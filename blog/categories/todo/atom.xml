@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: todo | Aki Tech Notes]]></title>
+  <link href="http://luozengbin.github.com/blog/categories/todo/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.com/"/>
+  <updated>2012-08-27T22:31:20+09:00</updated>
+  <id>http://luozengbin.github.com/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[blog setup todo list]]></title>
+    <link href="http://luozengbin.github.com/blog/2012/08/27/blog-setup-todo-list/"/>
+    <updated>2012-08-27T22:29:00+09:00</updated>
+    <id>http://luozengbin.github.com/blog/2012/08/27/blog-setup-todo-list</id>
+    <content type="html"><![CDATA[<ul>
+<li>Modify CSS Style</li>
+<li>Fix Github Repo Display</li>
+<li>Gist Tag</li>
+<li>Video Tag</li>
+<li>Code Tag</li>
+<li>Image Tag</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>
