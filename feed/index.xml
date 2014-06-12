@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/feed" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-12T15:15:56+09:00</updated>
+  <updated>2014-06-12T18:41:08+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,5 +12,370 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[LPIC Lv2-201試験準備メモ１]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html"/>
+    <updated>2014-06-12T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/lpic-lv2-201試験準備メモ１</id>
+    <content type="html"><![CDATA[<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">MBRパーティショニング</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>基本パテーション：MBR仕様の制限で基本パテーションは最大４つ
+</li>
+<li>拡張パテーション：一つ基本パテーションとして計算する
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">LVMスナップショート</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+スナップショートとはあるLVのカレント状態をバックアップする機能。
+バックアップ方式としてファイルの増分内容を記録LV領域を作成しそのLV
+領域にスナップショート作成時点からの変化履歴を記録する。
+増分バックアップ方式であるため、初期作成時は容量消費しない。
+対象LVに上ファイル変化があったたびにスナップショートLVに
+変化内容が書き込まれるため、領域が消費される。
+</p>
+
+<p>
+<!-- more -->
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">ARP (Address Resolution Protocol) コマンド</h2>
+<div class="outline-text-2" id="text-3">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">arp -i eth0</td>
+<td class="left">eth0インタフェースのarpキャッシュを表示する</td>
+</tr>
+
+<tr>
+<td class="left">arp -a jizai.home</td>
+<td class="left">対象ホストのmacアドレスを表示する</td>
+</tr>
+
+<tr>
+<td class="left">arp -d jizai.home</td>
+<td class="left">対象ホストのarpキャッシュを削除する</td>
+</tr>
+
+<tr>
+<td class="left">arp -n</td>
+<td class="left">逆引きを行わず、arpキャッシュを表示する</td>
+</tr>
+
+<tr>
+<td class="left">arp -s 192.168.100.4 0a:c3:1c:e4:75:eb</td>
+<td class="left">arpエントリレコードを追加する</td>
+</tr>
+
+<tr>
+<td class="left">arp -f [/etc/ethers]</td>
+<td class="left">ファイルからarpエントリレコードを追加する</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4">ネットワーク設定ファイルのパス</h2>
+<div class="outline-text-2" id="text-4">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">/etc/hostname</td>
+<td class="left">ホスト名の設定</td>
+</tr>
+
+<tr>
+<td class="left">/etc/hosts</td>
+<td class="left">ホスト別名とIPのマッピング定義</td>
+</tr>
+
+<tr>
+<td class="left">/etc/resolv.conf</td>
+<td class="left">DNSサーバの指定</td>
+</tr>
+
+<tr>
+<td class="left">/etc/nsswitch.conf</td>
+<td class="left">名前解決方式のの優先順位指定</td>
+</tr>
+
+<tr>
+<td class="left">/etc/networks</td>
+<td class="left">ネットワーク名とネットワークアドレス</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5">忘れがち知識</h2>
+<div class="outline-text-2" id="text-5">
+<ul class="org-ul">
+<li>/etc/sysconfig/network ファイルにおいて IPv6 アドレス有効化こと項目：NETWORKING_IPV6
+</li>
+<li>無線 LAN のリンク品質や信号強度を確認できるコマンド
+<ul class="org-ul">
+<li>iwconfig
+</li>
+<li>iwlist
+</li>
+<li>iwspy
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Java Mission Controlメモ]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-06-12-java-mission-control%E3%83%A1%E3%83%A2.html"/>
+    <updated>2014-06-12T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/java-mission-controlメモ</id>
+    <content type="html"><![CDATA[<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">利用可能なJavaバージョン</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>Java SE Advanced （アドバンスド）
+</li>
+<li>Java SE Suite
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">ローカルJavaプロセスの監視</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+監視対象Javaプロセス起動時に以下のオプションを追加する。
+</p>
+<ul class="org-ul">
+<li>+UnlockCommercialFeatures：商用オプションロックを解除する
+</li>
+<li>+FlightRecorder：フライドレコーダー機能を有効化する
+</li>
+</ul>
+
+<pre class="example">
+$ java -XX:+UnlockCommercialFeatures -XX:+FlightRecorder ......
+</pre>
+
+<p>
+<!-- more -->
+</p>
+
+<p>
+利用可能なコマンドを確認する、jcmdコマンドにプロセスIDを引数にして実行できる
+コマンド一覧を表示する。
+</p>
+<pre class="example">
+$ jcmd &lt;pid&gt; help
+  7720:
+  The following commands are available:
+  JFR.stop    ★レコーディング停止
+  JFR.start   ★レコーディング開始
+  JFR.dump    ★レコーディング内容をダンプする
+  JFR.check
+  VM.native_memory
+  VM.commercial_features
+  ManagementAgent.stop
+  ManagementAgent.start_local
+  ManagementAgent.start
+  Thread.print
+  GC.class_histogram
+  GC.heap_dump
+  GC.run_finalization
+  GC.run
+  VM.uptime
+  VM.flags
+  VM.system_properties
+  VM.command_line
+  VM.version
+  help
+</pre>
+
+<p>
+<code>jcmd &lt;pid&gt; JFR.start</code> でレコーディング開始、サブコマンドのヘルプは
+<code>jcmd &lt;pid&gt; help JFR.start</code> で見る。
+</p>
+<pre class="example">
+$ ./jcmd 7720 JFR.start
+ 7720:
+ Started recording 4. No limit (duration/maxsize/maxage) in use.
+  
+ Use JFR.dump recording=4 filename=FILEPATH to copy recording data to file.
+</pre>
+
+<p>
+<code>jcmd &lt;pid&gt; JFR.dump</code> でレコーディングファイルを取得する
+</p>
+<pre class="example">
+$ ./jcmd 7720 JFR.dump recording=4 filename=/tmp/7720_002.jfr
+7720:
+Dumped recording 4, 378.5 kB written to:
+
+/tmp/7720_002.jfr
+</pre>
+
+<p>
+<code>jcmd &lt;pid&gt; JFR.stop</code> でレコーディング終了
+</p>
+<pre class="example">
+$ ./jcmd 7720 JFR.stop
+7720:
+Must provide either name or recording.
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">リモートJavaプロセスの監視</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+JMXポートを公開する、一番手軽な方法、jcmdコマンドを用いて、JMX remote port を臨時で空
+けて接続する。
+</p>
+<pre class="example">
+jcmd &lt;pid&gt; ManagementAgent.start jmxremote.port=7091 jmxremote.authenticate=false jmxremote.ssl=false
+</pre>
+
+<p>
+クライアントマシンのJava Mission Control（GUI）からJMX接続して、記録を行う。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4">有用なJavaオプション</h2>
+<div class="outline-text-2" id="text-4">
+</div><div id="outline-container-sec-4-1" class="outline-3">
+<h3 id="sec-4-1">-XX:StartFlightRecording</h3>
+<div class="outline-text-3" id="text-4-1">
+<p>
+JRockit JVMで実行されるアプリケーションのフライト・レコーダ記録を開始するには、このオ
+プションを起動時に指定します。このオプションは、フライト・レコーダを実行時に開始する
+start_flightrecording診断コマンドと同等です。詳細は、Oracle JRockit JDKツールを参照し
+てください。
+</p>
+
+<pre class="example">
+java -XX:+FlightRecorder -XX:FlightRecorderOptions=disk=true,maxchunksize=10M -XX:StartFlightRecording=filename=test.jfr myApp
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-4-2" class="outline-3">
+<h3 id="sec-4-2">-XX:+PrintFlagsFinal</h3>
+<div class="outline-text-3" id="text-4-2">
+<p>
+JVM終了時にXXパラメータの値を標準出力にダンプする。
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5">よく使うコマンド</h2>
+<div class="outline-text-2" id="text-5">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">商用機能の有効化とステータス確認</td>
+<td class="left">jcmd &lt;pid&gt; VM.commercial_features</td>
+</tr>
+
+<tr>
+<td class="left">JMX Agent のリモート起動</td>
+<td class="left">jcmd &lt;pid&gt; ManagementAgent.start</td>
+</tr>
+
+<tr>
+<td class="left">JMX Agent のローカル起動</td>
+<td class="left">jcmd &lt;pid&gt; ManagementAgent.start_local</td>
+</tr>
+
+<tr>
+<td class="left">JMX Agent の停止</td>
+<td class="left">jcmd &lt;pid&gt; ManagementAgent.stop</td>
+</tr>
+
+<tr>
+<td class="left">スレッド一覧の出力</td>
+<td class="left">Thread.print</td>
+</tr>
+
+<tr>
+<td class="left">concurrent のlock に関するスレッド</td>
+<td class="left">jcmd &lt;pid&gt; Thread.print -l</td>
+</tr>
+
+<tr>
+<td class="left">JVM コマンドラインの表示</td>
+<td class="left">VM.command_line</td>
+</tr>
+
+<tr>
+<td class="left">System Properties の表示</td>
+<td class="left">VM.system_properties</td>
+</tr>
+
+<tr>
+<td class="left">該当VMに指定されたJVMオプションの表示 -all で全オプションと値の出力</td>
+<td class="left">VM.flags</td>
+</tr>
+
+<tr>
+<td class="left">GC.run</td>
+<td class="left">System.gc() の実行</td>
+</tr>
+
+<tr>
+<td class="left">ヒープダンプ出力（HPROF形式）-all を指定しない場合にはfull gc がリクエストされる</td>
+<td class="left">GC.heap_dump</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+]]></content>
+  </entry>
   
 </feed>
