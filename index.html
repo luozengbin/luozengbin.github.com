@@ -102,6 +102,69 @@
 
 
 
+<span class="glyphicon glyphicon-calendar"></span> <time datetime="2014-06-13T00:00:00+09:00" pubdate data-updated="true">2014-06-13 (Fri)</time>
+        
+      </p>
+    
+    
+      <h1 class="entry-title"><a href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">[検証]SMTPプロトコール監視してみた</a></h1>
+    
+  </header>
+
+
+  <div class="entry-content clearfix"><p>
+自宅のPC環境にMTA(postfix)サーバを構築しました。
+１周間ほど保持したので、telnet、nc、tcpdumpコマンドから
+メール送信処理の中身を観測してみたいと思います。
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">概要</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+VM環境を立てるのが面倒のため、loopbackインタフェースを通して
+ローカル環境内で検証を行う。
+</p>
+<pre class="example">
++--------------+         +-------------+
+|              |         |             |
+| クライアント +-- lo ----+  MTAサーバ |
+|              |         |             |
++--------------+         +-------------+
+  127.0.0.1                127.0.0.1:25
+</pre>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a class="btn btn-default" rel="full-article" href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+        </article>
+      
+      
+        <article class="post">
+          
+  <header class="page-header">
+    
+      <p class="meta text-muted text-uppercase">
+        
+
+
+
+
+
+
+
+
+
+
+
+
 <span class="glyphicon glyphicon-calendar"></span> <time datetime="2014-06-12T00:00:00+09:00" pubdate data-updated="true">2014-06-12 (Thu)</time>
         
       </p>
@@ -240,6 +303,8 @@ $ java -XX:+UnlockCommercialFeatures -XX:+FlightRecorder ......
   </div>
   
   <div id="recent_posts" class="list-group">
+    
+    <a class="list-group-item " href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">[検証]SMTPプロトコール監視してみた</a>
     
     <a class="list-group-item " href="/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html">LPIC Lv2-201試験準備メモ１</a>
     

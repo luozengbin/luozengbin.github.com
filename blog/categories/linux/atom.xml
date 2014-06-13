@@ -4,7 +4,7 @@
   <title><![CDATA[Category: linux | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-12T18:44:49+09:00</updated>
+  <updated>2014-06-13T14:04:46+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,450 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[検証]SMTPプロトコール監視してみた]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html"/>
+    <updated>2014-06-13T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[検証]smtpプロトコール監視してみた</id>
+    <content type="html"><![CDATA[<p>
+自宅のPC環境にMTA(postfix)サーバを構築しました。
+１周間ほど保持したので、telnet、nc、tcpdumpコマンドから
+メール送信処理の中身を観測してみたいと思います。
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">概要</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+VM環境を立てるのが面倒のため、loopbackインタフェースを通して
+ローカル環境内で検証を行う。
+</p>
+<pre class="example">
++--------------+         +-------------+
+|              |         |             |
+| クライアント +-- lo ----+  MTAサーバ |
+|              |         |             |
++--------------+         +-------------+
+  127.0.0.1                127.0.0.1:25
+</pre>
+
+<p>
+<!-- more -->
+</p>
+
+<p>
+ドメイン、メール送受信情報
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">MTAサーバFQDN</td>
+<td class="left">mail.home</td>
+</tr>
+
+<tr>
+<td class="left">クライアントFQDN</td>
+<td class="left">jizai.home</td>
+</tr>
+
+<tr>
+<td class="left">送信者メール</td>
+<td class="left">akira@mail.home</td>
+</tr>
+
+<tr>
+<td class="left">受信者メール</td>
+<td class="left">root@mail.home</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+tcpdumpコマンドでloopbackインタフェースのパケットを監視する。
+</p>
+
+<pre class="example">
+[akira@jizai ~]$ sudo tcpdump -n  -i lo port 25
+</pre>
+
+<p>
+telnetからメール送信レシピ、 <span class="underline">★</span> が付いている部分が手入力
+</p>
+<pre class="example">
+[akira@jizai ~]$ telnet localhost 25     ★接続開始
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+220 mail.home ESMTP unknown
+HELO jizai.home                          ★メール送信開始宣言
+250 mail.home
+MAIL FROM: &lt;akira@mail.home&gt;             ★送信元を指定する
+250 2.1.0 Ok
+RCPT TO: &lt;root@mail.home&gt;                ★送信先を指定する
+250 2.1.5 Ok
+DATA                                     ★メール本文を開始する
+354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;
+This is a Test mail from telnet
+Hello root!
+.                                        ★メール本文終了
+250 2.0.0 Ok: queued as AB9BF8A107E
+quit                                     ★接続終了
+221 2.0.0 Bye
+Connection closed by foreign host.
+[akira@jizai ~]$
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">telnetからの接続開始</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+localhostの25番ポートへ接続する。
+</p>
+<pre class="example">
+[akira@jizai ~]$ telnet localhost 25
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+220 mail.home ESMTP unknown    ★ 説明：MTAサーバから準備完了応答メッセージ
+</pre>
+
+<p>
+tcpdumpの出力にtcpの3ウェイ・ハンドシェイク処理(1-3行目)と
+MTAサーバから最初の応答メッセージ(4-5行目)が表示される。
+</p>
+<pre class="example">
+11:49:33.684755 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [S], seq 1483942186, win 43690, options [mss 65495,sackOK,TS val 2064872 ecr 0,nop,wscale 7], length 0
+11:49:33.684770 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [S.], seq 2082428713, ack 1483942187, win 43690, options [mss 65495,sackOK,TS val 2064872 ecr 2064872,nop,wscale 7], length 0
+11:49:33.684787 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 1, win 342, options [nop,nop,TS val 2064872 ecr 2064872], length 0
+11:49:33.685184 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 1:30, ack 1, win 342, options [nop,nop,TS val 2064872 ecr 2064872], length 29
+11:49:33.685214 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 30, win 342, options [nop,nop,TS val 2064872 ecr 2064872], length 0
+</pre>
+<p>
+気になること、tcpdumpの出力に途中からシーケンス番号が1に変わった。調べてみた結果、
+tcpdump がわかりやすく表示するためでした。 <code>-S</code> を付けることでオリジナルのシーケンス
+番号をそのまま出力することができる。
+</p>
+
+<p>
+MTAログにクライアントからの接続跡が記録された。
+</p>
+<pre class="example">
+Jun 13 11:49:33 localhost postfix/smtpd[4873]: warning: hostname jizai does not resolve to address 192.168.100.3
+Jun 13 11:49:33 localhost postfix/smtpd[4873]: connect from unknown[192.168.100.3]
+</pre>
+<p>
+MTAサーバでHELOからの名前解決にまだ問題が残っているようです。
+DNSサーバに名前登録したはずです。さあ、どうしよう！
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">メール送信の開始を宣言する</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+<code>HELO &lt;クライアントのホスト名&gt;</code> コマンドでメールサーバに
+にてメール送信の開始を宣言する。
+</p>
+<pre class="example">
+[akira@jizai ~]$ telnet localhost 25
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+220 mail.home ESMTP unknown
+HELO jizai.home        ★ HELOコマンド実行
+250 mail.home          ★ サーバからの250応答
+</pre>
+
+<p>
+tcpdumpの出力、クライアントのPUSH（１行目）とサーバのACK（２行目）、
+そしてサーバから応答時のPUSHとクライアントの受信ACKで合計４通が表示された。
+</p>
+<pre class="example">
+10:51:18.385531 IP 127.0.0.1.55748 &gt; 127.0.0.1.25: Flags [P.], seq 1:18, ack 30, win 342, options [nop,nop,TS val 1016282 ecr 1012424], length 17
+10:51:18.385568 IP 127.0.0.1.25 &gt; 127.0.0.1.55748: Flags [.], ack 18, win 342, options [nop,nop,TS val 1016282 ecr 1016282], length 0
+10:51:18.385682 IP 127.0.0.1.25 &gt; 127.0.0.1.55748: Flags [P.], seq 30:45, ack 18, win 342, options [nop,nop,TS val 1016282 ecr 1016282], length 15
+10:51:18.385711 IP 127.0.0.1.55748 &gt; 127.0.0.1.25: Flags [.], ack 45, win 342, options [nop,nop,TS val 1016282 ecr 1016282], length 0
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4">送信元を指定する</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+<code>MAIL FROM: &lt;送信元メール&gt;</code> コマンドにて送信元メールアドレスを設定する。
+</p>
+<pre class="example">
+MAIL FROM: &lt;akira@mail.home&gt;
+250 2.1.0 Ok       ★応答コード 250
+</pre>
+
+<p>
+tcpdumpの出力、サーバからのACKと応答メッセージのPUSHが纏めて送信されたため
+TCPやり取りが３通で表示された。
+</p>
+<pre class="example">
+11:50:09.768768 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 18:48, ack 45, win 342, options [nop,nop,TS val 2075697 ecr 2070308], length 30
+11:50:09.768944 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 45:59, ack 48, win 342, options [nop,nop,TS val 2075697 ecr 2075697], length 14
+11:50:09.768976 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 59, win 342, options [nop,nop,TS val 2075697 ecr 2075697], length 0
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5">送信先を指定する</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+<code>RCPT TO: &lt;送信先メール&gt;</code> コマンドにて送信先メールアドレスを設定する。
+</p>
+<pre class="example">
+MAIL FROM: &lt;root@mail.home&gt;
+250 2.1.5 Ok     ★応答コード 250
+</pre>
+
+<p>
+tcpdumpの出力、サーバからのACKと応答メッセージのPUSHが纏めて送信されたため
+TCPやり取りが３通で表示された。
+</p>
+<pre class="example">
+11:50:22.696751 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 48:75, ack 59, win 342, options [nop,nop,TS val 2079575 ecr 2075697], length 27
+11:50:22.703097 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 59:73, ack 75, win 342, options [nop,nop,TS val 2079577 ecr 2079575], length 14
+11:50:22.703135 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 73, win 342, options [nop,nop,TS val 2079577 ecr 2079577], length 0
+</pre>
+
+<p>
+また <code>RCPT TO</code> コマンドがMTAサーバに届くと、サーバ側のsmtpdプロセスでメール
+キューイングIDの払出、送信先アドレスのチェック処理が実施される。以下はMTAログです。
+</p>
+<pre class="example">
+Jun 13 11:50:22 localhost postfix/smtpd[4873]: AB9BF8A107E: client=unknown[192.168.100.3]
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6">メール本文を開始する</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+<code>DATA</code> コマンドにてメール本文開始要求をサーバへ送信する。
+</p>
+<pre class="example">
+DATA
+354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;  ★応答コード 354
+</pre>
+
+<p>
+tcpdumpの出力
+</p>
+<pre class="example">
+11:50:44.461274 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 75:81, ack 73, win 342, options [nop,nop,TS val 2086105 ecr 2079577], length 6
+11:50:44.461442 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 73:110, ack 81, win 342, options [nop,nop,TS val 2086105 ecr 2086105], length 37
+11:50:44.461474 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 110, win 342, options [nop,nop,TS val 2086105 ecr 2086105], length 0
+</pre>
+
+<p>
+<span class="underline">telnetターミナルからメール本文を入力する、観測結果から見ると改行が入力されるたびに</span>
+<span class="underline">入力されたテキストがサーバへ送信される。</span>
+</p>
+<pre class="example">
+This is a Test mail from telnet       ★改行１
+Hello root!                           ★改行２
+</pre>
+
+<p>
+tcpdumpの出力
+</p>
+<pre class="example">
+★改行１
+11:50:58.590306 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 81:114, ack 110, win 342, options [nop,nop,TS val 2090343 ecr 2086105], length 33
+11:50:58.628041 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [.], ack 114, win 342, options [nop,nop,TS val 2090355 ecr 2090343], length 0
+
+★改行２
+11:51:09.655315 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 114:127, ack 110, win 342, options [nop,nop,TS val 2093663 ecr 2090355], length 13
+11:51:09.655352 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [.], ack 127, win 342, options [nop,nop,TS val 2093663 ecr 2093663], length 0
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7">メール本文終了</h2>
+<div class="outline-text-2" id="text-7">
+<p>
+.（ピリオド）を入力して、メール本文終了要求をサーバへ送信する。
+</p>
+<pre class="example">
+.
+250 2.0.0 Ok: queued as AB9BF8A107E
+</pre>
+
+<p>
+.（ピリオド）の送信とサーバからの250正常応答受信合計４通。
+</p>
+<pre class="example">
+11:51:21.982567 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 127:130, ack 110, win 342, options [nop,nop,TS val 2097361 ecr 2093663], length 3
+11:51:21.982599 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [.], ack 130, win 342, options [nop,nop,TS val 2097361 ecr 2097361], length 0
+11:51:22.014030 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 110:147, ack 130, win 342, options [nop,nop,TS val 2097370 ecr 2097361], length 37
+11:51:22.014070 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 147, win 342, options [nop,nop,TS val 2097370 ecr 2097370], length 0
+</pre>
+
+<p>
+MTAログにメールのキューイング処理と転送処理の記録が出力された。
+メールヘッダのmessage-id項目がこの時点で払いだされたようです。
+</p>
+<ul class="org-ul">
+<li>形式： <code>yyyymmdd999999.キューイングID@ドメイン名</code>
+</li>
+</ul>
+<pre class="example">
+Jun 13 11:51:21 localhost postfix/cleanup[5028]: AB9BF8A107E: message-id=&lt;20140613025022.AB9BF8A107E@mail.home&gt;
+Jun 13 11:51:22 localhost postfix/qmgr[920]: AB9BF8A107E: from=&lt;akira@mail.home&gt;, size=333, nrcpt=1 (queue active)
+Jun 13 11:51:22 localhost postfix/local[5058]: AB9BF8A107E: to=&lt;akira@mail.home&gt;, orig_to=&lt;root@mail.home&gt;, relay=local, delay=72, delays=72/0.01/0/0.02, dsn=2.0.0, status=sent (delivered to maildir)
+Jun 13 11:51:22 localhost postfix/qmgr[920]: AB9BF8A107E: removed
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-8" class="outline-2">
+<h2 id="sec-8">接続終了</h2>
+<div class="outline-text-2" id="text-8">
+<p>
+<code>quit</code> コマンドにて接続切断する。
+</p>
+<pre class="example">
+quit                 ★ 切断送信
+221 2.0.0 Bye        ★ 211応答
+Connection closed by foreign host.
+</pre>
+
+<pre class="example">
+★ 切断送信
+11:51:42.503665 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 130:136, ack 147, win 342, options [nop,nop,TS val 2103517 ecr 2097370], length 6
+
+★ 211応答
+11:51:42.503825 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 147:162, ack 136, win 342, options [nop,nop,TS val 2103517 ecr 2103517], length 15
+11:51:42.503856 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 162, win 342, options [nop,nop,TS val 2103517 ecr 2103517], length 0
+
+★ tcpセッション終了
+11:51:42.503867 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [F.], seq 162, ack 136, win 342, options [nop,nop,TS val 2103517 ecr 2103517], length 0
+11:51:42.503969 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [F.], seq 136, ack 163, win 342, options [nop,nop,TS val 2103517 ecr 2103517], length 0
+11:51:42.503999 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [.], ack 137, win 342, options [nop,nop,TS val 2103517 ecr 2103517], length 0
+</pre>
+
+<p>
+MTAログにクライアント切断跡が残ります。
+</p>
+<pre class="example">
+Jun 13 11:51:42 localhost postfix/smtpd[4873]: disconnect from unknown[192.168.100.3]
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-9" class="outline-2">
+<h2 id="sec-9">ncコマンドでファイルからメール送信テスト</h2>
+<div class="outline-text-2" id="text-9">
+<p>
+telnetで入力した内容を <code>sendmail_test.txt</code> に保存し、ncに渡せばコマン１行
+でメール送信することができた。
+</p>
+
+<p>
+<code>sendmail_test.txt</code> の内容。
+</p>
+<pre class="example">
+HELO jizai.home
+MAIL FROM: &lt;akira@mail.home&gt;
+RCPT TO: &lt;root@mail.home&gt;
+DATA
+This is a Test mail from nc
+Hello root!
+.
+</pre>
+
+<p>
+メール送信したみた。
+</p>
+<pre class="example">
+[akira@jizai temp]$ cat sendmail_test.txt | nc localhost 25
+220 mail.home ESMTP unknown
+250 mail.home
+250 2.1.0 Ok
+250 2.1.5 Ok
+354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;
+250 2.0.0 Ok: queued as BE5B98A107E
+[akira@jizai temp]$
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-10" class="outline-2">
+<h2 id="sec-10">習ったこと</h2>
+<div class="outline-text-2" id="text-10">
+<ul class="org-ul">
+<li>tcpdumpのシーケンス番号出力ルール
+</li>
+<li>DATAブロック内であっても、telnetターミナルで改行すると内容がサーバに送信される
+</li>
+<li>キューイングIDとメールメッセージIDの払出タイミング
+</li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-11" class="outline-2">
+<h2 id="sec-11">参考</h2>
+<div class="outline-text-2" id="text-11">
+<p>
+<a href="http://www.atmarkit.co.jp/ait/articles/0304/22/news001.html">http://www.atmarkit.co.jp/ait/articles/0304/22/news001.html</a>
+</p>
+</div>
+</div>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[LPIC Lv2-201試験準備メモ１]]></title>
