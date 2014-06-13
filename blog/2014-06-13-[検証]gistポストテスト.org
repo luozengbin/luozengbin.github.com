@@ -1,0 +1,14 @@
+#+TITLE: [検証]gistポストテスト
+#+DATE: 2014-06-13
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: emacs
+#+JEKYLL_PUBLISHED: true
+
+* gist テスト
+
+{% gist 1027674 gist_tag.rb %}
+
+{{{ gist 1027674 gist_tag.rb }}}
+
+{{{more}}}
