@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/feed" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-13T17:23:22+09:00</updated>
+  <updated>2014-06-15T23:29:02+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,305 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]Otcopressコンテンツ投稿自動化]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-06-15-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E6%8A%95%E7%A8%BF%E8%87%AA%E5%8B%95%E5%8C%96.html"/>
+    <updated>2014-06-15T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]otcopressコンテンツ投稿自動化</id>
+    <content type="html"><![CDATA[<p>
+emacsからblog投稿ツールいくつ試しました、最近以下のツール組み合わせで落ち着いた。
+</p>
+<ul class="org-ul">
+<li>静的コンテンツ生成エンジン <code>Octopress</code> ： <a href="http://Octopress.org/">http://Octopress.org/</a>
+</li>
+<li>コンテンツ公開サービス <code>Github Page</code> : <a href="https://pages.github.com/">https://pages.github.com/</a>
+</li>
+<li>org-modesでOctopress記事を書く： <a href="https://github.com/yoshinari-nomura/org-Octopress">https://github.com/yoshinari-nomura/org-Octopress</a>
+</li>
+<li>自動化スクリプト
+</li>
+</ul>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Octopress + Github Page でブログ環境を構築する</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+同じ環境で複数Rubyバージョンを利用できるようにするためRbenvを導入する。
+</p>
+</div>
+
+<div id="outline-container-sec-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> Rbenvのインストール</h3>
+<div class="outline-text-3" id="text-1-1">
+<pre class="example">
+$ cd ~
+$ git clone git://github.com/sstephenson/rbenv.git .rbenv
+$ echo 'export PATH="$HOME/.rbenv/bin:$PATH"' &gt;&gt; ~/.bashrc
+$ echo 'eval "$(rbenv init -)"' &gt;&gt; ~/.bashrc
+$ git clone git://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build
+$ source ~/.bashrc
+</pre>
+
+<p>
+rbenvでインストール可能なバージョンリストを確認する。 <code>rbenv install -l</code>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> RbenvによるRubyバージョンの切り替え</h3>
+<div class="outline-text-3" id="text-1-2">
+<pre class="example">
+$ rbenv install 1.9.3-p0
+$ rbenv global 1.9.3-p0
+$ rbenv rehash
+$ rbenv global
+$ ruby --version
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> Octopressのインストール</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+GithubからOctopressをダウンロードする
+</p>
+<pre class="example">
+$ git clone git://github.com/imathis/Octopress.git Octopress
+$ cd Octopress
+$ ruby --version  # ruby バージョン確認
+</pre>
+
+<p>
+必要なrubyライブラリをインストールする
+</p>
+<pre class="example">
+$ gem install bundler
+$ rbenv rehash
+$ bundle install
+</pre>
+
+<p>
+Octopressテーマの初期化
+</p>
+<pre class="example">
+$ rake install
+</pre>
+
+<p>
+octostrap3 Themeへ変更
+</p>
+<pre class="example">
+$ cd Octopress
+$ git clone https://github.com/kAworu/octostrap3 .themes/octostrap3
+$ rake 'install[octostrap3]'
+</pre>
+
+<p>
+静的コンテンツの生成
+</p>
+<pre class="example">
+$ rake generate
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-4" class="outline-3">
+<h3 id="sec-1-4"><span class="section-number-3">1.4</span> Github Pageサイトの準備</h3>
+<div class="outline-text-3" id="text-1-4">
+<p>
+ここでは省略します。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-1-5" class="outline-3">
+<h3 id="sec-1-5"><span class="section-number-3">1.5</span> OctopressコンテンツをGithub Pageにコミットする</h3>
+<div class="outline-text-3" id="text-1-5">
+<pre class="example">
+$rake setup_github_pages    # githubリポジトリのurlを入力する
+$rake generate
+$rake deploy
+</pre>
+
+
+
+<p>
+
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> emacsから記事を書く道具の整備</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+<code>elpa</code> を通して、=org-mode= で記事を書くための <code>org-ocotpress</code> をインストールする。
+org-ocotpressは MELPAに登録してあるので、 <code>M-x package-install org-ocotpress</code> で
+インストールする。 <code>org-ocotpress</code> から記事を管理するため、emacsの設定とOcotpress
+のpermalink設定を以下のように変える。
+</p>
+
+<p>
+<code>octopress/_config.yml</code>
+</p>
+<pre class="example">
+permalink: /blog/:year-:month-:day-:title.html
+</pre>
+
+<p>
+<code>emacs設定</code>
+</p>
+<pre class="example">
+(require 'org-octopress)
+(setq org-octopress-directory-top       (concat user-emacs-directory "blogs/octopress/source"))
+(setq org-octopress-directory-posts     (concat user-emacs-directory "blogs/octopress/source/_posts"))
+(setq org-octopress-directory-org-top   (concat user-emacs-directory "blogs/octopress/source"))
+(setq org-octopress-directory-org-posts (concat user-emacs-directory "blogs/octopress/source/blog"))
+(setq org-octopress-setup-file          (concat user-emacs-directory "blogs/octopress/setupfile.org"))
+</pre>
+
+<p>
+<code>blogs/octopress/setupfile.org</code>
+</p>
+<pre class="example">
+#+OPTIONS: H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:nil -:t f:nil *:t &lt;:t
+#+OPTIONS: TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+OPTIONS: author:nil
+#+OPTIONS: email:nil
+#+OPTIONS: creator:nil
+#+OPTIONS: timestamp:nil
+#+MACRO: more @@html:&lt;!-- more --&gt;@@
+#+MACRO: twitter [[http://twitter.com/$1][@$1]]
+#+MACRO: github [[https://github.com/$1/$2][$2]]
+#+PROPERTY: cache yes
+#+STARTUP: odd
+#+STARTUP: content
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 自動化スクリプト</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+コンテンツプレビュー自動化elispとshell script
+</p>
+<pre class="example">
+(defvar org-octopress-top
+  (concat user-emacs-directory "blogs/octopress/")
+  "octopressブログテンプレートディレクトリ")
+
+(defun org-octopress-preview ()
+  "preview octopress content by call external shell script."
+  (interactive)
+  (message "preview octopress content ....")
+  (lexical-let* ((default-directory org-octopress-top)
+                 (preview-url "http://localhost:4000"))
+    (deferred:$
+      (deferred:process-shell "blog_preview.sh" org-octopress-top))
+    (deferred:nextc it
+      (lambda (x)
+        (message "*** preview blog ***")
+        (message x)
+        (message "launch preview url %s" preview-url)
+        (browse-url preview-url)))))
+</pre>
+
+<p>
+<code>blog_preview.sh</code>
+</p>
+<pre class="example">
+#!/bin/sh
+## Usage: blog_preview.sh
+##
+## Options: $1 octopressディレクトリの位置
+##
+## Comment: octopress配下にblog静的
+##          コンテンツの生成とプレビュー
+##################################################################### 
+
+RUBY_VER="1.9.3-p0"
+OCTOPRESS_DIR=$1
+
+which rbenv
+if [ $? = 0 ]; then
+    # ruby バージョン切り替え処理
+    rbenv global $RUBY_VER
+    rbenv rehash
+    global_ver=`rbenv global`
+    if [ $global_ver = $RUBY_VER ]; then
+        # blogコンテンツ生成とデプロイ
+        echo "run rake with `ruby --version`"
+        pushd $OCTOPRESS_DIR
+        rake generate
+        if [ -z "`netstat -nutl | grep 4000`" ] ; then
+            echo "&gt;&gt;&gt; Startup Preview"
+            rake preview &amp;
+            sleep 2
+        fi
+        popd
+    fi
+fi
+</pre>
+
+<p>
+コンテンツをgithubへ自動同期化elispとshell script
+</p>
+<pre class="example">
+(defun org-octopress-deploy ()
+  "deploy octopress content to github page service."
+  (interactive)
+  (message "deploy octopress content ....")
+  (lexical-let* ((default-directory org-octopress-top))
+    (deferred:$
+      (deferred:process-shell "blog_deploy.sh" org-octopress-top)
+      (deferred:nextc it
+        (lambda (x)
+          (message "*** deploy blog ***")
+          (message x))))))
+</pre>
+
+<p>
+<code>blog_deploy.sh</code>
+</p>
+<pre class="example">
+#!/bin/sh
+#!/bin/sh
+## Usage: blog_deploy.sh
+##
+## Options: $1 octopressディレクトリの位置
+##   
+## Comment: octopress配下にblog静的
+##          コンテンツの生成とデプロイ
+##################################################################### 
+
+RUBY_VER="1.9.3-p0"
+OCTOPRESS_DIR=$1
+
+which rbenv
+if [ $? = 0 ]; then
+    # ruby バージョン切り替え処理
+    rbenv global $RUBY_VER
+    rbenv rehash
+    global_ver=`rbenv global`
+    if [ $global_ver = $RUBY_VER ]; then
+        # blogコンテンツ生成とデプロイ
+        echo "run rake with `ruby --version`"
+        pushd $OCTOPRESS_DIR
+        rake generate
+        rake deploy
+        popd
+    fi
+fi
+</pre>
+</div>
+</div>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[検証]SMTPプロトコール監視してみた]]></title>
