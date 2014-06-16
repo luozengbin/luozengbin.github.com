@@ -9,7 +9,7 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="自宅の Raspberry Pi にfirewalldを入れて遊んで見ました。 firewalld情報収集から始まる iptablesが土台となります、firewalldの設定はipatbles設定へ変化される アプリケーションはAD-BUSのAPI経由で設定可能 &hellip;">
+  <meta name="description" content="自宅の Raspberry Pi にfirewalldを入れて遊んで見ました。 firewalld情報収集から始まる iptablesが土台となります、firewalldの設定はipatbles設定へ変換される D-BUSのAPI経由でアプリケーションから制御が可能 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -102,20 +102,20 @@
 <h2 id="sec-1">firewalld情報収集から始まる</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
-<li>iptablesが土台となります、firewalldの設定はipatbles設定へ変化される
+<li>iptablesが土台となります、firewalldの設定はipatbles設定へ変換される
 </li>
-<li>アプリケーションはAD-BUSのAPI経由で設定可能
+<li>D-BUSのAPI経由でアプリケーションから制御が可能
 </li>
 <li>受送信ルールはゾーンファイルにて定義する
 </li>
-<li>受送信サービスタイプ（サービス名＋ポートより識別する）による通信制限する
+<li>受送信サービスタイプ（サービス名＋ポートより識別する）による通信制限が可能
 </li>
-<li>受送信ICMPタイプによる通信制限する
+<li>受送信ICMPタイプによる通信制限が可能
 </li>
-<li>通信元のIPサブネットによる通信制限する
+<li>通信元のIPサブネットによる通信制限が可能
 </li>
 <li>NICポートごとにゾーンファイルを適用することが可能
-（複数同時適用可能かは未確定）
+（複数同時適用可能かは未検証）
 </li>
 </ul>
 

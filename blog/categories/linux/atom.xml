@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Linux | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-16T15:28:36+09:00</updated>
+  <updated>2014-06-16T20:41:08+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -29,20 +29,20 @@
 <h2 id="sec-1">firewalld情報収集から始まる</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
-<li>iptablesが土台となります、firewalldの設定はipatbles設定へ変化される
+<li>iptablesが土台となります、firewalldの設定はipatbles設定へ変換される
 </li>
-<li>アプリケーションはAD-BUSのAPI経由で設定可能
+<li>D-BUSのAPI経由でアプリケーションから制御が可能
 </li>
 <li>受送信ルールはゾーンファイルにて定義する
 </li>
-<li>受送信サービスタイプ（サービス名＋ポートより識別する）による通信制限する
+<li>受送信サービスタイプ（サービス名＋ポートより識別する）による通信制限が可能
 </li>
-<li>受送信ICMPタイプによる通信制限する
+<li>受送信ICMPタイプによる通信制限が可能
 </li>
-<li>通信元のIPサブネットによる通信制限する
+<li>通信元のIPサブネットによる通信制限が可能
 </li>
 <li>NICポートごとにゾーンファイルを適用することが可能
-（複数同時適用可能かは未確定）
+（複数同時適用可能かは未検証）
 </li>
 </ul>
 
