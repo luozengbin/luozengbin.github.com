@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-15T23:29:02+09:00</updated>
+  <updated>2014-06-16T15:28:36+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,923 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[検証]firewalldを遊んでみた]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-06-16-%5B%E6%A4%9C%E8%A8%BC%5Dfirewalld%E3%82%92%E9%81%8A%E3%82%93%E3%81%A7%E3%81%BF%E3%81%9F.html"/>
+    <updated>2014-06-16T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[検証]firewalldを遊んでみた</id>
+    <content type="html"><![CDATA[<p>
+自宅の <code>Raspberry Pi</code> にfirewalldを入れて遊んで見ました。
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">firewalld情報収集から始まる</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>iptablesが土台となります、firewalldの設定はipatbles設定へ変化される
+</li>
+<li>アプリケーションはAD-BUSのAPI経由で設定可能
+</li>
+<li>受送信ルールはゾーンファイルにて定義する
+</li>
+<li>受送信サービスタイプ（サービス名＋ポートより識別する）による通信制限する
+</li>
+<li>受送信ICMPタイプによる通信制限する
+</li>
+<li>通信元のIPサブネットによる通信制限する
+</li>
+<li>NICポートごとにゾーンファイルを適用することが可能
+（複数同時適用可能かは未確定）
+</li>
+</ul>
+
+<p>
+<!-- more -->
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">検証環境</h2>
+<div class="outline-text-2" id="text-2">
+<ul class="org-ul">
+<li>Archlinux : <a href="https://www.archlinux.org/">https://www.archlinux.org/</a>
+</li>
+<li>firewalld-0.3.10-1 : <a href="https://www.archlinux.org/packages/community/any/firewalld/">https://www.archlinux.org/packages/community/any/firewalld/</a>
+</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">firewalldのパッケージ構成</h2>
+<div class="outline-text-2" id="text-3">
+<pre class="example">
+/etc/
+/etc/conf.d/
+/etc/conf.d/firewalld           ★firewalldサービス起動パラメータの定義
+/etc/dbus-1/
+/etc/dbus-1/system.d/
+/etc/dbus-1/system.d/FirewallD.conf
+/etc/firewalld/
+/etc/firewalld/firewalld.conf
+/etc/firewalld/icmptypes/      ★独自ICMPタイプの定義はここに追加
+/etc/firewalld/lockdown-whitelist.xml
+/etc/firewalld/services/       ★独自サービス定義はここに追加
+/etc/firewalld/zones/          ★独自のゾーンファイルはここに追加
+/etc/xdg/
+/etc/xdg/autostart/
+/etc/xdg/autostart/firewall-applet.desktop
+/usr/
+/usr/bin/
+/usr/bin/firewall-applet       ★GUIツール
+/usr/bin/firewall-cmd
+/usr/bin/firewall-config
+/usr/bin/firewall-offline-cmd
+/usr/bin/firewalld
+/usr/lib/
+/usr/lib/firewalld/
+/usr/lib/firewalld/icmptypes/  ★ICMPタイプの定義
+/usr/lib/firewalld/icmptypes/destination-unreachable.xml
+/usr/lib/firewalld/icmptypes/echo-reply.xml
+/usr/lib/firewalld/icmptypes/echo-request.xml
+/usr/lib/firewalld/icmptypes/parameter-problem.xml
+/usr/lib/firewalld/icmptypes/redirect.xml
+/usr/lib/firewalld/icmptypes/router-advertisement.xml
+/usr/lib/firewalld/icmptypes/router-solicitation.xml
+/usr/lib/firewalld/icmptypes/source-quench.xml
+/usr/lib/firewalld/icmptypes/time-exceeded.xml
+/usr/lib/firewalld/services/  ★サービス定義
+/usr/lib/firewalld/services/amanda-client.xml
+/usr/lib/firewalld/services/amanda-k5-client.xml
+/usr/lib/firewalld/services/bacula-client.xml
+/usr/lib/firewalld/services/bacula.xml
+/usr/lib/firewalld/services/dhcp.xml
+/usr/lib/firewalld/services/dhcpv6-client.xml
+/usr/lib/firewalld/services/dhcpv6.xml
+/usr/lib/firewalld/services/dns.xml
+/usr/lib/firewalld/services/freeipa-ldap.xml
+/usr/lib/firewalld/services/freeipa-ldaps.xml
+/usr/lib/firewalld/services/freeipa-replication.xml
+/usr/lib/firewalld/services/ftp.xml
+/usr/lib/firewalld/services/high-availability.xml
+/usr/lib/firewalld/services/http.xml
+/usr/lib/firewalld/services/https.xml
+/usr/lib/firewalld/services/imaps.xml
+/usr/lib/firewalld/services/ipp-client.xml
+/usr/lib/firewalld/services/ipp.xml
+/usr/lib/firewalld/services/ipsec.xml
+/usr/lib/firewalld/services/kerberos.xml
+/usr/lib/firewalld/services/kpasswd.xml
+/usr/lib/firewalld/services/ldap.xml
+/usr/lib/firewalld/services/ldaps.xml
+/usr/lib/firewalld/services/libvirt-tls.xml
+/usr/lib/firewalld/services/libvirt.xml
+/usr/lib/firewalld/services/mdns.xml
+/usr/lib/firewalld/services/mountd.xml
+/usr/lib/firewalld/services/ms-wbt.xml
+/usr/lib/firewalld/services/mysql.xml
+/usr/lib/firewalld/services/nfs.xml
+/usr/lib/firewalld/services/ntp.xml
+/usr/lib/firewalld/services/openvpn.xml
+/usr/lib/firewalld/services/pmcd.xml
+/usr/lib/firewalld/services/pmproxy.xml
+/usr/lib/firewalld/services/pmwebapi.xml
+/usr/lib/firewalld/services/pmwebapis.xml
+/usr/lib/firewalld/services/pop3s.xml
+/usr/lib/firewalld/services/postgresql.xml
+/usr/lib/firewalld/services/privoxy.xml
+/usr/lib/firewalld/services/proxy-dhcp.xml
+/usr/lib/firewalld/services/puppetmaster.xml
+/usr/lib/firewalld/services/radius.xml
+/usr/lib/firewalld/services/rpc-bind.xml
+/usr/lib/firewalld/services/samba-client.xml
+/usr/lib/firewalld/services/samba.xml
+/usr/lib/firewalld/services/sane.xml
+/usr/lib/firewalld/services/smtp.xml
+/usr/lib/firewalld/services/ssh.xml
+/usr/lib/firewalld/services/synergy.xml
+/usr/lib/firewalld/services/telnet.xml
+/usr/lib/firewalld/services/tftp-client.xml
+/usr/lib/firewalld/services/tftp.xml
+/usr/lib/firewalld/services/tor-socks.xml
+/usr/lib/firewalld/services/transmission-client.xml
+/usr/lib/firewalld/services/vnc-server.xml
+/usr/lib/firewalld/services/wbem-https.xml
+/usr/lib/firewalld/services/xmpp-bosh.xml
+/usr/lib/firewalld/services/xmpp-client.xml
+/usr/lib/firewalld/services/xmpp-local.xml
+/usr/lib/firewalld/services/xmpp-server.xml
+/usr/lib/firewalld/zones/                          ★デフォルトで用意されたゾーンの定義ファイル
+/usr/lib/firewalld/zones/block.xml
+/usr/lib/firewalld/zones/dmz.xml
+/usr/lib/firewalld/zones/drop.xml
+/usr/lib/firewalld/zones/external.xml
+/usr/lib/firewalld/zones/home.xml
+/usr/lib/firewalld/zones/internal.xml
+/usr/lib/firewalld/zones/public.xml                ★デフォルトはこちらのゾーンが適用される
+/usr/lib/firewalld/zones/trusted.xml
+/usr/lib/firewalld/zones/work.xml
+/usr/lib/python3.4/
+/usr/lib/python3.4/site-packages/
+/usr/lib/python3.4/site-packages/firewall/
+/usr/lib/python3.4/site-packages/firewall/__init__.py
+/usr/lib/python3.4/site-packages/firewall/client.py
+/usr/lib/python3.4/site-packages/firewall/config/
+/usr/lib/python3.4/site-packages/firewall/config/__init__.py
+/usr/lib/python3.4/site-packages/firewall/config/dbus.py
+/usr/lib/python3.4/site-packages/firewall/core/
+/usr/lib/python3.4/site-packages/firewall/core/__init__.py
+/usr/lib/python3.4/site-packages/firewall/core/base.py
+/usr/lib/python3.4/site-packages/firewall/core/ebtables.py
+/usr/lib/python3.4/site-packages/firewall/core/fw.py
+/usr/lib/python3.4/site-packages/firewall/core/fw_config.py
+/usr/lib/python3.4/site-packages/firewall/core/fw_direct.py
+/usr/lib/python3.4/site-packages/firewall/core/fw_icmptype.py
+/usr/lib/python3.4/site-packages/firewall/core/fw_policies.py
+/usr/lib/python3.4/site-packages/firewall/core/fw_service.py
+/usr/lib/python3.4/site-packages/firewall/core/fw_test.py
+/usr/lib/python3.4/site-packages/firewall/core/fw_zone.py
+/usr/lib/python3.4/site-packages/firewall/core/io/
+/usr/lib/python3.4/site-packages/firewall/core/io/__init__.py
+/usr/lib/python3.4/site-packages/firewall/core/io/direct.py
+/usr/lib/python3.4/site-packages/firewall/core/io/firewalld_conf.py
+/usr/lib/python3.4/site-packages/firewall/core/io/icmptype.py
+/usr/lib/python3.4/site-packages/firewall/core/io/io_object.py
+/usr/lib/python3.4/site-packages/firewall/core/io/lockdown_whitelist.py
+/usr/lib/python3.4/site-packages/firewall/core/io/service.py
+/usr/lib/python3.4/site-packages/firewall/core/io/zone.py
+/usr/lib/python3.4/site-packages/firewall/core/ipXtables.py
+/usr/lib/python3.4/site-packages/firewall/core/logger.py
+/usr/lib/python3.4/site-packages/firewall/core/modules.py
+/usr/lib/python3.4/site-packages/firewall/core/prog.py
+/usr/lib/python3.4/site-packages/firewall/core/rich.py
+/usr/lib/python3.4/site-packages/firewall/core/watcher.py
+/usr/lib/python3.4/site-packages/firewall/dbus_utils.py
+/usr/lib/python3.4/site-packages/firewall/errors.py
+/usr/lib/python3.4/site-packages/firewall/functions.py
+/usr/lib/python3.4/site-packages/firewall/fw_types.py
+/usr/lib/python3.4/site-packages/firewall/server/
+/usr/lib/python3.4/site-packages/firewall/server/__init__.py
+/usr/lib/python3.4/site-packages/firewall/server/config.py
+/usr/lib/python3.4/site-packages/firewall/server/config_icmptype.py
+/usr/lib/python3.4/site-packages/firewall/server/config_service.py
+/usr/lib/python3.4/site-packages/firewall/server/config_zone.py
+/usr/lib/python3.4/site-packages/firewall/server/decorators.py
+/usr/lib/python3.4/site-packages/firewall/server/firewalld.py
+/usr/lib/python3.4/site-packages/firewall/server/server.py
+/usr/lib/systemd/
+/usr/lib/systemd/system/
+/usr/lib/systemd/system/firewalld.service     ★systemdサービス定義ファイル
+/usr/share/
+/usr/share/appdata/
+/usr/share/appdata/firewall-config.appdata.xml
+/usr/share/applications/
+/usr/share/applications/firewall-config.desktop
+/usr/share/bash-completion/
+/usr/share/bash-completion/completions/
+/usr/share/bash-completion/completions/firewall-cmd
+/usr/share/firewalld/
+/usr/share/firewalld/firewall-config.glade
+/usr/share/firewalld/gtk3_chooserbutton.py
+/usr/share/glib-2.0/
+/usr/share/glib-2.0/schemas/
+/usr/share/glib-2.0/schemas/org.fedoraproject.FirewallApplet.gschema.xml
+/usr/share/glib-2.0/schemas/org.fedoraproject.FirewallConfig.gschema.xml
+/usr/share/icons/(★iconディレクトリ配下は省略)
+/usr/share/locale/(★localeディレクトリ配下は省略)
+/usr/share/man/
+/usr/share/man/man1/
+/usr/share/man/man1/firewall-applet.1.gz
+/usr/share/man/man1/firewall-cmd.1.gz
+/usr/share/man/man1/firewall-config.1.gz
+/usr/share/man/man1/firewall-offline-cmd.1.gz
+/usr/share/man/man1/firewalld.1.gz
+/usr/share/man/man5/
+/usr/share/man/man5/firewalld.conf.5.gz
+/usr/share/man/man5/firewalld.dbus.5.gz
+/usr/share/man/man5/firewalld.direct.5.gz
+/usr/share/man/man5/firewalld.icmptype.5.gz
+/usr/share/man/man5/firewalld.lockdown-whitelist.5.gz
+/usr/share/man/man5/firewalld.richlanguage.5.gz
+/usr/share/man/man5/firewalld.service.5.gz
+/usr/share/man/man5/firewalld.zone.5.gz
+/usr/share/man/man5/firewalld.zones.5.gz
+/usr/share/polkit-1/
+/usr/share/polkit-1/actions/
+/usr/share/polkit-1/actions/org.fedoraproject.FirewallD1.desktop.policy
+/usr/share/polkit-1/actions/org.fedoraproject.FirewallD1.policy
+/usr/share/polkit-1/actions/org.fedoraproject.FirewallD1.server.policy
+</pre>
+</div>
+</div>
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4">定義ファイルの見本</h2>
+<div class="outline-text-2" id="text-4">
+</div><div id="outline-container-sec-4-1" class="outline-3">
+<h3 id="sec-4-1">publicゾーン定義ファイル</h3>
+<div class="outline-text-3" id="text-4-1">
+<pre class="example">
+[akira@pipi ~]$ cat /usr/lib/firewalld/zones/public.xml 
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;zone&gt;
+  &lt;short&gt;Public&lt;/short&gt;
+  &lt;description&gt;For use in public areas. You do not trust the other computers on networks to not harm your computer. Only selected incoming connections are accepted.&lt;/description&gt;
+  &lt;service name="ssh"/&gt;
+  &lt;service name="dhcpv6-client"/&gt;
+&lt;/zone&gt;
+[akira@pipi ~]$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-4-2" class="outline-3">
+<h3 id="sec-4-2">SSHサービス定義ファイル</h3>
+<div class="outline-text-3" id="text-4-2">
+<p>
+プロトコール名とポート番号で識別する。
+</p>
+<pre class="example">
+[akira@pipi ~]$ cat /usr/lib/firewalld/services/ssh.xml 
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;service&gt;
+  &lt;short&gt;SSH&lt;/short&gt;
+  &lt;description&gt;Secure Shell (SSH) is a protocol for logging into and executing commands on remote machines. It provides secure encrypted communications. If you plan on accessing your machine remotely via SSH over a firewalled interface, enable this option. You need the openssh-server package installed for this option to be useful.&lt;/description&gt;
+  &lt;port protocol="tcp" port="22"/&gt;
+&lt;/service&gt;
+[akira@pipi ~]$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-4-3" class="outline-3">
+<h3 id="sec-4-3">ICMPタイプ定義ファイル</h3>
+<div class="outline-text-3" id="text-4-3">
+<p>
+shortタグのICMPタイプ名で識別する。使用可能なタイプ名は <code>iptables -p icmp -h</code> で確認
+できる。
+</p>
+<pre class="example">
+[akira@pipi ~]$ cat /usr/lib/firewalld/icmptypes/destination-unreachable.xml 
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;icmptype&gt;
+  &lt;short&gt;Destination Unreachable&lt;/short&gt;
+  &lt;description&gt;This error message is generated by a host or gateway if the destination is not reachable.&lt;/description&gt;
+&lt;/icmptype&gt;
+
+★使用可能なICMPタイプ名の確認
+[akira@pipi ~]$ iptables -p icmp -h
+--省略--
+Valid ICMP Types:
+any
+echo-reply (pong)
+destination-unreachable
+   network-unreachable
+   host-unreachable
+   protocol-unreachable
+   port-unreachable
+   fragmentation-needed
+   source-route-failed
+   network-unknown
+   host-unknown
+   network-prohibited
+   host-prohibited
+   TOS-network-unreachable
+   TOS-host-unreachable
+   communication-prohibited
+   host-precedence-violation
+   precedence-cutoff
+source-quench
+redirect
+   network-redirect
+   host-redirect
+   TOS-network-redirect
+   TOS-host-redirect
+echo-request (ping)
+router-advertisement
+router-solicitation
+time-exceeded (ttl-exceeded)
+   ttl-zero-during-transit
+   ttl-zero-during-reassembly
+parameter-problem
+   ip-header-bad
+   required-option-missing
+timestamp-request
+timestamp-reply
+address-mask-request
+address-mask-reply
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5">firewalldコマンドインタフェース</h2>
+<div class="outline-text-2" id="text-5">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">firewall-cmd</td>
+<td class="left">&#x2013;reload</td>
+<td class="left">定義の変更を反映する</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;complete-reload</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;state</td>
+<td class="left">ステータスの確認</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;list-all-zones</td>
+<td class="left">ゾーン設定の確認</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;get-services</td>
+<td class="left">定義済みサービス一覧の取得</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;get-icmptypes</td>
+<td class="left">定義済みICMP応答一覧の取得</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;get-default-zone</td>
+<td class="left">デフォルトゾーンの確認</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;set-default-zone=&lt;ゾーン名&gt;</td>
+<td class="left">デフォルトゾーンの変更</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;remove-interface=&lt;nic名&gt;</td>
+<td class="left">対象nicの適用ゾーンを除去</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">★サービスの許可設定</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;list-services &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">対象ゾーンに許可されたサービス</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;query-service=&lt;サービス名&gt; &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">指定のサービスが許可されているか確認</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;add-service=&lt;サービス名&gt; &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">許可するサービスを追加</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;remove-service=&lt;サービス名&gt; &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">許可するサービスを削除</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">★ICMPタイプの拒否設定</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;list-icmp-blocks &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">禁止されているICMPタイプを表示</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;query-icmp-block=&lt;ICMPタイプ名&gt; &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">ICMPタイプが禁止されているか確認</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;add-icmp-block=&lt;ICMPタイプ名&gt; &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">拒否するICMPタイプの追加</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;remove-icmp-block=&lt;ICMPタイプ名&gt; &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">拒否するICMPタイプの除外</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">★IPマスカレードのOn/Off設定</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;query-masquerade &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">現在の設定を確認</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;add-masquerade &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">IPマスカレードを有効化</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;remove-masquerade &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">IPマスカレードを無効化</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">★nicに適用する</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;add-interface=&lt;nic名&gt; &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">対象nicにゾーンを適用</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;remove-interface=eth1</td>
+<td class="left">適用ゾーンを除去</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;list-interfaces &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">ゾーンが適用されるNICポートを表示</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;change-interface=&lt;nic名&gt; &#x2013;zone=&lt;ゾーン名&gt;</td>
+<td class="left">nicに適用するゾーンを変更する</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;query-interface=interface=h1</td>
+<td class="left">nicに対象ゾーンが適用されたかの確認</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">★通信元のIPサブネットによる通信制限</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;list-sources &#x2013;zone=&lt;ゾーン&gt;</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;get-zone-of-source=&lt;サブネット&gt;</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;query-source=&lt;サブネット&gt;</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;add-source=&lt;サブネット&gt; &#x2013;zone=&lt;ゾーン&gt;</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;change-source=&lt;サブネット&gt; &#x2013;zone=&lt;ゾーン&gt;</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;remove-source=&lt;サブネット&gt;</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">★システム保守時役立つコマンド</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;panic-on</td>
+<td class="left">すべてのネットワーク通信が遮断する</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#x2013;panic-off</td>
+<td class="left">パニックモードを止める</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6">インストールとサービスの有効化</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+<code>pacman</code> コマンドでインストール
+</p>
+<pre class="example">
+[akira@pipi ~]$ sudo pacman -S firewalld 
+依存関係を解決しています...
+相互衝突をチェックしています...
+
+パッケージ (1): firewalld-0.3.10-1
+
+Total Installed Size:   2.64 MiB
+
+:: インストールを行いますか？ [Y/n] 
+(1/1) キーリングのキーを確認                                                                                                 [############################################################################] 100%
+(1/1) パッケージの整合性をチェック                                                                                           [############################################################################] 100%
+(1/1) パッケージファイルのロード                                                                                             [############################################################################] 100%
+(1/1) ファイルの衝突をチェック                                                                                               [############################################################################] 100%
+(1/1) 空き容量を確認                                                                                                         [############################################################################] 100%
+(1/1) インストール firewalld                                                                                                 [############################################################################] 100%
+[akira@pipi ~]$
+</pre>
+
+<p>
+<code>systemctl</code> コマンドでサービスの有効化、起動
+</p>
+<pre class="example">
+★サービスの有効化
+[akira@pipi ~]$ sudo systemctl enable firewalld.service
+[sudo] password for akira: 
+ln -s '/usr/lib/systemd/system/firewalld.service' '/etc/systemd/system/dbus-org.fedoraproject.FirewallD1.service'
+ln -s '/usr/lib/systemd/system/firewalld.service' '/etc/systemd/system/basic.target.wants/firewalld.service'
+
+★サービスの起動
+[akira@pipi ~]$ sudo systemctl start firewalld.service
+
+★サービス起動時のログ
+[akira@pipi ~]$ sudo tail -f /var/log/everything.log
+Jun 16 10:15:29 pipi systemd[1]: Starting firewalld - dynamic firewall daemon...
+Jun 16 10:15:29 pipi systemd[1]: Failed to reset devices.list on /system.slice: Invalid argument
+                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Jun 16 10:15:31 pipi kernel: [ 6372.219681] nf_conntrack version 0.5.0 (16384 buckets, 65536 max)
+Jun 16 10:15:31 pipi kernel: [ 6372.360695] ip6_tables: (C) 2000-2006 Netfilter Core Team
+Jun 16 10:15:31 pipi kernel: [ 6372.486263] Ebtables v2.0 registered
+Jun 16 10:15:31 pipi kernel: [ 6372.504222] Bridge firewalling registered
+Jun 16 10:15:32 pipi systemd[1]: Started firewalld - dynamic firewall daemon.
+
+★サービスステータスの確認
+[akira@pipi ~]$ sudo systemctl status firewalld.service
+● firewalld.service - firewalld - dynamic firewall daemon
+   Loaded: loaded (/usr/lib/systemd/system/firewalld.service; enabled)
+   Active: active (running) since 月 2014-06-16 10:15:32 JST; 3min 22s ago
+ Main PID: 8679 (firewalld)
+   CGroup: /system.slice/firewalld.service
+           └─8679 /usr/bin/python -Es /usr/bin/firewalld --nofork --nopid
+
+ 6月 16 10:15:32 pipi systemd[1]: Started firewalld - dynamic firewall daemon.
+[akira@pipi ~]$ firewall-cmd --state
+</pre>
+
+<p>
+<code>/usr/lib/systemd/system/firewalld.service</code> サービス起動ファイルの中身
+</p>
+<pre class="example">
+[Unit]
+Description=firewalld - dynamic firewall daemon
+Before=network.target
+Before=libvirtd.service
+Before=NetworkManager.service
+Conflicts=iptables.service ip6tables.service ebtables.service  ★iptables, ebtablesサービスとのコンフリクト定義
+
+[Service]
+EnvironmentFile=-/etc/conf.d/firewalld                         ★起動パラメータファイル
+ExecStart=/usr/bin/firewalld --nofork --nopid $FIREWALLD_ARGS  ★起動コマンド
+ExecReload=/bin/kill -HUP $MAINPID                             ★停止コマンド
+# supress to log debug and error output also to /var/log/messages
+StandardOutput=null
+StandardError=null
+Type=dbus
+BusName=org.fedoraproject.FirewallD1
+
+[Install]
+WantedBy=basic.target
+Alias=dbus-org.fedoraproject.FirewallD1.service
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7">pingをブロックしてみた</h2>
+<div class="outline-text-2" id="text-7">
+<p>
+<code>public</code> ゾーンデフォルト状態ではすべてのICMPタイプを許可する。ここではpingをブロック
+するようにしてみた。
+</p>
+<pre class="example">
+★echo-requestをブロックする
+[akira@pipi ~]$ sudo firewall-cmd --add-icmp-block=echo-request --zone=public
+success
+★設定の確認
+[akira@pipi ~]$ sudo firewall-cmd --list-icmp-blocks --zone=public
+echo-request
+
+★iptablesにて設定を確認する
+[akira@pipi ~]$ sudo iptables-save
+~~省略~~
+-A IN_public_deny -p icmp -m icmp --icmp-type 8 -j REJECT --reject-with icmp-host-prohibited ★タイプコードが8のicmpパケットを拒否するようにする
+COMMIT
+# Completed on Mon Jun 16 11:13:17 2014
+</pre>
+
+<p>
+windows端末から確認して見る、見事にブロックができた。
+</p>
+<pre class="example">
+C:\Users\akira&gt;ping 192.168.100.4
+
+192.168.100.4 に ping を送信しています 32 バイトのデータ:
+192.168.100.4 からの応答: 宛先ホストに到達できません。
+192.168.100.4 からの応答: 宛先ホストに到達できません。
+192.168.100.4 からの応答: 宛先ホストに到達できません。
+192.168.100.4 からの応答: 宛先ホストに到達できません。
+
+192.168.100.4 の ping 統計:
+    パケット数: 送信 = 4、受信 = 4、損失 = 0 (0% の損失)、
+
+C:\Users\akira&gt;
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-8" class="outline-2">
+<h2 id="sec-8">sambaサービスを許可してみた</h2>
+<div class="outline-text-2" id="text-8">
+<pre class="example">
+[akira@pipi ~]$ sudo firewall-cmd --add-service=samba --zone=public
+success
+[akira@pipi ~]$ sudo iptables-save
+~~省略~~~
+-A IN_public_allow -p udp -m udp --dport 137 -m conntrack --ctstate NEW -j ACCEPT
+-A IN_public_allow -p udp -m udp --dport 138 -m conntrack --ctstate NEW -j ACCEPT
+-A IN_public_allow -p tcp -m tcp --dport 139 -m conntrack --ctstate NEW -j ACCEPT
+-A IN_public_allow -p tcp -m tcp --dport 445 -m conntrack --ctstate NEW -j ACCEPT
+~~省略~~~
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-9" class="outline-2">
+<h2 id="sec-9">独自ルールで通信履歴をロギングしてみた</h2>
+<div class="outline-text-2" id="text-9">
+<p>
+<code>Rich Language</code> を用いて、特定のクライアントからhttpサービスを利用時にロギングする。
+</p>
+<pre class="example">
+★ルール追加
+[akira@pipi ~]$ sudo firewall-cmd --add-rich-rule='rule family="ipv4" source address="192.168.100.3" port port="80" protocol="tcp" log prefix="http connection" level="info" accept' --zone=pipi
+success
+
+★iptablesの確認
+[akira@pipi ~]$ sudo iptables-save
+# Generated by iptables-save v1.4.21 on Mon Jun 16 13:54:04 2014
+~~省略~~
+-A IN_pipi_log -s 192.168.100.3/32 -p tcp -m tcp --dport 80 -m conntrack --ctstate NEW -j LOG --log-prefix "http connection" --log-level 6
+COMMIT
+
+★Apacheサーバの起動
+[akira@pipi ~]$ sudo systemctl start httpd
+
+★ログ確認
+[akira@pipi ~]$ sudo tail -f /var/log/everything.log
+Jun 16 14:12:25 pipi systemd[1]: Starting Apache Web Server...
+Jun 16 14:12:26 pipi systemd[1]: PID file /run/httpd/httpd.pid not readable (yet?) after start.
+Jun 16 14:12:26 pipi systemd[1]: Started Apache Web Server.
+Jun 16 14:13:00 pipi kernel: [ 2076.795011] http connectionIN=eth0 OUT= MAC=8c:89:a5:45:1d:ef:00:21:85:a9:65:7b:08:00 SRC=192.168.100.3 DST=192.168.100.4 LEN=52 TOS=0x00 PREC=0x00 TTL=128 ID=28405 DF PROTO=TCP SPT=53049 DPT=80 WINDOW=8192 RES=0x00 SYN URGP=0 
+Jun 16 14:13:44 pipi kernel: [ 2120.509739] http connectionIN=eth0 OUT= MAC=8c:89:a5:45:1d:ef:00:21:85:a9:65:7b:08:00 SRC=192.168.100.3 DST=192.168.100.4 LEN=52 TOS=0x00 PREC=0x00 TTL=128 ID=28755 DF PROTO=TCP SPT=53059 DPT=80 WINDOW=8192 RES=0x00 SYN URGP=
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-10" class="outline-2">
+<h2 id="sec-10">独自のゾーンファイルにしてみた</h2>
+<div class="outline-text-2" id="text-10">
+<p>
+<code>/etc/firewalld/zones/</code> 配下に独自のゾーンファイルを作成する。
+</p>
+<pre class="example">
+[akira@pipi ~]$ sudo touch /etc/firewalld/zones/pipi.xml
+[akira@pipi ~]$ cat /etc/firewalld/zones/pipi.xml
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;zone&gt;
+  &lt;short&gt;Pipi&lt;/short&gt;
+  &lt;description&gt;For use in pipi areas.&lt;/description&gt;
+  &lt;service name="ssh"/&gt;
+  &lt;service name="samba"/&gt;
+  &lt;!-- &lt;service name="samba-client"/&gt; --&gt;
+  &lt;service name="dhcpv6-client"/&gt;
+&lt;/zone&gt;
+[akira@pipi ~]$
+</pre>
+
+<p>
+<code>/etc/firewalld/firewalld.conf</code> ファイルにDefaultZoneを独自ゾーン名(ファイル名)に変更える。
+</p>
+<pre class="example">
+# firewalld config file
+
+# default zone
+# The default zone used if an empty zone string is used.
+# Default: public
+DefaultZone=pipi  ★ここです
+~~省略~~
+</pre>
+
+<p>
+サービスを再起動する
+</p>
+<pre class="example">
+[akira@pipi ~]$ sudo systemctl stop firewalld   ★サービス停止
+[akira@pipi ~]$ sudo iptables -L
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination         
+[akira@pipi ~]$ sudo systemctl start firewalld  ★サービス起動
+[akira@pipi ~]$ sudo iptables-save 
+~~省略~~
+-A IN_pipi -j IN_pipi_allow
+-A IN_pipi_allow -p tcp -m tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
+-A IN_pipi_allow -p udp -m udp --dport 137 -m conntrack --ctstate NEW -j ACCEPT
+-A IN_pipi_allow -p udp -m udp --dport 138 -m conntrack --ctstate NEW -j ACCEPT
+-A IN_pipi_allow -p tcp -m tcp --dport 139 -m conntrack --ctstate NEW -j ACCEPT
+-A IN_pipi_allow -p tcp -m tcp --dport 445 -m conntrack --ctstate NEW -j ACCEPT
+COMMIT
+# Completed on Mon Jun 16 13:31:04 2014
+[akira@pipi ~]$
+</pre>
+
+<p>
+<code>firewall-cmd --permanent</code> を用いて、pingのブロック設定を永続化させる。
+</p>
+<pre class="example">
+[akira@pipi ~]$ sudo firewall-cmd --permanent --zone=pipi --add-icmp-block=echo-request
+success
+[akira@pipi ~]$ sudo systemctl restart firewalld
+★ icmp-blockタグが自動的にゾーン定義ファイルに反映される。
+[akira@pipi ~]$ sudo cat /etc/firewalld/zones/pipi.xml
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;zone&gt;
+  &lt;short&gt;Pipi&lt;/short&gt;
+  &lt;description&gt;For use in pipi areas.&lt;/description&gt;
+  &lt;service name="ssh"/&gt;
+  &lt;service name="dhcpv6-client"/&gt;
+  &lt;service name="samba"/&gt;
+  &lt;icmp-block name="echo-request"/&gt;
+&lt;/zone&gt;
+[akira@pipi ~]$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-11" class="outline-2">
+<h2 id="sec-11">NICポートにゾーンの適用</h2>
+<div class="outline-text-2" id="text-11">
+<p>
+起動した状態で <code>--remove-interface</code> で適用ゾーンをクリアしようとすると
+<code>UNKNOWN_INTERFACE</code> で怒られた。一度 <code>--add-interface</code> してから使えるようになる。
+</p>
+<pre class="example">
+[akira@hakusai ~]$ sudo firewall-cmd --remove-interface=eth0
+Error: UNKNOWN_INTERFACE: eth0
+[akira@hakusai ~]$ sudo firewall-cmd --add-interface=eth0 --zone=home
+success
+[akira@hakusai ~]$ sudo firewall-cmd --remove-interface=eth0
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-12" class="outline-2">
+<h2 id="sec-12">GUIツールを使って見た</h2>
+<div class="outline-text-2" id="text-12">
+<p>
+firewalldのGUIインタフェースツール <code>/usr/bin/firewall-applet</code> として提供されている。
+<code>/etc/xdg/autostart/firewall-applet.desktop</code> がインストルされた場合、OSがGUIモードで
+起動するとfirewall-appletが自動起動される。システムトレイにアイコンが表示される。
+<img src="img/firewalld-applet-01.png" alt="firewalld-applet-01.png" />
+</p>
+
+<p>
+ゾーン設定変種画面
+<img src="img/firewalld-applet-02.png" alt="firewalld-applet-02.png" />
+</p>
+<p>
+サービス定義画面
+<img src="img/firewalld-applet-03.png" alt="firewalld-applet-03.png" />
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-13" class="outline-2">
+<h2 id="sec-13">参考した資料</h2>
+<div class="outline-text-2" id="text-13">
+<p>
+Linux女子部　firewalld徹底入門！
+<a href="http://www.slideshare.net/enakai/firewalld-study-v10">http://www.slideshare.net/enakai/firewalld-study-v10</a>
+</p>
+</div>
+</div>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[メモ]Otcopressコンテンツ投稿自動化]]></title>
@@ -31,6 +948,10 @@ emacsからblog投稿ツールいくつ試しました、最近以下のツー�
 <li>自動化スクリプト
 </li>
 </ul>
+
+<p>
+
+</p>
 
 <div id="outline-container-sec-1" class="outline-2">
 <h2 id="sec-1"><span class="section-number-2">1</span> Octopress + Github Page でブログ環境を構築する</h2>
@@ -134,12 +1055,6 @@ $rake setup_github_pages    # githubリポジトリのurlを入力する
 $rake generate
 $rake deploy
 </pre>
-
-
-
-<p>
-
-</p>
 </div>
 </div>
 </div>
@@ -211,13 +1126,13 @@ permalink: /blog/:year-:month-:day-:title.html
   (lexical-let* ((default-directory org-octopress-top)
                  (preview-url "http://localhost:4000"))
     (deferred:$
-      (deferred:process-shell "blog_preview.sh" org-octopress-top))
-    (deferred:nextc it
-      (lambda (x)
-        (message "*** preview blog ***")
-        (message x)
-        (message "launch preview url %s" preview-url)
-        (browse-url preview-url)))))
+      (deferred:process-shell "blog_preview.sh" org-octopress-top)
+      (deferred:nextc it
+        (lambda (x)
+          (message "*** preview blog ***")
+          (message x)
+          (message "launch preview url %s" preview-url)
+          (browse-url preview-url))))))
 </pre>
 
 <p>

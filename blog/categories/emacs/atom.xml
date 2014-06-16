@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Emacs | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/emacs/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-15T23:29:02+09:00</updated>
+  <updated>2014-06-16T15:28:36+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -33,6 +33,13 @@ emacsからblog投稿ツールいくつ試しました、最近以下のツー�
 <li>自動化スクリプト
 </li>
 </ul>
+
+
+
+
+<p>
+
+</p>
 
 
 
@@ -139,12 +146,6 @@ $rake setup_github_pages    # githubリポジトリのurlを入力する
 $rake generate
 $rake deploy
 </pre>
-
-
-
-<p>
-
-</p>
 </div>
 </div>
 </div>
@@ -222,13 +223,13 @@ permalink: /blog/:year-:month-:day-:title.html
   (lexical-let* ((default-directory org-octopress-top)
                  (preview-url "http://localhost:4000"))
     (deferred:$
-      (deferred:process-shell "blog_preview.sh" org-octopress-top))
-    (deferred:nextc it
-      (lambda (x)
-        (message "*** preview blog ***")
-        (message x)
-        (message "launch preview url %s" preview-url)
-        (browse-url preview-url)))))
+      (deferred:process-shell "blog_preview.sh" org-octopress-top)
+      (deferred:nextc it
+        (lambda (x)
+          (message "*** preview blog ***")
+          (message x)
+          (message "launch preview url %s" preview-url)
+          (browse-url preview-url))))))
 </pre>
 
 <p>

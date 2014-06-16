@@ -12,6 +12,8 @@ emacsからblog投稿ツールいくつ試しました、最近以下のツー�
 - org-modesでOctopress記事を書く： https://github.com/yoshinari-nomura/org-Octopress
 - 自動化スクリプト
 
+{{{more}}}
+
 * Octopress + Github Page でブログ環境を構築する
 同じ環境で複数Rubyバージョンを利用できるようにするためRbenvを導入する。
 
@@ -78,10 +80,6 @@ $rake generate
 $rake deploy
 #+end_example
 
-
-
-{{{more}}}
-
 * emacsから記事を書く道具の整備
 =elpa= を通して、=org-mode= で記事を書くための =org-ocotpress= をインストールする。
 org-ocotpressは MELPAに登録してあるので、 =M-x package-install org-ocotpress= で
@@ -133,13 +131,13 @@ permalink: /blog/:year-:month-:day-:title.html
   (lexical-let* ((default-directory org-octopress-top)
                  (preview-url "http://localhost:4000"))
     (deferred:$
-      (deferred:process-shell "blog_preview.sh" org-octopress-top))
-    (deferred:nextc it
-      (lambda (x)
-        (message "*** preview blog ***")
-        (message x)
-        (message "launch preview url %s" preview-url)
-        (browse-url preview-url)))))
+      (deferred:process-shell "blog_preview.sh" org-octopress-top)
+      (deferred:nextc it
+        (lambda (x)
+          (message "*** preview blog ***")
+          (message x)
+          (message "launch preview url %s" preview-url)
+          (browse-url preview-url))))))
 #+end_example
 
 =blog_preview.sh=
