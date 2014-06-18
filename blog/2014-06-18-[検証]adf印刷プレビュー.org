@@ -1,0 +1,98 @@
+#+TITLE: [検証]ADF印刷プレビュー機能
+#+DATE: 2014-06-18
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: java
+#+JEKYLL_PUBLISHED: true
+
+Oracle ADFの印刷機能にたずさわる機会がありましたので、一部調査した内容を
+ここでメモしておきます。サンプルコードは [[https://github.com/luozengbin/ADFSamples/tree/master/PrintPreview][Github]] に登録しています。
+
+* 検証内容
+1. =af:showPrintablePageBehavior= タグの使い方
+2. 印刷内容の制御
+3. IE印刷プレビュー画面を出す
+
+{{{more}}}
+
+* af:showPrintablePageBehaviorタグの使い方
+=af:showPrintablePageBehavior= タグを画面に任意のcommandコンポネントの子コンポネント
+として入れれば、そのcommandコンポネントがトリガーされると印刷プレビュー画面が新規ブラ
+ウザ画面にて表示される。
+
+* 印刷内容の制御
+基本的に全画面(同じjspx)の内容が印刷プレビュー画面に表示される。一部コンポネント
+(例： =af:menuBar= ) は表示しない仕様となっている。またレイアウトコンテナに
+=af:panelSplitter= や =af:panelAccordion= が使用された場合、アクティビティとなってい
+るレイアウトアイテムしかが印刷画面に表示しない。 =af:showPrintablePageBehavior= タグ
+の配置場所にもよります。
+
+また、 =f:view= タグの =beforePhase= リスナーにて印刷プレビュー画面に表示する内容を
+カスタマイズ(非表示制御)することができる。
+
+サンプル =DataView.jspx= の定義
+
+{% gist 0094c8013bc3eed1c962 %}
+
+サンプル =beforePhase= リスナー
+#+begin_src java
+public void beforePhaseMethod(PhaseEvent phaseEvent) {
+    
+    System.out.println("----------   phaseEvent   -------------");
+    System.out.println("phaseEvent.getPhaseId():" + phaseEvent.getPhaseId());
+    
+    //only perform action if RENDER_RESPONSE phase is reached
+    if (phaseEvent.getPhaseId() == PhaseId.RENDER_RESPONSE) {
+        
+        FacesContext fctx = FacesContext.getCurrentInstance();
+        //check internal request parameter
+        Map requestMap = fctx.getExternalContext().getRequestMap();
+        
+        // リクエストコンテキストに印刷らしきキーを特定
+        Object showPrintableBehavior = requestMap.get("oracle.adfinternal.view.faces.el.PrintablePage");
+        if (showPrintableBehavior != null) {
+            // 印刷画面のカスタマイズ
+            if (Boolean.TRUE == showPrintableBehavior) {
+                // コンポネントIDを用いて隠す処理を実施する
+                UiComponentControlUtil.setUnRendered("mb1", "it1", "it2");
+                UiComponentControlUtil.callbackJavascript("customPrint();");
+            }
+        }
+    }
+}
+#+end_src
+
+* IE印刷プレビュー画面を出す
+いい方法が見つからない、とりあえずWebBrowserというIEに含まれたActiveXコンポーネントを
+利用します。
+
+#+begin_src js
+function customPrint() {
+  if (getBrowser().indexOf('ie8') !== -1 ) {
+    if(window.ActiveXObject == null || document.body.insertAdjacentHTML == null) {
+      return;
+    }
+    var sWebBrowserCode = '<object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"></object>';
+    document.body.insertAdjacentHTML('beforeEnd', sWebBrowserCode);
+    var objWebBrowser = document.body.lastChild;
+    if(objWebBrowser == null) return;
+    objWebBrowser.ExecWB(7, 1);
+    document.body.removeChild(objWebBrowser);
+  } else {
+    window.print();
+  }
+
+  // 印刷プレビュー画面閉じる→HTML画面を閉じる
+  window.onfocus = function(){
+   (window.open('','_self').opener=window).close(); 
+  };
+}
+#+end_src
+
+ブラウザのセキュリティ設定に注意が必要です。
+
+
+* 参考
+Oracle Fusion Middleware Tag Reference for Oracle ADF Faces 11g Release 1 (11.1.1.5.0)
+http://docs.oracle.com/cd/E21764_01/apirefs.1111/e12419/tagdoc/af_showPrintablePageBehavior.html
+
