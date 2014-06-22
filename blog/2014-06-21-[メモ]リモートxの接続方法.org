@@ -266,3 +266,4 @@ leafpad: ディスプレイをオープンできません:
 
 * 参考サイト
 - [[http://vega.sra-tohoku.co.jp/~kabe/vsd/ssh-x.html][最近の豪華なX11環境でsshを使ってＸプロトコルを中継する]]
+- [[http://www.ibm.com/developerworks/jp/linux/tutorials/l-basics/][Linux ビギナーのための基本タスク]]
