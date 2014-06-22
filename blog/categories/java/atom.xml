@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-18T20:04:15+09:00</updated>
+  <updated>2014-06-22T10:23:53+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -155,26 +155,26 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 </p>
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #f0dfaf; font-weight: bold;">public</span> <span style="color: #8cd0d3;">void</span> <span style="color: #8cd0d3;">beforePhaseMethod</span>(<span style="color: #8cd0d3;">PhaseEvent</span> <span style="color: #dfaf8f;">phaseEvent</span>) {
+<pre class="src src-java"><span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">beforePhaseMethod</span>(<span style="color: #8ae234; font-weight: bold;">PhaseEvent</span> <span style="color: #ff6347;">phaseEvent</span>) {
 
-    System.out.println(<span style="color: #cc9393;">"----------   phaseEvent   -------------"</span>);
-    System.out.println(<span style="color: #cc9393;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
+    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"----------   phaseEvent   -------------"</span>);
+    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
 
-    <span style="color: #7f9f7f;">//</span><span style="color: #7f9f7f;">only perform action if RENDER_RESPONSE phase is reached</span>
-    <span style="color: #f0dfaf; font-weight: bold;">if</span> (phaseEvent.getPhaseId() == <span style="color: #bfebbf;">PhaseId</span>.RENDER_RESPONSE) {
+    <span style="color: #888a85;">//</span><span style="color: #888a85;">only perform action if RENDER_RESPONSE phase is reached</span>
+    <span style="color: #729fcf; font-weight: bold;">if</span> (phaseEvent.getPhaseId() == <span style="color: #8ae234;">PhaseId</span>.RENDER_RESPONSE) {
 
-        <span style="color: #8cd0d3;">FacesContext</span> <span style="color: #dfaf8f;">fctx</span> = FacesContext.getCurrentInstance();
-        <span style="color: #7f9f7f;">//</span><span style="color: #7f9f7f;">check internal request parameter</span>
-        <span style="color: #8cd0d3;">Map</span> <span style="color: #dfaf8f;">requestMap</span> = fctx.getExternalContext().getRequestMap();
+        <span style="color: #8ae234; font-weight: bold;">FacesContext</span> <span style="color: #ff6347;">fctx</span> = FacesContext.getCurrentInstance();
+        <span style="color: #888a85;">//</span><span style="color: #888a85;">check internal request parameter</span>
+        <span style="color: #8ae234; font-weight: bold;">Map</span> <span style="color: #ff6347;">requestMap</span> = fctx.getExternalContext().getRequestMap();
 
-        <span style="color: #7f9f7f;">// </span><span style="color: #7f9f7f;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
-        <span style="color: #8cd0d3;">Object</span> <span style="color: #dfaf8f;">showPrintableBehavior</span> = requestMap.get(<span style="color: #cc9393;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
-        <span style="color: #f0dfaf; font-weight: bold;">if</span> (showPrintableBehavior != <span style="color: #bfebbf;">null</span>) {
-            <span style="color: #7f9f7f;">// </span><span style="color: #7f9f7f;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
-            <span style="color: #f0dfaf; font-weight: bold;">if</span> (<span style="color: #bfebbf;">Boolean</span>.TRUE == showPrintableBehavior) {
-                <span style="color: #7f9f7f;">// </span><span style="color: #7f9f7f;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
-                UiComponentControlUtil.setUnRendered(<span style="color: #cc9393;">"mb1"</span>, <span style="color: #cc9393;">"it1"</span>, <span style="color: #cc9393;">"it2"</span>);
-                UiComponentControlUtil.callbackJavascript(<span style="color: #cc9393;">"customPrint();"</span>);
+        <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
+        <span style="color: #8ae234; font-weight: bold;">Object</span> <span style="color: #ff6347;">showPrintableBehavior</span> = requestMap.get(<span style="color: #ad7fa8; font-style: italic;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
+        <span style="color: #729fcf; font-weight: bold;">if</span> (showPrintableBehavior != <span style="color: #8ae234;">null</span>) {
+            <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
+            <span style="color: #729fcf; font-weight: bold;">if</span> (<span style="color: #8ae234;">Boolean</span>.TRUE == showPrintableBehavior) {
+                <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
+                UiComponentControlUtil.setUnRendered(<span style="color: #ad7fa8; font-style: italic;">"mb1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it2"</span>);
+                UiComponentControlUtil.callbackJavascript(<span style="color: #ad7fa8; font-style: italic;">"customPrint();"</span>);
             }
         }
     }
@@ -197,24 +197,24 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
 <div class="org-src-container">
 
-<pre class="src src-js"><span style="color: #f0dfaf; font-weight: bold;">function</span> <span style="color: #8cd0d3;">customPrint</span>() {
-  <span style="color: #f0dfaf; font-weight: bold;">if</span> (getBrowser().indexOf(<span style="color: #cc9393;">'ie8'</span>) !== -1 ) {
-    <span style="color: #f0dfaf; font-weight: bold;">if</span>(window.ActiveXObject == <span style="color: #bfebbf;">null</span> || document.body.insertAdjacentHTML == <span style="color: #bfebbf;">null</span>) {
-      <span style="color: #f0dfaf; font-weight: bold;">return</span>;
+<pre class="src src-js"><span style="color: #729fcf; font-weight: bold;">function</span> <span style="color: #edd400; font-weight: bold;">customPrint</span>() {
+  <span style="color: #729fcf; font-weight: bold;">if</span> (getBrowser().indexOf(<span style="color: #ad7fa8; font-style: italic;">'ie8'</span>) !== -1 ) {
+    <span style="color: #729fcf; font-weight: bold;">if</span>(window.ActiveXObject == <span style="color: #8ae234;">null</span> || document.body.insertAdjacentHTML == <span style="color: #8ae234;">null</span>) {
+      <span style="color: #729fcf; font-weight: bold;">return</span>;
     }
-    <span style="color: #f0dfaf; font-weight: bold;">var</span> <span style="color: #dfaf8f;">sWebBrowserCode</span> = <span style="color: #cc9393;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
-    document.body.insertAdjacentHTML(<span style="color: #cc9393;">'beforeEnd'</span>, sWebBrowserCode);
-    <span style="color: #f0dfaf; font-weight: bold;">var</span> <span style="color: #dfaf8f;">objWebBrowser</span> = document.body.lastChild;
-    <span style="color: #f0dfaf; font-weight: bold;">if</span>(objWebBrowser == <span style="color: #bfebbf;">null</span>) <span style="color: #f0dfaf; font-weight: bold;">return</span>;
+    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">sWebBrowserCode</span> = <span style="color: #ad7fa8; font-style: italic;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
+    document.body.insertAdjacentHTML(<span style="color: #ad7fa8; font-style: italic;">'beforeEnd'</span>, sWebBrowserCode);
+    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">objWebBrowser</span> = document.body.lastChild;
+    <span style="color: #729fcf; font-weight: bold;">if</span>(objWebBrowser == <span style="color: #8ae234;">null</span>) <span style="color: #729fcf; font-weight: bold;">return</span>;
     objWebBrowser.ExecWB(7, 1);
     document.body.removeChild(objWebBrowser);
-  } <span style="color: #f0dfaf; font-weight: bold;">else</span> {
+  } <span style="color: #729fcf; font-weight: bold;">else</span> {
     window.print();
   }
 
-  <span style="color: #7f9f7f;">// </span><span style="color: #7f9f7f;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
-  window.onfocus = <span style="color: #f0dfaf; font-weight: bold;">function</span>(){
-   (window.open(<span style="color: #cc9393;">''</span>,<span style="color: #cc9393;">'_self'</span>).opener=window).close(); 
+  <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
+  window.onfocus = <span style="color: #729fcf; font-weight: bold;">function</span>(){
+   (window.open(<span style="color: #ad7fa8; font-style: italic;">''</span>,<span style="color: #ad7fa8; font-style: italic;">'_self'</span>).opener=window).close(); 
   };
 }
 </pre>

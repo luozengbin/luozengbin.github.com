@@ -1,0 +1,268 @@
+#+TITLE: [メモ]リモートXの接続方法
+#+DATE: 2014-06-21
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_PUBLISHED: true
+
+リモートLinuxサーバでXアプリを利用するケースはしばしばあります。
+実現方式について調べてみた。
+
+#+ATTR_HTML: border="2" rules="all" frame="all"
+| No | サーバ側           | クライアント側        | 備考                                   |
+|----+--------------------+-----------------------+----------------------------------------|
+|  1 | DISPLAY変数の指定  | xhostよりアクセス許可 | クライアント側6000番ポートの開放が必要 |
+|  2 | SSH X11 Forwarding | ssh -X で接続する     | サーバ側：X11Forwarding yes が必要　   |
+|  3 | VNCサーバ          | VNCビューア           |                                        |
+
+- サーバ側:       Xアプリを動かす側
+- クライアント側: Xサーバを動かす側
+
+* 検証環境
+- クライアント: GDM経由でGnome3が動いているGUI環境
+- サーバ: CUIモードLinux環境
+
+#+begin_example
+┏━━━━━━━┓      ┏━━━━━━━┓
+┃ クライアント ┃      ┃   サーバ     ┃
+┃  mimi-air    ┣━━━┫    pipi      ┃
+┃192.168.100.13┃      ┃192.169.100.4 ┃
+┗━━━━━━━┛      ┗━━━━━━━┛
+#+end_example
+
+{{{more}}}
+
+* xhostによるXアプリを起動する方式
+
+通信イメージ
+#+begin_example
+┏━━━━━━━━━━━━━━━━━┓        ┏━━━━━━━┓
+┃    クライアント（Xサーバ）       ┃        ┃   サーバ     ┃
+┃ Unixソケット                tcp  ┃        ┃   Xアプリ    ┃
+┃ /tmp/.X11-unix/X0   <---->  6000 <<━━━━┫$DISPLAY      ┃
+┗━━━━━━━━━━━━━━━━━┛        ┗━━━━━━━┛
+#+end_example
+
+GDMパラメータにTCP接続許可の設定を行う。
+- =/etc/gdm/custom.conf= に =DisallowTcp=false= を追加する。
+- =/usr/share/gdm/gdm.schemas= に =security/DisallowTCP= の値を =false= へ変更する。
+
+設定後、GDMを再起動して =netstat= コマンドで =6000= ポートがリスニング状態であること
+を確認したうえで、 =xhost= コマンドでサーバからのアクセスを許可するようにする。
+XサーバのTCP受け待ちポート番号は =6000+スクリン番号= 式で決まる。 Xサーバがスクリン１
+で起動された場合TCP受け待ちポート番号が6001となります。通常は０番スクリーンが利用され
+る。
+
+#+begin_example
+[akira@mimi-air ~]$ sudo netstat -nutpl | grep 6000
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      2115/Xorg
+tcp6       0      0 :::6000                 :::*                    LISTEN      2115/Xorg
+
+★アクセス許可
+[akira@mimi-air ~]$ xhost + 192.168.100.4
+192.168.100.4 being added to access control list
+
+★アクセス許可リストの確認
+[akira@mimi-air ~]$ xhost
+access control enabled, only authorized clients can connect
+INET:pipi
+SI:localuser:akira
+SI:localuser:gdm
+SI:localuser:root
+[akira@mimi-air ~]$
+#+end_example
+
+サーバ側の =DISPLAY= 環境変数をクライアントをXサーバへ指すように変更する。
+#+begin_example
+★環境変数設定
+[akira@pipi ~]$ export DISPLAY=192.168.100.13:0.0
+
+★環境変数確認
+[akira@pipi ~]$ env | grep DISPLAY
+DISPLAY=192.168.100.13:0.0
+
+★Xアプリ起動して確認する
+[akira@pipi ~]$ leafpad
+#+end_example
+
+* SSH X11フォワード方式
+通信イメージ
+#+begin_example
+┏━━━━━━━━━━━━━━━━━┓        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+┃    クライアント（Xサーバ）       ┃        ┃      サーバ (Xアプリ)                      ┃
+┃ Unixソケット                tcp  ┃ ssh -X ┃tcp                      Unixソケット       ┃
+┃ /tmp/.X11-unix/X0   <---->  ssh  <<━━━━┫sshd <---> tcp:6010 <--> /tmp/.X11-unix/X10 ┃
+┗━━━━━━━━━━━━━━━━━┛        ┗━━━━━━━━━━━━━━━━━━━━━━┛
+#+end_example
+
+設定作業と接続手順
+- サーバ側のSSHにX11フォワードを許可するようにする。
+- クライアントから =ssh -X= で接続する。
+
+クライアントからサーバに接続するに際にサーバサイトで以下の処理が実装される。
+- DISPLAY環境変数を =localhost:10.0= に設定する。
+- =xauth= コマンドで =~/.Xauthority= に認証用クッキーを追加する。
+
+=ssh -X= で接続時にエラーが起きた場合、 =-v= オプションでデバッグメッセージの出力を有
+効にするとトラブルの原因究明に効果的かもしれない。
+
+#+begin_example
+■サーバ側
+------------------------------------------------------------
+
+★サーバ側のX11Forwarding設定値を確認する
+[akira@pipi ~]$ cat /etc/ssh/sshd_config | grep X11Forwarding
+X11Forwarding yes
+[akira@pipi ~]$ 
+
+■クライアント側
+------------------------------------------------------------
+★-Xオプションつけてサーバへ接続する
+[akira@mimi-air ~]$ ssh -X pipi
+Last login: Sun Jun 22 08:58:59 2014 from 192.168.100.13
+
+■サーバ側
+------------------------------------------------------------
+★DISPLAY環境変数の確認
+[akira@pipi ~]$ env | grep DISPLAY
+DISPLAY=localhost:10.0
+
+★~/.Xauthorityに登録されたクッキーの確認
+[akira@pipi ~]$ xauth list
+pipi/unix:10  MIT-MAGIC-COOKIE-1  75af091faa9e151987efb8fb46c5e2d3
+
+★6010ポートのリスリング状態の確認
+[akira@pipi ~]$ sudo netstat -nutpl | grep 6010 
+tcp        0      0 127.0.0.1:6010          0.0.0.0:*               LISTEN      9772/sshd: akira@pt 
+
+★Xアプリを起動して見る
+[akira@pipi ~]$ leafpad 
+Xlib:  extension "RANDR" missing on display "localhost:10.0".
+Gtk-Message: Failed to load module "canberra-gtk-module"
+leafpad: can't save config file - /home/akira/.config/leafpad/leafpadrc
+#+end_example
+
+サーバ側X11フォワードが有効でない、クライアントにて =ssh -X localhost= でX11のunixソケッ
+トをTCPの6010ポートに変換する。クライアントからサーバへ接続時にローカルの6010ポートを
+サーバ側にフォワードする方式もあります。この場合、サーバ側の =DISPLAY= 環境変数と
+=~/.Xauthority= の認証クッキーの追加を手動で行う必要があります。
+
+以下はその接続イメージです。
+#+begin_example
+┏━━━━━━━━━━━━━━┓    ┏━━━━━━━━━━━━━━┓
+┃    クライアント（Xサーバ） ┃    ┃     サーバ(Xアプリ)        ┃
+┃ Unixソケット               ┃    ┃                            ┃
+┃ /tmp/.X11-unix/X0          ┃    ┃        /tmp/.X11-unix/X10  ┃
+┃     ↓                     ┃    ┃                ↑          ┃
+┃  tcp:6010 <-------> ssh    ┣━━┫ sshd <---> localhost:6010  ┃
+┗━━━━━━━━━━━━━━┛    ┗━━━━━━━━━━━━━━┛
+#+end_example
+
+設定作業と接続手順
+- ローカルののSSHにX11フォワードを許可するようにする。
+- クライアントにて =ssh -X localhost= で接続する。
+- =ssh -R 6010= でサーバへ接続する
+- サーバ側の =DISPLAY= 環境変数を設定する
+- サーバ側の =~/.Xauthority= 認証クッキーを追加する
+
+#+begin_example
+
+■クライアント側
+------------------------------------------------------------
+★クライアント側のssh設定の確認
+[akira@mimi-air ~]$ cat /etc/ssh/sshd_config | grep X11Forwarding
+X11Forwarding yes
+
+★X11のUnixソケットをTCPへ変換する
+[akira@mimi-air ~]$ ssh -X localhost
+Last login: Sat Jun 21 13:10:45 2014 from localhost.localdomain
+
+[akira@mimi-air ~]$ sudo netstat -nutpl | grep 6010
+[sudo] password for akira: 
+tcp        0      0 127.0.0.1:6010          0.0.0.0:*               LISTEN      18706/sshd: akira@p 
+tcp6       0      0 ::1:6010                :::*                    LISTEN      18706/sshd: akira@p 
+
+★sshポートフォワーディングしてサーバへ接続する
+[akira@mimi-air ~]$ ssh -R 6010:localhost:6010 pipi
+Last login: Sun Jun 22 09:52:34 2014 from 192.168.100.13
+
+■サーバ側
+------------------------------------------------------------
+★ポートフォワーディング有効であることを確認する
+[akira@pipi ~]$ sudo netstat -nutpl | grep 6010
+tcp        0      0 127.0.0.1:6010          0.0.0.0:*               LISTEN      11106/sshd: akira@p 
+
+★DISPLAY環境変数の指定
+[akira@pipi ~]$ export DISPLAY=localhost:10.0
+
+★Xアプリ起動失敗：X認証失敗が原因です
+[akira@pipi ~]$ leafpad 
+leafpad: Cannot open display: 
+
+■クライアント側
+------------------------------------------------------------
+[akira@mimi-air ~]$ X11 connection rejected because of wrong authentication.
+
+★X認証用クッキーを確認する
+[akira@mimi-air ~]$ xauth list
+mimi-air/unix:10  MIT-MAGIC-COOKIE-1  47ed008f47dc3eae07294ee49b26fb35
+[akira@mimi-air ~]$ 
+
+■サーバ側
+------------------------------------------------------------
+★既存のサーバサイトのX認証クッキーを削除する
+[akira@pipi ~]$ xauth list
+pipi/unix:10  MIT-MAGIC-COOKIE-1  75af091faa9e151987efb8fb46c5e2d3
+[akira@pipi ~]$ xauth remove unix:10
+
+★クライアント側登録されたX認証クッキーをサーバ側にも登録する
+[akira@pipi ~]$ xauth add unix:10 MIT-MAGIC-COOKIE-1  47ed008f47dc3eae07294ee49b26fb35
+
+★Xアプリ起動成功
+[akira@pipi ~]$ leafpad 
+Xlib:  extension "RANDR" missing on display "localhost:10.0".
+Gtk-Message: Failed to load module "canberra-gtk-module"
+leafpad: can't save config file - /home/akira/.config/leafpad/leafpadrc
+[akira@pipi ~]$
+
+#+end_example
+
+* VNC方式
+- [[https://wiki.archlinux.org/index.php/Vncserver_%2528%25E6%2597%25A5%25E6%259C%25AC%25E8%25AA%259E%2529][Archlinux Wiki: Vncserver (日本語)]]
+
+* ローカルで異なるユーザでXアプリの起動
+
+以下のようにコンソールからローカルの環境の別ユーザでXアプリを起動しようとするとエラー
+になります。
+
+#+begin_example
+★sudo -u で試す
+[akira@mimi-air ~]$ sudo -u milan leafpad 
+[sudo] password for akira: 
+No protocol specified
+leafpad: ディスプレイをオープンできません: 
+
+★suでユーザ切り替えたから試す
+[akira@mimi-air ~]$ su - milan
+パスワード:
+[milan@mimi-air ~]$ leafpad 
+leafpad: ディスプレイをオープンできません: 
+[milan@mimi-air ~]$ 
+#+end_example
+
+次の手順で設定すれば、普通に起動出来ます。
+- =DISPLAY= 環境変数の指定
+- =xauth= でX認証クッキーの登録
+
+#+begin_example
+[akira@mimi-air ~]$ su - milan
+パスワード:
+[milan@mimi-air ~]$ export DISPLAY=:0
+[milan@mimi-air ~]$ xauth list
+[milan@mimi-air ~]$ xauth add unix:0 MIT-MAGIC-COOKIE-1  75de7d9075e9582838e38aad909df062
+[milan@mimi-air ~]$ leafpad 
+[milan@mimi-air ~]$ 
+#+end_example
+
+* 参考サイト
+- [[http://vega.sra-tohoku.co.jp/~kabe/vsd/ssh-x.html][最近の豪華なX11環境でsshを使ってＸプロトコルを中継する]]

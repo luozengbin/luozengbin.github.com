@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/feed" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-18T20:04:15+09:00</updated>
+  <updated>2014-06-22T10:23:53+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,399 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]リモートXの接続方法]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html"/>
+    <updated>2014-06-21T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]リモートxの接続方法</id>
+    <content type="html"><![CDATA[<p>
+リモートLinuxサーバでXアプリを利用するケースはしばしばあります。
+実現方式について調べてみた。
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="right" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="right">No</th>
+<th scope="col" class="left">サーバ側</th>
+<th scope="col" class="left">クライアント側</th>
+<th scope="col" class="left">備考</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="right">1</td>
+<td class="left">DISPLAY変数の指定</td>
+<td class="left">xhostよりアクセス許可</td>
+<td class="left">クライアント側6000番ポートの開放が必要</td>
+</tr>
+
+<tr>
+<td class="right">2</td>
+<td class="left">SSH X11 Forwarding</td>
+<td class="left">ssh -X で接続する</td>
+<td class="left">サーバ側：X11Forwarding yes が必要　</td>
+</tr>
+
+<tr>
+<td class="right">3</td>
+<td class="left">VNCサーバ</td>
+<td class="left">VNCビューア</td>
+<td class="left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+
+<ul class="org-ul">
+<li>サーバ側:       Xアプリを動かす側
+</li>
+<li>クライアント側: Xサーバを動かす側
+</li>
+</ul>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">検証環境</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>クライアント: GDM経由でGnome3が動いているGUI環境
+</li>
+<li>サーバ: CUIモードLinux環境
+</li>
+</ul>
+
+<pre class="example">
+┏━━━━━━━┓      ┏━━━━━━━┓
+┃ クライアント ┃      ┃   サーバ     ┃
+┃  mimi-air    ┣━━━┫    pipi      ┃
+┃192.168.100.13┃      ┃192.169.100.4 ┃
+┗━━━━━━━┛      ┗━━━━━━━┛
+</pre>
+
+<p>
+<!-- more -->
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">xhostによるXアプリを起動する方式</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+通信イメージ
+</p>
+<pre class="example">
+┏━━━━━━━━━━━━━━━━━┓        ┏━━━━━━━┓
+┃    クライアント（Xサーバ）       ┃        ┃   サーバ     ┃
+┃ Unixソケット                tcp  ┃        ┃   Xアプリ    ┃
+┃ /tmp/.X11-unix/X0   &lt;----&gt;  6000 &lt;&lt;━━━━┫$DISPLAY      ┃
+┗━━━━━━━━━━━━━━━━━┛        ┗━━━━━━━┛
+</pre>
+
+<p>
+GDMパラメータにTCP接続許可の設定を行う。
+</p>
+<ul class="org-ul">
+<li><code>/etc/gdm/custom.conf</code> に <code>DisallowTcp=false</code> を追加する。
+</li>
+<li><code>/usr/share/gdm/gdm.schemas</code> に <code>security/DisallowTCP</code> の値を <code>false</code> へ変更する。
+</li>
+</ul>
+
+<p>
+設定後、GDMを再起動して <code>netstat</code> コマンドで <code>6000</code> ポートがリスニング状態であること
+を確認したうえで、 <code>xhost</code> コマンドでサーバからのアクセスを許可するようにする。
+XサーバのTCP受け待ちポート番号は <code>6000+スクリン番号</code> 式で決まる。 Xサーバがスクリン１
+で起動された場合TCP受け待ちポート番号が6001となります。通常は０番スクリーンが利用され
+る。
+</p>
+
+<pre class="example">
+[akira@mimi-air ~]$ sudo netstat -nutpl | grep 6000
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      2115/Xorg
+tcp6       0      0 :::6000                 :::*                    LISTEN      2115/Xorg
+
+★アクセス許可
+[akira@mimi-air ~]$ xhost + 192.168.100.4
+192.168.100.4 being added to access control list
+
+★アクセス許可リストの確認
+[akira@mimi-air ~]$ xhost
+access control enabled, only authorized clients can connect
+INET:pipi
+SI:localuser:akira
+SI:localuser:gdm
+SI:localuser:root
+[akira@mimi-air ~]$
+</pre>
+
+<p>
+サーバ側の <code>DISPLAY</code> 環境変数をクライアントをXサーバへ指すように変更する。
+</p>
+<pre class="example">
+★環境変数設定
+[akira@pipi ~]$ export DISPLAY=192.168.100.13:0.0
+
+★環境変数確認
+[akira@pipi ~]$ env | grep DISPLAY
+DISPLAY=192.168.100.13:0.0
+
+★Xアプリ起動して確認する
+[akira@pipi ~]$ leafpad
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">SSH X11フォワード方式</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+通信イメージ
+</p>
+<pre class="example">
+┏━━━━━━━━━━━━━━━━━┓        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+┃    クライアント（Xサーバ）       ┃        ┃      サーバ (Xアプリ)                      ┃
+┃ Unixソケット                tcp  ┃ ssh -X ┃tcp                      Unixソケット       ┃
+┃ /tmp/.X11-unix/X0   &lt;----&gt;  ssh  &lt;&lt;━━━━┫sshd &lt;---&gt; tcp:6010 &lt;--&gt; /tmp/.X11-unix/X10 ┃
+┗━━━━━━━━━━━━━━━━━┛        ┗━━━━━━━━━━━━━━━━━━━━━━┛
+</pre>
+
+<p>
+設定作業と接続手順
+</p>
+<ul class="org-ul">
+<li>サーバ側のSSHにX11フォワードを許可するようにする。
+</li>
+<li>クライアントから <code>ssh -X</code> で接続する。
+</li>
+</ul>
+
+<p>
+クライアントからサーバに接続するに際にサーバサイトで以下の処理が実装される。
+</p>
+<ul class="org-ul">
+<li>DISPLAY環境変数を <code>localhost:10.0</code> に設定する。
+</li>
+<li><code>xauth</code> コマンドで <code>~/.Xauthority</code> に認証用クッキーを追加する。
+</li>
+</ul>
+
+<p>
+<code>ssh -X</code> で接続時にエラーが起きた場合、 <code>-v</code> オプションでデバッグメッセージの出力を有
+効にするとトラブルの原因究明に効果的かもしれない。
+</p>
+
+<pre class="example">
+■サーバ側
+------------------------------------------------------------
+
+★サーバ側のX11Forwarding設定値を確認する
+[akira@pipi ~]$ cat /etc/ssh/sshd_config | grep X11Forwarding
+X11Forwarding yes
+[akira@pipi ~]$ 
+
+■クライアント側
+------------------------------------------------------------
+★-Xオプションつけてサーバへ接続する
+[akira@mimi-air ~]$ ssh -X pipi
+Last login: Sun Jun 22 08:58:59 2014 from 192.168.100.13
+
+■サーバ側
+------------------------------------------------------------
+★DISPLAY環境変数の確認
+[akira@pipi ~]$ env | grep DISPLAY
+DISPLAY=localhost:10.0
+
+★~/.Xauthorityに登録されたクッキーの確認
+[akira@pipi ~]$ xauth list
+pipi/unix:10  MIT-MAGIC-COOKIE-1  75af091faa9e151987efb8fb46c5e2d3
+
+★6010ポートのリスリング状態の確認
+[akira@pipi ~]$ sudo netstat -nutpl | grep 6010 
+tcp        0      0 127.0.0.1:6010          0.0.0.0:*               LISTEN      9772/sshd: akira@pt 
+
+★Xアプリを起動して見る
+[akira@pipi ~]$ leafpad 
+Xlib:  extension "RANDR" missing on display "localhost:10.0".
+Gtk-Message: Failed to load module "canberra-gtk-module"
+leafpad: can't save config file - /home/akira/.config/leafpad/leafpadrc
+</pre>
+
+<p>
+サーバ側X11フォワードが有効でない、クライアントにて <code>ssh -X localhost</code> でX11のunixソケッ
+トをTCPの6010ポートに変換する。クライアントからサーバへ接続時にローカルの6010ポートを
+サーバ側にフォワードする方式もあります。この場合、サーバ側の <code>DISPLAY</code> 環境変数と
+<code>~/.Xauthority</code> の認証クッキーの追加を手動で行う必要があります。
+</p>
+
+<p>
+以下はその接続イメージです。
+</p>
+<pre class="example">
+┏━━━━━━━━━━━━━━┓    ┏━━━━━━━━━━━━━━┓
+┃    クライアント（Xサーバ） ┃    ┃     サーバ(Xアプリ)        ┃
+┃ Unixソケット               ┃    ┃                            ┃
+┃ /tmp/.X11-unix/X0          ┃    ┃        /tmp/.X11-unix/X10  ┃
+┃     ↓                     ┃    ┃                ↑          ┃
+┃  tcp:6010 &lt;-------&gt; ssh    ┣━━┫ sshd &lt;---&gt; localhost:6010  ┃
+┗━━━━━━━━━━━━━━┛    ┗━━━━━━━━━━━━━━┛
+</pre>
+
+<p>
+設定作業と接続手順
+</p>
+<ul class="org-ul">
+<li>ローカルののSSHにX11フォワードを許可するようにする。
+</li>
+<li>クライアントにて <code>ssh -X localhost</code> で接続する。
+</li>
+<li><code>ssh -R 6010</code> でサーバへ接続する
+</li>
+<li>サーバ側の <code>DISPLAY</code> 環境変数を設定する
+</li>
+<li>サーバ側の <code>~/.Xauthority</code> 認証クッキーを追加する
+</li>
+</ul>
+
+<pre class="example">
+■クライアント側
+------------------------------------------------------------
+★クライアント側のssh設定の確認
+[akira@mimi-air ~]$ cat /etc/ssh/sshd_config | grep X11Forwarding
+X11Forwarding yes
+
+★X11のUnixソケットをTCPへ変換する
+[akira@mimi-air ~]$ ssh -X localhost
+Last login: Sat Jun 21 13:10:45 2014 from localhost.localdomain
+
+[akira@mimi-air ~]$ sudo netstat -nutpl | grep 6010
+[sudo] password for akira: 
+tcp        0      0 127.0.0.1:6010          0.0.0.0:*               LISTEN      18706/sshd: akira@p 
+tcp6       0      0 ::1:6010                :::*                    LISTEN      18706/sshd: akira@p 
+
+★sshポートフォワーディングしてサーバへ接続する
+[akira@mimi-air ~]$ ssh -R 6010:localhost:6010 pipi
+Last login: Sun Jun 22 09:52:34 2014 from 192.168.100.13
+
+■サーバ側
+------------------------------------------------------------
+★ポートフォワーディング有効であることを確認する
+[akira@pipi ~]$ sudo netstat -nutpl | grep 6010
+tcp        0      0 127.0.0.1:6010          0.0.0.0:*               LISTEN      11106/sshd: akira@p 
+
+★DISPLAY環境変数の指定
+[akira@pipi ~]$ export DISPLAY=localhost:10.0
+
+★Xアプリ起動失敗：X認証失敗が原因です
+[akira@pipi ~]$ leafpad 
+leafpad: Cannot open display: 
+
+■クライアント側
+------------------------------------------------------------
+[akira@mimi-air ~]$ X11 connection rejected because of wrong authentication.
+
+★X認証用クッキーを確認する
+[akira@mimi-air ~]$ xauth list
+mimi-air/unix:10  MIT-MAGIC-COOKIE-1  47ed008f47dc3eae07294ee49b26fb35
+[akira@mimi-air ~]$ 
+
+■サーバ側
+------------------------------------------------------------
+★既存のサーバサイトのX認証クッキーを削除する
+[akira@pipi ~]$ xauth list
+pipi/unix:10  MIT-MAGIC-COOKIE-1  75af091faa9e151987efb8fb46c5e2d3
+[akira@pipi ~]$ xauth remove unix:10
+
+★クライアント側登録されたX認証クッキーをサーバ側にも登録する
+[akira@pipi ~]$ xauth add unix:10 MIT-MAGIC-COOKIE-1  47ed008f47dc3eae07294ee49b26fb35
+
+★Xアプリ起動成功
+[akira@pipi ~]$ leafpad 
+Xlib:  extension "RANDR" missing on display "localhost:10.0".
+Gtk-Message: Failed to load module "canberra-gtk-module"
+leafpad: can't save config file - /home/akira/.config/leafpad/leafpadrc
+[akira@pipi ~]$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4">VNC方式</h2>
+<div class="outline-text-2" id="text-4">
+<ul class="org-ul">
+<li><a href="https://wiki.archlinux.org/index.php/Vncserver_%2528%25E6%2597%25A5%25E6%259C%25AC%25E8%25AA%259E%2529">Archlinux Wiki: Vncserver (日本語)</a>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5">ローカルで異なるユーザでXアプリの起動</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+以下のようにコンソールからローカルの環境の別ユーザでXアプリを起動しようとするとエラー
+になります。
+</p>
+
+<pre class="example">
+★sudo -u で試す
+[akira@mimi-air ~]$ sudo -u milan leafpad 
+[sudo] password for akira: 
+No protocol specified
+leafpad: ディスプレイをオープンできません: 
+
+★suでユーザ切り替えたから試す
+[akira@mimi-air ~]$ su - milan
+パスワード:
+[milan@mimi-air ~]$ leafpad 
+leafpad: ディスプレイをオープンできません: 
+[milan@mimi-air ~]$
+</pre>
+
+<p>
+次の手順で設定すれば、普通に起動出来ます。
+</p>
+<ul class="org-ul">
+<li><code>DISPLAY</code> 環境変数の指定
+</li>
+<li><code>xauth</code> でX認証クッキーの登録
+</li>
+</ul>
+
+<pre class="example">
+[akira@mimi-air ~]$ su - milan
+パスワード:
+[milan@mimi-air ~]$ export DISPLAY=:0
+[milan@mimi-air ~]$ xauth list
+[milan@mimi-air ~]$ xauth add unix:0 MIT-MAGIC-COOKIE-1  75de7d9075e9582838e38aad909df062
+[milan@mimi-air ~]$ leafpad 
+[milan@mimi-air ~]$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6">参考サイト</h2>
+<div class="outline-text-2" id="text-6">
+<ul class="org-ul">
+<li><a href="http://vega.sra-tohoku.co.jp/~kabe/vsd/ssh-x.html">最近の豪華なX11環境でsshを使ってＸプロトコルを中継する</a>
+</li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[検証]ADF印刷プレビュー機能]]></title>
@@ -146,26 +539,26 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 </p>
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #f0dfaf; font-weight: bold;">public</span> <span style="color: #8cd0d3;">void</span> <span style="color: #8cd0d3;">beforePhaseMethod</span>(<span style="color: #8cd0d3;">PhaseEvent</span> <span style="color: #dfaf8f;">phaseEvent</span>) {
+<pre class="src src-java"><span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">beforePhaseMethod</span>(<span style="color: #8ae234; font-weight: bold;">PhaseEvent</span> <span style="color: #ff6347;">phaseEvent</span>) {
 
-    System.out.println(<span style="color: #cc9393;">"----------   phaseEvent   -------------"</span>);
-    System.out.println(<span style="color: #cc9393;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
+    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"----------   phaseEvent   -------------"</span>);
+    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
 
-    <span style="color: #7f9f7f;">//</span><span style="color: #7f9f7f;">only perform action if RENDER_RESPONSE phase is reached</span>
-    <span style="color: #f0dfaf; font-weight: bold;">if</span> (phaseEvent.getPhaseId() == <span style="color: #bfebbf;">PhaseId</span>.RENDER_RESPONSE) {
+    <span style="color: #888a85;">//</span><span style="color: #888a85;">only perform action if RENDER_RESPONSE phase is reached</span>
+    <span style="color: #729fcf; font-weight: bold;">if</span> (phaseEvent.getPhaseId() == <span style="color: #8ae234;">PhaseId</span>.RENDER_RESPONSE) {
 
-        <span style="color: #8cd0d3;">FacesContext</span> <span style="color: #dfaf8f;">fctx</span> = FacesContext.getCurrentInstance();
-        <span style="color: #7f9f7f;">//</span><span style="color: #7f9f7f;">check internal request parameter</span>
-        <span style="color: #8cd0d3;">Map</span> <span style="color: #dfaf8f;">requestMap</span> = fctx.getExternalContext().getRequestMap();
+        <span style="color: #8ae234; font-weight: bold;">FacesContext</span> <span style="color: #ff6347;">fctx</span> = FacesContext.getCurrentInstance();
+        <span style="color: #888a85;">//</span><span style="color: #888a85;">check internal request parameter</span>
+        <span style="color: #8ae234; font-weight: bold;">Map</span> <span style="color: #ff6347;">requestMap</span> = fctx.getExternalContext().getRequestMap();
 
-        <span style="color: #7f9f7f;">// </span><span style="color: #7f9f7f;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
-        <span style="color: #8cd0d3;">Object</span> <span style="color: #dfaf8f;">showPrintableBehavior</span> = requestMap.get(<span style="color: #cc9393;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
-        <span style="color: #f0dfaf; font-weight: bold;">if</span> (showPrintableBehavior != <span style="color: #bfebbf;">null</span>) {
-            <span style="color: #7f9f7f;">// </span><span style="color: #7f9f7f;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
-            <span style="color: #f0dfaf; font-weight: bold;">if</span> (<span style="color: #bfebbf;">Boolean</span>.TRUE == showPrintableBehavior) {
-                <span style="color: #7f9f7f;">// </span><span style="color: #7f9f7f;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
-                UiComponentControlUtil.setUnRendered(<span style="color: #cc9393;">"mb1"</span>, <span style="color: #cc9393;">"it1"</span>, <span style="color: #cc9393;">"it2"</span>);
-                UiComponentControlUtil.callbackJavascript(<span style="color: #cc9393;">"customPrint();"</span>);
+        <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
+        <span style="color: #8ae234; font-weight: bold;">Object</span> <span style="color: #ff6347;">showPrintableBehavior</span> = requestMap.get(<span style="color: #ad7fa8; font-style: italic;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
+        <span style="color: #729fcf; font-weight: bold;">if</span> (showPrintableBehavior != <span style="color: #8ae234;">null</span>) {
+            <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
+            <span style="color: #729fcf; font-weight: bold;">if</span> (<span style="color: #8ae234;">Boolean</span>.TRUE == showPrintableBehavior) {
+                <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
+                UiComponentControlUtil.setUnRendered(<span style="color: #ad7fa8; font-style: italic;">"mb1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it2"</span>);
+                UiComponentControlUtil.callbackJavascript(<span style="color: #ad7fa8; font-style: italic;">"customPrint();"</span>);
             }
         }
     }
@@ -185,24 +578,24 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
 <div class="org-src-container">
 
-<pre class="src src-js"><span style="color: #f0dfaf; font-weight: bold;">function</span> <span style="color: #8cd0d3;">customPrint</span>() {
-  <span style="color: #f0dfaf; font-weight: bold;">if</span> (getBrowser().indexOf(<span style="color: #cc9393;">'ie8'</span>) !== -1 ) {
-    <span style="color: #f0dfaf; font-weight: bold;">if</span>(window.ActiveXObject == <span style="color: #bfebbf;">null</span> || document.body.insertAdjacentHTML == <span style="color: #bfebbf;">null</span>) {
-      <span style="color: #f0dfaf; font-weight: bold;">return</span>;
+<pre class="src src-js"><span style="color: #729fcf; font-weight: bold;">function</span> <span style="color: #edd400; font-weight: bold;">customPrint</span>() {
+  <span style="color: #729fcf; font-weight: bold;">if</span> (getBrowser().indexOf(<span style="color: #ad7fa8; font-style: italic;">'ie8'</span>) !== -1 ) {
+    <span style="color: #729fcf; font-weight: bold;">if</span>(window.ActiveXObject == <span style="color: #8ae234;">null</span> || document.body.insertAdjacentHTML == <span style="color: #8ae234;">null</span>) {
+      <span style="color: #729fcf; font-weight: bold;">return</span>;
     }
-    <span style="color: #f0dfaf; font-weight: bold;">var</span> <span style="color: #dfaf8f;">sWebBrowserCode</span> = <span style="color: #cc9393;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
-    document.body.insertAdjacentHTML(<span style="color: #cc9393;">'beforeEnd'</span>, sWebBrowserCode);
-    <span style="color: #f0dfaf; font-weight: bold;">var</span> <span style="color: #dfaf8f;">objWebBrowser</span> = document.body.lastChild;
-    <span style="color: #f0dfaf; font-weight: bold;">if</span>(objWebBrowser == <span style="color: #bfebbf;">null</span>) <span style="color: #f0dfaf; font-weight: bold;">return</span>;
+    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">sWebBrowserCode</span> = <span style="color: #ad7fa8; font-style: italic;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
+    document.body.insertAdjacentHTML(<span style="color: #ad7fa8; font-style: italic;">'beforeEnd'</span>, sWebBrowserCode);
+    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">objWebBrowser</span> = document.body.lastChild;
+    <span style="color: #729fcf; font-weight: bold;">if</span>(objWebBrowser == <span style="color: #8ae234;">null</span>) <span style="color: #729fcf; font-weight: bold;">return</span>;
     objWebBrowser.ExecWB(7, 1);
     document.body.removeChild(objWebBrowser);
-  } <span style="color: #f0dfaf; font-weight: bold;">else</span> {
+  } <span style="color: #729fcf; font-weight: bold;">else</span> {
     window.print();
   }
 
-  <span style="color: #7f9f7f;">// </span><span style="color: #7f9f7f;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
-  window.onfocus = <span style="color: #f0dfaf; font-weight: bold;">function</span>(){
-   (window.open(<span style="color: #cc9393;">''</span>,<span style="color: #cc9393;">'_self'</span>).opener=window).close(); 
+  <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
+  window.onfocus = <span style="color: #729fcf; font-weight: bold;">function</span>(){
+   (window.open(<span style="color: #ad7fa8; font-style: italic;">''</span>,<span style="color: #ad7fa8; font-style: italic;">'_self'</span>).opener=window).close(); 
   };
 }
 </pre>
