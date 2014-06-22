@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Linux | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-22T10:27:46+09:00</updated>
+  <updated>2014-06-22T10:30:15+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -423,6 +423,8 @@ leafpad: ディスプレイをオープンできません:
 <div class="outline-text-2" id="text-6">
 <ul class="org-ul">
 <li><a href="http://vega.sra-tohoku.co.jp/~kabe/vsd/ssh-x.html">最近の豪華なX11環境でsshを使ってＸプロトコルを中継する</a>
+</li>
+<li><a href="http://www.ibm.com/developerworks/jp/linux/tutorials/l-basics/">Linux ビギナーのための基本タスク</a>
 </li>
 </ul>
 </div>
