@@ -9,16 +9,10 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="リモートLinuxサーバでXアプリを利用するケースはしばしばあります。
-実現方式について調べてみた。 No
-サーバ側
-クライアント側
-備考 1
-DISPLAY変数の指定
-xhostよりアクセス許可
-クライアント側6000番ポートの開放が必要 2
-SSH X11 Forwarding
-ssh -X &hellip;">
+  <meta name="description" content="
+Emacsをドキュメントビューアとして使っていますが、時々漢字の読み方がわからないことに遭
+遇します。漢字から意味を読み取ったとしても、読み方がわからない場合が多いい。いままで
+一々ブラウザに切り替えて調べました。せっかくEmacsを使っているので自動化してみました。 ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -74,6 +68,52 @@ ssh -X &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html">[メモ]emacsで漢字→かな変換</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-06-29T00:00:00+09:00" pubdate data-updated="true">2014-06-29 (Sun)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>
+Emacsをドキュメントビューアとして使っていますが、時々漢字の読み方がわからないことに遭
+遇します。漢字から意味を読み取ったとしても、読み方がわからない場合が多いい。いままで
+一々ブラウザに切り替えて調べました。せっかくEmacsを使っているので自動化してみました。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -145,13 +185,30 @@ ssh -X &hellip;">
 
 <tr>
 <td class="right">3</td>
-<td class="left">VNCサーバ</td>
+<td class="left">Xdmcp(udp:177)</td>
+<td class="left">Xサーバとして動く</td>
+<td class="left">Display Managerがエントリ画面になる</td>
+</tr>
+
+<tr>
+<td class="right">4</td>
+<td class="left">VNCサーバ(tcp:5901〜)</td>
 <td class="left">VNCビューア</td>
-<td class="left">&#xa0;</td>
+<td class="left">よく使われる</td>
+</tr>
+
+<tr>
+<td class="right">5</td>
+<td class="left">XRDP</td>
+<td class="left">XRDPクライアントソフト</td>
+<td class="left">WindowsのRemote Desktop Procotol</td>
 </tr>
 </tbody>
 </table>
 
+<p>
+VNCとXRDP以外のサーバとクライアントの役割
+</p>
 <ul class="org-ul">
 <li>サーバ側:       Xアプリを動かす側
 </li>
@@ -843,6 +900,10 @@ $ java -XX:+UnlockCommercialFeatures -XX:+FlightRecorder ......
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html">[メモ]emacsで漢字→かな変換</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html">[メモ]リモートXの接続方法</a>
       </li>
     
@@ -856,10 +917,6 @@ $ java -XX:+UnlockCommercialFeatures -XX:+FlightRecorder ......
     
       <li class="post">
         <a href="/blog/2014-06-15-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E6%8A%95%E7%A8%BF%E8%87%AA%E5%8B%95%E5%8C%96.html">[メモ]Otcopressコンテンツ投稿自動化</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">[検証]SMTPプロトコール監視してみた</a>
       </li>
     
   </ul>

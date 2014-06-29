@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Linux | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-22T10:30:15+09:00</updated>
+  <updated>2014-06-29T23:37:47+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -63,14 +63,33 @@
 
 <tr>
 <td class="right">3</td>
-<td class="left">VNCサーバ</td>
+<td class="left">Xdmcp(udp:177)</td>
+<td class="left">Xサーバとして動く</td>
+<td class="left">Display Managerがエントリ画面になる</td>
+</tr>
+
+<tr>
+<td class="right">4</td>
+<td class="left">VNCサーバ(tcp:5901〜)</td>
 <td class="left">VNCビューア</td>
-<td class="left">&#xa0;</td>
+<td class="left">よく使われる</td>
+</tr>
+
+<tr>
+<td class="right">5</td>
+<td class="left">XRDP</td>
+<td class="left">XRDPクライアントソフト</td>
+<td class="left">WindowsのRemote Desktop Procotol</td>
 </tr>
 </tbody>
 </table>
 
 
+
+
+<p>
+VNCとXRDP以外のサーバとクライアントの役割
+</p>
 
 
 <ul class="org-ul">

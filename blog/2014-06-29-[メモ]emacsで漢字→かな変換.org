@@ -1,0 +1,166 @@
+#+TITLE: [メモ]emacsで漢字→かな変換
+#+DATE: 2014-06-29
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: emacs
+#+JEKYLL_PUBLISHED: true
+
+Emacsをドキュメントビューアとして使っていますが、時々漢字の読み方がわからないことに遭
+遇します。漢字から意味を読み取ったとしても、読み方がわからない場合が多いい。いままで
+一々ブラウザに切り替えて調べました。せっかくEmacsを使っているので自動化してみました。
+
+{{{more}}}
+
+* 考案
+
+1. スクラップ開発：選択テキストを漢字なか変換Webサービスに投げって応答を表示する
+2. 既存のものを使う
+
+効率を考えて２の近道を選択しました。
+
+ひとまず、 =list-packages= でELPAに登録されたパッケージを検索した、意外に当てはまる
+ものもが見つかりませんでした。googleしたら =skk-kakasi.el= が浮上してきた。
+
+例の =Meadow/Emacs memo= の [[http://www.bookshelf.jp/soft/meadow_21.html#SEC197][21.3.2 漢字をひらがなへ変換 ― skk-kakasi]] セクションに
+機能紹介がありました。以下はその内容の引用です。
+
+#+begin_example
+これは SKK に附属しています。 skk-kakasi.el です。
+動作には kakasi が必要です。
+例えば,
+読み方の分からない文字をリージョンで選択し, skk-gyakubiki-message とすると, ミニバッファ
+によみ方が出力されます. ただし, 第 1 候補のみ. C-u M-x skk-gyakubiki-messageとすると,
+すべての候補が出力されます. 他にも漢字の混ざった文章にふり仮名をという文章を選択し,
+skk-hurigana-regionとすると漢字 [かんじ] の混ざ [まざ] った文章 [ぶんしょう] にふり仮
+名 [かな] をとできます. 他にもいろいろと用意されているので, 一度ソースを読んで見てくだ
+さい. ちゃんと日本 語で詳しく説明してありますよ．
+#+end_example
+
+早速導入してみた、以下はその手順です。
+
+* =skk-kakasi.el= の導入手順
+=skk-kakasi.el= の導入に必要なもの
+- KAKASI - 漢字→かな(ローマ字)変換プログラム： http://kakasi.namazu.org/
+- ddskk：http://openlab.ring.gr.jp/skk/ddskk-ja.html
+
+** KAKASIのインストール
+
+Archlinuxをお使いなので =sudo pacman -S kakasi= で一発でインストールが出来ました。
+
+#+begin_example
+[akira@jizai .emacs.d]$ sudo pacman -S kakasi
+依存関係を解決しています...
+相互衝突をチェックしています...
+
+パッケージ (1): kakasi-2.3.6-1
+
+Total Download Size:    0.69 MiB
+Total Installed Size:   2.36 MiB
+
+:: インストールを行いますか？ [Y/n] 
+:: パッケージを取得します ...
+ kakasi-2.3.6-1-x86_64                                                                                708.8 KiB  3.96M/s 00:00 [#############################################################################] 100%
+(1/1) キーリングのキーを確認                                                                                                   [#############################################################################] 100%
+(1/1) パッケージの整合性をチェック                                                                                             [#############################################################################] 100%
+(1/1) パッケージファイルのロード                                                                                               [#############################################################################] 100%
+(1/1) ファイルの衝突をチェック                                                                                                 [#############################################################################] 100%
+(1/1) 空き容量を確認                                                                                                           [#############################################################################] 100%
+(1/1) インストール kakasi                                                                                                      [#############################################################################] 100%
+
+★インストールされたファイル一式を確認する
+[akira@jizai .emacs.d]$ pacman -Ql kakasi
+kakasi /usr/
+kakasi /usr/bin/
+kakasi /usr/bin/atoc_conv
+kakasi /usr/bin/kakasi
+kakasi /usr/bin/kakasi-config
+kakasi /usr/bin/mkkanwa
+kakasi /usr/bin/rdic_conv
+kakasi /usr/bin/wx2_conv
+kakasi /usr/include/
+kakasi /usr/include/libkakasi.h
+kakasi /usr/lib/
+kakasi /usr/lib/libkakasi.so
+kakasi /usr/lib/libkakasi.so.2
+kakasi /usr/lib/libkakasi.so.2.1.0
+kakasi /usr/share/
+kakasi /usr/share/kakasi/
+kakasi /usr/share/kakasi/itaijidict
+kakasi /usr/share/kakasi/kanwadict
+kakasi /usr/share/man/
+kakasi /usr/share/man/man1/
+kakasi /usr/share/man/man1/kakasi-config.1.gz
+kakasi /usr/share/man/man1/kakasi.1.gz
+[akira@jizai .emacs.d]$ 
+#+end_example
+
+** ddskk のインストール
+
+ddskk のインストール手順はいくつがあります。詳細はddskkのインストールマニュアルへ参照する。
+
+** 動作確認
+
+=(require 'skk-kakasi)= でskk-kakasi.elをロードし、適当に漢字を含むテキストを選択し
+=skk-gyakubiki-message= を実行する。
+
+#+BEGIN_HTML
+<video controls src="video/2014-06-29-skk-gyakubiki-message.mp4"></video>
+#+END_HTML
+
+* 更に自動化する
+
+=pos-tip.el= と連携してtooltip形でカッコ良く表示する。漢字の読み方をチラ見に便利。
+
+#+begin_src emacs-lisp
+(require 'skk-autoloads)
+(require 'skk-kakasi)
+(require 'pos-tip)
+
+;;; ふり仮名変換結果をpos-tipで表示する
+(defun skk-hurigana-tip (start end &optional all)
+  "領域の漢字に全てふりがなを付け、ポップアップする。"
+  (interactive "r\nP")
+  (pos-tip-show (skk-hurigana-1 start end all)))
+
+;;; 適当にキーを割り当てする
+(global-set-key (kbd "C-x x") 'skk-hurigana-tip)
+#+end_src
+
+
+=popwin.el= でpopupバッファーで表示する。変換結果を流用したい場合に便利。
+
+#+begin_src emacs-lisp
+(require 'skk-autoloads)
+(require 'skk-kakasi)
+(require 'popwin)
+
+;;; ふり仮名変換結果バッファ名
+(defvar skk-kakasi-popbuf-name " *skk-kakasi*" "ふり仮名変換結果バッファ名")
+
+(defun skk-hurigana-popup (start end &optional all)
+  (interactive "r\nP")
+  (let ((str0 (buffer-substring-no-properties start end))
+        (str1 (skk-hurigana-1 start end all))
+        (str2 (skk-gyakubiki-1 start end all)))
+    (with-current-buffer (get-buffer-create skk-kakasi-popbuf-name)
+      (setq buffer-read-only nil)
+      (erase-buffer)
+      (insert "KAKASI - 漢字→かな(ローマ字)変換結果:\n")
+      (insert "-------------------------------------\n\n")
+      (insert str0 "\n\n")
+      (insert str1 "\n\n")
+      (insert str2 "\n\n")
+      (setq buffer-read-only t))
+    (display-buffer (get-buffer skk-kakasi-popbuf-name))))
+
+;;; 適当にキーを割り当てする
+(global-set-key (kbd "C-x X") 'skk-hurigana-popup)
+#+end_src
+
+#+BEGIN_HTML
+<video controls src="video/2014-06-29-skk-hurigana-popup.mp4"></video>
+#+END_HTML
+
+* もう一歩
+- オンライン辞書サービスを使って単語の解釈を表示したい
+- テキスト読み上げ機能と連携したい
