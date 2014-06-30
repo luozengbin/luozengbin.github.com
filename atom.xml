@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-29T23:37:47+09:00</updated>
+  <updated>2014-06-30T09:30:18+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[[メモ]emacsで漢字→かな変換]]></title>
+    <title type="html"><![CDATA[[メモ]Emacsで漢字→かな変換]]></title>
     <link href="http://luozengbin.github.io/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html"/>
     <updated>2014-06-29T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[メモ]emacsで漢字→かな変換</id>
@@ -146,6 +146,45 @@ kakasi /usr/share/man/man1/kakasi.1.gz
 <p>
 ddskk のインストール手順はいくつがあります。詳細はddskkのインストールマニュアルへ参照する。
 </p>
+
+<p>
+本家から最新版のダウンロード
+</p>
+<pre class="example">
+$ wget http://openlab.ring.gr.jp/skk/maintrunk/ddskk-20140622.tar.gz
+$ tar xzvf ddskk-20140622.tar.gz
+$ cd ddskk-20140622
+</pre>
+
+<p>
+<code>ddskk-20140622/SKK-CFG</code> ファイルの最後にインストール先を指定する。
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#36766;&#26360;&#12501;&#12449;&#12452;&#12523;&#12398;&#26684;&#32013;&#20808;</span>
+(setq SKK_DATADIR <span style="color: #ffa07a;">"~/.emacs.d/etc/skk"</span>)
+
+<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#12489;&#12461;&#12517;&#12513;&#12531;&#12488;</span>
+(setq SKK_INFODIR <span style="color: #ffa07a;">"~/.emacs.d/share/info-ja/skk"</span>)
+
+<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">skk lisp&#26412;&#20307;</span>
+(setq SKK_LISPDIR <span style="color: #ffa07a;">"~/.emacs.d/lisp/skk"</span>)
+
+<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">skk-large-jisyo &#12398;&#20516;&#12434;&#33258;&#21205;&#35373;&#23450;&#12377;&#12427;</span>
+(setq SKK_SET_JISYO t)
+</pre>
+</div>
+
+<p>
+DDSKKのインストール
+</p>
+<pre class="example">
+★ インストーラが SKK の各ファイルをどこにインストールしようとしているかを確認する
+$ make what-where
+
+★ インストール
+$ make install
+</pre>
 </div>
 </div>
 
@@ -157,7 +196,7 @@ ddskk のインストール手順はいくつがあります。詳細はddskkの
 <code>skk-gyakubiki-message</code> を実行する。
 </p>
 
-<video controls src="video/2014-06-29-skk-gyakubiki-message.mp4"></video>
+<video controls src="video/2014-06-29-skk-gyakubiki-message.webm"></video>
 </div>
 </div>
 </div>
@@ -171,18 +210,18 @@ ddskk のインストール手順はいくつがあります。詳細はddskkの
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #00bfff; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-autoloads</span>)
-(<span style="color: #00bfff; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-kakasi</span>)
-(<span style="color: #00bfff; font-weight: bold;">require</span> '<span style="color: #8ae234;">pos-tip</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">skk-autoloads</span>)
+(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">skk-kakasi</span>)
+(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">pos-tip</span>)
 
-<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12434;pos-tip&#12391;&#34920;&#31034;&#12377;&#12427;</span>
-(<span style="color: #00bfff; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">skk-hurigana-tip</span> (start end <span style="color: #8ae234; font-weight: bold;">&amp;optional</span> all)
-  <span style="color: #888a85;">"&#38936;&#22495;&#12398;&#28450;&#23383;&#12395;&#20840;&#12390;&#12405;&#12426;&#12364;&#12394;&#12434;&#20184;&#12369;&#12289;&#12509;&#12483;&#12503;&#12450;&#12483;&#12503;&#12377;&#12427;&#12290;"</span>
-  (interactive <span style="color: #bcee68; font-style: italic;">"r\nP"</span>)
+<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12434;pos-tip&#12391;&#34920;&#31034;&#12377;&#12427;</span>
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">skk-hurigana-tip</span> (start end <span style="color: #98fb98;">&amp;optional</span> all)
+  <span style="color: #ffa07a;">"&#38936;&#22495;&#12398;&#28450;&#23383;&#12395;&#20840;&#12390;&#12405;&#12426;&#12364;&#12394;&#12434;&#20184;&#12369;&#12289;&#12509;&#12483;&#12503;&#12450;&#12483;&#12503;&#12377;&#12427;&#12290;"</span>
+  (interactive <span style="color: #ffa07a;">"r\nP"</span>)
   (pos-tip-show (skk-hurigana-1 start end all)))
 
-<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
-(global-set-key (kbd <span style="color: #bcee68; font-style: italic;">"C-x x"</span>) 'skk-hurigana-tip)
+<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
+(global-set-key (kbd <span style="color: #ffa07a;">"C-x x"</span>) 'skk-hurigana-tip)
 </pre>
 </div>
 
@@ -193,35 +232,35 @@ ddskk のインストール手順はいくつがあります。詳細はddskkの
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #00bfff; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-autoloads</span>)
-(<span style="color: #00bfff; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-kakasi</span>)
-(<span style="color: #00bfff; font-weight: bold;">require</span> '<span style="color: #8ae234;">popwin</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">skk-autoloads</span>)
+(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">skk-kakasi</span>)
+(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">popwin</span>)
 
-<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;</span>
-(<span style="color: #00bfff; font-weight: bold;">defvar</span> <span style="color: #ff6347;">skk-kakasi-popbuf-name</span> <span style="color: #bcee68; font-style: italic;">" *skk-kakasi*"</span> <span style="color: #888a85;">"&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;"</span>)
+<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;</span>
+(<span style="color: #00ffff;">defvar</span> <span style="color: #eedd82;">skk-kakasi-popbuf-name</span> <span style="color: #ffa07a;">" *skk-kakasi*"</span> <span style="color: #ffa07a;">"&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;"</span>)
 
-(<span style="color: #00bfff; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">skk-hurigana-popup</span> (start end <span style="color: #8ae234; font-weight: bold;">&amp;optional</span> all)
-  (interactive <span style="color: #bcee68; font-style: italic;">"r\nP"</span>)
-  (<span style="color: #00bfff; font-weight: bold;">let</span> ((str0 (buffer-substring-no-properties start end))
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">skk-hurigana-popup</span> (start end <span style="color: #98fb98;">&amp;optional</span> all)
+  (interactive <span style="color: #ffa07a;">"r\nP"</span>)
+  (<span style="color: #00ffff;">let</span> ((str0 (buffer-substring-no-properties start end))
         (str1 (skk-hurigana-1 start end all))
         (str2 (skk-gyakubiki-1 start end all)))
-    (<span style="color: #00bfff; font-weight: bold;">with-current-buffer</span> (get-buffer-create skk-kakasi-popbuf-name)
+    (<span style="color: #00ffff;">with-current-buffer</span> (get-buffer-create skk-kakasi-popbuf-name)
       (setq buffer-read-only nil)
       (erase-buffer)
-      (insert <span style="color: #bcee68; font-style: italic;">"KAKASI - &#28450;&#23383;&#8594;&#12363;&#12394;(&#12525;&#12540;&#12510;&#23383;)&#22793;&#25563;&#32080;&#26524;:\n"</span>)
-      (insert <span style="color: #bcee68; font-style: italic;">"-------------------------------------\n\n"</span>)
-      (insert str0 <span style="color: #bcee68; font-style: italic;">"\n\n"</span>)
-      (insert str1 <span style="color: #bcee68; font-style: italic;">"\n\n"</span>)
-      (insert str2 <span style="color: #bcee68; font-style: italic;">"\n\n"</span>)
+      (insert <span style="color: #ffa07a;">"KAKASI - &#28450;&#23383;&#8594;&#12363;&#12394;(&#12525;&#12540;&#12510;&#23383;)&#22793;&#25563;&#32080;&#26524;:\n"</span>)
+      (insert <span style="color: #ffa07a;">"-------------------------------------\n\n"</span>)
+      (insert str0 <span style="color: #ffa07a;">"\n\n"</span>)
+      (insert str1 <span style="color: #ffa07a;">"\n\n"</span>)
+      (insert str2 <span style="color: #ffa07a;">"\n\n"</span>)
       (setq buffer-read-only t))
     (display-buffer (get-buffer skk-kakasi-popbuf-name))))
 
-<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
-(global-set-key (kbd <span style="color: #bcee68; font-style: italic;">"C-x X"</span>) 'skk-hurigana-popup)
+<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
+(global-set-key (kbd <span style="color: #ffa07a;">"C-x X"</span>) 'skk-hurigana-popup)
 </pre>
 </div>
 
-<video controls src="video/2014-06-29-skk-hurigana-popup.mp4"></video>
+<video controls src="video/2014-06-29-skk-hurigana-popup.webm"></video>
 </div>
 </div>
 

@@ -1,4 +1,4 @@
-#+TITLE: [メモ]emacsで漢字→かな変換
+#+TITLE: [メモ]Emacsで漢字→かな変換
 #+DATE: 2014-06-29
 #+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
 #+JEKYLL_LAYOUT: post
@@ -95,8 +95,38 @@ kakasi /usr/share/man/man1/kakasi.1.gz
 #+end_example
 
 ** ddskk のインストール
-
 ddskk のインストール手順はいくつがあります。詳細はddskkのインストールマニュアルへ参照する。
+
+本家から最新版のダウンロード
+#+begin_example
+$ wget http://openlab.ring.gr.jp/skk/maintrunk/ddskk-20140622.tar.gz
+$ tar xzvf ddskk-20140622.tar.gz
+$ cd ddskk-20140622
+#+end_example
+
+=ddskk-20140622/SKK-CFG= ファイルの最後にインストール先を指定する。
+#+begin_src emacs-lisp
+;;; 辞書ファイルの格納先
+(setq SKK_DATADIR "~/.emacs.d/etc/skk")
+
+;;; ドキュメント
+(setq SKK_INFODIR "~/.emacs.d/share/info-ja/skk")
+
+;;; skk lisp本体
+(setq SKK_LISPDIR "~/.emacs.d/lisp/skk")
+
+;;; skk-large-jisyo の値を自動設定する
+(setq SKK_SET_JISYO t)
+#+end_src
+
+DDSKKのインストール
+#+begin_example
+★ インストーラが SKK の各ファイルをどこにインストールしようとしているかを確認する
+$ make what-where
+
+★ インストール
+$ make install
+#+end_example
 
 ** 動作確認
 
@@ -104,7 +134,7 @@ ddskk のインストール手順はいくつがあります。詳細はddskkの
 =skk-gyakubiki-message= を実行する。
 
 #+BEGIN_HTML
-<video controls src="video/2014-06-29-skk-gyakubiki-message.mp4"></video>
+<video controls src="video/2014-06-29-skk-gyakubiki-message.webm"></video>
 #+END_HTML
 
 * 更に自動化する
@@ -158,7 +188,7 @@ ddskk のインストール手順はいくつがあります。詳細はddskkの
 #+end_src
 
 #+BEGIN_HTML
-<video controls src="video/2014-06-29-skk-hurigana-popup.mp4"></video>
+<video controls src="video/2014-06-29-skk-hurigana-popup.webm"></video>
 #+END_HTML
 
 * もう一歩
