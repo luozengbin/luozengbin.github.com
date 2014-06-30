@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-06-30T09:30:18+09:00</updated>
+  <updated>2014-06-30T10:09:06+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -196,7 +196,10 @@ $ make install
 <code>skk-gyakubiki-message</code> を実行する。
 </p>
 
-<video controls src="video/2014-06-29-skk-gyakubiki-message.webm"></video>
+<video controls>
+   <source src="video/2014-06-29-skk-gyakubiki-message.mp4">
+   <source src="video/2014-06-29-skk-gyakubiki-message.webm">
+</video>
 </div>
 </div>
 </div>
@@ -260,7 +263,10 @@ $ make install
 </pre>
 </div>
 
-<video controls src="video/2014-06-29-skk-hurigana-popup.webm"></video>
+<video controls>
+   <source src="video/2014-06-29-skk-hurigana-popup.mp4">
+   <source src="video/2014-06-29-skk-hurigana-popup.webm">
+</video>
 </div>
 </div>
 

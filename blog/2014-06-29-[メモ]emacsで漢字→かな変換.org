@@ -134,7 +134,10 @@ $ make install
 =skk-gyakubiki-message= を実行する。
 
 #+BEGIN_HTML
-<video controls src="video/2014-06-29-skk-gyakubiki-message.webm"></video>
+<video controls>
+   <source src="video/2014-06-29-skk-gyakubiki-message.mp4">
+   <source src="video/2014-06-29-skk-gyakubiki-message.webm">
+</video>
 #+END_HTML
 
 * 更に自動化する
@@ -188,7 +191,10 @@ $ make install
 #+end_src
 
 #+BEGIN_HTML
-<video controls src="video/2014-06-29-skk-hurigana-popup.webm"></video>
+<video controls>
+   <source src="video/2014-06-29-skk-hurigana-popup.mp4">
+   <source src="video/2014-06-29-skk-hurigana-popup.webm">
+</video>
 #+END_HTML
 
 * もう一歩
