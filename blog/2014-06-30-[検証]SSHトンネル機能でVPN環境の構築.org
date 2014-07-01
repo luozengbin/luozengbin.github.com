@@ -1,0 +1,561 @@
+#+TITLE: [検証]SSHトンネル機能でVPN環境の構築
+#+DATE: 2014-06-30
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_PUBLISHED: true
+
+友人に自宅のLAN内のコンテンツを共有するため、VPNについて検証しました。
+自宅のルータはYamahaのRTX810です。このルータのVPN機能を使えば簡単に出来てしまうので面
+白くないと思って、敢えてSSHのトンネル機能を使って0円VPN環境を構築してみた。
+
+更に難易度を上げて、自宅WAN側のグローバルIPを公開せずにAmazonEC2インスタンスをVPN経路
+に挟むことにしました。
+
+{{{more}}}
+
+通信経路イメージは以下のようになります。
+- 区間１、友人PCとAmazonEC2間SSHトンネリングして通信する
+- 区間２、AmazonEC2間とRaspberry Pi間SSHトンネリングして通信する
+- AmazonEC2インスタンスにて２つのSSHトンネルをethernet bridgeかiptablesによる結び付ける
+- 区間２のRaspberry PiにてProxy ARPかiptablesによるLANとの通信経路を制御する
+
+#+begin_example
++-------------区間１---------+      +-------------区間２-----------------------+
+
+                                                        ________________________
+                                                       /      自宅LAN
+                                                      |
+                                                     /
+                                __                  /
+                            ___/  \_               |
++--------------+          _/        \__           / (DNAT)         +---------------+
+|              |         /  (sshd)     \          +---------+      |   (sshd)      |
+|  Tomodati    +--ssh--- |  Amazon EC2  ---ssh----+ RTX810  +------+ Raspberry Pi  |
+|              |         \_           __/         +---------+      |               |
++--------------+           \__     __/            \                +---------------+
+                              \___/                |
+                                                    \
+                                                     \
+                                                      |
+                                                       \________________________
+#+end_example
+
+* SSHトンネリング
+
+| 方式         | 通信イメージ                                      | broadcast |
+|--------------+---------------------------------------------------+-----------|
+| ppp over ssh | トンネルの両端に仮想ダイヤルアップPPPで結び付ける | ☓         |
+| TUNデバイス  | トンネルの両端に仮想TUNデバイスで結び付ける       | △        |
+| TAPデバイス  | トンネルの両端に仮想tapデバイスで結び付ける       | ◯        |
+
+- Point-to-Point TUN DeviceTUN
+  + TUNデバイスはLayer3をエミュレートし、IPフレームを転送します。
+  + IP-in-IP トンネリング (Point-to-Point: PPP通信と似ている)
+  + GRE トンネリング (※未確認)
+- Ethernet TAP Device
+  + TAPデバイスはLayer2(Ethernet)をエミュレートし、Ethernetフレームを転送します。
+
+TUNデバイスとTAPデバイス利用するに当たって、 =tun= というカーネルモジュールが必要とし
+ます。 SSHトンネリング時に自動的にロードしてくれます。
+
+#+begin_example
+[akira@tomodati ~]$ modinfo tun
+filename:       /lib/modules/3.15.2-1-ARCH/kernel/drivers/net/tun.ko.gz
+alias:          devname:net/tun
+alias:          char-major-10-200
+license:        GPL
+author:         (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>
+description:    Universal TUN/TAP device driver
+depends:
+intree:         Y
+vermagic:       3.15.2-1-ARCH SMP preempt mod_unload modversions
+[akira@tomodati ~]$
+#+end_example
+
+=tun= カーネルモジュールのデバイス初期化処理のコード（カーネルバージョン:3.12）
+
+#+begin_src c
+/* Initialize net device. */
+static void tun_net_init(struct net_device *dev)
+{
+	struct tun_struct *tun = netdev_priv(dev);
+
+	switch (tun->flags & TUN_TYPE_MASK) {
+	case TUN_TUN_DEV:
+		dev->netdev_ops = &tun_netdev_ops;
+
+		/* Point-to-Point TUN Device */
+		dev->hard_header_len = 0;
+		dev->addr_len = 0;
+		dev->mtu = 1500;
+
+		/* Zero header length */
+		dev->type = ARPHRD_NONE;
+		dev->flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
+		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
+		break;
+
+	case TUN_TAP_DEV:
+		dev->netdev_ops = &tap_netdev_ops;
+		/* Ethernet TAP Device */
+		ether_setup(dev);
+		dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+		dev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
+
+		eth_hw_addr_random(dev);
+
+		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
+		break;
+	}
+}
+#+end_src
+
+TUNデバイスのIP-in-IP方式とppp方式どちらもPPPプロトコルを使ってSSHトンネル両端間で通信
+するため、本検証ではppp方式を検証対象外としました。
+
+* TUNデバイス利用方式
+TUNデバイスでトンネリングする、iptablesとルーティングテーブルで交通を整理する。
+
+- 区間１:SSHトンネルでTomodatiとAmazonEC2間Point-To-Pointで通信できるようにする
+- 区間２:SSHトンネルでAmazonEC2とRaspberryPi間Point-To-Pointで通信できるようにする
+- AmazonEC2にて区間１と区間２のパケットをルーティングさせる（★ルータ的な役割）
+
+以下は通信イメージ図です。区間１と区間２リンク層の物理NICを表していない。
+#+begin_example
+       +-----------区間１---------+                  +----------区間２------+
+       |                          |                  |                      |
+       |                          |                  |                      |
+ <<Tomodati>>              <<AmazonEC2>>                             <<RaspberryPi>>
+┏━━━━━━━┓        ┏━━━━━━━━━━━━━━━━┓      ┏━━━━━━━━━━━┓
+┃              ┃        ┃[sshd]                          ┃      ┃[sshd]                ┃
+┃    ┏━━┓  ┃ <ssh>  ┃  ┏━━┓            ┏━━┓  ┃<ssh> ┃  ┏━━┓   ┏━━┓ ┃
+┃    ┃tun0┣━╋━━━━╋━┫tun0┃>>> SNAT >>>┃tun1┣━╋━━━╋━┫tun1┃   ┃eth0┣━━192.168.100.0/24
+┃    ┗━━┛  ┃        ┃  ┗━━┛            ┗━━┛  ┃      ┃  ┗━━┛   ┗━━┛ ┃         ^
+┃  192.168.3.1 ┃        ┃192.168.3.2          192.168.4.1┃      ┃ 192.168.4.2          ┃         |
+┗━━━━━━━┛        ┗━━━━━━━━━━━━━━━━┛      ┗━━━━━━━━━━━┛         |
+        |                                                                                              |
+        |                      多重VPN経路を通して、192.168.100.0/24へアクセスする                     |
+        +----------------------------------------------------------------------------------------------+
+#+end_example
+
+構築手順
+- 1. sshdに対してトンネリングを有効化する
+- 2. rootユーザログインできるように公開鍵を登録する ※1
+- 3. SSHトンネルを開設する
+- 4. 各TUNデバイスにIPアドレスを付与する
+- 5. 区間１トンネルと区間２トンネルを結び付ける
+
+※1: sshログイン時にtapデバイスファイルを自動生成するためにクライアント側とサーバ側に
+     root特権を持つアカウントを利用せざるを得ない。
+
+** sshdに対してトンネリングを有効化する
+
+AmazonEC2インスタンスとRaspberryPiが設定対象となります。 =/etc/ssh/sshd_config= ファイ
+ルに以下の内容を追加して、 =sshd= サービスをリロードする。
+
+#+begin_example
+########################################################################
+# トンネリング機能を有効化する
+#    point-to-point … Layer 3 のトンネリングのみを許可 (TUNデバイスを使用)
+#    ethernet … Layer 2 のトンネリングのみを許可 (tapデバイスを使用)
+#    yes … 両方のタイプのトンネリングを許可 (クライアントがトンネリングのタイプを選べる)
+#    no … トンネリングを許可しない
+########################################################################
+PermitTunnel yes
+#+end_example
+
+** rootユーザログインできるように公開鍵を登録する
+
+区間１はAmazonEC2へのログインですので、EC2インスタンス作成時に生成された秘密鍵でログ
+インできる。
+
+区間２のログインは公開鍵方式を使うため、以下の手順で鍵生成と登録を実施する。
+- Tomodatiにて =ssh-keygen= で鍵ペアを作成する。
+- 生成された公開鍵 =id_rsa.pub= の内容をAmazonEC2の =/root/.ssh/authorized_keys= に追加する。
+
+** SSHトンネルを開設する
+rootユーザでsshコマンドにオプションを付けてログインすることでSSHトンネルが開設される。
+一々オプションを指定するのが面倒なので、 =/root/.ssh/config= にまとめて書きましょう。
+
+区間１のSSHトンネルを開設するための =/root/.ssh/config=
+#+begin_example
+Host     amazon-vpn
+  HostName        xxxxxxxx.compute.amazonaws.com   ★AmazonEC2インスタンスのPublic DNS
+  User            root
+  IdentityFile    /tmp/private-ec2.pem             ★秘密鍵
+  LogLevel        DEBUG
+  Tunnel          point-to-point                   ★tun方式
+  TunnelDevice    0:0                              ★デバイスペアの番号(tun0 ... tun0)
+  RequestTTY      no
+  PermitLocalCommand yes
+  LocalCommand    /tmp/setup_tun0_client           ★ログイン成功後ローカルで実行するコマンドの定義
+#+end_example
+
+区間２のSSHトンネルを開設するための =/root/.ssh/config=
+#+begin_example
+Host    jitaku-vpn
+  HostName        xxxxx.mydns.jp  ★RTX810のWAN側のグローバルIP
+  User            root
+  Port            22              ★SSHポート
+  LogLevel        DEBUG
+  Tunnel          point-to-point
+  TunnelDevice    1:1
+  RequestTTY      no
+  PermitLocalCommand yes
+  LocalCommand    /tmp/setup_tun1_client
+#+end_example
+
+区間１のSSHトンネル起動時のログ
+#+begin_example
+[root@tomodati ~]# ssh amazon-vpn
+debug1: permanently_set_uid: 0/0
+debug1: permanently_drop_suid: 0
+debug1: identity file /tmp/private-ec2.pem type -1
+debug1: identity file /tmp/private-ec2.pem-cert type -1
+debug1: Enabling compatibility mode for protocol 2.0
+debug1: Local version string SSH-2.0-OpenSSH_6.6.1
+debug1: Remote protocol version 2.0, remote software version OpenSSH_6.6.1p1 Ubuntu-2ubuntu2
+debug1: match: OpenSSH_6.6.1p1 Ubuntu-2ubuntu2 pat OpenSSH_6.6.1* compat 0x04000000
+debug1: SSH2_MSG_KEXINIT sent
+debug1: SSH2_MSG_KEXINIT received
+debug1: kex: server->client aes128-ctr hmac-md5-etm@openssh.com none
+debug1: kex: client->server aes128-ctr hmac-md5-etm@openssh.com none
+debug1: sending SSH2_MSG_KEX_ECDH_INIT
+debug1: expecting SSH2_MSG_KEX_ECDH_REPLY
+debug1: Server host key: ECDSA d8:71:41:32:08:0d:8a:4c:24:6a:74:45:21:7d:ef:0c
+debug1: Host 'xxxxxxxx.compute.amazonaws.com' is known and matches the ECDSA host key.
+debug1: Found key in /root/.ssh/known_hosts:3
+debug1: ssh_ecdsa_verify: signature correct
+debug1: SSH2_MSG_NEWKEYS sent
+debug1: expecting SSH2_MSG_NEWKEYS
+debug1: SSH2_MSG_NEWKEYS received
+debug1: Roaming not allowed by server
+debug1: SSH2_MSG_SERVICE_REQUEST sent
+debug1: SSH2_MSG_SERVICE_ACCEPT received
+debug1: Authentications that can continue: publickey
+debug1: Next authentication method: publickey
+debug1: Trying private key: /tmp/private-ec2.pem
+debug1: key_parse_private2: missing begin marker
+debug1: read PEM private key done: type RSA
+debug1: Authentication succeeded (publickey).
+Authenticated to xxxxxxxx.compute.amazonaws.com.
+debug1: Requesting tun unit 0 in mode 1
+debug1: sys_tun_open: tun0 mode 1 fd 3
+debug1: channel 0: new [tun]
+debug1: channel 1: new [client-session]
+debug1: Requesting no-more-sessions@openssh.com
+debug1: Entering interactive session.
+#+end_example
+
+Tomodatiに =tun0= デバイスが生成されたことを確認する。
+#+begin_example
+[root@tomodati ~]# ip link show | grep tun0
+11: tun0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN mode DEFAULT group default qlen 500
+#+end_example
+
+区間２開設後、AmazonEC2に =tun1= デバイスが生成されたことを確認する。
+#+begin_example
+root@ip-xxxxxxxx:~# ip link show | grep tun
+★tun0 は区間１開設時生成されたデバイス
+26: tun0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN mode DEFAULT group default qlen 500
+
+★tun1 は区間２開設時生成されたデバイス
+27: tun1: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN mode DEFAULT group default qlen 500
+root@ip-xxxxxxxx:~#
+#+end_example
+
+RaspberryPiに生成された =tun1= デバイスを確認する
+#+begin_example
+[root@pipi ~]# ifconfig | grep tun
+tun1: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
+[root@pipi ~]#
+#+end_example
+
+** 各TUNデバイスにIPアドレスを付与する
+Tomodatiの =tun0= デバイスに =192.168.3.1= アドレスを指定する、Point-To-Point通信のた
+め、対向側のTUNデバイスのIPアドレスも指定する。
+#+begin_example
+★IPアドレス指定
+[root@tomodati ~]# ifconfig tun0 192.168.3.1 pointopoint 192.168.3.2
+
+★IPアドレス確認
+[root@tomodati ~]# ifconfig tun0
+tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
+        inet 192.168.3.1  netmask 255.255.255.255  destination 192.168.3.2
+        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+★ルーティングテーブルに自動で追加された経路
+[root@tomodati ~]# ip route show | grep tun
+192.168.3.2 dev tun0  proto kernel  scope link  src 192.168.3.1
+[root@tomodati ~]# 
+#+end_example
+
+AmazonEC2インスタンスのTUNデバイスにアドレスを指定する。
+#+begin_example
+★区間１：tun0デバイスのIP指定
+root@ip-xxxxxxxx:~# ifconfig tun0 192.168.3.2 pointopoint 192.168.3.1
+root@ip-xxxxxxxx:~# ifconfig tun0
+tun0      Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+          inet addr:192.168.3.2  P-t-P:192.168.3.1  Mask:255.255.255.255
+          UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:500 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+★区間２：tun1デバイスのIP指定
+root@ip-xxxxxxxx:~# ifconfig tun1 192.168.4.1 pointopoint 192.168.4.2
+root@ip-xxxxxxxx:~# ifconfig tun1
+tun1      Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+          inet addr:192.168.4.1  P-t-P:192.168.4.2  Mask:255.255.255.255
+          UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:500 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+★ルーティングテーブルに自動で追加された経路
+root@ip-xxxxxxxx:~# ip route show | grep tun
+192.168.3.1 dev tun0  proto kernel  scope link  src 192.168.3.2 
+192.168.4.2 dev tun1  proto kernel  scope link  src 192.168.4.1 
+root@ip-xxxxxxxx:~# 
+#+end_example
+
+RaspberryPiのTUNデバイスにアドレスを指定する。
+
+#+begin_example
+★IPアドレス指定
+[root@pipi ~]# ifconfig tun1 192.168.4.2 pointopoint 192.168.4.1
+[root@pipi ~]# ifconfig tun1
+tun1: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
+        inet 192.168.4.2  netmask 255.255.255.255  destination 192.168.4.1
+        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+★ルーティングテーブルに自動で追加された経路
+[root@pipi ~]# ip route show | grep tun
+192.168.4.1 dev tun1  proto kernel  scope link  src 192.168.4.2 
+[root@pipi ~]#
+#+end_example
+
+** 区間１トンネルと区間２トンネルを結び付ける
+AmazonEC2にてiptablesのSNAT機能を用いて区間１と区間２のパケットをルーティングさせる。
+#+begin_example
+★ パケット転送を許可する
+root@ip-xxxxxxxx:~# sysctl -w net.ipv4.ip_forward=1
+
+★ tun0からtun1へ転送時にMASQUERADEを行う
+root@ip-xxxxxxxx:~# iptables -t nat -A POSTROUTING -o tun1 -s 192.168.3.0/24 -j MASQUERADE
+#+end_example
+
+区間１と区間２の各ノードに =192.168.100.0/24= への転送ルートを定義する。
+
+Tomodatiに =192.168.100.0/24= への転送ルートを定義する。
+#+begin_example
+[root@tomodati ~]# ip route add 192.168.100.0/24 via 192.168.3.2 dev tun0
+[root@tomodati ~]# ip route show
+192.168.3.2 dev tun0  proto kernel  scope link  src 192.168.3.1
+
+★ 192.168.100.0/24への通信はすべてtun0を経路する
+192.168.100.0/24 via 192.168.3.2 dev tun0
+#+end_example
+
+AmazonEC2に =192.168.100.0/24= への転送ルートを定義する。
+#+begin_example
+★ 区間１から =192.168.100.0/24= へのパケットを転送を許可する
+root@ip-xxxxxxxx:~# iptables -A FORWARD -i tun0 -p tcp -d 192.168.100.0/24 -j ACCEPT
+
+★ =192.168.100.0/24= への転送ルートを追加する
+root@ip-xxxxxxxx:~# ip route add 192.168.100.0/24 via 192.168.4.2 dev tun1
+
+★ 192.168.100.0/24への通信はすべてtun1を経路する
+root@ip-xxxxxxxx:~# ip route show
+192.168.3.1 dev tun0  proto kernel  scope link  src 192.168.3.2
+192.168.4.2 dev tun1  proto kernel  scope link  src 192.168.4.1
+192.168.100.0/24 via 192.168.4.2 dev tun1
+#+end_example
+
+RaspberryPiに =192.168.100.0/24= への転送ルートを定義する。
+
+#+begin_example
+★ ローカルサブネットへルーティング時のDNAT設定
+[root@pipi ~]# sysctl -w net.ipv4.ip_forward=1
+
+★ tun1 から eth0 出て行く時にMASQUERADEする
+[root@pipi ~]# iptables -t nat -A POSTROUTING -o eth0 -s 192.168.4.0/24 -j MASQUERADE
+#+end_example
+
+ここまで、区間１から =192.168.100.0/24= への接続ができるようになります。逆方向の接続
+は同じ考え方でiptables、ルーティングテーブルを駆使すればできると思います。
+
+* TAPデバイス利用方式
+TAPデバイスはLayer2(Ethernet)をエミュレートできるため =bridge= カーネルモジュールや
+ARP Proxy 機能と組み合わせて柔軟なVPNを構成することが可能になります。
+
+VPNネットワーク構成概要
+- VPN部分を自宅LANのサブネットセグメントとして定義する
+- 区間１、区間２はTAPデバイスよりSSHトンネリングする
+- 区間１と区間２はBridgeで繋ぐ (★AmazonEC2はハブ的な役割)
+- RaspberryPiノード上のtapとeth0間でARP PROXYし、２つセグメントを繋ぐ
+
+以下は通信イメージ図です。一部リンク層の物理NICを表していない。
+#+begin_example
+   +---------------------------------------------------------------------------------------------------------------------+
+   |                                                                            〜自宅のLANセグメント〜                  |
+   |   +-----------------------------------------------------------------+                                               |
+   |   |         〜多重VPNによるサブネットセグメント〜                   |                                               |
+   |   |           network   : 192.168.100.48/29                         |    network   : 192.168.100.0/24               |
+   |   |           netmask   : 255.255.255.248                           |    netmask   : 255.255.255.0                  |
+   |   |           broadcast : 192.168.100.55                            |    broadcast : 192.168.100.255                |
+   |   |           gateway   : 192.168.100.54                            |    gateway   : 192.168.100.1                  |
+   |   |           ip range  : 192.168.100.49〜192.168.100.54            |    ip range  : 192.168.100.1〜192.168.100.254 |
+   |   |                                                                 |                                               |
+   |   |                                                                 |                                               |
+   |   +-----------区間１--------+                  +--------区間２------+                                               |
+   |   |                         |                  |                    |                                               |
+ <<Tomodati>>              <<AmazonEC2>>                             <<RaspberryPi>>                                     |
+┏━━━━━━━┓        ┏━━━━━━━━━━━━━━━┓      ┏━━━━━━━━━━━━━━━━┓                   |
+┃              ┃        ┃[sshd]                        ┃      ┃[sshd]                          ┃                   |
+┃              ┃        ┃        ┏━━━━━┓        ┃      ┃                                ┃                   |
+┃              ┃        ┃      ┏┫    br0   ┣┓      ┃      ┃                                ┃                   |
+┃              ┃        ┃      ┃┗━━━━━┛┃      ┃      ┃                                ┃                   |
+┃192.168.100.49┃        ┃      ┃192.168.100.50┃      ┃      ┃192.168.100.54                  ┃                   |
+┃    ┏━━┓  ┃ <ssh>  ┃  ┏━┻┓          ┏┻━┓  ┃<ssh> ┃  ┏━━┓             ┏━━┓ ┃                   |
+┃    ┃tap0┣━╋━━━━╋━┫tap0┃          ┃tap1┣━╋━━━╋━┫tap1┃<<ARP PROXY>>┃eth0┣━━192.168.100.0/24--+
+┃    ┗━━┛  ┃        ┃  ┗━━┛          ┗━━┛  ┃      ┃  ┗━━┛             ┗━━┛ ┃         ^
+┗━━━━━━━┛        ┗━━━━━━━━━━━━━━━┛      ┗━━━━━━━━━━━━━━━━┛         |
+        |                                                                                                      |
+        |                      多重VPN経路を通して、192.168.100.0/24へアクセスする                             |
+        +------------------------------------------------------------------------------------------------------+
+#+end_example
+
+区間２のRaspberryPiノード上のtap1とeth0の繋ぐ方法について、=ARP PROXY= 以外にBridge方
+式もできる。Bridge方式だと =192.168.100.0/24= セグメントのブロードキャストパケットが
+全部AamzonEC2に転送されて、AWSの課金が飛んでしまう可能性があるため、 =ARP PROXY= 方
+式のほうが適していると勝手な判断です。
+
+構築の詳細手順を割愛します。検証で作成したスクリプトを以下に示します。
+
+** 区間１の設定
+Tomodati =/root/.ssh/config= ：SSHクライアント設定
+#+begin_example
+Host     amazon-vpn-tap
+  HostName        xxxxxxxx.compute.amazonaws.com   ★AmazonEC2インスタンスのPublic DNS
+  User            root
+  IdentityFile    /tmp/private-ec2.pem             ★秘密鍵
+  LogLevel        DEBUG
+  Tunnel          ethernet                         ★tap方式
+  TunnelDevice    0:0                              ★デバイスペアの番号(tap0 ... tap0)
+  RequestTTY      no
+  PermitLocalCommand yes
+  LocalCommand    /tmp/setup_tap0_client           ★ログイン成功後ローカルで実行するコマンドの定義
+#+end_example
+
+Tomodati =/tmp/setup_tap0_client=
+#+begin_example
+#!/bin/sh
+
+## tap0のIPアドレスアサイン
+ifconfig tap0 192.168.100.49/29
+
+## 192.168.100.0/24 セグメントへのルート定義
+ip route add 192.168.100.0/24 via 192.168.100.54 dev tap0
+#+end_example
+
+AmazonEC2 =/root/.ssh/authorized_keys=
+#+begin_example
+★rootユーザでログイン後 /root/.ssh/setup_tap0 を実行する定義
+no-port-forwarding,no-agent-forwarding,no-X11-forwarding,command="/root/.ssh/setup_tap0" ssh-rsa xxxxxxxxx
+                                                         ~~~~~~~ ←rootユーザで実行できるコマンドを限定する
+#+end_example
+
+AmazonEC2 =/root/.ssh/setup_tap0= 、brctlコマンドは =bridge-utils= パッケージに含まれ
+ている。
+#+begin_example
+#!/bin/bash
+
+## br0 ブリッジデバイスを作成
+brctl addbr br0
+
+## br0 ブリッジデバイスにIPをアサインする
+ifconfig br0 192.168.100.51/29
+
+## tap0デバイスを活性化する
+ip link set tap0 up
+
+## tap0デバイスを br0 ブリッジに刺す
+brctl addif br0 tap0
+#+end_example
+
+** 区間２の設定
+AmazonEC2 =/root/.ssh/config= ：SSHクライアント設定
+#+begin_example
+Host     jitaku-vpn-tap
+  HostName        xxxxx.mydns.jp  ★RTX810のWAN側のグローバルIP
+  User            root
+  Port            22              ★SSHポート
+  LogLevel        DEBUG
+  Tunnel          ethernet                         ★tap方式
+  TunnelDevice    1:1
+  RequestTTY      no
+  PermitLocalCommand yes
+  LocalCommand    /tmp/setup_tap1_client           ★ログイン成功後ローカルで実行するコマンドの定義
+#+end_example
+
+AmazonEC2 =/tmp/setup_tap1_client=
+#+begin_example
+#!/bin/sh
+
+## tap1デバイスを活性化する
+ip link set tap1 up
+
+## tap1デバイスを br0 ブリッジに刺す
+brctl addif br0 tap1
+
+## 192.168.100.0/24 セグメントへのルート定義
+ip route add 192.168.100.0/24 via 192.168.100.54 dev br0
+
+#+end_example
+
+RaspberryPi =/root/.ssh/authorized_keys=
+#+begin_example
+★rootユーザでログイン後 /root/.ssh/setup_tap1 を実行する定義
+no-port-forwarding,no-agent-forwarding,no-X11-forwarding,command="/root/.ssh/setup_tap1" ssh-rsa xxxxxxxxx
+#+end_example
+
+RaspberryPi =/root/.ssh/setup_tap1=
+#+begin_example
+#!/bin/sh
+
+## tap1デバイスにIPをアサインする
+ifconfig tap1 192.168.100.54/29
+
+## APR PROXY機能を有効にする
+sysctl -w net.ipv4.ip_forward=1
+sysctl -w net.ipv4.conf.eth0.proxy_arp=1
+#+end_example
+
+
+* おまけに
+今後機会があれば、TUNデバイス方式とTAPデバイス方式の性能を比較したいと思います。
+TAP の方が Ethernetヘッダが付加されるため、TUNより通信量が多いいのでTUNの方がが
+性能がいいかもしれない。但しTUN方式はPoint-To-Point通信であるため、BroadCastや
+MultiCastが出来ない部分とネットワークセグメント間のパケット転送の設定（iptabels）
+が面倒の部分もあります。
+
+* 参考リンク
+- [[http://www.komoto.org/vpn/index.html][VPN技術について]]
+- [[http://www.unixuser.org/~euske/doc/openssh/book/chap6.html#real-vpn][入門OpenSSH - 第6章 すすんだ使い方]]
+- [[http://www.usupi.org/sysad/248.html][SSH でVPNを実現する]]
+- [[http://www.usupi.org/sysad/066.html][お試しネットワーク環境を作る ～ Proxy ARP 編]]
+- [[http://web.mit.edu/rhel-doc/4/RH-DOCS/rhel-sg-ja-4/s1-firewall-ipt-fwd.html][Red Hat Enterprise Linux 4: セキュリティガイド]]
+- [[https://access.redhat.com/site/documentation/ja-JP/Red_Hat_Enterprise_Linux/6/html/Security_Guide/sect-Security_Guide-Firewalls-FORWARD_and_NAT_Rules.html][FORWARD および NAT ルール]]
+
