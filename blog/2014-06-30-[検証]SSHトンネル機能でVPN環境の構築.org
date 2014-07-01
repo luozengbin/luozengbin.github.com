@@ -149,7 +149,7 @@ TUNデバイスでトンネリングする、iptablesとルーティングテー
 ※1: sshログイン時にtapデバイスファイルを自動生成するためにクライアント側とサーバ側に
      root特権を持つアカウントを利用せざるを得ない。
 
-** sshdに対してトンネリングを有効化する
+** 1.sshdに対してトンネリングを有効化する
 
 AmazonEC2インスタンスとRaspberryPiが設定対象となります。 =/etc/ssh/sshd_config= ファイ
 ルに以下の内容を追加して、 =sshd= サービスをリロードする。
@@ -165,7 +165,7 @@ AmazonEC2インスタンスとRaspberryPiが設定対象となります。 =/etc
 PermitTunnel yes
 #+end_example
 
-** rootユーザログインできるように公開鍵を登録する
+** 2.rootユーザログインできるように公開鍵を登録する
 
 区間１はAmazonEC2へのログインですので、EC2インスタンス作成時に生成された秘密鍵でログ
 インできる。
@@ -174,7 +174,7 @@ PermitTunnel yes
 - Tomodatiにて =ssh-keygen= で鍵ペアを作成する。
 - 生成された公開鍵 =id_rsa.pub= の内容をAmazonEC2の =/root/.ssh/authorized_keys= に追加する。
 
-** SSHトンネルを開設する
+** 3.SSHトンネルを開設する
 rootユーザでsshコマンドにオプションを付けてログインすることでSSHトンネルが開設される。
 一々オプションを指定するのが面倒なので、 =/root/.ssh/config= にまとめて書きましょう。
 
@@ -272,7 +272,7 @@ tun1: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
 [root@pipi ~]#
 #+end_example
 
-** 各TUNデバイスにIPアドレスを付与する
+** 4.各TUNデバイスにIPアドレスを付与する
 Tomodatiの =tun0= デバイスに =192.168.3.1= アドレスを指定する、Point-To-Point通信のた
 め、対向側のTUNデバイスのIPアドレスも指定する。
 #+begin_example
@@ -346,7 +346,7 @@ tun1: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
 [root@pipi ~]#
 #+end_example
 
-** 区間１トンネルと区間２トンネルを結び付ける
+** 5.区間１トンネルと区間２トンネルを結び付ける
 AmazonEC2にてiptablesのSNAT機能を用いて区間１と区間２のパケットをルーティングさせる。
 #+begin_example
 ★ パケット転送を許可する

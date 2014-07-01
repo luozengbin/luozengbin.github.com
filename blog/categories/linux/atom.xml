@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Linux | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-01T12:17:54+09:00</updated>
+  <updated>2014-07-01T12:23:31+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -275,7 +275,7 @@ TUNデバイスでトンネリングする、iptablesとルーティングテー
 </div>
 
 <div id="outline-container-sec-2-1" class="outline-3">
-<h3 id="sec-2-1">sshdに対してトンネリングを有効化する</h3>
+<h3 id="sec-2-1">1.sshdに対してトンネリングを有効化する</h3>
 <div class="outline-text-3" id="text-2-1">
 <p>
 AmazonEC2インスタンスとRaspberryPiが設定対象となります。 <code>/etc/ssh/sshd_config</code> ファイ
@@ -296,7 +296,7 @@ PermitTunnel yes
 </div>
 
 <div id="outline-container-sec-2-2" class="outline-3">
-<h3 id="sec-2-2">rootユーザログインできるように公開鍵を登録する</h3>
+<h3 id="sec-2-2">2.rootユーザログインできるように公開鍵を登録する</h3>
 <div class="outline-text-3" id="text-2-2">
 <p>
 区間１はAmazonEC2へのログインですので、EC2インスタンス作成時に生成された秘密鍵でログ
@@ -316,7 +316,7 @@ PermitTunnel yes
 </div>
 
 <div id="outline-container-sec-2-3" class="outline-3">
-<h3 id="sec-2-3">SSHトンネルを開設する</h3>
+<h3 id="sec-2-3">3.SSHトンネルを開設する</h3>
 <div class="outline-text-3" id="text-2-3">
 <p>
 rootユーザでsshコマンドにオプションを付けてログインすることでSSHトンネルが開設される。
@@ -432,7 +432,7 @@ tun1: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500
 </div>
 
 <div id="outline-container-sec-2-4" class="outline-3">
-<h3 id="sec-2-4">各TUNデバイスにIPアドレスを付与する</h3>
+<h3 id="sec-2-4">4.各TUNデバイスにIPアドレスを付与する</h3>
 <div class="outline-text-3" id="text-2-4">
 <p>
 Tomodatiの <code>tun0</code> デバイスに <code>192.168.3.1</code> アドレスを指定する、Point-To-Point通信のた
@@ -516,7 +516,7 @@ tun1: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500
 </div>
 
 <div id="outline-container-sec-2-5" class="outline-3">
-<h3 id="sec-2-5">区間１トンネルと区間２トンネルを結び付ける</h3>
+<h3 id="sec-2-5">5.区間１トンネルと区間２トンネルを結び付ける</h3>
 <div class="outline-text-3" id="text-2-5">
 <p>
 AmazonEC2にてiptablesのSNAT機能を用いて区間１と区間２のパケットをルーティングさせる。
