@@ -3,6 +3,7 @@
 #+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
 #+JEKYLL_LAYOUT: post
 #+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: ssh vpn
 #+JEKYLL_PUBLISHED: true
 
 友人に自宅のLAN内のコンテンツを共有するため、VPNについて検証しました。
@@ -558,4 +559,5 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
 - [[http://www.usupi.org/sysad/066.html][お試しネットワーク環境を作る ～ Proxy ARP 編]]
 - [[http://web.mit.edu/rhel-doc/4/RH-DOCS/rhel-sg-ja-4/s1-firewall-ipt-fwd.html][Red Hat Enterprise Linux 4: セキュリティガイド]]
 - [[https://access.redhat.com/site/documentation/ja-JP/Red_Hat_Enterprise_Linux/6/html/Security_Guide/sect-Security_Guide-Firewalls-FORWARD_and_NAT_Rules.html][FORWARD および NAT ルール]]
-
+- [[http://sgros.blogspot.jp/2011/11/tunneling-everything-with-ssh-or-how-to.html][Tunneling everything with SSH... or how to make VPNs...]]
+- [[http://sgros.blogspot.jp/2011/11/ssh-vpns-bridged-connection-to-lan.html][SSH VPNs: Bridged connection to LAN using tap]]

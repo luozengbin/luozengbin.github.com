@@ -3,6 +3,7 @@
 #+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
 #+JEKYLL_LAYOUT: post
 #+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: iptables firewalld
 #+JEKYLL_PUBLISHED: true
 
 自宅の =Raspberry Pi= にfirewalldを入れて遊んで見ました。

@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Otcopress | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/otcopress/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2014-07-01T19:29:34+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]Otcopressにプラグインを導入する-その１]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-07-01-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%81%AB%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%99%E3%82%8B-%E3%81%9D%E3%81%AE%EF%BC%91.html"/>
+    <updated>2014-07-01T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]otcopressにプラグインを導入する-その１</id>
+    <content type="html"><![CDATA[<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">TagCloudとカテゴリリスト</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+<a href="https://github.com/tokkonopapa/octopress-tagcloud">このから</a> ダウンロードする
+</p>
+<pre class="example">
+[akira@jizai tmp]$ git clone https://github.com/tokkonopapa/octopress-tagcloud.git
+Cloning into 'octopress-tagcloud'...
+remote: Reusing existing pack: 65, done.
+remote: Total 65 (delta 0), reused 0 (delta 0)
+Unpacking objects: 100% (65/65), done.
+Checking connectivity... done.
+[akira@jizai tmp]$
+</pre>
+
+<p>
+<code>octopress-tagcloud/plugin/</code> 配下のファイルを <code>octopress/plugins</code> へコピーする。
+<code>octopress-tagcloud/source/</code> 配下のファイルを <code>octopress/source</code> へコピーする。
+</p>
+
+<pre class="example">
+[akira@jizai tmp]$ cd octopress-tagcloud/
+[akira@jizai octopress-tagcloud]$ cp -rfv plugins/* ~/.emacs.d/blogs/octopress/plugins
+`plugins/tag_cloud.rb' -&gt; `/home/akira/.emacs.d/blogs/octopress/plugins/tag_cloud.rb'
+[akira@jizai octopress-tagcloud]$ cp -rfv source/* ~/.emacs.d/blogs/octopress/source
+`source/_includes/custom/asides/tag_cloud.html' -&gt; `/home/akira/.emacs.d/blogs/octopress/source/_includes/custom/asides/tag_cloud.html'
+`source/_includes/custom/asides/category_list.html' -&gt; `/home/akira/.emacs.d/blogs/octopress/source/_includes/custom/asides/category_list.html'
+[akira@jizai octopress-tagcloud]$
+</pre>
+
+<p>
+<code>octopress/_config.yml</code> の <code>default_asides</code> 項目に <code>custom/asides/tag_cloud.html</code> と
+<code>custom/asides/category_list.html</code> を追加する。
+</p>
+<pre class="example">
+default_asides: [...., custom/asides/tag_cloud.html, custom/asides/category_list.html, ..... ]
+</pre>
+
+<p>
+このままだとTagCloudカテゴリリストが同じものになったしまうので、<a href="http://komasaru.github.io/blog/2012/12/19/octopress-add-tag-cloud/">ここ</a> と <a href="http://rcmdnk.github.io/blog/2013/04/12/blog-octopress/">ここ</a> の記事を
+参考してカテゴライズ機能を流用してTagCloud機能を実装する。以下TagCloud機能を実現する
+ためには変更及び追加したファイル一覧です。
+</p>
+
+<pre class="example">
+[akira@hakusai octopress]$ git status
+Changes not staged for commit:
+  (use "git add &lt;file&gt;..." to update what will be committed)
+  (use "git checkout -- &lt;file&gt;..." to discard changes in working directory)
+  (commit or discard the untracked or modified content in submodules)
+
+    modified:   _config.yml
+    modified:   sass/partials/_archive.scss
+    modified:   sass/partials/_blog.scss
+    modified:   source/_includes/archive_post.html
+    modified:   source/_includes/post/categories.html
+    modified:   source/_layouts/page.html
+    modified:   source/_layouts/post.html
+
+Untracked files:
+  (use "git add &lt;file&gt;..." to include in what will be committed)
+
+    plugins/tag_cloud.old.rb
+    plugins/tag_cloud.rb
+    plugins/tag_generator.rb
+    source/_includes/custom/asides/related.html
+    source/_includes/custom/asides/tag_cloud.html
+    source/_includes/custom/tag_feed.xml
+    source/_includes/post/tags.html
+    source/_layouts/tag_index.html
+</pre>
+
+<p>
+記事書く際にヘッダの属性リストに <code>tags</code> と <code>category</code> を記述するすればOKです。
+</p>
+
+<pre class="example">
+---
+title: "[メモ]Otcopressにプラグインを導入する-その１"
+date: 2014-07-01
+layout: post
+category: misc
+tags: Octopress blog
+published: true
+comments: true
+---
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">QRコード</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+Google Chart APIで記事URLのQRコードイメージを自動的に生成する。
+</p>
+
+<p>
+<code>octopress/source/_includes/custom/asides/qrcode.html</code>
+</p>
+<pre class="example">
+&lt;section&gt;
+  &lt;!-- create at 2017/07/01 
+       Google Chart Tools: Infographics
+       https://developers.google.com/chart/infographics/docs/qr_codes?csw=1
+  --&gt;
+
+  &lt;div style="position: relative; text-align: center"&gt;
+
+    &lt;!-- Google Chart API でQRコード取得 --&gt;
+    &lt;img src="http://chart.apis.google.com/chart?chs=180x180&amp;amp;cht=qr&amp;amp;choe=UTF-8&amp;amp;chl=http://luozengbin.github.ioblog/tags/otcopress/atom.xml" alt="post-qrcode" height="180" width="180" /&gt;
+
+    &lt;!-- サイトのfaviconを重ねて表示する --&gt;
+    &lt;div style="position: absolute; top: 75px; width: 100%; margin: 0 auto; text-align: center"&gt;
+      &lt;img style="border: 0.2em solid #FFF;" src="/favicon.png" alt="post-qrcode" height="30" width="30" /&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+&lt;/section&gt;
+</pre>
+
+<p>
+<code>octopress/_config.yml</code> の <code>default_asides</code> 項目に <code>custom/asides/qrcode.html</code> を追加
+する。
+</p>
+<pre class="example">
+default_asides: [...., custom/asides/qrcode.html, ..... ]
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">月間アーカイブ</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+作成中&#x2026;
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4">参考リンク</h2>
+<div class="outline-text-2" id="text-4">
+<ul class="org-ul">
+<li><a href="http://komasaru.github.io/blog/2012/12/19/octopress-add-tag-cloud/">Octopress - タグクラウドの追加</a>
+</li>
+<li><a href="http://rcmdnk.github.io/blog/2013/04/12/blog-octopress/">Octopressでのタグの運用</a>
+</li>
+<li><a href="http://komasaru.github.io/blog/2013/02/15/octopress-monthly-archives/">Octopress - 月別アーカイブ！</a>
+</li>
+<li><a href="http://rcmdnk.github.io/blog/2013/10/01/blog-octopress/">月間アーカイブ for Octopress</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]Otcopressコンテンツ投稿自動化]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-06-15-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E6%8A%95%E7%A8%BF%E8%87%AA%E5%8B%95%E5%8C%96.html"/>
+    <updated>2014-06-15T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]otcopressコンテンツ投稿自動化</id>
+    <content type="html"><![CDATA[<p>
+emacsからblog投稿ツールいくつ試しました、最近以下のツール組み合わせで落ち着いた。
+</p>
+
+
+<ul class="org-ul">
+<li>静的コンテンツ生成エンジン <code>Octopress</code> ： <a href="http://Octopress.org/">http://Octopress.org/</a>
+</li>
+<li>コンテンツ公開サービス <code>Github Page</code> : <a href="https://pages.github.com/">https://pages.github.com/</a>
+</li>
+<li>org-modesでOctopress記事を書く： <a href="https://github.com/yoshinari-nomura/org-Octopress">https://github.com/yoshinari-nomura/org-Octopress</a>
+</li>
+<li>自動化スクリプト
+</li>
+</ul>
+
+
+
+
+<p>
+
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Octopress + Github Page でブログ環境を構築する</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+同じ環境で複数Rubyバージョンを利用できるようにするためRbenvを導入する。
+</p>
+</div>
+
+<div id="outline-container-sec-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> Rbenvのインストール</h3>
+<div class="outline-text-3" id="text-1-1">
+<pre class="example">
+$ cd ~
+$ git clone git://github.com/sstephenson/rbenv.git .rbenv
+$ echo 'export PATH="$HOME/.rbenv/bin:$PATH"' &gt;&gt; ~/.bashrc
+$ echo 'eval "$(rbenv init -)"' &gt;&gt; ~/.bashrc
+$ git clone git://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build
+$ source ~/.bashrc
+</pre>
+
+<p>
+rbenvでインストール可能なバージョンリストを確認する。 <code>rbenv install -l</code>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> RbenvによるRubyバージョンの切り替え</h3>
+<div class="outline-text-3" id="text-1-2">
+<pre class="example">
+$ rbenv install 1.9.3-p0
+$ rbenv global 1.9.3-p0
+$ rbenv rehash
+$ rbenv global
+$ ruby --version
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> Octopressのインストール</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+GithubからOctopressをダウンロードする
+</p>
+<pre class="example">
+$ git clone git://github.com/imathis/Octopress.git Octopress
+$ cd Octopress
+$ ruby --version  # ruby バージョン確認
+</pre>
+
+<p>
+必要なrubyライブラリをインストールする
+</p>
+<pre class="example">
+$ gem install bundler
+$ rbenv rehash
+$ bundle install
+</pre>
+
+<p>
+Octopressテーマの初期化
+</p>
+<pre class="example">
+$ rake install
+</pre>
+
+<p>
+octostrap3 Themeへ変更
+</p>
+<pre class="example">
+$ cd Octopress
+$ git clone https://github.com/kAworu/octostrap3 .themes/octostrap3
+$ rake 'install[octostrap3]'
+</pre>
+
+<p>
+静的コンテンツの生成
+</p>
+<pre class="example">
+$ rake generate
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-4" class="outline-3">
+<h3 id="sec-1-4"><span class="section-number-3">1.4</span> Github Pageサイトの準備</h3>
+<div class="outline-text-3" id="text-1-4">
+<p>
+ここでは省略します。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-1-5" class="outline-3">
+<h3 id="sec-1-5"><span class="section-number-3">1.5</span> OctopressコンテンツをGithub Pageにコミットする</h3>
+<div class="outline-text-3" id="text-1-5">
+<pre class="example">
+$rake setup_github_pages    # githubリポジトリのurlを入力する
+$rake generate
+$rake deploy
+</pre>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> emacsから記事を書く道具の整備</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+<code>elpa</code> を通して、=org-mode= で記事を書くための <code>org-ocotpress</code> をインストールする。
+org-ocotpressは MELPAに登録してあるので、 <code>M-x package-install org-ocotpress</code> で
+インストールする。 <code>org-ocotpress</code> から記事を管理するため、emacsの設定とOcotpress
+のpermalink設定を以下のように変える。
+</p>
+
+<p>
+<code>octopress/_config.yml</code>
+</p>
+<pre class="example">
+permalink: /blog/:year-:month-:day-:title.html
+</pre>
+
+<p>
+<code>emacs設定</code>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">org-octopress</span>)
+(setq org-octopress-directory-top       (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-posts     (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source/_posts"</span>))
+(setq org-octopress-directory-org-top   (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-org-posts (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source/blog"</span>))
+(setq org-octopress-setup-file          (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/setupfile.org"</span>))
+</pre>
+</div>
+
+<p>
+<code>blogs/octopress/setupfile.org</code>
+</p>
+<pre class="example">
+#+OPTIONS: H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:nil -:t f:nil *:t &lt;:t
+#+OPTIONS: TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+OPTIONS: author:nil
+#+OPTIONS: email:nil
+#+OPTIONS: creator:nil
+#+OPTIONS: timestamp:nil
+#+MACRO: more @@html:&lt;!-- more --&gt;@@
+#+MACRO: twitter [[http://twitter.com/$1][@$1]]
+#+MACRO: github [[https://github.com/$1/$2][$2]]
+#+PROPERTY: cache yes
+#+STARTUP: odd
+#+STARTUP: content
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 自動化スクリプト</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+コンテンツプレビュー自動化elispとshell script
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">defvar</span> <span style="color: #9acd32;">org-octopress-top</span>
+  (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/"</span>)
+  <span style="color: #bdb76b;">"octopress&#12502;&#12525;&#12464;&#12486;&#12531;&#12503;&#12524;&#12540;&#12488;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;"</span>)
+
+(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">org-octopress-preview</span> ()
+  <span style="color: #bdb76b;">"preview octopress content by call external shell script."</span>
+  (interactive)
+  (message <span style="color: #bdb76b;">"preview octopress content ...."</span>)
+  (<span style="color: #ffffff;">lexical-let*</span> ((default-directory org-octopress-top)
+                 (preview-url <span style="color: #bdb76b;">"http://localhost:4000"</span>))
+    (deferred:$
+      (deferred:process-shell <span style="color: #bdb76b;">"blog_preview.sh"</span> org-octopress-top)
+      (deferred:nextc it
+        (<span style="color: #ffffff;">lambda</span> (x)
+          (message <span style="color: #bdb76b;">"*** preview blog ***"</span>)
+          (message x)
+          (message <span style="color: #bdb76b;">"launch preview url %s"</span> preview-url)
+          (browse-url preview-url))))))
+</pre>
+</div>
+
+<p>
+<code>blog_preview.sh</code>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Usage: blog_preview.sh</span>
+<span style="color: #00cd66;">##</span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #00cd66;">##</span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #00cd66;">##          </span><span style="color: #00cd66;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12503;&#12524;&#12499;&#12517;&#12540;</span>
+<span style="color: #00cd66;">##################################################################### </span>
+
+<span style="color: #9acd32;">RUBY_VER</span>=<span style="color: #bdb76b;">"1.9.3-p0"</span>
+<span style="color: #9acd32;">OCTOPRESS_DIR</span>=$<span style="color: #9acd32;">1</span>
+
+which rbenv
+<span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">?</span> = 0 ]; <span style="color: #ffffff;">then</span>
+    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #9acd32;">RUBY_VER</span>
+    rbenv rehash
+    <span style="color: #9acd32;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">global_ver</span> = $<span style="color: #9acd32;">RUBY_VER</span> ]; <span style="color: #ffffff;">then</span>
+        <span style="color: #00cd66;"># </span><span style="color: #00cd66;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"run rake with `ruby --version`"</span>
+        <span style="color: #b0c4de;">pushd</span> $<span style="color: #9acd32;">OCTOPRESS_DIR</span>
+        rake generate
+        <span style="color: #ffffff;">if</span> [ -z <span style="color: #bdb76b;">"`netstat -nutl | grep 4000`"</span> ] ; <span style="color: #ffffff;">then</span>
+            <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"&gt;&gt;&gt; Startup Preview"</span>
+            rake preview &amp;
+            sleep 2
+        <span style="color: #ffffff;">fi</span>
+        <span style="color: #b0c4de;">popd</span>
+    <span style="color: #ffffff;">fi</span>
+<span style="color: #ffffff;">fi</span>
+</pre>
+</div>
+
+<p>
+コンテンツをgithubへ自動同期化elispとshell script
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">org-octopress-deploy</span> ()
+  <span style="color: #bdb76b;">"deploy octopress content to github page service."</span>
+  (interactive)
+  (message <span style="color: #bdb76b;">"deploy octopress content ...."</span>)
+  (<span style="color: #ffffff;">lexical-let*</span> ((default-directory org-octopress-top))
+    (deferred:$
+      (deferred:process-shell <span style="color: #bdb76b;">"blog_deploy.sh"</span> org-octopress-top)
+      (deferred:nextc it
+        (<span style="color: #ffffff;">lambda</span> (x)
+          (message <span style="color: #bdb76b;">"*** deploy blog ***"</span>)
+          (message x))))))
+</pre>
+</div>
+
+<p>
+<code>blog_deploy.sh</code>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
+<span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/sh</span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Usage: blog_deploy.sh</span>
+<span style="color: #00cd66;">##</span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #00cd66;">##   </span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #00cd66;">##          </span><span style="color: #00cd66;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+<span style="color: #00cd66;">##################################################################### </span>
+
+<span style="color: #9acd32;">RUBY_VER</span>=<span style="color: #bdb76b;">"1.9.3-p0"</span>
+<span style="color: #9acd32;">OCTOPRESS_DIR</span>=$<span style="color: #9acd32;">1</span>
+
+which rbenv
+<span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">?</span> = 0 ]; <span style="color: #ffffff;">then</span>
+    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #9acd32;">RUBY_VER</span>
+    rbenv rehash
+    <span style="color: #9acd32;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">global_ver</span> = $<span style="color: #9acd32;">RUBY_VER</span> ]; <span style="color: #ffffff;">then</span>
+        <span style="color: #00cd66;"># </span><span style="color: #00cd66;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"run rake with `ruby --version`"</span>
+        <span style="color: #b0c4de;">pushd</span> $<span style="color: #9acd32;">OCTOPRESS_DIR</span>
+        rake generate
+        rake deploy
+        <span style="color: #b0c4de;">popd</span>
+    <span style="color: #ffffff;">fi</span>
+<span style="color: #ffffff;">fi</span>
+</pre>
+</div>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

@@ -235,14 +235,16 @@ permalink: /blog/:year-:month-:day-:title.html
 <p>
 <code>emacs設定</code>
 </p>
-<pre class="example">
-(require 'org-octopress)
-(setq org-octopress-directory-top       (concat user-emacs-directory "blogs/octopress/source"))
-(setq org-octopress-directory-posts     (concat user-emacs-directory "blogs/octopress/source/_posts"))
-(setq org-octopress-directory-org-top   (concat user-emacs-directory "blogs/octopress/source"))
-(setq org-octopress-directory-org-posts (concat user-emacs-directory "blogs/octopress/source/blog"))
-(setq org-octopress-setup-file          (concat user-emacs-directory "blogs/octopress/setupfile.org"))
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">org-octopress</span>)
+(setq org-octopress-directory-top       (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-posts     (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source/_posts"</span>))
+(setq org-octopress-directory-org-top   (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-org-posts (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source/blog"</span>))
+(setq org-octopress-setup-file          (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/setupfile.org"</span>))
 </pre>
+</div>
 
 <p>
 <code>blogs/octopress/setupfile.org</code>
@@ -270,114 +272,122 @@ permalink: /blog/:year-:month-:day-:title.html
 <p>
 コンテンツプレビュー自動化elispとshell script
 </p>
-<pre class="example">
-(defvar org-octopress-top
-  (concat user-emacs-directory "blogs/octopress/")
-  "octopressブログテンプレートディレクトリ")
+<div class="org-src-container">
 
-(defun org-octopress-preview ()
-  "preview octopress content by call external shell script."
+<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">defvar</span> <span style="color: #9acd32;">org-octopress-top</span>
+  (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/"</span>)
+  <span style="color: #bdb76b;">"octopress&#12502;&#12525;&#12464;&#12486;&#12531;&#12503;&#12524;&#12540;&#12488;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;"</span>)
+
+(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">org-octopress-preview</span> ()
+  <span style="color: #bdb76b;">"preview octopress content by call external shell script."</span>
   (interactive)
-  (message "preview octopress content ....")
-  (lexical-let* ((default-directory org-octopress-top)
-                 (preview-url "http://localhost:4000"))
+  (message <span style="color: #bdb76b;">"preview octopress content ...."</span>)
+  (<span style="color: #ffffff;">lexical-let*</span> ((default-directory org-octopress-top)
+                 (preview-url <span style="color: #bdb76b;">"http://localhost:4000"</span>))
     (deferred:$
-      (deferred:process-shell "blog_preview.sh" org-octopress-top)
+      (deferred:process-shell <span style="color: #bdb76b;">"blog_preview.sh"</span> org-octopress-top)
       (deferred:nextc it
-        (lambda (x)
-          (message "*** preview blog ***")
+        (<span style="color: #ffffff;">lambda</span> (x)
+          (message <span style="color: #bdb76b;">"*** preview blog ***"</span>)
           (message x)
-          (message "launch preview url %s" preview-url)
+          (message <span style="color: #bdb76b;">"launch preview url %s"</span> preview-url)
           (browse-url preview-url))))))
 </pre>
+</div>
 
 <p>
 <code>blog_preview.sh</code>
 </p>
-<pre class="example">
-#!/bin/sh
-## Usage: blog_preview.sh
-##
-## Options: $1 octopressディレクトリの位置
-##
-## Comment: octopress配下にblog静的
-##          コンテンツの生成とプレビュー
-##################################################################### 
+<div class="org-src-container">
 
-RUBY_VER="1.9.3-p0"
-OCTOPRESS_DIR=$1
+<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Usage: blog_preview.sh</span>
+<span style="color: #00cd66;">##</span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #00cd66;">##</span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #00cd66;">##          </span><span style="color: #00cd66;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12503;&#12524;&#12499;&#12517;&#12540;</span>
+<span style="color: #00cd66;">##################################################################### </span>
+
+<span style="color: #9acd32;">RUBY_VER</span>=<span style="color: #bdb76b;">"1.9.3-p0"</span>
+<span style="color: #9acd32;">OCTOPRESS_DIR</span>=$<span style="color: #9acd32;">1</span>
 
 which rbenv
-if [ $? = 0 ]; then
-    # ruby バージョン切り替え処理
-    rbenv global $RUBY_VER
+<span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">?</span> = 0 ]; <span style="color: #ffffff;">then</span>
+    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #9acd32;">RUBY_VER</span>
     rbenv rehash
-    global_ver=`rbenv global`
-    if [ $global_ver = $RUBY_VER ]; then
-        # blogコンテンツ生成とデプロイ
-        echo "run rake with `ruby --version`"
-        pushd $OCTOPRESS_DIR
+    <span style="color: #9acd32;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">global_ver</span> = $<span style="color: #9acd32;">RUBY_VER</span> ]; <span style="color: #ffffff;">then</span>
+        <span style="color: #00cd66;"># </span><span style="color: #00cd66;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"run rake with `ruby --version`"</span>
+        <span style="color: #b0c4de;">pushd</span> $<span style="color: #9acd32;">OCTOPRESS_DIR</span>
         rake generate
-        if [ -z "`netstat -nutl | grep 4000`" ] ; then
-            echo "&gt;&gt;&gt; Startup Preview"
+        <span style="color: #ffffff;">if</span> [ -z <span style="color: #bdb76b;">"`netstat -nutl | grep 4000`"</span> ] ; <span style="color: #ffffff;">then</span>
+            <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"&gt;&gt;&gt; Startup Preview"</span>
             rake preview &amp;
             sleep 2
-        fi
-        popd
-    fi
-fi
+        <span style="color: #ffffff;">fi</span>
+        <span style="color: #b0c4de;">popd</span>
+    <span style="color: #ffffff;">fi</span>
+<span style="color: #ffffff;">fi</span>
 </pre>
+</div>
 
 <p>
 コンテンツをgithubへ自動同期化elispとshell script
 </p>
-<pre class="example">
-(defun org-octopress-deploy ()
-  "deploy octopress content to github page service."
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">org-octopress-deploy</span> ()
+  <span style="color: #bdb76b;">"deploy octopress content to github page service."</span>
   (interactive)
-  (message "deploy octopress content ....")
-  (lexical-let* ((default-directory org-octopress-top))
+  (message <span style="color: #bdb76b;">"deploy octopress content ...."</span>)
+  (<span style="color: #ffffff;">lexical-let*</span> ((default-directory org-octopress-top))
     (deferred:$
-      (deferred:process-shell "blog_deploy.sh" org-octopress-top)
+      (deferred:process-shell <span style="color: #bdb76b;">"blog_deploy.sh"</span> org-octopress-top)
       (deferred:nextc it
-        (lambda (x)
-          (message "*** deploy blog ***")
+        (<span style="color: #ffffff;">lambda</span> (x)
+          (message <span style="color: #bdb76b;">"*** deploy blog ***"</span>)
           (message x))))))
 </pre>
+</div>
 
 <p>
 <code>blog_deploy.sh</code>
 </p>
-<pre class="example">
-#!/bin/sh
-#!/bin/sh
-## Usage: blog_deploy.sh
-##
-## Options: $1 octopressディレクトリの位置
-##   
-## Comment: octopress配下にblog静的
-##          コンテンツの生成とデプロイ
-##################################################################### 
+<div class="org-src-container">
 
-RUBY_VER="1.9.3-p0"
-OCTOPRESS_DIR=$1
+<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
+<span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/sh</span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Usage: blog_deploy.sh</span>
+<span style="color: #00cd66;">##</span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #00cd66;">##   </span>
+<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #00cd66;">##          </span><span style="color: #00cd66;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+<span style="color: #00cd66;">##################################################################### </span>
+
+<span style="color: #9acd32;">RUBY_VER</span>=<span style="color: #bdb76b;">"1.9.3-p0"</span>
+<span style="color: #9acd32;">OCTOPRESS_DIR</span>=$<span style="color: #9acd32;">1</span>
 
 which rbenv
-if [ $? = 0 ]; then
-    # ruby バージョン切り替え処理
-    rbenv global $RUBY_VER
+<span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">?</span> = 0 ]; <span style="color: #ffffff;">then</span>
+    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #9acd32;">RUBY_VER</span>
     rbenv rehash
-    global_ver=`rbenv global`
-    if [ $global_ver = $RUBY_VER ]; then
-        # blogコンテンツ生成とデプロイ
-        echo "run rake with `ruby --version`"
-        pushd $OCTOPRESS_DIR
+    <span style="color: #9acd32;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">global_ver</span> = $<span style="color: #9acd32;">RUBY_VER</span> ]; <span style="color: #ffffff;">then</span>
+        <span style="color: #00cd66;"># </span><span style="color: #00cd66;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"run rake with `ruby --version`"</span>
+        <span style="color: #b0c4de;">pushd</span> $<span style="color: #9acd32;">OCTOPRESS_DIR</span>
         rake generate
         rake deploy
-        popd
-    fi
-fi
+        <span style="color: #b0c4de;">popd</span>
+    <span style="color: #ffffff;">fi</span>
+<span style="color: #ffffff;">fi</span>
 </pre>
+</div>
 </div>
 </div>
 </div>
@@ -406,8 +416,19 @@ fi
       
 
 <span class="categories">
+  Posted in
   
     <a class='category' href='/blog/categories/emacs/'>emacs</a>
+  
+</span>
+
+
+      
+
+<span class="tags">
+  Tagged as
+  
+    <a class='tag' href='/blog/tags/otcopress/'>Otcopress</a>
   
 </span>
 
@@ -434,13 +455,41 @@ fi
   </footer>
 </article>
 
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
 </div>
 
 <aside class="sidebar">
   
     <section>
+  <!-- create at 2017/07/01 
+       Google Chart Tools: Infographics
+       https://developers.google.com/chart/infographics/docs/qr_codes?csw=1
+  -->
+
+  <div style="position: relative; text-align: center">
+
+    <!-- Google Chart API でQRコード取得 -->
+    <img src="http://chart.apis.google.com/chart?chs=180x180&amp;cht=qr&amp;choe=UTF-8&amp;chl=http://luozengbin.github.io/blog/2014-06-15-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E6%8A%95%E7%A8%BF%E8%87%AA%E5%8B%95%E5%8C%96.html" alt="post-qrcode" height="180" width="180" />
+
+    <!-- サイトのfaviconを重ねて表示する -->
+    <div style="position: absolute; top: 75px; width: 100%; margin: 0 auto; text-align: center">
+      <img style="border: 0.2em solid #FFF;" src="/favicon.png" alt="post-qrcode" height="30" width="30" />
+    </div>
+  </div>
+
+</section>
+<section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014-07-01-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%81%AB%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%99%E3%82%8B-%E3%81%9D%E3%81%AE%EF%BC%91.html">[メモ]Otcopressにプラグインを導入する-その１</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">[検証]SSHトンネル機能でVPN環境の構築</a>
@@ -462,7 +511,34 @@ fi
         <a href="/blog/2014-06-16-%5B%E6%A4%9C%E8%A8%BC%5Dfirewalld%E3%82%92%E9%81%8A%E3%82%93%E3%81%A7%E3%81%BF%E3%81%9F.html">[検証]firewalldを遊んでみた</a>
       </li>
     
+      <li class="post">
+        <a href="/blog/2014-06-15-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E6%8A%95%E7%A8%BF%E8%87%AA%E5%8B%95%E5%8C%96.html">[メモ]Otcopressコンテンツ投稿自動化</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">[検証]SMTPプロトコール監視してみた</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html">LPIC Lv2-201試験準備メモ１</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-12-java-mission-control%E3%83%A1%E3%83%A2.html">Java Mission Controlメモ</a>
+      </li>
+    
   </ul>
+</section>
+
+
+
+<section>
+  <h1>Categories</h1>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (2)</a></li><li><a href='/blog/categories/linux/'>linux (5)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
+</section>
+<section>
+  <h1>Tag Cloud</h1>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
 </section>
 
 <section>
@@ -495,9 +571,6 @@ fi
 </section>
 
 
-
-
-
   
 </aside>
 
@@ -516,7 +589,10 @@ fi
       var disqus_shortname = 'luozengbin';
       
         
-        var disqus_script = 'count.js';
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://luozengbin.github.io/blog/2014-06-15-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E6%8A%95%E7%A8%BF%E8%87%AA%E5%8B%95%E5%8C%96.html';
+        var disqus_url = 'http://luozengbin.github.io/blog/2014-06-15-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E6%8A%95%E7%A8%BF%E8%87%AA%E5%8B%95%E5%8C%96.html';
+        var disqus_script = 'embed.js';
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;

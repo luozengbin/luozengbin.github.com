@@ -3,6 +3,7 @@
 #+SETUPFILE: ~/.emacs.d/blogs/Octopress/setupfile.org
 #+JEKYLL_LAYOUT: post
 #+JEKYLL_CATEGORIES: emacs
+#+JEKYLL_TAGS: Otcopress
 #+JEKYLL_PUBLISHED: true
 #+OPTIONS: toc:nil
 
@@ -92,14 +93,14 @@ permalink: /blog/:year-:month-:day-:title.html
 #+end_example
 
 =emacs設定=
-#+begin_example
+#+begin_src emacs-lisp
 (require 'org-octopress)
 (setq org-octopress-directory-top       (concat user-emacs-directory "blogs/octopress/source"))
 (setq org-octopress-directory-posts     (concat user-emacs-directory "blogs/octopress/source/_posts"))
 (setq org-octopress-directory-org-top   (concat user-emacs-directory "blogs/octopress/source"))
 (setq org-octopress-directory-org-posts (concat user-emacs-directory "blogs/octopress/source/blog"))
 (setq org-octopress-setup-file          (concat user-emacs-directory "blogs/octopress/setupfile.org"))
-#+end_example
+#+end_src
 
 =blogs/octopress/setupfile.org=
 #+begin_example
@@ -119,7 +120,7 @@ permalink: /blog/:year-:month-:day-:title.html
 
 * 自動化スクリプト
 コンテンツプレビュー自動化elispとshell script
-#+begin_example
+#+begin_src emacs-lisp
 (defvar org-octopress-top
   (concat user-emacs-directory "blogs/octopress/")
   "octopressブログテンプレートディレクトリ")
@@ -138,10 +139,10 @@ permalink: /blog/:year-:month-:day-:title.html
           (message x)
           (message "launch preview url %s" preview-url)
           (browse-url preview-url))))))
-#+end_example
+#+end_src
 
 =blog_preview.sh=
-#+begin_example
+#+begin_src sh
 #!/bin/sh
 ## Usage: blog_preview.sh
 ##
@@ -173,10 +174,10 @@ if [ $? = 0 ]; then
         popd
     fi
 fi
-#+end_example
+#+end_src
 
 コンテンツをgithubへ自動同期化elispとshell script
-#+begin_example
+#+begin_src emacs-lisp
 (defun org-octopress-deploy ()
   "deploy octopress content to github page service."
   (interactive)
@@ -188,10 +189,10 @@ fi
         (lambda (x)
           (message "*** deploy blog ***")
           (message x))))))
-#+end_example
+#+end_src
 
 =blog_deploy.sh=
-#+begin_example
+#+begin_src sh
 #!/bin/sh
 #!/bin/sh
 ## Usage: blog_deploy.sh
@@ -220,5 +221,4 @@ if [ $? = 0 ]; then
         popd
     fi
 fi
-#+end_example
-
+#+end_src

@@ -236,16 +236,16 @@ $ cd ddskk-20140622
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp"><span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#36766;&#26360;&#12501;&#12449;&#12452;&#12523;&#12398;&#26684;&#32013;&#20808;</span>
-(setq SKK_DATADIR <span style="color: #ffa07a;">"~/.emacs.d/etc/skk"</span>)
+<pre class="src src-emacs-lisp"><span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#36766;&#26360;&#12501;&#12449;&#12452;&#12523;&#12398;&#26684;&#32013;&#20808;</span>
+(setq SKK_DATADIR <span style="color: #bdb76b;">"~/.emacs.d/etc/skk"</span>)
 
-<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#12489;&#12461;&#12517;&#12513;&#12531;&#12488;</span>
-(setq SKK_INFODIR <span style="color: #ffa07a;">"~/.emacs.d/share/info-ja/skk"</span>)
+<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#12489;&#12461;&#12517;&#12513;&#12531;&#12488;</span>
+(setq SKK_INFODIR <span style="color: #bdb76b;">"~/.emacs.d/share/info-ja/skk"</span>)
 
-<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">skk lisp&#26412;&#20307;</span>
-(setq SKK_LISPDIR <span style="color: #ffa07a;">"~/.emacs.d/lisp/skk"</span>)
+<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">skk lisp&#26412;&#20307;</span>
+(setq SKK_LISPDIR <span style="color: #bdb76b;">"~/.emacs.d/lisp/skk"</span>)
 
-<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">skk-large-jisyo &#12398;&#20516;&#12434;&#33258;&#21205;&#35373;&#23450;&#12377;&#12427;</span>
+<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">skk-large-jisyo &#12398;&#20516;&#12434;&#33258;&#21205;&#35373;&#23450;&#12377;&#12427;</span>
 (setq SKK_SET_JISYO t)
 </pre>
 </div>
@@ -288,18 +288,18 @@ $ make install
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">skk-autoloads</span>)
-(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">skk-kakasi</span>)
-(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">pos-tip</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-autoloads</span>)
+(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-kakasi</span>)
+(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">pos-tip</span>)
 
-<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12434;pos-tip&#12391;&#34920;&#31034;&#12377;&#12427;</span>
-(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">skk-hurigana-tip</span> (start end <span style="color: #98fb98;">&amp;optional</span> all)
-  <span style="color: #ffa07a;">"&#38936;&#22495;&#12398;&#28450;&#23383;&#12395;&#20840;&#12390;&#12405;&#12426;&#12364;&#12394;&#12434;&#20184;&#12369;&#12289;&#12509;&#12483;&#12503;&#12450;&#12483;&#12503;&#12377;&#12427;&#12290;"</span>
-  (interactive <span style="color: #ffa07a;">"r\nP"</span>)
+<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12434;pos-tip&#12391;&#34920;&#31034;&#12377;&#12427;</span>
+(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">skk-hurigana-tip</span> (start end <span style="color: #7fffd4;">&amp;optional</span> all)
+  <span style="color: #bdb76b;">"&#38936;&#22495;&#12398;&#28450;&#23383;&#12395;&#20840;&#12390;&#12405;&#12426;&#12364;&#12394;&#12434;&#20184;&#12369;&#12289;&#12509;&#12483;&#12503;&#12450;&#12483;&#12503;&#12377;&#12427;&#12290;"</span>
+  (interactive <span style="color: #bdb76b;">"r\nP"</span>)
   (pos-tip-show (skk-hurigana-1 start end all)))
 
-<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
-(global-set-key (kbd <span style="color: #ffa07a;">"C-x x"</span>) 'skk-hurigana-tip)
+<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
+(global-set-key (kbd <span style="color: #bdb76b;">"C-x x"</span>) 'skk-hurigana-tip)
 </pre>
 </div>
 
@@ -310,31 +310,31 @@ $ make install
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">skk-autoloads</span>)
-(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">skk-kakasi</span>)
-(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">popwin</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-autoloads</span>)
+(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-kakasi</span>)
+(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">popwin</span>)
 
-<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;</span>
-(<span style="color: #00ffff;">defvar</span> <span style="color: #eedd82;">skk-kakasi-popbuf-name</span> <span style="color: #ffa07a;">" *skk-kakasi*"</span> <span style="color: #ffa07a;">"&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;"</span>)
+<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;</span>
+(<span style="color: #ffffff;">defvar</span> <span style="color: #9acd32;">skk-kakasi-popbuf-name</span> <span style="color: #bdb76b;">" *skk-kakasi*"</span> <span style="color: #bdb76b;">"&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;"</span>)
 
-(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">skk-hurigana-popup</span> (start end <span style="color: #98fb98;">&amp;optional</span> all)
-  (interactive <span style="color: #ffa07a;">"r\nP"</span>)
-  (<span style="color: #00ffff;">let</span> ((str0 (buffer-substring-no-properties start end))
+(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">skk-hurigana-popup</span> (start end <span style="color: #7fffd4;">&amp;optional</span> all)
+  (interactive <span style="color: #bdb76b;">"r\nP"</span>)
+  (<span style="color: #ffffff;">let</span> ((str0 (buffer-substring-no-properties start end))
         (str1 (skk-hurigana-1 start end all))
         (str2 (skk-gyakubiki-1 start end all)))
-    (<span style="color: #00ffff;">with-current-buffer</span> (get-buffer-create skk-kakasi-popbuf-name)
+    (<span style="color: #ffffff;">with-current-buffer</span> (get-buffer-create skk-kakasi-popbuf-name)
       (setq buffer-read-only nil)
       (erase-buffer)
-      (insert <span style="color: #ffa07a;">"KAKASI - &#28450;&#23383;&#8594;&#12363;&#12394;(&#12525;&#12540;&#12510;&#23383;)&#22793;&#25563;&#32080;&#26524;:\n"</span>)
-      (insert <span style="color: #ffa07a;">"-------------------------------------\n\n"</span>)
-      (insert str0 <span style="color: #ffa07a;">"\n\n"</span>)
-      (insert str1 <span style="color: #ffa07a;">"\n\n"</span>)
-      (insert str2 <span style="color: #ffa07a;">"\n\n"</span>)
+      (insert <span style="color: #bdb76b;">"KAKASI - &#28450;&#23383;&#8594;&#12363;&#12394;(&#12525;&#12540;&#12510;&#23383;)&#22793;&#25563;&#32080;&#26524;:\n"</span>)
+      (insert <span style="color: #bdb76b;">"-------------------------------------\n\n"</span>)
+      (insert str0 <span style="color: #bdb76b;">"\n\n"</span>)
+      (insert str1 <span style="color: #bdb76b;">"\n\n"</span>)
+      (insert str2 <span style="color: #bdb76b;">"\n\n"</span>)
       (setq buffer-read-only t))
     (display-buffer (get-buffer skk-kakasi-popbuf-name))))
 
-<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
-(global-set-key (kbd <span style="color: #ffa07a;">"C-x X"</span>) 'skk-hurigana-popup)
+<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
+(global-set-key (kbd <span style="color: #bdb76b;">"C-x X"</span>) 'skk-hurigana-popup)
 </pre>
 </div>
 
@@ -382,8 +382,19 @@ $ make install
       
 
 <span class="categories">
+  Posted in
   
     <a class='category' href='/blog/categories/emacs/'>emacs</a>
+  
+</span>
+
+
+      
+
+<span class="tags">
+  Tagged as
+  
+    <a class='tag' href='/blog/tags/ddskk/'>ddskk</a>
   
 </span>
 
@@ -410,13 +421,41 @@ $ make install
   </footer>
 </article>
 
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
 </div>
 
 <aside class="sidebar">
   
     <section>
+  <!-- create at 2017/07/01 
+       Google Chart Tools: Infographics
+       https://developers.google.com/chart/infographics/docs/qr_codes?csw=1
+  -->
+
+  <div style="position: relative; text-align: center">
+
+    <!-- Google Chart API でQRコード取得 -->
+    <img src="http://chart.apis.google.com/chart?chs=180x180&amp;cht=qr&amp;choe=UTF-8&amp;chl=http://luozengbin.github.io/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html" alt="post-qrcode" height="180" width="180" />
+
+    <!-- サイトのfaviconを重ねて表示する -->
+    <div style="position: absolute; top: 75px; width: 100%; margin: 0 auto; text-align: center">
+      <img style="border: 0.2em solid #FFF;" src="/favicon.png" alt="post-qrcode" height="30" width="30" />
+    </div>
+  </div>
+
+</section>
+<section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014-07-01-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%81%AB%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%99%E3%82%8B-%E3%81%9D%E3%81%AE%EF%BC%91.html">[メモ]Otcopressにプラグインを導入する-その１</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">[検証]SSHトンネル機能でVPN環境の構築</a>
@@ -438,7 +477,34 @@ $ make install
         <a href="/blog/2014-06-16-%5B%E6%A4%9C%E8%A8%BC%5Dfirewalld%E3%82%92%E9%81%8A%E3%82%93%E3%81%A7%E3%81%BF%E3%81%9F.html">[検証]firewalldを遊んでみた</a>
       </li>
     
+      <li class="post">
+        <a href="/blog/2014-06-15-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E6%8A%95%E7%A8%BF%E8%87%AA%E5%8B%95%E5%8C%96.html">[メモ]Otcopressコンテンツ投稿自動化</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">[検証]SMTPプロトコール監視してみた</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html">LPIC Lv2-201試験準備メモ１</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-12-java-mission-control%E3%83%A1%E3%83%A2.html">Java Mission Controlメモ</a>
+      </li>
+    
   </ul>
+</section>
+
+
+
+<section>
+  <h1>Categories</h1>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (2)</a></li><li><a href='/blog/categories/linux/'>linux (5)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
+</section>
+<section>
+  <h1>Tag Cloud</h1>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
 </section>
 
 <section>
@@ -471,9 +537,6 @@ $ make install
 </section>
 
 
-
-
-
   
 </aside>
 
@@ -492,7 +555,10 @@ $ make install
       var disqus_shortname = 'luozengbin';
       
         
-        var disqus_script = 'count.js';
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://luozengbin.github.io/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html';
+        var disqus_url = 'http://luozengbin.github.io/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html';
+        var disqus_script = 'embed.js';
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;

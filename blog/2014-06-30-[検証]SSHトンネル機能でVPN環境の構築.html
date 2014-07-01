@@ -228,37 +228,37 @@ vermagic:       3.15.2-1-ARCH SMP preempt mod_unload modversions
 
 <div class="org-src-container">
 
-<pre class="src src-c"><span style="color: #888a85;">/* </span><span style="color: #888a85;">Initialize net device. </span><span style="color: #888a85;">*/</span>
-<span style="color: #00bfff; font-weight: bold;">static</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">tun_net_init</span>(<span style="color: #00bfff; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">net_device</span> *<span style="color: #ff6347;">dev</span>)
+<pre class="src src-c"><span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Initialize net device. </span><span style="color: #00cd66;">*/</span>
+<span style="color: #ffffff;">static</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">tun_net_init</span>(<span style="color: #ffffff;">struct</span> <span style="color: #7fffd4;">net_device</span> *<span style="color: #9acd32;">dev</span>)
 {
-    <span style="color: #00bfff; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">tun_struct</span> *<span style="color: #ff6347;">tun</span> = netdev_priv(dev);
+    <span style="color: #ffffff;">struct</span> <span style="color: #7fffd4;">tun_struct</span> *<span style="color: #9acd32;">tun</span> = netdev_priv(dev);
 
-    <span style="color: #00bfff; font-weight: bold;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
-    <span style="color: #00bfff; font-weight: bold;">case</span> TUN_TUN_DEV:
+    <span style="color: #ffffff;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
+    <span style="color: #ffffff;">case</span> TUN_TUN_DEV:
         dev-&gt;netdev_ops = &amp;tun_netdev_ops;
 
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Point-to-Point TUN Device </span><span style="color: #888a85;">*/</span>
+        <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Point-to-Point TUN Device </span><span style="color: #00cd66;">*/</span>
         dev-&gt;hard_header_len = 0;
         dev-&gt;addr_len = 0;
         dev-&gt;mtu = 1500;
 
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Zero header length </span><span style="color: #888a85;">*/</span>
+        <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Zero header length </span><span style="color: #00cd66;">*/</span>
         dev-&gt;type = ARPHRD_NONE;
         dev-&gt;flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
-        <span style="color: #00bfff; font-weight: bold;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">We prefer our own queue length </span><span style="color: #00cd66;">*/</span>
+        <span style="color: #ffffff;">break</span>;
 
-    <span style="color: #00bfff; font-weight: bold;">case</span> TUN_TAP_DEV:
+    <span style="color: #ffffff;">case</span> TUN_TAP_DEV:
         dev-&gt;netdev_ops = &amp;tap_netdev_ops;
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Ethernet TAP Device </span><span style="color: #888a85;">*/</span>
+        <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Ethernet TAP Device </span><span style="color: #00cd66;">*/</span>
         ether_setup(dev);
         dev-&gt;priv_flags &amp;= ~IFF_TX_SKB_SHARING;
         dev-&gt;priv_flags |= IFF_LIVE_ADDR_CHANGE;
 
         eth_hw_addr_random(dev);
 
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
-        <span style="color: #00bfff; font-weight: bold;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">We prefer our own queue length </span><span style="color: #00cd66;">*/</span>
+        <span style="color: #ffffff;">break</span>;
     }
 }
 </pre>
@@ -857,6 +857,10 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
 </li>
 <li><a href="https://access.redhat.com/site/documentation/ja-JP/Red_Hat_Enterprise_Linux/6/html/Security_Guide/sect-Security_Guide-Firewalls-FORWARD_and_NAT_Rules.html">FORWARD および NAT ルール</a>
 </li>
+<li><a href="http://sgros.blogspot.jp/2011/11/tunneling-everything-with-ssh-or-how-to.html">Tunneling everything with SSH&#x2026; or how to make VPNs&#x2026;</a>
+</li>
+<li><a href="http://sgros.blogspot.jp/2011/11/ssh-vpns-bridged-connection-to-lan.html">SSH VPNs: Bridged connection to LAN using tap</a>
+</li>
 </ul>
 </div>
 </div>
@@ -886,8 +890,19 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
       
 
 <span class="categories">
+  Posted in
   
     <a class='category' href='/blog/categories/linux/'>linux</a>
+  
+</span>
+
+
+      
+
+<span class="tags">
+  Tagged as
+  
+    <a class='tag' href='/blog/tags/ssh/'>ssh</a>, <a class='tag' href='/blog/tags/vpn/'>vpn</a>
   
 </span>
 
@@ -908,17 +923,47 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
         <a class="basic-alignment left" href="/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html" title="Previous Post: [メモ]Emacsで漢字→かな変換">&laquo; [メモ]Emacsで漢字→かな変換</a>
       
       
+        <a class="basic-alignment right" href="/blog/2014-07-01-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%81%AB%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%99%E3%82%8B-%E3%81%9D%E3%81%AE%EF%BC%91.html" title="Next Post: [メモ]Otcopressにプラグインを導入する-その１">[メモ]Otcopressにプラグインを導入する-その１ &raquo;</a>
+      
     </p>
   </footer>
 </article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
 
 </div>
 
 <aside class="sidebar">
   
     <section>
+  <!-- create at 2017/07/01 
+       Google Chart Tools: Infographics
+       https://developers.google.com/chart/infographics/docs/qr_codes?csw=1
+  -->
+
+  <div style="position: relative; text-align: center">
+
+    <!-- Google Chart API でQRコード取得 -->
+    <img src="http://chart.apis.google.com/chart?chs=180x180&amp;cht=qr&amp;choe=UTF-8&amp;chl=http://luozengbin.github.io/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html" alt="post-qrcode" height="180" width="180" />
+
+    <!-- サイトのfaviconを重ねて表示する -->
+    <div style="position: absolute; top: 75px; width: 100%; margin: 0 auto; text-align: center">
+      <img style="border: 0.2em solid #FFF;" src="/favicon.png" alt="post-qrcode" height="30" width="30" />
+    </div>
+  </div>
+
+</section>
+<section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014-07-01-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%81%AB%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%99%E3%82%8B-%E3%81%9D%E3%81%AE%EF%BC%91.html">[メモ]Otcopressにプラグインを導入する-その１</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">[検証]SSHトンネル機能でVPN環境の構築</a>
@@ -940,7 +985,34 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
         <a href="/blog/2014-06-16-%5B%E6%A4%9C%E8%A8%BC%5Dfirewalld%E3%82%92%E9%81%8A%E3%82%93%E3%81%A7%E3%81%BF%E3%81%9F.html">[検証]firewalldを遊んでみた</a>
       </li>
     
+      <li class="post">
+        <a href="/blog/2014-06-15-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E6%8A%95%E7%A8%BF%E8%87%AA%E5%8B%95%E5%8C%96.html">[メモ]Otcopressコンテンツ投稿自動化</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">[検証]SMTPプロトコール監視してみた</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html">LPIC Lv2-201試験準備メモ１</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-12-java-mission-control%E3%83%A1%E3%83%A2.html">Java Mission Controlメモ</a>
+      </li>
+    
   </ul>
+</section>
+
+
+
+<section>
+  <h1>Categories</h1>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (2)</a></li><li><a href='/blog/categories/linux/'>linux (5)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
+</section>
+<section>
+  <h1>Tag Cloud</h1>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
 </section>
 
 <section>
@@ -973,9 +1045,6 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
 </section>
 
 
-
-
-
   
 </aside>
 
@@ -994,7 +1063,10 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
       var disqus_shortname = 'luozengbin';
       
         
-        var disqus_script = 'count.js';
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://luozengbin.github.io/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html';
+        var disqus_url = 'http://luozengbin.github.io/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html';
+        var disqus_script = 'embed.js';
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
