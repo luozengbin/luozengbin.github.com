@@ -228,37 +228,37 @@ vermagic:       3.15.2-1-ARCH SMP preempt mod_unload modversions
 
 <div class="org-src-container">
 
-<pre class="src src-c"><span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Initialize net device. </span><span style="color: #00cd66;">*/</span>
-<span style="color: #ffffff;">static</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">tun_net_init</span>(<span style="color: #ffffff;">struct</span> <span style="color: #7fffd4;">net_device</span> *<span style="color: #9acd32;">dev</span>)
+<pre class="src src-c"><span style="color: #888a85;">/* </span><span style="color: #888a85;">Initialize net device. </span><span style="color: #888a85;">*/</span>
+<span style="color: #729fcf; font-weight: bold;">static</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">tun_net_init</span>(<span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">net_device</span> *<span style="color: #ff6347;">dev</span>)
 {
-    <span style="color: #ffffff;">struct</span> <span style="color: #7fffd4;">tun_struct</span> *<span style="color: #9acd32;">tun</span> = netdev_priv(dev);
+    <span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">tun_struct</span> *<span style="color: #ff6347;">tun</span> = netdev_priv(dev);
 
-    <span style="color: #ffffff;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
-    <span style="color: #ffffff;">case</span> TUN_TUN_DEV:
+    <span style="color: #729fcf; font-weight: bold;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
+    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TUN_DEV:
         dev-&gt;netdev_ops = &amp;tun_netdev_ops;
 
-        <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Point-to-Point TUN Device </span><span style="color: #00cd66;">*/</span>
+        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Point-to-Point TUN Device </span><span style="color: #888a85;">*/</span>
         dev-&gt;hard_header_len = 0;
         dev-&gt;addr_len = 0;
         dev-&gt;mtu = 1500;
 
-        <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Zero header length </span><span style="color: #00cd66;">*/</span>
+        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Zero header length </span><span style="color: #888a85;">*/</span>
         dev-&gt;type = ARPHRD_NONE;
         dev-&gt;flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">We prefer our own queue length </span><span style="color: #00cd66;">*/</span>
-        <span style="color: #ffffff;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
+        <span style="color: #729fcf; font-weight: bold;">break</span>;
 
-    <span style="color: #ffffff;">case</span> TUN_TAP_DEV:
+    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TAP_DEV:
         dev-&gt;netdev_ops = &amp;tap_netdev_ops;
-        <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Ethernet TAP Device </span><span style="color: #00cd66;">*/</span>
+        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Ethernet TAP Device </span><span style="color: #888a85;">*/</span>
         ether_setup(dev);
         dev-&gt;priv_flags &amp;= ~IFF_TX_SKB_SHARING;
         dev-&gt;priv_flags |= IFF_LIVE_ADDR_CHANGE;
 
         eth_hw_addr_random(dev);
 
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">We prefer our own queue length </span><span style="color: #00cd66;">*/</span>
-        <span style="color: #ffffff;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
+        <span style="color: #729fcf; font-weight: bold;">break</span>;
     }
 }
 </pre>
@@ -1012,7 +1012,7 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/categories/emacs' style='font-size: 124.0%'>emacs(2)</a> <a href='/blog/categories/java' style='font-size: 124.0%'>java(2)</a> <a href='/blog/categories/linux' style='font-size: 160.0%'>linux(5)</a> <a href='/blog/categories/misc' style='font-size: 112.0%'>misc(1)</a> </span>
 </section>
 
 <section>

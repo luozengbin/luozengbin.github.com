@@ -237,12 +237,12 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">org-octopress</span>)
-(setq org-octopress-directory-top       (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source"</span>))
-(setq org-octopress-directory-posts     (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source/_posts"</span>))
-(setq org-octopress-directory-org-top   (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source"</span>))
-(setq org-octopress-directory-org-posts (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source/blog"</span>))
-(setq org-octopress-setup-file          (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/setupfile.org"</span>))
+<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">org-octopress</span>)
+(setq org-octopress-directory-top       (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-posts     (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source/_posts"</span>))
+(setq org-octopress-directory-org-top   (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-org-posts (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source/blog"</span>))
+(setq org-octopress-setup-file          (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/setupfile.org"</span>))
 </pre>
 </div>
 
@@ -274,23 +274,23 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">defvar</span> <span style="color: #9acd32;">org-octopress-top</span>
-  (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/"</span>)
-  <span style="color: #bdb76b;">"octopress&#12502;&#12525;&#12464;&#12486;&#12531;&#12503;&#12524;&#12540;&#12488;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;"</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">defvar</span> <span style="color: #ff6347;">org-octopress-top</span>
+  (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/"</span>)
+  <span style="color: #888a85;">"octopress&#12502;&#12525;&#12464;&#12486;&#12531;&#12503;&#12524;&#12540;&#12488;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;"</span>)
 
-(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">org-octopress-preview</span> ()
-  <span style="color: #bdb76b;">"preview octopress content by call external shell script."</span>
+(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">org-octopress-preview</span> ()
+  <span style="color: #888a85;">"preview octopress content by call external shell script."</span>
   (interactive)
-  (message <span style="color: #bdb76b;">"preview octopress content ...."</span>)
-  (<span style="color: #ffffff;">lexical-let*</span> ((default-directory org-octopress-top)
-                 (preview-url <span style="color: #bdb76b;">"http://localhost:4000"</span>))
+  (message <span style="color: #ad7fa8; font-style: italic;">"preview octopress content ...."</span>)
+  (<span style="color: #729fcf; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top)
+                 (preview-url <span style="color: #ad7fa8; font-style: italic;">"http://localhost:4000"</span>))
     (deferred:$
-      (deferred:process-shell <span style="color: #bdb76b;">"blog_preview.sh"</span> org-octopress-top)
+      (deferred:process-shell <span style="color: #ad7fa8; font-style: italic;">"blog_preview.sh"</span> org-octopress-top)
       (deferred:nextc it
-        (<span style="color: #ffffff;">lambda</span> (x)
-          (message <span style="color: #bdb76b;">"*** preview blog ***"</span>)
+        (<span style="color: #729fcf; font-weight: bold;">lambda</span> (x)
+          (message <span style="color: #ad7fa8; font-style: italic;">"*** preview blog ***"</span>)
           (message x)
-          (message <span style="color: #bdb76b;">"launch preview url %s"</span> preview-url)
+          (message <span style="color: #ad7fa8; font-style: italic;">"launch preview url %s"</span> preview-url)
           (browse-url preview-url))))))
 </pre>
 </div>
@@ -300,37 +300,37 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Usage: blog_preview.sh</span>
-<span style="color: #00cd66;">##</span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
-<span style="color: #00cd66;">##</span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
-<span style="color: #00cd66;">##          </span><span style="color: #00cd66;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12503;&#12524;&#12499;&#12517;&#12540;</span>
-<span style="color: #00cd66;">##################################################################### </span>
+<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Usage: blog_preview.sh</span>
+<span style="color: #888a85;">##</span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #888a85;">##</span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #888a85;">##          </span><span style="color: #888a85;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12503;&#12524;&#12499;&#12517;&#12540;</span>
+<span style="color: #888a85;">##################################################################### </span>
 
-<span style="color: #9acd32;">RUBY_VER</span>=<span style="color: #bdb76b;">"1.9.3-p0"</span>
-<span style="color: #9acd32;">OCTOPRESS_DIR</span>=$<span style="color: #9acd32;">1</span>
+<span style="color: #ff6347;">RUBY_VER</span>=<span style="color: #ad7fa8; font-style: italic;">"1.9.3-p0"</span>
+<span style="color: #ff6347;">OCTOPRESS_DIR</span>=$<span style="color: #ff6347;">1</span>
 
 which rbenv
-<span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">?</span> = 0 ]; <span style="color: #ffffff;">then</span>
-    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
-    rbenv global $<span style="color: #9acd32;">RUBY_VER</span>
+<span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">?</span> = 0 ]; <span style="color: #729fcf; font-weight: bold;">then</span>
+    <span style="color: #888a85;"># </span><span style="color: #888a85;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #ff6347;">RUBY_VER</span>
     rbenv rehash
-    <span style="color: #9acd32;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
-    <span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">global_ver</span> = $<span style="color: #9acd32;">RUBY_VER</span> ]; <span style="color: #ffffff;">then</span>
-        <span style="color: #00cd66;"># </span><span style="color: #00cd66;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-        <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"run rake with `ruby --version`"</span>
-        <span style="color: #b0c4de;">pushd</span> $<span style="color: #9acd32;">OCTOPRESS_DIR</span>
+    <span style="color: #ff6347;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">global_ver</span> = $<span style="color: #ff6347;">RUBY_VER</span> ]; <span style="color: #729fcf; font-weight: bold;">then</span>
+        <span style="color: #888a85;"># </span><span style="color: #888a85;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"run rake with `ruby --version`"</span>
+        <span style="color: #729fcf;">pushd</span> $<span style="color: #ff6347;">OCTOPRESS_DIR</span>
         rake generate
-        <span style="color: #ffffff;">if</span> [ -z <span style="color: #bdb76b;">"`netstat -nutl | grep 4000`"</span> ] ; <span style="color: #ffffff;">then</span>
-            <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"&gt;&gt;&gt; Startup Preview"</span>
+        <span style="color: #729fcf; font-weight: bold;">if</span> [ -z <span style="color: #ad7fa8; font-style: italic;">"`netstat -nutl | grep 4000`"</span> ] ; <span style="color: #729fcf; font-weight: bold;">then</span>
+            <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"&gt;&gt;&gt; Startup Preview"</span>
             rake preview &amp;
             sleep 2
-        <span style="color: #ffffff;">fi</span>
-        <span style="color: #b0c4de;">popd</span>
-    <span style="color: #ffffff;">fi</span>
-<span style="color: #ffffff;">fi</span>
+        <span style="color: #729fcf; font-weight: bold;">fi</span>
+        <span style="color: #729fcf;">popd</span>
+    <span style="color: #729fcf; font-weight: bold;">fi</span>
+<span style="color: #729fcf; font-weight: bold;">fi</span>
 </pre>
 </div>
 
@@ -339,16 +339,16 @@ which rbenv
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">org-octopress-deploy</span> ()
-  <span style="color: #bdb76b;">"deploy octopress content to github page service."</span>
+<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">org-octopress-deploy</span> ()
+  <span style="color: #888a85;">"deploy octopress content to github page service."</span>
   (interactive)
-  (message <span style="color: #bdb76b;">"deploy octopress content ...."</span>)
-  (<span style="color: #ffffff;">lexical-let*</span> ((default-directory org-octopress-top))
+  (message <span style="color: #ad7fa8; font-style: italic;">"deploy octopress content ...."</span>)
+  (<span style="color: #729fcf; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top))
     (deferred:$
-      (deferred:process-shell <span style="color: #bdb76b;">"blog_deploy.sh"</span> org-octopress-top)
+      (deferred:process-shell <span style="color: #ad7fa8; font-style: italic;">"blog_deploy.sh"</span> org-octopress-top)
       (deferred:nextc it
-        (<span style="color: #ffffff;">lambda</span> (x)
-          (message <span style="color: #bdb76b;">"*** deploy blog ***"</span>)
+        (<span style="color: #729fcf; font-weight: bold;">lambda</span> (x)
+          (message <span style="color: #ad7fa8; font-style: italic;">"*** deploy blog ***"</span>)
           (message x))))))
 </pre>
 </div>
@@ -358,34 +358,34 @@ which rbenv
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
-<span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/sh</span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Usage: blog_deploy.sh</span>
-<span style="color: #00cd66;">##</span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
-<span style="color: #00cd66;">##   </span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
-<span style="color: #00cd66;">##          </span><span style="color: #00cd66;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-<span style="color: #00cd66;">##################################################################### </span>
+<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
+<span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/sh</span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Usage: blog_deploy.sh</span>
+<span style="color: #888a85;">##</span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #888a85;">##   </span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #888a85;">##          </span><span style="color: #888a85;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+<span style="color: #888a85;">##################################################################### </span>
 
-<span style="color: #9acd32;">RUBY_VER</span>=<span style="color: #bdb76b;">"1.9.3-p0"</span>
-<span style="color: #9acd32;">OCTOPRESS_DIR</span>=$<span style="color: #9acd32;">1</span>
+<span style="color: #ff6347;">RUBY_VER</span>=<span style="color: #ad7fa8; font-style: italic;">"1.9.3-p0"</span>
+<span style="color: #ff6347;">OCTOPRESS_DIR</span>=$<span style="color: #ff6347;">1</span>
 
 which rbenv
-<span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">?</span> = 0 ]; <span style="color: #ffffff;">then</span>
-    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
-    rbenv global $<span style="color: #9acd32;">RUBY_VER</span>
+<span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">?</span> = 0 ]; <span style="color: #729fcf; font-weight: bold;">then</span>
+    <span style="color: #888a85;"># </span><span style="color: #888a85;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #ff6347;">RUBY_VER</span>
     rbenv rehash
-    <span style="color: #9acd32;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
-    <span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">global_ver</span> = $<span style="color: #9acd32;">RUBY_VER</span> ]; <span style="color: #ffffff;">then</span>
-        <span style="color: #00cd66;"># </span><span style="color: #00cd66;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-        <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"run rake with `ruby --version`"</span>
-        <span style="color: #b0c4de;">pushd</span> $<span style="color: #9acd32;">OCTOPRESS_DIR</span>
+    <span style="color: #ff6347;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">global_ver</span> = $<span style="color: #ff6347;">RUBY_VER</span> ]; <span style="color: #729fcf; font-weight: bold;">then</span>
+        <span style="color: #888a85;"># </span><span style="color: #888a85;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"run rake with `ruby --version`"</span>
+        <span style="color: #729fcf;">pushd</span> $<span style="color: #ff6347;">OCTOPRESS_DIR</span>
         rake generate
         rake deploy
-        <span style="color: #b0c4de;">popd</span>
-    <span style="color: #ffffff;">fi</span>
-<span style="color: #ffffff;">fi</span>
+        <span style="color: #729fcf;">popd</span>
+    <span style="color: #729fcf; font-weight: bold;">fi</span>
+<span style="color: #729fcf; font-weight: bold;">fi</span>
 </pre>
 </div>
 </div>
@@ -538,7 +538,7 @@ which rbenv
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/categories/emacs' style='font-size: 124.0%'>emacs(2)</a> <a href='/blog/categories/java' style='font-size: 124.0%'>java(2)</a> <a href='/blog/categories/linux' style='font-size: 160.0%'>linux(5)</a> <a href='/blog/categories/misc' style='font-size: 112.0%'>misc(1)</a> </span>
 </section>
 
 <section>

@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-01T19:29:34+09:00</updated>
+  <updated>2014-07-06T14:58:38+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -318,37 +318,37 @@ vermagic:       3.15.2-1-ARCH SMP preempt mod_unload modversions
 
 <div class="org-src-container">
 
-<pre class="src src-c"><span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Initialize net device. </span><span style="color: #00cd66;">*/</span>
-<span style="color: #ffffff;">static</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">tun_net_init</span>(<span style="color: #ffffff;">struct</span> <span style="color: #7fffd4;">net_device</span> *<span style="color: #9acd32;">dev</span>)
+<pre class="src src-c"><span style="color: #888a85;">/* </span><span style="color: #888a85;">Initialize net device. </span><span style="color: #888a85;">*/</span>
+<span style="color: #729fcf; font-weight: bold;">static</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">tun_net_init</span>(<span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">net_device</span> *<span style="color: #ff6347;">dev</span>)
 {
-    <span style="color: #ffffff;">struct</span> <span style="color: #7fffd4;">tun_struct</span> *<span style="color: #9acd32;">tun</span> = netdev_priv(dev);
+    <span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">tun_struct</span> *<span style="color: #ff6347;">tun</span> = netdev_priv(dev);
 
-    <span style="color: #ffffff;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
-    <span style="color: #ffffff;">case</span> TUN_TUN_DEV:
+    <span style="color: #729fcf; font-weight: bold;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
+    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TUN_DEV:
         dev-&gt;netdev_ops = &amp;tun_netdev_ops;
 
-        <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Point-to-Point TUN Device </span><span style="color: #00cd66;">*/</span>
+        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Point-to-Point TUN Device </span><span style="color: #888a85;">*/</span>
         dev-&gt;hard_header_len = 0;
         dev-&gt;addr_len = 0;
         dev-&gt;mtu = 1500;
 
-        <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Zero header length </span><span style="color: #00cd66;">*/</span>
+        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Zero header length </span><span style="color: #888a85;">*/</span>
         dev-&gt;type = ARPHRD_NONE;
         dev-&gt;flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">We prefer our own queue length </span><span style="color: #00cd66;">*/</span>
-        <span style="color: #ffffff;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
+        <span style="color: #729fcf; font-weight: bold;">break</span>;
 
-    <span style="color: #ffffff;">case</span> TUN_TAP_DEV:
+    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TAP_DEV:
         dev-&gt;netdev_ops = &amp;tap_netdev_ops;
-        <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">Ethernet TAP Device </span><span style="color: #00cd66;">*/</span>
+        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Ethernet TAP Device </span><span style="color: #888a85;">*/</span>
         ether_setup(dev);
         dev-&gt;priv_flags &amp;= ~IFF_TX_SKB_SHARING;
         dev-&gt;priv_flags |= IFF_LIVE_ADDR_CHANGE;
 
         eth_hw_addr_random(dev);
 
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #00cd66;">/* </span><span style="color: #00cd66;">We prefer our own queue length </span><span style="color: #00cd66;">*/</span>
-        <span style="color: #ffffff;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
+        <span style="color: #729fcf; font-weight: bold;">break</span>;
     }
 }
 </pre>
@@ -1105,16 +1105,16 @@ $ cd ddskk-20140622
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp"><span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#36766;&#26360;&#12501;&#12449;&#12452;&#12523;&#12398;&#26684;&#32013;&#20808;</span>
-(setq SKK_DATADIR <span style="color: #bdb76b;">"~/.emacs.d/etc/skk"</span>)
+<pre class="src src-emacs-lisp"><span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#36766;&#26360;&#12501;&#12449;&#12452;&#12523;&#12398;&#26684;&#32013;&#20808;</span>
+(setq SKK_DATADIR <span style="color: #ad7fa8; font-style: italic;">"~/.emacs.d/etc/skk"</span>)
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#12489;&#12461;&#12517;&#12513;&#12531;&#12488;</span>
-(setq SKK_INFODIR <span style="color: #bdb76b;">"~/.emacs.d/share/info-ja/skk"</span>)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#12489;&#12461;&#12517;&#12513;&#12531;&#12488;</span>
+(setq SKK_INFODIR <span style="color: #ad7fa8; font-style: italic;">"~/.emacs.d/share/info-ja/skk"</span>)
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">skk lisp&#26412;&#20307;</span>
-(setq SKK_LISPDIR <span style="color: #bdb76b;">"~/.emacs.d/lisp/skk"</span>)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">skk lisp&#26412;&#20307;</span>
+(setq SKK_LISPDIR <span style="color: #ad7fa8; font-style: italic;">"~/.emacs.d/lisp/skk"</span>)
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">skk-large-jisyo &#12398;&#20516;&#12434;&#33258;&#21205;&#35373;&#23450;&#12377;&#12427;</span>
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">skk-large-jisyo &#12398;&#20516;&#12434;&#33258;&#21205;&#35373;&#23450;&#12377;&#12427;</span>
 (setq SKK_SET_JISYO t)
 </pre>
 </div>
@@ -1157,18 +1157,18 @@ $ make install
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-autoloads</span>)
-(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-kakasi</span>)
-(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">pos-tip</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-autoloads</span>)
+(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-kakasi</span>)
+(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">pos-tip</span>)
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12434;pos-tip&#12391;&#34920;&#31034;&#12377;&#12427;</span>
-(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">skk-hurigana-tip</span> (start end <span style="color: #7fffd4;">&amp;optional</span> all)
-  <span style="color: #bdb76b;">"&#38936;&#22495;&#12398;&#28450;&#23383;&#12395;&#20840;&#12390;&#12405;&#12426;&#12364;&#12394;&#12434;&#20184;&#12369;&#12289;&#12509;&#12483;&#12503;&#12450;&#12483;&#12503;&#12377;&#12427;&#12290;"</span>
-  (interactive <span style="color: #bdb76b;">"r\nP"</span>)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12434;pos-tip&#12391;&#34920;&#31034;&#12377;&#12427;</span>
+(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">skk-hurigana-tip</span> (start end <span style="color: #8ae234; font-weight: bold;">&amp;optional</span> all)
+  <span style="color: #888a85;">"&#38936;&#22495;&#12398;&#28450;&#23383;&#12395;&#20840;&#12390;&#12405;&#12426;&#12364;&#12394;&#12434;&#20184;&#12369;&#12289;&#12509;&#12483;&#12503;&#12450;&#12483;&#12503;&#12377;&#12427;&#12290;"</span>
+  (interactive <span style="color: #ad7fa8; font-style: italic;">"r\nP"</span>)
   (pos-tip-show (skk-hurigana-1 start end all)))
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
-(global-set-key (kbd <span style="color: #bdb76b;">"C-x x"</span>) 'skk-hurigana-tip)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
+(global-set-key (kbd <span style="color: #ad7fa8; font-style: italic;">"C-x x"</span>) 'skk-hurigana-tip)
 </pre>
 </div>
 
@@ -1179,31 +1179,31 @@ $ make install
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-autoloads</span>)
-(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-kakasi</span>)
-(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">popwin</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-autoloads</span>)
+(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-kakasi</span>)
+(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">popwin</span>)
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;</span>
-(<span style="color: #ffffff;">defvar</span> <span style="color: #9acd32;">skk-kakasi-popbuf-name</span> <span style="color: #bdb76b;">" *skk-kakasi*"</span> <span style="color: #bdb76b;">"&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;"</span>)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;</span>
+(<span style="color: #729fcf; font-weight: bold;">defvar</span> <span style="color: #ff6347;">skk-kakasi-popbuf-name</span> <span style="color: #ad7fa8; font-style: italic;">" *skk-kakasi*"</span> <span style="color: #888a85;">"&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;"</span>)
 
-(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">skk-hurigana-popup</span> (start end <span style="color: #7fffd4;">&amp;optional</span> all)
-  (interactive <span style="color: #bdb76b;">"r\nP"</span>)
-  (<span style="color: #ffffff;">let</span> ((str0 (buffer-substring-no-properties start end))
+(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">skk-hurigana-popup</span> (start end <span style="color: #8ae234; font-weight: bold;">&amp;optional</span> all)
+  (interactive <span style="color: #ad7fa8; font-style: italic;">"r\nP"</span>)
+  (<span style="color: #729fcf; font-weight: bold;">let</span> ((str0 (buffer-substring-no-properties start end))
         (str1 (skk-hurigana-1 start end all))
         (str2 (skk-gyakubiki-1 start end all)))
-    (<span style="color: #ffffff;">with-current-buffer</span> (get-buffer-create skk-kakasi-popbuf-name)
+    (<span style="color: #729fcf; font-weight: bold;">with-current-buffer</span> (get-buffer-create skk-kakasi-popbuf-name)
       (setq buffer-read-only nil)
       (erase-buffer)
-      (insert <span style="color: #bdb76b;">"KAKASI - &#28450;&#23383;&#8594;&#12363;&#12394;(&#12525;&#12540;&#12510;&#23383;)&#22793;&#25563;&#32080;&#26524;:\n"</span>)
-      (insert <span style="color: #bdb76b;">"-------------------------------------\n\n"</span>)
-      (insert str0 <span style="color: #bdb76b;">"\n\n"</span>)
-      (insert str1 <span style="color: #bdb76b;">"\n\n"</span>)
-      (insert str2 <span style="color: #bdb76b;">"\n\n"</span>)
+      (insert <span style="color: #ad7fa8; font-style: italic;">"KAKASI - &#28450;&#23383;&#8594;&#12363;&#12394;(&#12525;&#12540;&#12510;&#23383;)&#22793;&#25563;&#32080;&#26524;:\n"</span>)
+      (insert <span style="color: #ad7fa8; font-style: italic;">"-------------------------------------\n\n"</span>)
+      (insert str0 <span style="color: #ad7fa8; font-style: italic;">"\n\n"</span>)
+      (insert str1 <span style="color: #ad7fa8; font-style: italic;">"\n\n"</span>)
+      (insert str2 <span style="color: #ad7fa8; font-style: italic;">"\n\n"</span>)
       (setq buffer-read-only t))
     (display-buffer (get-buffer skk-kakasi-popbuf-name))))
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
-(global-set-key (kbd <span style="color: #bdb76b;">"C-x X"</span>) 'skk-hurigana-popup)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
+(global-set-key (kbd <span style="color: #ad7fa8; font-style: italic;">"C-x X"</span>) 'skk-hurigana-popup)
 </pre>
 </div>
 
@@ -1773,26 +1773,26 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 </p>
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">beforePhaseMethod</span>(<span style="color: #7fffd4;">PhaseEvent</span> <span style="color: #9acd32;">phaseEvent</span>) {
+<pre class="src src-java"><span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">beforePhaseMethod</span>(<span style="color: #8ae234; font-weight: bold;">PhaseEvent</span> <span style="color: #ff6347;">phaseEvent</span>) {
 
-    System.out.println(<span style="color: #bdb76b;">"----------   phaseEvent   -------------"</span>);
-    System.out.println(<span style="color: #bdb76b;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
+    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"----------   phaseEvent   -------------"</span>);
+    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
 
-    <span style="color: #00cd66;">//</span><span style="color: #00cd66;">only perform action if RENDER_RESPONSE phase is reached</span>
-    <span style="color: #ffffff;">if</span> (phaseEvent.getPhaseId() == <span style="color: #40e0d0;">PhaseId</span>.RENDER_RESPONSE) {
+    <span style="color: #888a85;">//</span><span style="color: #888a85;">only perform action if RENDER_RESPONSE phase is reached</span>
+    <span style="color: #729fcf; font-weight: bold;">if</span> (phaseEvent.getPhaseId() == <span style="color: #8ae234;">PhaseId</span>.RENDER_RESPONSE) {
 
-        <span style="color: #7fffd4;">FacesContext</span> <span style="color: #9acd32;">fctx</span> = FacesContext.getCurrentInstance();
-        <span style="color: #00cd66;">//</span><span style="color: #00cd66;">check internal request parameter</span>
-        <span style="color: #7fffd4;">Map</span> <span style="color: #9acd32;">requestMap</span> = fctx.getExternalContext().getRequestMap();
+        <span style="color: #8ae234; font-weight: bold;">FacesContext</span> <span style="color: #ff6347;">fctx</span> = FacesContext.getCurrentInstance();
+        <span style="color: #888a85;">//</span><span style="color: #888a85;">check internal request parameter</span>
+        <span style="color: #8ae234; font-weight: bold;">Map</span> <span style="color: #ff6347;">requestMap</span> = fctx.getExternalContext().getRequestMap();
 
-        <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
-        <span style="color: #7fffd4;">Object</span> <span style="color: #9acd32;">showPrintableBehavior</span> = requestMap.get(<span style="color: #bdb76b;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
-        <span style="color: #ffffff;">if</span> (showPrintableBehavior != <span style="color: #40e0d0;">null</span>) {
-            <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
-            <span style="color: #ffffff;">if</span> (<span style="color: #40e0d0;">Boolean</span>.TRUE == showPrintableBehavior) {
-                <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
-                UiComponentControlUtil.setUnRendered(<span style="color: #bdb76b;">"mb1"</span>, <span style="color: #bdb76b;">"it1"</span>, <span style="color: #bdb76b;">"it2"</span>);
-                UiComponentControlUtil.callbackJavascript(<span style="color: #bdb76b;">"customPrint();"</span>);
+        <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
+        <span style="color: #8ae234; font-weight: bold;">Object</span> <span style="color: #ff6347;">showPrintableBehavior</span> = requestMap.get(<span style="color: #ad7fa8; font-style: italic;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
+        <span style="color: #729fcf; font-weight: bold;">if</span> (showPrintableBehavior != <span style="color: #8ae234;">null</span>) {
+            <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
+            <span style="color: #729fcf; font-weight: bold;">if</span> (<span style="color: #8ae234;">Boolean</span>.TRUE == showPrintableBehavior) {
+                <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
+                UiComponentControlUtil.setUnRendered(<span style="color: #ad7fa8; font-style: italic;">"mb1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it2"</span>);
+                UiComponentControlUtil.callbackJavascript(<span style="color: #ad7fa8; font-style: italic;">"customPrint();"</span>);
             }
         }
     }
@@ -1812,24 +1812,24 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
 <div class="org-src-container">
 
-<pre class="src src-js"><span style="color: #ffffff;">function</span> <span style="color: #98fb98;">customPrint</span>() {
-  <span style="color: #ffffff;">if</span> (getBrowser().indexOf(<span style="color: #bdb76b;">'ie8'</span>) !== -1 ) {
-    <span style="color: #ffffff;">if</span>(window.ActiveXObject == <span style="color: #40e0d0;">null</span> || document.body.insertAdjacentHTML == <span style="color: #40e0d0;">null</span>) {
-      <span style="color: #ffffff;">return</span>;
+<pre class="src src-js"><span style="color: #729fcf; font-weight: bold;">function</span> <span style="color: #edd400; font-weight: bold;">customPrint</span>() {
+  <span style="color: #729fcf; font-weight: bold;">if</span> (getBrowser().indexOf(<span style="color: #ad7fa8; font-style: italic;">'ie8'</span>) !== -1 ) {
+    <span style="color: #729fcf; font-weight: bold;">if</span>(window.ActiveXObject == <span style="color: #8ae234;">null</span> || document.body.insertAdjacentHTML == <span style="color: #8ae234;">null</span>) {
+      <span style="color: #729fcf; font-weight: bold;">return</span>;
     }
-    <span style="color: #ffffff;">var</span> <span style="color: #9acd32;">sWebBrowserCode</span> = <span style="color: #bdb76b;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
-    document.body.insertAdjacentHTML(<span style="color: #bdb76b;">'beforeEnd'</span>, sWebBrowserCode);
-    <span style="color: #ffffff;">var</span> <span style="color: #9acd32;">objWebBrowser</span> = document.body.lastChild;
-    <span style="color: #ffffff;">if</span>(objWebBrowser == <span style="color: #40e0d0;">null</span>) <span style="color: #ffffff;">return</span>;
+    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">sWebBrowserCode</span> = <span style="color: #ad7fa8; font-style: italic;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
+    document.body.insertAdjacentHTML(<span style="color: #ad7fa8; font-style: italic;">'beforeEnd'</span>, sWebBrowserCode);
+    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">objWebBrowser</span> = document.body.lastChild;
+    <span style="color: #729fcf; font-weight: bold;">if</span>(objWebBrowser == <span style="color: #8ae234;">null</span>) <span style="color: #729fcf; font-weight: bold;">return</span>;
     objWebBrowser.ExecWB(7, 1);
     document.body.removeChild(objWebBrowser);
-  } <span style="color: #ffffff;">else</span> {
+  } <span style="color: #729fcf; font-weight: bold;">else</span> {
     window.print();
   }
 
-  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
-  window.onfocus = <span style="color: #ffffff;">function</span>(){
-   (window.open(<span style="color: #bdb76b;">''</span>,<span style="color: #bdb76b;">'_self'</span>).opener=window).close(); 
+  <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
+  window.onfocus = <span style="color: #729fcf; font-weight: bold;">function</span>(){
+   (window.open(<span style="color: #ad7fa8; font-style: italic;">''</span>,<span style="color: #ad7fa8; font-style: italic;">'_self'</span>).opener=window).close(); 
   };
 }
 </pre>
@@ -2922,12 +2922,12 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">org-octopress</span>)
-(setq org-octopress-directory-top       (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source"</span>))
-(setq org-octopress-directory-posts     (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source/_posts"</span>))
-(setq org-octopress-directory-org-top   (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source"</span>))
-(setq org-octopress-directory-org-posts (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/source/blog"</span>))
-(setq org-octopress-setup-file          (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/setupfile.org"</span>))
+<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">org-octopress</span>)
+(setq org-octopress-directory-top       (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-posts     (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source/_posts"</span>))
+(setq org-octopress-directory-org-top   (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-org-posts (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source/blog"</span>))
+(setq org-octopress-setup-file          (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/setupfile.org"</span>))
 </pre>
 </div>
 
@@ -2959,23 +2959,23 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">defvar</span> <span style="color: #9acd32;">org-octopress-top</span>
-  (concat user-emacs-directory <span style="color: #bdb76b;">"blogs/octopress/"</span>)
-  <span style="color: #bdb76b;">"octopress&#12502;&#12525;&#12464;&#12486;&#12531;&#12503;&#12524;&#12540;&#12488;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;"</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">defvar</span> <span style="color: #ff6347;">org-octopress-top</span>
+  (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/"</span>)
+  <span style="color: #888a85;">"octopress&#12502;&#12525;&#12464;&#12486;&#12531;&#12503;&#12524;&#12540;&#12488;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;"</span>)
 
-(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">org-octopress-preview</span> ()
-  <span style="color: #bdb76b;">"preview octopress content by call external shell script."</span>
+(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">org-octopress-preview</span> ()
+  <span style="color: #888a85;">"preview octopress content by call external shell script."</span>
   (interactive)
-  (message <span style="color: #bdb76b;">"preview octopress content ...."</span>)
-  (<span style="color: #ffffff;">lexical-let*</span> ((default-directory org-octopress-top)
-                 (preview-url <span style="color: #bdb76b;">"http://localhost:4000"</span>))
+  (message <span style="color: #ad7fa8; font-style: italic;">"preview octopress content ...."</span>)
+  (<span style="color: #729fcf; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top)
+                 (preview-url <span style="color: #ad7fa8; font-style: italic;">"http://localhost:4000"</span>))
     (deferred:$
-      (deferred:process-shell <span style="color: #bdb76b;">"blog_preview.sh"</span> org-octopress-top)
+      (deferred:process-shell <span style="color: #ad7fa8; font-style: italic;">"blog_preview.sh"</span> org-octopress-top)
       (deferred:nextc it
-        (<span style="color: #ffffff;">lambda</span> (x)
-          (message <span style="color: #bdb76b;">"*** preview blog ***"</span>)
+        (<span style="color: #729fcf; font-weight: bold;">lambda</span> (x)
+          (message <span style="color: #ad7fa8; font-style: italic;">"*** preview blog ***"</span>)
           (message x)
-          (message <span style="color: #bdb76b;">"launch preview url %s"</span> preview-url)
+          (message <span style="color: #ad7fa8; font-style: italic;">"launch preview url %s"</span> preview-url)
           (browse-url preview-url))))))
 </pre>
 </div>
@@ -2985,37 +2985,37 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Usage: blog_preview.sh</span>
-<span style="color: #00cd66;">##</span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
-<span style="color: #00cd66;">##</span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
-<span style="color: #00cd66;">##          </span><span style="color: #00cd66;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12503;&#12524;&#12499;&#12517;&#12540;</span>
-<span style="color: #00cd66;">##################################################################### </span>
+<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Usage: blog_preview.sh</span>
+<span style="color: #888a85;">##</span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #888a85;">##</span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #888a85;">##          </span><span style="color: #888a85;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12503;&#12524;&#12499;&#12517;&#12540;</span>
+<span style="color: #888a85;">##################################################################### </span>
 
-<span style="color: #9acd32;">RUBY_VER</span>=<span style="color: #bdb76b;">"1.9.3-p0"</span>
-<span style="color: #9acd32;">OCTOPRESS_DIR</span>=$<span style="color: #9acd32;">1</span>
+<span style="color: #ff6347;">RUBY_VER</span>=<span style="color: #ad7fa8; font-style: italic;">"1.9.3-p0"</span>
+<span style="color: #ff6347;">OCTOPRESS_DIR</span>=$<span style="color: #ff6347;">1</span>
 
 which rbenv
-<span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">?</span> = 0 ]; <span style="color: #ffffff;">then</span>
-    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
-    rbenv global $<span style="color: #9acd32;">RUBY_VER</span>
+<span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">?</span> = 0 ]; <span style="color: #729fcf; font-weight: bold;">then</span>
+    <span style="color: #888a85;"># </span><span style="color: #888a85;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #ff6347;">RUBY_VER</span>
     rbenv rehash
-    <span style="color: #9acd32;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
-    <span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">global_ver</span> = $<span style="color: #9acd32;">RUBY_VER</span> ]; <span style="color: #ffffff;">then</span>
-        <span style="color: #00cd66;"># </span><span style="color: #00cd66;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-        <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"run rake with `ruby --version`"</span>
-        <span style="color: #b0c4de;">pushd</span> $<span style="color: #9acd32;">OCTOPRESS_DIR</span>
+    <span style="color: #ff6347;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">global_ver</span> = $<span style="color: #ff6347;">RUBY_VER</span> ]; <span style="color: #729fcf; font-weight: bold;">then</span>
+        <span style="color: #888a85;"># </span><span style="color: #888a85;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"run rake with `ruby --version`"</span>
+        <span style="color: #729fcf;">pushd</span> $<span style="color: #ff6347;">OCTOPRESS_DIR</span>
         rake generate
-        <span style="color: #ffffff;">if</span> [ -z <span style="color: #bdb76b;">"`netstat -nutl | grep 4000`"</span> ] ; <span style="color: #ffffff;">then</span>
-            <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"&gt;&gt;&gt; Startup Preview"</span>
+        <span style="color: #729fcf; font-weight: bold;">if</span> [ -z <span style="color: #ad7fa8; font-style: italic;">"`netstat -nutl | grep 4000`"</span> ] ; <span style="color: #729fcf; font-weight: bold;">then</span>
+            <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"&gt;&gt;&gt; Startup Preview"</span>
             rake preview &amp;
             sleep 2
-        <span style="color: #ffffff;">fi</span>
-        <span style="color: #b0c4de;">popd</span>
-    <span style="color: #ffffff;">fi</span>
-<span style="color: #ffffff;">fi</span>
+        <span style="color: #729fcf; font-weight: bold;">fi</span>
+        <span style="color: #729fcf;">popd</span>
+    <span style="color: #729fcf; font-weight: bold;">fi</span>
+<span style="color: #729fcf; font-weight: bold;">fi</span>
 </pre>
 </div>
 
@@ -3024,16 +3024,16 @@ which rbenv
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">org-octopress-deploy</span> ()
-  <span style="color: #bdb76b;">"deploy octopress content to github page service."</span>
+<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">org-octopress-deploy</span> ()
+  <span style="color: #888a85;">"deploy octopress content to github page service."</span>
   (interactive)
-  (message <span style="color: #bdb76b;">"deploy octopress content ...."</span>)
-  (<span style="color: #ffffff;">lexical-let*</span> ((default-directory org-octopress-top))
+  (message <span style="color: #ad7fa8; font-style: italic;">"deploy octopress content ...."</span>)
+  (<span style="color: #729fcf; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top))
     (deferred:$
-      (deferred:process-shell <span style="color: #bdb76b;">"blog_deploy.sh"</span> org-octopress-top)
+      (deferred:process-shell <span style="color: #ad7fa8; font-style: italic;">"blog_deploy.sh"</span> org-octopress-top)
       (deferred:nextc it
-        (<span style="color: #ffffff;">lambda</span> (x)
-          (message <span style="color: #bdb76b;">"*** deploy blog ***"</span>)
+        (<span style="color: #729fcf; font-weight: bold;">lambda</span> (x)
+          (message <span style="color: #ad7fa8; font-style: italic;">"*** deploy blog ***"</span>)
           (message x))))))
 </pre>
 </div>
@@ -3043,34 +3043,34 @@ which rbenv
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
-<span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/sh</span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Usage: blog_deploy.sh</span>
-<span style="color: #00cd66;">##</span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
-<span style="color: #00cd66;">##   </span>
-<span style="color: #00cd66;">## </span><span style="color: #00cd66;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
-<span style="color: #00cd66;">##          </span><span style="color: #00cd66;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-<span style="color: #00cd66;">##################################################################### </span>
+<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
+<span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/sh</span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Usage: blog_deploy.sh</span>
+<span style="color: #888a85;">##</span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #888a85;">##   </span>
+<span style="color: #888a85;">## </span><span style="color: #888a85;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #888a85;">##          </span><span style="color: #888a85;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+<span style="color: #888a85;">##################################################################### </span>
 
-<span style="color: #9acd32;">RUBY_VER</span>=<span style="color: #bdb76b;">"1.9.3-p0"</span>
-<span style="color: #9acd32;">OCTOPRESS_DIR</span>=$<span style="color: #9acd32;">1</span>
+<span style="color: #ff6347;">RUBY_VER</span>=<span style="color: #ad7fa8; font-style: italic;">"1.9.3-p0"</span>
+<span style="color: #ff6347;">OCTOPRESS_DIR</span>=$<span style="color: #ff6347;">1</span>
 
 which rbenv
-<span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">?</span> = 0 ]; <span style="color: #ffffff;">then</span>
-    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
-    rbenv global $<span style="color: #9acd32;">RUBY_VER</span>
+<span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">?</span> = 0 ]; <span style="color: #729fcf; font-weight: bold;">then</span>
+    <span style="color: #888a85;"># </span><span style="color: #888a85;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #ff6347;">RUBY_VER</span>
     rbenv rehash
-    <span style="color: #9acd32;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
-    <span style="color: #ffffff;">if</span> [ $<span style="color: #9acd32;">global_ver</span> = $<span style="color: #9acd32;">RUBY_VER</span> ]; <span style="color: #ffffff;">then</span>
-        <span style="color: #00cd66;"># </span><span style="color: #00cd66;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-        <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"run rake with `ruby --version`"</span>
-        <span style="color: #b0c4de;">pushd</span> $<span style="color: #9acd32;">OCTOPRESS_DIR</span>
+    <span style="color: #ff6347;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">global_ver</span> = $<span style="color: #ff6347;">RUBY_VER</span> ]; <span style="color: #729fcf; font-weight: bold;">then</span>
+        <span style="color: #888a85;"># </span><span style="color: #888a85;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"run rake with `ruby --version`"</span>
+        <span style="color: #729fcf;">pushd</span> $<span style="color: #ff6347;">OCTOPRESS_DIR</span>
         rake generate
         rake deploy
-        <span style="color: #b0c4de;">popd</span>
-    <span style="color: #ffffff;">fi</span>
-<span style="color: #ffffff;">fi</span>
+        <span style="color: #729fcf;">popd</span>
+    <span style="color: #729fcf; font-weight: bold;">fi</span>
+<span style="color: #729fcf; font-weight: bold;">fi</span>
 </pre>
 </div>
 </div>

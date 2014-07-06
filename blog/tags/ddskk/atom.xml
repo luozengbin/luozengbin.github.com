@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: Ddskk | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/ddskk/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-01T19:29:34+09:00</updated>
+  <updated>2014-07-06T14:58:38+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -170,16 +170,16 @@ $ cd ddskk-20140622
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp"><span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#36766;&#26360;&#12501;&#12449;&#12452;&#12523;&#12398;&#26684;&#32013;&#20808;</span>
-(setq SKK_DATADIR <span style="color: #bdb76b;">"~/.emacs.d/etc/skk"</span>)
+<pre class="src src-emacs-lisp"><span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#36766;&#26360;&#12501;&#12449;&#12452;&#12523;&#12398;&#26684;&#32013;&#20808;</span>
+(setq SKK_DATADIR <span style="color: #ad7fa8; font-style: italic;">"~/.emacs.d/etc/skk"</span>)
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#12489;&#12461;&#12517;&#12513;&#12531;&#12488;</span>
-(setq SKK_INFODIR <span style="color: #bdb76b;">"~/.emacs.d/share/info-ja/skk"</span>)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#12489;&#12461;&#12517;&#12513;&#12531;&#12488;</span>
+(setq SKK_INFODIR <span style="color: #ad7fa8; font-style: italic;">"~/.emacs.d/share/info-ja/skk"</span>)
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">skk lisp&#26412;&#20307;</span>
-(setq SKK_LISPDIR <span style="color: #bdb76b;">"~/.emacs.d/lisp/skk"</span>)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">skk lisp&#26412;&#20307;</span>
+(setq SKK_LISPDIR <span style="color: #ad7fa8; font-style: italic;">"~/.emacs.d/lisp/skk"</span>)
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">skk-large-jisyo &#12398;&#20516;&#12434;&#33258;&#21205;&#35373;&#23450;&#12377;&#12427;</span>
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">skk-large-jisyo &#12398;&#20516;&#12434;&#33258;&#21205;&#35373;&#23450;&#12377;&#12427;</span>
 (setq SKK_SET_JISYO t)
 </pre>
 </div>
@@ -225,18 +225,18 @@ $ make install
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-autoloads</span>)
-(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-kakasi</span>)
-(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">pos-tip</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-autoloads</span>)
+(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-kakasi</span>)
+(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">pos-tip</span>)
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12434;pos-tip&#12391;&#34920;&#31034;&#12377;&#12427;</span>
-(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">skk-hurigana-tip</span> (start end <span style="color: #7fffd4;">&amp;optional</span> all)
-  <span style="color: #bdb76b;">"&#38936;&#22495;&#12398;&#28450;&#23383;&#12395;&#20840;&#12390;&#12405;&#12426;&#12364;&#12394;&#12434;&#20184;&#12369;&#12289;&#12509;&#12483;&#12503;&#12450;&#12483;&#12503;&#12377;&#12427;&#12290;"</span>
-  (interactive <span style="color: #bdb76b;">"r\nP"</span>)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12434;pos-tip&#12391;&#34920;&#31034;&#12377;&#12427;</span>
+(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">skk-hurigana-tip</span> (start end <span style="color: #8ae234; font-weight: bold;">&amp;optional</span> all)
+  <span style="color: #888a85;">"&#38936;&#22495;&#12398;&#28450;&#23383;&#12395;&#20840;&#12390;&#12405;&#12426;&#12364;&#12394;&#12434;&#20184;&#12369;&#12289;&#12509;&#12483;&#12503;&#12450;&#12483;&#12503;&#12377;&#12427;&#12290;"</span>
+  (interactive <span style="color: #ad7fa8; font-style: italic;">"r\nP"</span>)
   (pos-tip-show (skk-hurigana-1 start end all)))
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
-(global-set-key (kbd <span style="color: #bdb76b;">"C-x x"</span>) 'skk-hurigana-tip)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
+(global-set-key (kbd <span style="color: #ad7fa8; font-style: italic;">"C-x x"</span>) 'skk-hurigana-tip)
 </pre>
 </div>
 
@@ -247,31 +247,31 @@ $ make install
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-autoloads</span>)
-(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">skk-kakasi</span>)
-(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">popwin</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-autoloads</span>)
+(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-kakasi</span>)
+(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">popwin</span>)
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;</span>
-(<span style="color: #ffffff;">defvar</span> <span style="color: #9acd32;">skk-kakasi-popbuf-name</span> <span style="color: #bdb76b;">" *skk-kakasi*"</span> <span style="color: #bdb76b;">"&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;"</span>)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;</span>
+(<span style="color: #729fcf; font-weight: bold;">defvar</span> <span style="color: #ff6347;">skk-kakasi-popbuf-name</span> <span style="color: #ad7fa8; font-style: italic;">" *skk-kakasi*"</span> <span style="color: #888a85;">"&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;"</span>)
 
-(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">skk-hurigana-popup</span> (start end <span style="color: #7fffd4;">&amp;optional</span> all)
-  (interactive <span style="color: #bdb76b;">"r\nP"</span>)
-  (<span style="color: #ffffff;">let</span> ((str0 (buffer-substring-no-properties start end))
+(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">skk-hurigana-popup</span> (start end <span style="color: #8ae234; font-weight: bold;">&amp;optional</span> all)
+  (interactive <span style="color: #ad7fa8; font-style: italic;">"r\nP"</span>)
+  (<span style="color: #729fcf; font-weight: bold;">let</span> ((str0 (buffer-substring-no-properties start end))
         (str1 (skk-hurigana-1 start end all))
         (str2 (skk-gyakubiki-1 start end all)))
-    (<span style="color: #ffffff;">with-current-buffer</span> (get-buffer-create skk-kakasi-popbuf-name)
+    (<span style="color: #729fcf; font-weight: bold;">with-current-buffer</span> (get-buffer-create skk-kakasi-popbuf-name)
       (setq buffer-read-only nil)
       (erase-buffer)
-      (insert <span style="color: #bdb76b;">"KAKASI - &#28450;&#23383;&#8594;&#12363;&#12394;(&#12525;&#12540;&#12510;&#23383;)&#22793;&#25563;&#32080;&#26524;:\n"</span>)
-      (insert <span style="color: #bdb76b;">"-------------------------------------\n\n"</span>)
-      (insert str0 <span style="color: #bdb76b;">"\n\n"</span>)
-      (insert str1 <span style="color: #bdb76b;">"\n\n"</span>)
-      (insert str2 <span style="color: #bdb76b;">"\n\n"</span>)
+      (insert <span style="color: #ad7fa8; font-style: italic;">"KAKASI - &#28450;&#23383;&#8594;&#12363;&#12394;(&#12525;&#12540;&#12510;&#23383;)&#22793;&#25563;&#32080;&#26524;:\n"</span>)
+      (insert <span style="color: #ad7fa8; font-style: italic;">"-------------------------------------\n\n"</span>)
+      (insert str0 <span style="color: #ad7fa8; font-style: italic;">"\n\n"</span>)
+      (insert str1 <span style="color: #ad7fa8; font-style: italic;">"\n\n"</span>)
+      (insert str2 <span style="color: #ad7fa8; font-style: italic;">"\n\n"</span>)
       (setq buffer-read-only t))
     (display-buffer (get-buffer skk-kakasi-popbuf-name))))
 
-<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
-(global-set-key (kbd <span style="color: #bdb76b;">"C-x X"</span>) 'skk-hurigana-popup)
+<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
+(global-set-key (kbd <span style="color: #ad7fa8; font-style: italic;">"C-x X"</span>) 'skk-hurigana-popup)
 </pre>
 </div>
 
