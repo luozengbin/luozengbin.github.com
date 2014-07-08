@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Sync | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/sync/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2014-07-08T19:00:10+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[検証]syncシステムコールの性能について]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-07-08-%5B%E6%A4%9C%E8%A8%BC%5Dsync%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%82%B3%E3%83%BC%E3%83%AB%E3%81%AE%E6%80%A7%E8%83%BD%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html"/>
+    <updated>2014-07-08T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[検証]syncシステムコールの性能について</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. IOPSとは</a></li>
+<li><a href="#sec-2">2. 実機検証</a>
+<ul>
+<li><a href="#sec-2-1">2.1. 環境確認</a></li>
+<li><a href="#sec-2-2">2.2. テスト用プログラム</a></li>
+<li><a href="#sec-2-3">2.3. sarコマンドでIOPSを確認する</a></li>
+<li><a href="#sec-2-4">2.4. 測定結果</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. 参考リンク</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+商用（本番運用）にて、なんらかの障害発生時にログがロストしないようにトランザクション
+ポイントで <code>sync</code> システムコールを呼び出して汚れたページをディスクへ書き込む方法が
+あるのですが、それは普通のHDDに置いては性能的に非現実的です。理由は <code>IOPS</code> です。
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> IOPSとは</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+ハードディスクなどの記憶装置の性能指標の一つで、ある条件の元で1秒間に読み込み・書き込
+みできる回数のこと。<a href="http://en.wikipedia.org/wiki/IOPS">wikipedia</a> から参照するとHDDのIOPS数値は以下のようです。
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">Device</th>
+<th scope="col" class="left">Type</th>
+<th scope="col" class="left">IOPS</th>
+<th scope="col" class="left">Interface</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">7,200 rpm SATA drives</td>
+<td class="left">HDD</td>
+<td class="left">~75-100 IOPS</td>
+<td class="left">SATA 3 Gbit/s</td>
+</tr>
+
+<tr>
+<td class="left">10,000 rpm SATA drives</td>
+<td class="left">HDD</td>
+<td class="left">~125-150 IOPS</td>
+<td class="left">SATA 3 Gbit/s</td>
+</tr>
+
+<tr>
+<td class="left">10,000 rpm SAS drives</td>
+<td class="left">HDD</td>
+<td class="left">~140 IOPS</td>
+<td class="left">SAS</td>
+</tr>
+
+<tr>
+<td class="left">15,000 rpm SAS drives</td>
+<td class="left">HDD</td>
+<td class="left">~175-210 IOPS</td>
+<td class="left">SAS</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+つまり、HDDに置いて秒間同期書き込み回数の上限はしょせん200回（多めに）ぐらいです。
+</p>
+
+<p>
+さあ、実際はどうなるでしょうか？実機検証してみましょう。
+</p>
+
+<p>
+<!-- more -->
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 実機検証</h2>
+<div class="outline-text-2" id="text-2">
+</div><div id="outline-container-sec-2-1" class="outline-3">
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> 環境確認</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+ディスクデバイスは <code>7,200rpm</code> のものを使用します。
+</p>
+<pre class="example">
+$ sudo hdparm -I /dev/sda
+
+/dev/sda:
+
+ATA device, with non-removable media
+    Model Number:       WDC WD2500AAKX-193CA0
+    Serial Number:      WD-**********
+    Firmware Revision:  15.01H15
+    Transport:          Serial, SATA 1.0a, SATA II Extensions, SATA Rev 2.5, SATA Rev 2.6, SATA Rev 3.0
+Standards:
+    Supported: 8 7 6 5
+    Likely used: 8
+Configuration:
+    Logical     max current
+    cylinders   16383   16383
+    heads       16  16
+    sectors/track   63  63
+    --
+    CHS current addressable sectors:   16514064
+    LBA    user addressable sectors:  268435455
+    LBA48  user addressable sectors:  488397168
+    Logical/Physical Sector size:           512 bytes
+    device size with M = 1024*1024:      238475 MBytes
+    device size with M = 1000*1000:      250059 MBytes (250 GB)
+    cache/buffer size  = 16384 KBytes
+Capabilities:
+    LBA, IORDY(can be disabled)
+    Queue depth: 32
+    Standby timer values: spec'd by Standard, with device specific minimum
+    R/W multiple sector transfer: Max = 16  Current = 16
+    DMA: mdma0 mdma1 mdma2 udma0 udma1 udma2 udma3 udma4 udma5 *udma6 
+         Cycle time: min=120ns recommended=120ns
+    PIO: pio0 pio1 pio2 pio3 pio4 
+         Cycle time: no flow control=120ns  IORDY flow control=120ns
+Commands/features:
+    Enabled Supported:
+       *    SMART feature set
+            Security Mode feature set
+       *    Power Management feature set
+       *    Write cache                  ★★★キャッシュを有効に
+       *    Look-ahead
+       *    Host Protected Area feature set
+       *    WRITE_BUFFER command
+       *    READ_BUFFER command
+       *    NOP cmd
+       *    DOWNLOAD_MICROCODE
+            Power-Up In Standby feature set
+       *    SET_FEATURES required to spinup after power up
+            SET_MAX security extension
+       *    48-bit Address feature set
+       *    Device Configuration Overlay feature set
+       *    Mandatory FLUSH_CACHE
+       *    FLUSH_CACHE_EXT
+       *    SMART error logging
+       *    SMART self-test
+       *    General Purpose Logging feature set
+       *    64-bit World wide name
+       *    {READ,WRITE}_DMA_EXT_GPL commands
+       *    Segmented DOWNLOAD_MICROCODE
+       *    Gen1 signaling speed (1.5Gb/s)
+       *    Gen2 signaling speed (3.0Gb/s)
+       *    Gen3 signaling speed (6.0Gb/s)
+       *    Native Command Queueing (NCQ)
+       *    Host-initiated interface power management
+       *    Phy event counters
+       *    NCQ priority information
+       *    DMA Setup Auto-Activate optimization
+       *    Software settings preservation
+       *    SMART Command Transport (SCT) feature set
+       *    SCT Read/Write Long (AC1), obsolete
+       *    SCT Write Same (AC2)
+       *    SCT Features Control (AC4)
+       *    SCT Data Tables (AC5)
+            unknown 206[12] (vendor specific)
+            unknown 206[13] (vendor specific)
+Security: 
+    Master password revision code = 65534
+        supported
+    not enabled
+    not locked
+        frozen
+    not expired: security count
+        supported: enhanced erase
+    40min for SECURITY ERASE UNIT. 40min for ENHANCED SECURITY ERASE UNIT. 
+Logical Unit WWN Device Identifier: 50014ee601e91fb5
+    NAA     : 5
+    IEEE OUI    : 0014ee
+    Unique ID   : 601e91fb5
+Checksum: correct
+$
+</pre>
+
+<p>
+カーネルパラメータの確認
+</p>
+<pre class="example">
+$ sudo sysctl -a | grep dirty
+vm.dirty_background_bytes = 0
+vm.dirty_background_ratio = 10
+vm.dirty_bytes = 0
+vm.dirty_expire_centisecs = 3000
+vm.dirty_ratio = 20
+vm.dirty_writeback_centisecs = 500
+$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-2-2" class="outline-3">
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> テスト用プログラム</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+以下のperlスクリプトに無限ループ内で1KBのデータ（ログ１行に相当する？）をファイルへ
+の書き込みを行って、=sync= をコールして <code>pdflush</code> を強制的動かさせる。また秒単位で
+の書き込み回数（アプリ視点から）を集計して標準出力に出します。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-perl"><span style="color: #888a85; font-style: italic;">#</span><span style="color: #888a85; font-style: italic;">!/usr/bin/perl</span>
+<span style="color: #729fcf; font-weight: bold;">use</span> <span style="color: #5E8C6A;">strict</span>;
+<span style="color: #729fcf; font-weight: bold;">use</span> <span style="color: #5E8C6A;">warnings</span>;
+<span style="color: #729fcf; font-weight: bold;">use</span> <span style="color: #5E8C6A;">IO</span>::File;
+<span style="color: #729fcf; font-weight: bold;">use</span> <span style="color: #5E8C6A;">Time</span>::HiRes qw<span style="color: #ad7fa8;">( usleep gettimeofday tv_interval )</span>;
+<span style="color: #729fcf; font-weight: bold;">use</span> <span style="color: #5E8C6A;">constant</span> DATA =&gt; <span style="color: #ad7fa8;">"12345678"</span> x 128;   <span style="color: #888a85; font-style: italic;"># 1KB&#12398;&#12487;&#12540;&#12479;</span>
+
+<span style="color: #2DA6F5; font-weight: bold;">my</span> $<span style="color: #ff6347;">io</span> = IO::File-&gt;new(<span style="color: #ad7fa8;">"test.dat"</span>, <span style="color: #ad7fa8;">'w'</span>) or <span style="color: #729fcf; font-weight: bold;">die</span> $!;
+<span style="color: #2DA6F5; font-weight: bold;">my</span> $<span style="color: #ff6347;">write_count</span> = 0;
+<span style="color: #2DA6F5; font-weight: bold;">my</span> $<span style="color: #ff6347;">current_second</span> = 0;
+<span style="color: #2DA6F5; font-weight: bold;">my</span> $<span style="color: #ff6347;">last_second</span> = 0;
+<span style="color: #2DA6F5; font-weight: bold;">my</span> $<span style="color: #ff6347;">start_time</span> = Time::HiRes::time;
+
+<span style="color: #729fcf; font-weight: bold;">while</span> (1) {
+
+    $<span style="color: #ff6347;">io</span>-&gt;syswrite(DATA);
+    <span style="color: #888a85; font-style: italic;"># &#24375;&#21046;&#26360;&#12365;&#36796;&#12415;</span>
+    IO::Handle::sync($<span style="color: #ff6347;">io</span>);
+
+    <span style="color: #888a85; font-style: italic;"># &#26178;&#21051;&#24773;&#22577;&#12392;&#26360;&#12365;&#36796;&#12415;&#22238;&#25968;&#12398;&#20986;&#21147;&#20966;&#29702;</span>
+    $<span style="color: #ff6347;">current_second</span> = sprintf(<span style="color: #ad7fa8;">"%.0f"</span>, Time::HiRes::time - $<span style="color: #ff6347;">start_time</span>);
+    <span style="color: #729fcf; font-weight: bold;">if</span> ($<span style="color: #ff6347;">current_second</span> != $<span style="color: #ff6347;">last_second</span>) {
+        print STDOUT <span style="color: #ad7fa8;">"$last_second \t$write_count\n"</span>;
+        $<span style="color: #ff6347;">last_second</span> = $<span style="color: #ff6347;">current_second</span>;
+        $<span style="color: #ff6347;">write_count</span> = 0;
+    }
+    $<span style="color: #ff6347;">write_count</span> += 1;
+}
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2-3" class="outline-3">
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> sarコマンドでIOPSを確認する</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+<code>sar</code> コマンドを利用して実測IOPS値を確認することが出来ます。出力結果の４列目の <code>wtps</code>
+はIOPSに相当します。
+</p>
+<pre class="example">
+$ sar -b 1 10
+Linux 3.15.2-1-ARCH (*******)   2014年07月08日   _x86_64_    (4 CPU)
+
+16時47分08秒       tps      rtps      wtps   bread/s   bwrtn/s
+16時47分09秒    136.00      1.00    135.00     24.00   1008.00
+16時47分10秒    120.00      0.00    120.00      0.00    912.00
+16時47分11秒    143.00      0.00    143.00      0.00   1112.00
+16時47分12秒    130.00      0.00    130.00      0.00    976.00
+16時47分13秒     53.00      0.00     53.00      0.00    400.00
+16時47分14秒      0.00      0.00      0.00      0.00      0.00
+16時47分15秒      0.00      0.00      0.00      0.00      0.00
+16時47分16秒      7.00      7.00      0.00    296.00      0.00
+16時47分17秒      0.00      0.00      0.00      0.00      0.00
+16時47分18秒      0.00      0.00      0.00      0.00      0.00
+平均値:      58.90      0.80     58.10     32.00    440.80
+$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-2-4" class="outline-3">
+<h3 id="sec-2-4"><span class="section-number-3">2.4</span> 測定結果</h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+ファイル出力処理スクリプトの出力結果。
+</p>
+<ul class="org-ul">
+<li>１列目： 実行開始からの秒数
+</li>
+<li>２列目： 秒間 <code>sync</code> コール回数
+</li>
+</ul>
+<pre class="example">
+$ ./simple_iops_test.pl
+0   13
+1   25
+2   24
+3   24
+4   30
+5   30
+6   22
+7   13
+8   30
+9   26
+10  25
+11  25
+12  27
+13  28
+$
+</pre>
+
+<p>
+IOPSの実測値
+</p>
+<pre class="example">
+$ sar -b 1 1000
+Linux 3.15.2-1-ARCH (******)    2014年07月08日   _x86_64_    (4 CPU)
+
+16時49分06秒       tps      rtps      wtps   bread/s   bwrtn/s
+16時49分07秒     79.00      0.00     79.00      0.00    624.00
+16時49分08秒    124.00      0.00    124.00      0.00    936.00
+16時49分09秒    122.00      0.00    122.00      0.00   1824.00
+16時49分10秒    125.00      0.00    125.00      0.00    944.00
+16時49分11秒    150.00      0.00    150.00      0.00   1128.00
+16時49分12秒    148.00      0.00    148.00      0.00   1144.00
+16時49分13秒    129.00     30.00     99.00   2488.00    856.00
+16時49分14秒    125.00     48.00     77.00   6264.00    960.00
+16時49分15秒    150.00      0.00    150.00      0.00   1128.00
+16時49分16秒    127.00      0.00    127.00      0.00    952.00
+16時49分17秒    128.00      0.00    128.00      0.00    992.00
+16時49分18秒    125.00      0.00    125.00      0.00    944.00
+16時49分19秒    132.00      0.00    132.00      0.00   1008.00
+16時49分20秒    140.00      0.00    140.00      0.00   1064.00
+16時49分21秒     66.00      0.00     66.00      0.00    488.00
+
+16時49分21秒      0.00      0.00      0.00      0.00      0.00
+平均値:     123.60      5.16    118.44    578.45    990.88
+$
+</pre>
+
+<p>
+無限ループ処理中にほどんどんのIOが <code>write</code> であることが分かります。
+また、ディスクへの秒間書き込み回数が120〜150ですが、アプリ側の秒間書き込み回数
+が約24〜30程度です。
+</p>
+
+<font color="red"><strong>
+<p>
+つまり１回の <code>sync</code> コールで平均5回のディスクIOが発生したのようです。
+IOPSが150ぐらいのHDDなら、平均で秒間ログ30件しか吐けない結果になります。
+</p>
+</strong></font>
+
+<p>
+別途単発のWrite処理を確認したところ、確かに１回の <code>sync</code> コール ５回のIOが起きたこと
+が確認されました。（※内部の仕組みはまたわかっていないです。iNodeの更新などメタデータ
+ブロックの更新によるものと推測しています。）
+</p>
+
+<p>
+SSD、Fusion-ioの様なIOPSを稼げるストレージについて、机上で計算した結果は以下になりま
+す。
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">&#xa0;</th>
+<th scope="col" class="left">IOPS</th>
+<th scope="col" class="left">秒間syncできる回数</th>
+<th scope="col" class="left">備考</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">Fusion-io ioDrive2</td>
+<td class="left">9,608,000</td>
+<td class="left">1,921,600</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">SSD (SATA 6 Gbit/s)</td>
+<td class="left">120,000</td>
+<td class="left">24,000</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">SSD (PCIe)</td>
+<td class="left">250,000</td>
+<td class="left">50,000</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">SSD (SATA 6 Gbit/s)</td>
+<td class="left">90,000</td>
+<td class="left">18,000</td>
+<td class="left">市販のSDD</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+秒間１万回以上書けるってホントウ？ SDD持ってないので確認出来ない。
+</p>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 参考リンク</h2>
+<div class="outline-text-2" id="text-3">
+<ul class="org-ul">
+<li><a href="http://d.hatena.ne.jp/naoya/20070523/1179938637">Linux I/O のお話 write 編</a>
+</li>
+<li><a href="http://d.hatena.ne.jp/akuwano/20120223/1330016926">iops確認するための1Liner</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

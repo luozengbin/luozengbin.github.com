@@ -1,0 +1,279 @@
+#+TITLE: [検証]syncシステムコールの性能について
+#+DATE: 2014-07-08
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: sync iops
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+商用（本番運用）にて、なんらかの障害発生時にログがロストしないようにトランザクション
+ポイントで =sync= システムコールを呼び出して汚れたページをディスクへ書き込む方法が
+あるのですが、それは普通のHDDに置いては性能的に非現実的です。理由は =IOPS= です。
+
+* IOPSとは
+ハードディスクなどの記憶装置の性能指標の一つで、ある条件の元で1秒間に読み込み・書き込
+みできる回数のこと。[[http://en.wikipedia.org/wiki/IOPS][wikipedia]] から参照するとHDDのIOPS数値は以下のようです。
+
+| Device                 | Type | IOPS          | Interface     |
+|------------------------+------+---------------+---------------|
+| 7,200 rpm SATA drives  | HDD  | ~75-100 IOPS  | SATA 3 Gbit/s |
+| 10,000 rpm SATA drives | HDD  | ~125-150 IOPS | SATA 3 Gbit/s |
+| 10,000 rpm SAS drives  | HDD  | ~140 IOPS     | SAS           |
+| 15,000 rpm SAS drives  | HDD  | ~175-210 IOPS | SAS           |
+
+つまり、HDDに置いて秒間同期書き込み回数の上限はしょせん200回（多めに）ぐらいです。
+
+さあ、実際はどうなるでしょうか？実機検証してみましょう。
+
+{{{more}}}
+
+* 実機検証
+** 環境確認
+
+ディスクデバイスは =7,200rpm= のものを使用します。
+#+begin_example
+$ sudo hdparm -I /dev/sda
+
+/dev/sda:
+
+ATA device, with non-removable media
+	Model Number:       WDC WD2500AAKX-193CA0
+	Serial Number:      WD-**********
+	Firmware Revision:  15.01H15
+	Transport:          Serial, SATA 1.0a, SATA II Extensions, SATA Rev 2.5, SATA Rev 2.6, SATA Rev 3.0
+Standards:
+	Supported: 8 7 6 5
+	Likely used: 8
+Configuration:
+	Logical		max	current
+	cylinders	16383	16383
+	heads		16	16
+	sectors/track	63	63
+	--
+	CHS current addressable sectors:   16514064
+	LBA    user addressable sectors:  268435455
+	LBA48  user addressable sectors:  488397168
+	Logical/Physical Sector size:           512 bytes
+	device size with M = 1024*1024:      238475 MBytes
+	device size with M = 1000*1000:      250059 MBytes (250 GB)
+	cache/buffer size  = 16384 KBytes
+Capabilities:
+	LBA, IORDY(can be disabled)
+	Queue depth: 32
+	Standby timer values: spec'd by Standard, with device specific minimum
+	R/W multiple sector transfer: Max = 16	Current = 16
+	DMA: mdma0 mdma1 mdma2 udma0 udma1 udma2 udma3 udma4 udma5 *udma6 
+	     Cycle time: min=120ns recommended=120ns
+	PIO: pio0 pio1 pio2 pio3 pio4 
+	     Cycle time: no flow control=120ns  IORDY flow control=120ns
+Commands/features:
+	Enabled	Supported:
+	   *	SMART feature set
+	    	Security Mode feature set
+	   *	Power Management feature set
+	   *	Write cache                  ★★★キャッシュを有効に
+	   *	Look-ahead
+	   *	Host Protected Area feature set
+	   *	WRITE_BUFFER command
+	   *	READ_BUFFER command
+	   *	NOP cmd
+	   *	DOWNLOAD_MICROCODE
+	    	Power-Up In Standby feature set
+	   *	SET_FEATURES required to spinup after power up
+	    	SET_MAX security extension
+	   *	48-bit Address feature set
+	   *	Device Configuration Overlay feature set
+	   *	Mandatory FLUSH_CACHE
+	   *	FLUSH_CACHE_EXT
+	   *	SMART error logging
+	   *	SMART self-test
+	   *	General Purpose Logging feature set
+	   *	64-bit World wide name
+	   *	{READ,WRITE}_DMA_EXT_GPL commands
+	   *	Segmented DOWNLOAD_MICROCODE
+	   *	Gen1 signaling speed (1.5Gb/s)
+	   *	Gen2 signaling speed (3.0Gb/s)
+	   *	Gen3 signaling speed (6.0Gb/s)
+	   *	Native Command Queueing (NCQ)
+	   *	Host-initiated interface power management
+	   *	Phy event counters
+	   *	NCQ priority information
+	   *	DMA Setup Auto-Activate optimization
+	   *	Software settings preservation
+	   *	SMART Command Transport (SCT) feature set
+	   *	SCT Read/Write Long (AC1), obsolete
+	   *	SCT Write Same (AC2)
+	   *	SCT Features Control (AC4)
+	   *	SCT Data Tables (AC5)
+	    	unknown 206[12] (vendor specific)
+	    	unknown 206[13] (vendor specific)
+Security: 
+	Master password revision code = 65534
+		supported
+	not	enabled
+	not	locked
+		frozen
+	not	expired: security count
+		supported: enhanced erase
+	40min for SECURITY ERASE UNIT. 40min for ENHANCED SECURITY ERASE UNIT. 
+Logical Unit WWN Device Identifier: 50014ee601e91fb5
+	NAA		: 5
+	IEEE OUI	: 0014ee
+	Unique ID	: 601e91fb5
+Checksum: correct
+$ 
+#+end_example
+
+カーネルパラメータの確認
+#+begin_example
+$ sudo sysctl -a | grep dirty
+vm.dirty_background_bytes = 0
+vm.dirty_background_ratio = 10
+vm.dirty_bytes = 0
+vm.dirty_expire_centisecs = 3000
+vm.dirty_ratio = 20
+vm.dirty_writeback_centisecs = 500
+$ 
+#+end_example
+
+** テスト用プログラム
+以下のperlスクリプトに無限ループ内で1KBのデータ（ログ１行に相当する？）をファイルへ
+の書き込みを行って、=sync= をコールして =pdflush= を強制的動かさせる。また秒単位で
+の書き込み回数（アプリ視点から）を集計して標準出力に出します。
+
+#+begin_src perl
+#!/usr/bin/perl
+use strict;
+use warnings;
+use IO::File;
+use Time::HiRes qw( usleep gettimeofday tv_interval );
+use constant DATA => "12345678" x 128;   # 1KBのデータ
+
+my $io = IO::File->new("test.dat", 'w') or die $!;
+my $write_count = 0;
+my $current_second = 0;
+my $last_second = 0;
+my $start_time = Time::HiRes::time;
+
+while (1) {
+
+    $io->syswrite(DATA);
+    # 強制書き込み
+    IO::Handle::sync($io);
+
+    # 時刻情報と書き込み回数の出力処理
+    $current_second = sprintf("%.0f", Time::HiRes::time - $start_time);
+    if ($current_second != $last_second) {
+        print STDOUT "$last_second \t$write_count\n";
+        $last_second = $current_second;
+        $write_count = 0;
+    }
+    $write_count += 1;
+}
+#+end_src
+
+** sarコマンドでIOPSを確認する
+=sar= コマンドを利用して実測IOPS値を確認することが出来ます。出力結果の４列目の =wtps=
+はIOPSに相当します。
+#+begin_example
+$ sar -b 1 10
+Linux 3.15.2-1-ARCH (*******) 	2014年07月08日 	_x86_64_	(4 CPU)
+
+16時47分08秒       tps      rtps      wtps   bread/s   bwrtn/s
+16時47分09秒    136.00      1.00    135.00     24.00   1008.00
+16時47分10秒    120.00      0.00    120.00      0.00    912.00
+16時47分11秒    143.00      0.00    143.00      0.00   1112.00
+16時47分12秒    130.00      0.00    130.00      0.00    976.00
+16時47分13秒     53.00      0.00     53.00      0.00    400.00
+16時47分14秒      0.00      0.00      0.00      0.00      0.00
+16時47分15秒      0.00      0.00      0.00      0.00      0.00
+16時47分16秒      7.00      7.00      0.00    296.00      0.00
+16時47分17秒      0.00      0.00      0.00      0.00      0.00
+16時47分18秒      0.00      0.00      0.00      0.00      0.00
+平均値:      58.90      0.80     58.10     32.00    440.80
+$
+#+end_example
+
+** 測定結果
+ファイル出力処理スクリプトの出力結果。
+- １列目： 実行開始からの秒数
+- ２列目： 秒間 =sync= コール回数
+#+begin_example
+$ ./simple_iops_test.pl
+0 	13
+1 	25
+2 	24
+3 	24
+4 	30
+5 	30
+6 	22
+7 	13
+8 	30
+9 	26
+10 	25
+11 	25
+12 	27
+13 	28
+$
+#+end_example
+
+IOPSの実測値
+#+begin_example
+$ sar -b 1 1000
+Linux 3.15.2-1-ARCH (******) 	2014年07月08日 	_x86_64_	(4 CPU)
+
+16時49分06秒       tps      rtps      wtps   bread/s   bwrtn/s
+16時49分07秒     79.00      0.00     79.00      0.00    624.00
+16時49分08秒    124.00      0.00    124.00      0.00    936.00
+16時49分09秒    122.00      0.00    122.00      0.00   1824.00
+16時49分10秒    125.00      0.00    125.00      0.00    944.00
+16時49分11秒    150.00      0.00    150.00      0.00   1128.00
+16時49分12秒    148.00      0.00    148.00      0.00   1144.00
+16時49分13秒    129.00     30.00     99.00   2488.00    856.00
+16時49分14秒    125.00     48.00     77.00   6264.00    960.00
+16時49分15秒    150.00      0.00    150.00      0.00   1128.00
+16時49分16秒    127.00      0.00    127.00      0.00    952.00
+16時49分17秒    128.00      0.00    128.00      0.00    992.00
+16時49分18秒    125.00      0.00    125.00      0.00    944.00
+16時49分19秒    132.00      0.00    132.00      0.00   1008.00
+16時49分20秒    140.00      0.00    140.00      0.00   1064.00
+16時49分21秒     66.00      0.00     66.00      0.00    488.00
+
+16時49分21秒      0.00      0.00      0.00      0.00      0.00
+平均値:     123.60      5.16    118.44    578.45    990.88
+$ 
+#+end_example
+
+無限ループ処理中にほどんどんのIOが =write= であることが分かります。
+また、ディスクへの秒間書き込み回数が120〜150ですが、アプリ側の秒間書き込み回数
+が約24〜30程度です。
+
+#+begin_html
+<font color="red"><strong>
+#+end_html
+つまり１回の =sync= コールで平均5回のディスクIOが発生したのようです。
+IOPSが150ぐらいのHDDなら、平均で秒間ログ30件しか吐けない結果になります。
+#+begin_html
+</strong></font>
+#+end_html
+
+別途単発のWrite処理を確認したところ、確かに１回の =sync= コール ５回のIOが起きたこと
+が確認されました。（※内部の仕組みはまたわかっていないです。iNodeの更新などメタデータ
+ブロックの更新によるものと推測しています。）
+
+SSD、Fusion-ioの様なIOPSを稼げるストレージについて、机上で計算した結果は以下になりま
+す。
+
+|                     | IOPS      | 秒間syncできる回数 | 備考      |
+|---------------------+-----------+--------------------+-----------|
+| Fusion-io ioDrive2  | 9,608,000 | 1,921,600          |           |
+| SSD (SATA 6 Gbit/s) | 120,000   | 24,000             |           |
+| SSD (PCIe)          | 250,000   | 50,000             |           |
+| SSD (SATA 6 Gbit/s) | 90,000    | 18,000             | 市販のSDD |
+
+秒間１万回以上書けるってホントウ？ SDD持ってないので確認出来ない。
+
+* 参考リンク
+- [[http://d.hatena.ne.jp/naoya/20070523/1179938637][Linux I/O のお話 write 編]]
+- [[http://d.hatena.ne.jp/akuwano/20120223/1330016926][iops確認するための1Liner]]

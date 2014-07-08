@@ -44,7 +44,7 @@ default_asides: [...., custom/asides/tag_cloud.html, custom/asides/category_list
 ためには変更及び追加したファイル一覧です。
 
 #+begin_example
-[akira@hakusai octopress]$ git status
+[akira@jizai octopress]$ git status
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
   (use "git checkout -- <file>..." to discard changes in working directory)

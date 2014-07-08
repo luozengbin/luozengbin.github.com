@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: Iptables | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/iptables/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-06T14:58:38+09:00</updated>
+  <updated>2014-07-08T19:00:12+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -18,7 +18,35 @@
     <link href="http://luozengbin.github.io/blog/2014-06-16-%5B%E6%A4%9C%E8%A8%BC%5Dfirewalld%E3%82%92%E9%81%8A%E3%82%93%E3%81%A7%E3%81%BF%E3%81%9F.html"/>
     <updated>2014-06-16T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[検証]firewalldを遊んでみた</id>
-    <content type="html"><![CDATA[<p>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. firewalld情報収集から始まる</a></li>
+<li><a href="#sec-2">2. 検証環境</a></li>
+<li><a href="#sec-3">3. firewalldのパッケージ構成</a></li>
+<li><a href="#sec-4">4. 定義ファイルの見本</a>
+<ul>
+<li><a href="#sec-4-1">4.1. publicゾーン定義ファイル</a></li>
+<li><a href="#sec-4-2">4.2. SSHサービス定義ファイル</a></li>
+<li><a href="#sec-4-3">4.3. ICMPタイプ定義ファイル</a></li>
+</ul>
+</li>
+<li><a href="#sec-5">5. firewalldコマンドインタフェース</a></li>
+<li><a href="#sec-6">6. インストールとサービスの有効化</a></li>
+<li><a href="#sec-7">7. pingをブロックしてみた</a></li>
+<li><a href="#sec-8">8. sambaサービスを許可してみた</a></li>
+<li><a href="#sec-9">9. 独自ルールで通信履歴をロギングしてみた</a></li>
+<li><a href="#sec-10">10. 独自のゾーンファイルにしてみた</a></li>
+<li><a href="#sec-11">11. NICポートにゾーンの適用</a></li>
+<li><a href="#sec-12">12. GUIツールを使って見た</a></li>
+<li><a href="#sec-13">13. 参考した資料</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
 自宅の <code>Raspberry Pi</code> にfirewalldを入れて遊んで見ました。
 </p>
 
@@ -26,7 +54,7 @@
 
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">firewalld情報収集から始まる</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> firewalld情報収集から始まる</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
 <li>iptablesが土台となります、firewalldの設定はipatbles設定へ変換される
@@ -56,7 +84,7 @@
 
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">検証環境</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> 検証環境</h2>
 <div class="outline-text-2" id="text-2">
 <ul class="org-ul">
 <li>Archlinux : <a href="https://www.archlinux.org/">https://www.archlinux.org/</a>
@@ -69,7 +97,7 @@
 
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">firewalldのパッケージ構成</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> firewalldのパッケージ構成</h2>
 <div class="outline-text-2" id="text-3">
 <pre class="example">
 /etc/
@@ -273,10 +301,10 @@
 
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">定義ファイルの見本</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> 定義ファイルの見本</h2>
 <div class="outline-text-2" id="text-4">
 </div><div id="outline-container-sec-4-1" class="outline-3">
-<h3 id="sec-4-1">publicゾーン定義ファイル</h3>
+<h3 id="sec-4-1"><span class="section-number-3">4.1</span> publicゾーン定義ファイル</h3>
 <div class="outline-text-3" id="text-4-1">
 <pre class="example">
 [akira@pipi ~]$ cat /usr/lib/firewalld/zones/public.xml 
@@ -293,7 +321,7 @@
 </div>
 
 <div id="outline-container-sec-4-2" class="outline-3">
-<h3 id="sec-4-2">SSHサービス定義ファイル</h3>
+<h3 id="sec-4-2"><span class="section-number-3">4.2</span> SSHサービス定義ファイル</h3>
 <div class="outline-text-3" id="text-4-2">
 <p>
 プロトコール名とポート番号で識別する。
@@ -312,7 +340,7 @@
 </div>
 
 <div id="outline-container-sec-4-3" class="outline-3">
-<h3 id="sec-4-3">ICMPタイプ定義ファイル</h3>
+<h3 id="sec-4-3"><span class="section-number-3">4.3</span> ICMPタイプ定義ファイル</h3>
 <div class="outline-text-3" id="text-4-3">
 <p>
 shortタグのICMPタイプ名で識別する。使用可能なタイプ名は <code>iptables -p icmp -h</code> で確認
@@ -374,7 +402,7 @@ address-mask-reply
 
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">firewalldコマンドインタフェース</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> firewalldコマンドインタフェース</h2>
 <div class="outline-text-2" id="text-5">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -629,7 +657,7 @@ address-mask-reply
 
 
 <div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6">インストールとサービスの有効化</h2>
+<h2 id="sec-6"><span class="section-number-2">6</span> インストールとサービスの有効化</h2>
 <div class="outline-text-2" id="text-6">
 <p>
 <code>pacman</code> コマンドでインストール
@@ -722,7 +750,7 @@ Alias=dbus-org.fedoraproject.FirewallD1.service
 
 
 <div id="outline-container-sec-7" class="outline-2">
-<h2 id="sec-7">pingをブロックしてみた</h2>
+<h2 id="sec-7"><span class="section-number-2">7</span> pingをブロックしてみた</h2>
 <div class="outline-text-2" id="text-7">
 <p>
 <code>public</code> ゾーンデフォルト状態ではすべてのICMPタイプを許可する。ここではpingをブロック
@@ -768,7 +796,7 @@ C:\Users\akira&gt;
 
 
 <div id="outline-container-sec-8" class="outline-2">
-<h2 id="sec-8">sambaサービスを許可してみた</h2>
+<h2 id="sec-8"><span class="section-number-2">8</span> sambaサービスを許可してみた</h2>
 <div class="outline-text-2" id="text-8">
 <pre class="example">
 [akira@pipi ~]$ sudo firewall-cmd --add-service=samba --zone=public
@@ -788,7 +816,7 @@ success
 
 
 <div id="outline-container-sec-9" class="outline-2">
-<h2 id="sec-9">独自ルールで通信履歴をロギングしてみた</h2>
+<h2 id="sec-9"><span class="section-number-2">9</span> 独自ルールで通信履歴をロギングしてみた</h2>
 <div class="outline-text-2" id="text-9">
 <p>
 <code>Rich Language</code> を用いて、特定のクライアントからhttpサービスを利用時にロギングする。
@@ -823,7 +851,7 @@ Jun 16 14:13:44 pipi kernel: [ 2120.509739] http connectionIN=eth0 OUT= MAC=8c:8
 
 
 <div id="outline-container-sec-10" class="outline-2">
-<h2 id="sec-10">独自のゾーンファイルにしてみた</h2>
+<h2 id="sec-10"><span class="section-number-2">10</span> 独自のゾーンファイルにしてみた</h2>
 <div class="outline-text-2" id="text-10">
 <p>
 <code>/etc/firewalld/zones/</code> 配下に独自のゾーンファイルを作成する。
@@ -911,18 +939,18 @@ success
 
 
 <div id="outline-container-sec-11" class="outline-2">
-<h2 id="sec-11">NICポートにゾーンの適用</h2>
+<h2 id="sec-11"><span class="section-number-2">11</span> NICポートにゾーンの適用</h2>
 <div class="outline-text-2" id="text-11">
 <p>
 起動した状態で <code>--remove-interface</code> で適用ゾーンをクリアしようとすると
 <code>UNKNOWN_INTERFACE</code> で怒られた。一度 <code>--add-interface</code> してから使えるようになる。
 </p>
 <pre class="example">
-[akira@hakusai ~]$ sudo firewall-cmd --remove-interface=eth0
+[akira@jizai ~]$ sudo firewall-cmd --remove-interface=eth0
 Error: UNKNOWN_INTERFACE: eth0
-[akira@hakusai ~]$ sudo firewall-cmd --add-interface=eth0 --zone=home
+[akira@jizai ~]$ sudo firewall-cmd --add-interface=eth0 --zone=home
 success
-[akira@hakusai ~]$ sudo firewall-cmd --remove-interface=eth0
+[akira@jizai ~]$ sudo firewall-cmd --remove-interface=eth0
 </pre>
 </div>
 </div>
@@ -931,7 +959,7 @@ success
 
 
 <div id="outline-container-sec-12" class="outline-2">
-<h2 id="sec-12">GUIツールを使って見た</h2>
+<h2 id="sec-12"><span class="section-number-2">12</span> GUIツールを使って見た</h2>
 <div class="outline-text-2" id="text-12">
 <p>
 firewalldのGUIインタフェースツール <code>/usr/bin/firewall-applet</code> として提供されている。
@@ -955,7 +983,7 @@ firewalldのGUIインタフェースツール <code>/usr/bin/firewall-applet</co
 
 
 <div id="outline-container-sec-13" class="outline-2">
-<h2 id="sec-13">参考した資料</h2>
+<h2 id="sec-13"><span class="section-number-2">13</span> 参考した資料</h2>
 <div class="outline-text-2" id="text-13">
 <p>
 Linux女子部　firewalld徹底入門！

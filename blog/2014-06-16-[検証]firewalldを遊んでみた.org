@@ -576,11 +576,11 @@ success
 起動した状態で =--remove-interface= で適用ゾーンをクリアしようとすると
 =UNKNOWN_INTERFACE= で怒られた。一度 =--add-interface= してから使えるようになる。
 #+begin_example
-[akira@hakusai ~]$ sudo firewall-cmd --remove-interface=eth0
+[akira@jizai ~]$ sudo firewall-cmd --remove-interface=eth0
 Error: UNKNOWN_INTERFACE: eth0
-[akira@hakusai ~]$ sudo firewall-cmd --add-interface=eth0 --zone=home
+[akira@jizai ~]$ sudo firewall-cmd --add-interface=eth0 --zone=home
 success
-[akira@hakusai ~]$ sudo firewall-cmd --remove-interface=eth0
+[akira@jizai ~]$ sudo firewall-cmd --remove-interface=eth0
 #+end_example
 
 * GUIツールを使って見た
