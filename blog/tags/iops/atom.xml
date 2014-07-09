@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: Iops | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/iops/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-08T19:00:10+09:00</updated>
+  <updated>2014-07-09T13:43:25+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -251,29 +251,29 @@ $
 
 <div class="org-src-container">
 
-<pre class="src src-perl"><span style="color: #888a85; font-style: italic;">#</span><span style="color: #888a85; font-style: italic;">!/usr/bin/perl</span>
-<span style="color: #729fcf; font-weight: bold;">use</span> <span style="color: #5E8C6A;">strict</span>;
-<span style="color: #729fcf; font-weight: bold;">use</span> <span style="color: #5E8C6A;">warnings</span>;
-<span style="color: #729fcf; font-weight: bold;">use</span> <span style="color: #5E8C6A;">IO</span>::File;
-<span style="color: #729fcf; font-weight: bold;">use</span> <span style="color: #5E8C6A;">Time</span>::HiRes qw<span style="color: #ad7fa8;">( usleep gettimeofday tv_interval )</span>;
-<span style="color: #729fcf; font-weight: bold;">use</span> <span style="color: #5E8C6A;">constant</span> DATA =&gt; <span style="color: #ad7fa8;">"12345678"</span> x 128;   <span style="color: #888a85; font-style: italic;"># 1KB&#12398;&#12487;&#12540;&#12479;</span>
+<pre class="src src-perl"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/usr/bin/perl</span>
+<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">strict</span>;
+<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">warnings</span>;
+<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">IO</span>::File;
+<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">Time</span>::HiRes qw<span style="color: #bcee68; font-style: italic;">( usleep gettimeofday tv_interval )</span>;
+<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">constant</span> DATA =&gt; <span style="color: #bcee68; font-style: italic;">"12345678"</span> x 128;   <span style="color: #888a85;"># 1KB&#12398;&#12487;&#12540;&#12479;</span>
 
-<span style="color: #2DA6F5; font-weight: bold;">my</span> $<span style="color: #ff6347;">io</span> = IO::File-&gt;new(<span style="color: #ad7fa8;">"test.dat"</span>, <span style="color: #ad7fa8;">'w'</span>) or <span style="color: #729fcf; font-weight: bold;">die</span> $!;
-<span style="color: #2DA6F5; font-weight: bold;">my</span> $<span style="color: #ff6347;">write_count</span> = 0;
-<span style="color: #2DA6F5; font-weight: bold;">my</span> $<span style="color: #ff6347;">current_second</span> = 0;
-<span style="color: #2DA6F5; font-weight: bold;">my</span> $<span style="color: #ff6347;">last_second</span> = 0;
-<span style="color: #2DA6F5; font-weight: bold;">my</span> $<span style="color: #ff6347;">start_time</span> = Time::HiRes::time;
+<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">io</span> = IO::File-&gt;new(<span style="color: #bcee68; font-style: italic;">"test.dat"</span>, <span style="color: #bcee68; font-style: italic;">'w'</span>) or <span style="color: #00bfff; font-weight: bold;">die</span> $!;
+<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">write_count</span> = 0;
+<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">current_second</span> = 0;
+<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">last_second</span> = 0;
+<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">start_time</span> = Time::HiRes::time;
 
-<span style="color: #729fcf; font-weight: bold;">while</span> (1) {
+<span style="color: #00bfff; font-weight: bold;">while</span> (1) {
 
     $<span style="color: #ff6347;">io</span>-&gt;syswrite(DATA);
-    <span style="color: #888a85; font-style: italic;"># &#24375;&#21046;&#26360;&#12365;&#36796;&#12415;</span>
+    <span style="color: #888a85;"># &#24375;&#21046;&#26360;&#12365;&#36796;&#12415;</span>
     IO::Handle::sync($<span style="color: #ff6347;">io</span>);
 
-    <span style="color: #888a85; font-style: italic;"># &#26178;&#21051;&#24773;&#22577;&#12392;&#26360;&#12365;&#36796;&#12415;&#22238;&#25968;&#12398;&#20986;&#21147;&#20966;&#29702;</span>
-    $<span style="color: #ff6347;">current_second</span> = sprintf(<span style="color: #ad7fa8;">"%.0f"</span>, Time::HiRes::time - $<span style="color: #ff6347;">start_time</span>);
-    <span style="color: #729fcf; font-weight: bold;">if</span> ($<span style="color: #ff6347;">current_second</span> != $<span style="color: #ff6347;">last_second</span>) {
-        print STDOUT <span style="color: #ad7fa8;">"$last_second \t$write_count\n"</span>;
+    <span style="color: #888a85;"># &#26178;&#21051;&#24773;&#22577;&#12392;&#26360;&#12365;&#36796;&#12415;&#22238;&#25968;&#12398;&#20986;&#21147;&#20966;&#29702;</span>
+    $<span style="color: #ff6347;">current_second</span> = sprintf(<span style="color: #bcee68; font-style: italic;">"%.0f"</span>, Time::HiRes::time - $<span style="color: #ff6347;">start_time</span>);
+    <span style="color: #00bfff; font-weight: bold;">if</span> ($<span style="color: #ff6347;">current_second</span> != $<span style="color: #ff6347;">last_second</span>) {
+        print STDOUT <span style="color: #bcee68; font-style: italic;">"$last_second \t$write_count\n"</span>;
         $<span style="color: #ff6347;">last_second</span> = $<span style="color: #ff6347;">current_second</span>;
         $<span style="color: #ff6347;">write_count</span> = 0;
     }
@@ -448,7 +448,7 @@ SSD、Fusion-ioの様なIOPSを稼げるストレージについて、机上で�
 </table>
 
 <p>
-秒間１万回以上書けるってホントウ？ SDD持ってないので確認出来ない。
+秒間１万回以上書けるってホントウ？ SSD持ってないので確認出来ない。
 </p>
 </div>
 </div>
