@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Linux | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-09T13:43:25+09:00</updated>
+  <updated>2014-07-21T20:45:44+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,185 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]ffmpegでスクリンキャストを取る]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html"/>
+    <updated>2014-07-21T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]ffmpegでスクリンキャストを取る</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 特定のウィンドウを録画する</a></li>
+<li><a href="#sec-2">2. 全画面を録画する</a></li>
+<li><a href="#sec-3">3. サンプル</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+<code>ffmpeg</code> と <code>xwininfo</code> コマンドでスクリンキャストを取るシェールスクリプトを作成してみた。
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 特定のウィンドウを録画する</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+第一引数に録画ビデオファイルの保存パスを指定する。
+</p>
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+
+<span style="color: #74af68;">###########################################################################</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">fsc-window.sh - take screen video cast for selected window</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">Authors: Luo Zengbin <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">GNU General Public License for more details.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/">&lt;http://www.gnu.org/licenses/&gt;</a>.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">Usage:</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">$fsc-window.sh $1 &#31532;&#19968;&#24341;&#25968;&#12395;&#37682;&#30011;&#12499;&#12487;&#12458;&#12501;&#12449;&#12452;&#12523;&#12398;&#20445;&#23384;&#12497;&#12473;&#12434;&#25351;&#23450;&#12377;&#12427;&#12290;</span>
+<span style="color: #74af68;">###########################################################################</span>
+
+<span style="color: #74af68;">####################################</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">&#22855;&#25968;&#12434;&#20598;&#25968;&#12395;&#22793;&#25563;&#12377;&#12427;&#20966;&#29702;</span>
+<span style="color: #74af68;">####################################</span>
+<span style="color: #ffad29; font-weight: bold;">function</span> <span style="color: #00ede1; font-weight: bold;">even_round</span> {
+    <span style="color: #ffad29; font-weight: bold;">if</span> [ <span style="color: #fa8072;">`expr $1 % 2`</span> == 0 ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+        <span style="color: #23d7d7;">echo</span> $<span style="color: #dbdb95;">1</span>
+    <span style="color: #ffad29; font-weight: bold;">else</span>
+        <span style="color: #23d7d7;">echo</span> $(($<span style="color: #dbdb95;">1</span> - 1))
+    <span style="color: #ffad29; font-weight: bold;">fi</span>
+}
+
+<span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"&#37682;&#30011;&#23550;&#35937;Window&#12434;&#12459;&#12540;&#12477;&#12523;&#12391;&#36984;&#25246;&#12375;&#12390;&#12367;&#12384;&#12373;&#12356;&#12290;"</span>
+<span style="color: #dbdb95;">VFILE</span>=$<span style="color: #dbdb95;">1</span>
+<span style="color: #dbdb95;">INFO</span>=$(<span style="color: #fa8072;">xwininfo</span> -frame)
+
+<span style="color: #dbdb95;">WIN_GEO</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">INFO</span> | grep -oEe <span style="color: #e67128;">'geometry [0-9]+x[0-9]+'</span> | grep -oEe <span style="color: #e67128;">'[0-9]+x[0-9]+'</span>)
+<span style="color: #dbdb95;">WIN_XY</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">INFO</span> | grep -oEe <span style="color: #e67128;">'Corners:\s+\+[0-9]+\+[0-9]+'</span> | grep -oEe <span style="color: #e67128;">'[0-9]+\+[0-9]+'</span> | sed -e <span style="color: #e67128;">'s/\+/,/'</span> )
+
+<span style="color: #74af68;"># </span><span style="color: #74af68;">Windows&#12398;&#27178;&#12469;&#12452;&#12474;&#12392;&#32294;&#12469;&#12452;&#12474;&#12434;&#20598;&#25968;&#12395;&#12377;&#12427;</span>
+<span style="color: #dbdb95;">WIN_GEO_X</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">WIN_GEO</span> | cut -d <span style="color: #e67128;">'x'</span> -f 1)
+<span style="color: #dbdb95;">WIN_GEO_Y</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">WIN_GEO</span> | cut -d <span style="color: #e67128;">'x'</span> -f 2)
+
+<span style="color: #dbdb95;">WIN_GEO</span>=<span style="color: #e67128;">"$(</span><span style="color: #fa8072;">even_round</span><span style="color: #e67128;"> $WIN_GEO_X)x$(</span><span style="color: #fa8072;">even_round</span><span style="color: #e67128;"> $WIN_GEO_Y)"</span>
+
+<span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"&#30011;&#38754;&#12469;&#12452;&#12474;&#65306;$WIN_GEO"</span>
+<span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"&#30011;&#38754;&#20301;&#32622;  &#65306;$WIN_XY"</span>
+
+<span style="color: #74af68;"># </span><span style="color: #74af68;">&#37682;&#30011;&#38283;&#22987;</span>
+ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: #dbdb95;">WIN_GEO</span> -i :0.0+$<span style="color: #dbdb95;">WIN_XY</span> <span style="color: #e67128;">\</span>
+       -dcodec copy -pix_fmt yuv420p -c:v libx264 -preset veryfast -qscale 1 -y $<span style="color: #dbdb95;">VFILE</span>
+</pre>
+</div>
+
+<p>
+ハマッたところ
+</p>
+<ul class="org-ul">
+<li>ビデオの横と縦のサイズを偶数にしないと、iphoneで再生時に真っグリンな画面しか見れない
+</li>
+<li>shell関数の戻り値は <code>return</code> じゃなくて、 <code>echo</code> を使うべき。 <code>return</code> はプロセスの
+実行結果ステータスと同じ使い方、ステータスを示すに使う
+</li>
+</ul>
+
+<p>
+コマンドの便利なオプション
+</p>
+<ul class="org-ul">
+<li><code>xwininfo -frame</code> 対象のウィンドウをカーソルで選択できるオプション
+</li>
+<li><code>ffmpeg -show_region 1</code> 録画対象範囲を点線で囲んで分かりやすくするオプション、1は点
+線の太さを示す
+</li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 全画面を録画する</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+<code>xwininfo -root</code> でフルスクリーンの情報を取得することができます。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+
+<span style="color: #74af68;">###########################################################################</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">fsc-full.sh - take full screen video cast</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">Authors: Luo Zengbin <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">GNU General Public License for more details.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/">&lt;http://www.gnu.org/licenses/&gt;</a>.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">Usage:</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">$fsc-full.sh $1 &#31532;&#19968;&#24341;&#25968;&#12395;&#37682;&#30011;&#12499;&#12487;&#12458;&#12501;&#12449;&#12452;&#12523;&#12398;&#20445;&#23384;&#12497;&#12473;&#12434;&#25351;&#23450;&#12377;&#12427;&#12290;</span>
+<span style="color: #74af68;">###########################################################################</span>
+
+<span style="color: #dbdb95;">WIN_GEO</span>=$(<span style="color: #fa8072;">xwininfo</span> -root | grep <span style="color: #e67128;">'geometry'</span> | awk <span style="color: #e67128;">'{print $2;}'</span> | cut -d <span style="color: #e67128;">'+'</span> -f 1)
+
+<span style="color: #74af68;"># </span><span style="color: #74af68;">&#37682;&#30011;&#38283;&#22987;</span>
+ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: #dbdb95;">WIN_GEO</span> -i :0.0 <span style="color: #e67128;">\</span>
+       -dcodec copy -pix_fmt yuv420p -c:v libx264 -preset veryfast -qscale 1 -y $<span style="color: #dbdb95;">1</span>
+</pre>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> サンプル</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+録画テストサンプル
+</p>
+<video controls>
+   <source src="video/2014-07-21-ffmpeg-test.mp4">
+</video>
+
+<p>
+ばっちりだね。 めでたしめでたし。
+</p>
+</div>
+</div>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[検証]syncシステムコールの性能について]]></title>
@@ -251,33 +430,33 @@ $
 
 <div class="org-src-container">
 
-<pre class="src src-perl"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/usr/bin/perl</span>
-<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">strict</span>;
-<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">warnings</span>;
-<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">IO</span>::File;
-<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">Time</span>::HiRes qw<span style="color: #bcee68; font-style: italic;">( usleep gettimeofday tv_interval )</span>;
-<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">constant</span> DATA =&gt; <span style="color: #bcee68; font-style: italic;">"12345678"</span> x 128;   <span style="color: #888a85;"># 1KB&#12398;&#12487;&#12540;&#12479;</span>
+<pre class="src src-perl"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/usr/bin/perl</span>
+<span style="color: #ffad29; font-weight: bold;">use</span> <span style="color: #008b8b;">strict</span>;
+<span style="color: #ffad29; font-weight: bold;">use</span> <span style="color: #008b8b;">warnings</span>;
+<span style="color: #ffad29; font-weight: bold;">use</span> <span style="color: #008b8b;">IO</span>::File;
+<span style="color: #ffad29; font-weight: bold;">use</span> <span style="color: #008b8b;">Time</span>::HiRes qw<span style="color: #e67128;">( usleep gettimeofday tv_interval )</span>;
+<span style="color: #ffad29; font-weight: bold;">use</span> <span style="color: #008b8b;">constant</span> DATA =&gt; <span style="color: #e67128;">"12345678"</span> x 128;   <span style="color: #74af68;"># 1KB&#12398;&#12487;&#12540;&#12479;</span>
 
-<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">io</span> = IO::File-&gt;new(<span style="color: #bcee68; font-style: italic;">"test.dat"</span>, <span style="color: #bcee68; font-style: italic;">'w'</span>) or <span style="color: #00bfff; font-weight: bold;">die</span> $!;
-<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">write_count</span> = 0;
-<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">current_second</span> = 0;
-<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">last_second</span> = 0;
-<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">start_time</span> = Time::HiRes::time;
+<span style="color: #34cae2;">my</span> $<span style="color: #dbdb95;">io</span> = IO::File-&gt;new(<span style="color: #e67128;">"test.dat"</span>, <span style="color: #e67128;">'w'</span>) or <span style="color: #ffad29; font-weight: bold;">die</span> $!;
+<span style="color: #34cae2;">my</span> $<span style="color: #dbdb95;">write_count</span> = 0;
+<span style="color: #34cae2;">my</span> $<span style="color: #dbdb95;">current_second</span> = 0;
+<span style="color: #34cae2;">my</span> $<span style="color: #dbdb95;">last_second</span> = 0;
+<span style="color: #34cae2;">my</span> $<span style="color: #dbdb95;">start_time</span> = Time::HiRes::time;
 
-<span style="color: #00bfff; font-weight: bold;">while</span> (1) {
+<span style="color: #ffad29; font-weight: bold;">while</span> (1) {
 
-    $<span style="color: #ff6347;">io</span>-&gt;syswrite(DATA);
-    <span style="color: #888a85;"># &#24375;&#21046;&#26360;&#12365;&#36796;&#12415;</span>
-    IO::Handle::sync($<span style="color: #ff6347;">io</span>);
+    $<span style="color: #dbdb95;">io</span>-&gt;syswrite(DATA);
+    <span style="color: #74af68;"># &#24375;&#21046;&#26360;&#12365;&#36796;&#12415;</span>
+    IO::Handle::sync($<span style="color: #dbdb95;">io</span>);
 
-    <span style="color: #888a85;"># &#26178;&#21051;&#24773;&#22577;&#12392;&#26360;&#12365;&#36796;&#12415;&#22238;&#25968;&#12398;&#20986;&#21147;&#20966;&#29702;</span>
-    $<span style="color: #ff6347;">current_second</span> = sprintf(<span style="color: #bcee68; font-style: italic;">"%.0f"</span>, Time::HiRes::time - $<span style="color: #ff6347;">start_time</span>);
-    <span style="color: #00bfff; font-weight: bold;">if</span> ($<span style="color: #ff6347;">current_second</span> != $<span style="color: #ff6347;">last_second</span>) {
-        print STDOUT <span style="color: #bcee68; font-style: italic;">"$last_second \t$write_count\n"</span>;
-        $<span style="color: #ff6347;">last_second</span> = $<span style="color: #ff6347;">current_second</span>;
-        $<span style="color: #ff6347;">write_count</span> = 0;
+    <span style="color: #74af68;"># &#26178;&#21051;&#24773;&#22577;&#12392;&#26360;&#12365;&#36796;&#12415;&#22238;&#25968;&#12398;&#20986;&#21147;&#20966;&#29702;</span>
+    $<span style="color: #dbdb95;">current_second</span> = sprintf(<span style="color: #e67128;">"%.0f"</span>, Time::HiRes::time - $<span style="color: #dbdb95;">start_time</span>);
+    <span style="color: #ffad29; font-weight: bold;">if</span> ($<span style="color: #dbdb95;">current_second</span> != $<span style="color: #dbdb95;">last_second</span>) {
+        print STDOUT <span style="color: #e67128;">"$last_second \t$write_count\n"</span>;
+        $<span style="color: #dbdb95;">last_second</span> = $<span style="color: #dbdb95;">current_second</span>;
+        $<span style="color: #dbdb95;">write_count</span> = 0;
     }
-    $<span style="color: #ff6347;">write_count</span> += 1;
+    $<span style="color: #dbdb95;">write_count</span> += 1;
 }
 </pre>
 </div>
@@ -477,7 +656,34 @@ SSD、Fusion-ioの様なIOPSを稼げるストレージについて、机上で�
     <link href="http://luozengbin.github.io/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html"/>
     <updated>2014-06-30T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[検証]SSHトンネル機能でVPN環境の構築</id>
-    <content type="html"><![CDATA[<p>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. SSHトンネリング</a></li>
+<li><a href="#sec-2">2. TUNデバイス利用方式</a>
+<ul>
+<li><a href="#sec-2-1">2.1. 1.sshdに対してトンネリングを有効化する</a></li>
+<li><a href="#sec-2-2">2.2. 2.rootユーザログインできるように公開鍵を登録する</a></li>
+<li><a href="#sec-2-3">2.3. 3.SSHトンネルを開設する</a></li>
+<li><a href="#sec-2-4">2.4. 4.各TUNデバイスにIPアドレスを付与する</a></li>
+<li><a href="#sec-2-5">2.5. 5.区間１トンネルと区間２トンネルを結び付ける</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. TAPデバイス利用方式</a>
+<ul>
+<li><a href="#sec-3-1">3.1. 区間１の設定</a></li>
+<li><a href="#sec-3-2">3.2. 区間２の設定</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. おまけに</a></li>
+<li><a href="#sec-5">5. 参考リンク</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
 友人に自宅のLAN内のコンテンツを共有するため、VPNについて検証しました。
 自宅のルータはYamahaのRTX810です。このルータのVPN機能を使えば簡単に出来てしまうので面
 白くないと思って、敢えてSSHのトンネル機能を使って0円VPN環境を構築してみた。
@@ -545,7 +751,7 @@ SSD、Fusion-ioの様なIOPSを稼げるストレージについて、机上で�
 
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">SSHトンネリング</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> SSHトンネリング</h2>
 <div class="outline-text-2" id="text-1">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -629,37 +835,37 @@ vermagic:       3.15.2-1-ARCH SMP preempt mod_unload modversions
 
 <div class="org-src-container">
 
-<pre class="src src-c"><span style="color: #888a85;">/* </span><span style="color: #888a85;">Initialize net device. </span><span style="color: #888a85;">*/</span>
-<span style="color: #729fcf; font-weight: bold;">static</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">tun_net_init</span>(<span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">net_device</span> *<span style="color: #ff6347;">dev</span>)
+<pre class="src src-c"><span style="color: #74af68;">/* </span><span style="color: #74af68;">Initialize net device. </span><span style="color: #74af68;">*/</span>
+<span style="color: #ffad29; font-weight: bold;">static</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">tun_net_init</span>(<span style="color: #ffad29; font-weight: bold;">struct</span> <span style="color: #34cae2;">net_device</span> *<span style="color: #dbdb95;">dev</span>)
 {
-    <span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">tun_struct</span> *<span style="color: #ff6347;">tun</span> = netdev_priv(dev);
+    <span style="color: #ffad29; font-weight: bold;">struct</span> <span style="color: #34cae2;">tun_struct</span> *<span style="color: #dbdb95;">tun</span> = netdev_priv(dev);
 
-    <span style="color: #729fcf; font-weight: bold;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
-    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TUN_DEV:
+    <span style="color: #ffad29; font-weight: bold;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
+    <span style="color: #ffad29; font-weight: bold;">case</span> TUN_TUN_DEV:
         dev-&gt;netdev_ops = &amp;tun_netdev_ops;
 
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Point-to-Point TUN Device </span><span style="color: #888a85;">*/</span>
+        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Point-to-Point TUN Device </span><span style="color: #74af68;">*/</span>
         dev-&gt;hard_header_len = 0;
         dev-&gt;addr_len = 0;
         dev-&gt;mtu = 1500;
 
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Zero header length </span><span style="color: #888a85;">*/</span>
+        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Zero header length </span><span style="color: #74af68;">*/</span>
         dev-&gt;type = ARPHRD_NONE;
         dev-&gt;flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
-        <span style="color: #729fcf; font-weight: bold;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #74af68;">/* </span><span style="color: #74af68;">We prefer our own queue length </span><span style="color: #74af68;">*/</span>
+        <span style="color: #ffad29; font-weight: bold;">break</span>;
 
-    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TAP_DEV:
+    <span style="color: #ffad29; font-weight: bold;">case</span> TUN_TAP_DEV:
         dev-&gt;netdev_ops = &amp;tap_netdev_ops;
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Ethernet TAP Device </span><span style="color: #888a85;">*/</span>
+        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Ethernet TAP Device </span><span style="color: #74af68;">*/</span>
         ether_setup(dev);
         dev-&gt;priv_flags &amp;= ~IFF_TX_SKB_SHARING;
         dev-&gt;priv_flags |= IFF_LIVE_ADDR_CHANGE;
 
         eth_hw_addr_random(dev);
 
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
-        <span style="color: #729fcf; font-weight: bold;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #74af68;">/* </span><span style="color: #74af68;">We prefer our own queue length </span><span style="color: #74af68;">*/</span>
+        <span style="color: #ffad29; font-weight: bold;">break</span>;
     }
 }
 </pre>
@@ -676,7 +882,7 @@ TUNデバイスのIP-in-IP方式とppp方式どちらもPPPプロトコルを使
 
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">TUNデバイス利用方式</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> TUNデバイス利用方式</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 TUNデバイスでトンネリングする、iptablesとルーティングテーブルで交通を整理する。
@@ -734,7 +940,7 @@ TUNデバイスでトンネリングする、iptablesとルーティングテー
 </div>
 
 <div id="outline-container-sec-2-1" class="outline-3">
-<h3 id="sec-2-1">1.sshdに対してトンネリングを有効化する</h3>
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> 1.sshdに対してトンネリングを有効化する</h3>
 <div class="outline-text-3" id="text-2-1">
 <p>
 AmazonEC2インスタンスとRaspberryPiが設定対象となります。 <code>/etc/ssh/sshd_config</code> ファイ
@@ -755,7 +961,7 @@ PermitTunnel yes
 </div>
 
 <div id="outline-container-sec-2-2" class="outline-3">
-<h3 id="sec-2-2">2.rootユーザログインできるように公開鍵を登録する</h3>
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> 2.rootユーザログインできるように公開鍵を登録する</h3>
 <div class="outline-text-3" id="text-2-2">
 <p>
 区間１はAmazonEC2へのログインですので、EC2インスタンス作成時に生成された秘密鍵でログ
@@ -775,7 +981,7 @@ PermitTunnel yes
 </div>
 
 <div id="outline-container-sec-2-3" class="outline-3">
-<h3 id="sec-2-3">3.SSHトンネルを開設する</h3>
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> 3.SSHトンネルを開設する</h3>
 <div class="outline-text-3" id="text-2-3">
 <p>
 rootユーザでsshコマンドにオプションを付けてログインすることでSSHトンネルが開設される。
@@ -891,7 +1097,7 @@ tun1: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500
 </div>
 
 <div id="outline-container-sec-2-4" class="outline-3">
-<h3 id="sec-2-4">4.各TUNデバイスにIPアドレスを付与する</h3>
+<h3 id="sec-2-4"><span class="section-number-3">2.4</span> 4.各TUNデバイスにIPアドレスを付与する</h3>
 <div class="outline-text-3" id="text-2-4">
 <p>
 Tomodatiの <code>tun0</code> デバイスに <code>192.168.3.1</code> アドレスを指定する、Point-To-Point通信のた
@@ -975,7 +1181,7 @@ tun1: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500
 </div>
 
 <div id="outline-container-sec-2-5" class="outline-3">
-<h3 id="sec-2-5">5.区間１トンネルと区間２トンネルを結び付ける</h3>
+<h3 id="sec-2-5"><span class="section-number-3">2.5</span> 5.区間１トンネルと区間２トンネルを結び付ける</h3>
 <div class="outline-text-3" id="text-2-5">
 <p>
 AmazonEC2にてiptablesのSNAT機能を用いて区間１と区間２のパケットをルーティングさせる。
@@ -1045,7 +1251,7 @@ RaspberryPiに <code>192.168.100.0/24</code> への転送ルートを定義す�
 
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">TAPデバイス利用方式</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> TAPデバイス利用方式</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 TAPデバイスはLayer2(Ethernet)をエミュレートできるため <code>bridge</code> カーネルモジュールや
@@ -1112,7 +1318,7 @@ VPNネットワーク構成概要
 </div>
 
 <div id="outline-container-sec-3-1" class="outline-3">
-<h3 id="sec-3-1">区間１の設定</h3>
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> 区間１の設定</h3>
 <div class="outline-text-3" id="text-3-1">
 <p>
 Tomodati <code>/root/.ssh/config</code> ：SSHクライアント設定
@@ -1175,7 +1381,7 @@ brctl addif br0 tap0
 </div>
 
 <div id="outline-container-sec-3-2" class="outline-3">
-<h3 id="sec-3-2">区間２の設定</h3>
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> 区間２の設定</h3>
 <div class="outline-text-3" id="text-3-2">
 <p>
 AmazonEC2 <code>/root/.ssh/config</code> ：SSHクライアント設定
@@ -1238,7 +1444,7 @@ sysctl -w net.ipv4.conf.eth0.proxy_arp=1
 
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">おまけに</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> おまけに</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 今後機会があれば、TUNデバイス方式とTAPデバイス方式の性能を比較したいと思います。
@@ -1254,7 +1460,7 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
 
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">参考リンク</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> 参考リンク</h2>
 <div class="outline-text-2" id="text-5">
 <ul class="org-ul">
 <li><a href="http://www.komoto.org/vpn/index.html">VPN技術について</a>
@@ -1285,7 +1491,22 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
     <link href="http://luozengbin.github.io/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html"/>
     <updated>2014-06-21T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[メモ]リモートxの接続方法</id>
-    <content type="html"><![CDATA[<p>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 検証環境</a></li>
+<li><a href="#sec-2">2. xhostによるXアプリを起動する方式</a></li>
+<li><a href="#sec-3">3. SSH X11フォワード方式</a></li>
+<li><a href="#sec-4">4. VNC方式</a></li>
+<li><a href="#sec-5">5. ローカルで異なるユーザでXアプリの起動</a></li>
+<li><a href="#sec-6">6. 参考サイト</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
 リモートLinuxサーバでXアプリを利用するケースはしばしばあります。
 実現方式について調べてみた。
 </p>
@@ -1370,7 +1591,7 @@ VNCとXRDP以外のサーバとクライアントの役割
 
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">検証環境</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> 検証環境</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
 <li>クライアント: GDM経由でGnome3が動いているGUI環境
@@ -1397,7 +1618,7 @@ VNCとXRDP以外のサーバとクライアントの役割
 
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">xhostによるXアプリを起動する方式</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> xhostによるXアプリを起動する方式</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 通信イメージ
@@ -1468,7 +1689,7 @@ DISPLAY=192.168.100.13:0.0
 
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">SSH X11フォワード方式</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> SSH X11フォワード方式</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 通信イメージ
@@ -1644,7 +1865,7 @@ leafpad: can't save config file - /home/akira/.config/leafpad/leafpadrc
 
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">VNC方式</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> VNC方式</h2>
 <div class="outline-text-2" id="text-4">
 <ul class="org-ul">
 <li><a href="https://wiki.archlinux.org/index.php/Vncserver_%2528%25E6%2597%25A5%25E6%259C%25AC%25E8%25AA%259E%2529">Archlinux Wiki: Vncserver (日本語)</a>
@@ -1657,7 +1878,7 @@ leafpad: can't save config file - /home/akira/.config/leafpad/leafpadrc
 
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">ローカルで異なるユーザでXアプリの起動</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> ローカルで異なるユーザでXアプリの起動</h2>
 <div class="outline-text-2" id="text-5">
 <p>
 以下のようにコンソールからローカルの環境の別ユーザでXアプリを起動しようとするとエラー
@@ -1705,7 +1926,7 @@ leafpad: ディスプレイをオープンできません:
 
 
 <div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6">参考サイト</h2>
+<h2 id="sec-6"><span class="section-number-2">6</span> 参考サイト</h2>
 <div class="outline-text-2" id="text-6">
 <ul class="org-ul">
 <li><a href="http://vega.sra-tohoku.co.jp/~kabe/vsd/ssh-x.html">最近の豪華なX11環境でsshを使ってＸプロトコルを中継する</a>
@@ -2695,451 +2916,6 @@ firewalldのGUIインタフェースツール <code>/usr/bin/firewall-applet</co
 Linux女子部　firewalld徹底入門！
 <a href="http://www.slideshare.net/enakai/firewalld-study-v10">http://www.slideshare.net/enakai/firewalld-study-v10</a>
 </p>
-</div>
-</div>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[検証]SMTPプロトコール監視してみた]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html"/>
-    <updated>2014-06-13T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[検証]smtpプロトコール監視してみた</id>
-    <content type="html"><![CDATA[<p>
-自宅のPC環境にMTA(postfix)サーバを構築しました。
-１周間ほど保持したので、telnet、nc、tcpdumpコマンドから
-メール送信処理の中身を観測してみたいと思います。
-</p>
-
-
-
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">概要</h2>
-<div class="outline-text-2" id="text-1">
-<p>
-VM環境を立てるのが面倒のため、loopbackインタフェースを通して
-ローカル環境内で検証を行う。
-</p>
-<pre class="example">
-+--------------+         +-------------+
-|              |         |             |
-| クライアント +-- lo ----+  MTAサーバ |
-|              |         |             |
-+--------------+         +-------------+
-  127.0.0.1                127.0.0.1:25
-</pre>
-
-<p>
-<!-- more -->
-</p>
-
-<p>
-ドメイン、メール送受信情報
-</p>
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">MTAサーバFQDN</td>
-<td class="left">mail.home</td>
-</tr>
-
-<tr>
-<td class="left">クライアントFQDN</td>
-<td class="left">jizai.home</td>
-</tr>
-
-<tr>
-<td class="left">送信者メール</td>
-<td class="left">akira@mail.home</td>
-</tr>
-
-<tr>
-<td class="left">受信者メール</td>
-<td class="left">root@mail.home</td>
-</tr>
-</tbody>
-</table>
-
-<p>
-tcpdumpコマンドでloopbackインタフェースのパケットを監視する。
-</p>
-
-<pre class="example">
-[akira@jizai ~]$ sudo tcpdump -n  -i lo port 25
-</pre>
-
-<p>
-telnetからメール送信レシピ、 <span class="underline">★</span> が付いている部分が手入力
-</p>
-<pre class="example">
-[akira@jizai ~]$ telnet localhost 25     ★接続開始
-Trying 127.0.0.1...
-Connected to localhost.
-Escape character is '^]'.
-220 mail.home ESMTP unknown
-HELO jizai.home                          ★メール送信開始宣言
-250 mail.home
-MAIL FROM: &lt;akira@mail.home&gt;             ★送信元を指定する
-250 2.1.0 Ok
-RCPT TO: &lt;root@mail.home&gt;                ★送信先を指定する
-250 2.1.5 Ok
-DATA                                     ★メール本文を開始する
-354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;
-This is a Test mail from telnet
-Hello root!
-.                                        ★メール本文終了
-250 2.0.0 Ok: queued as AB9BF8A107E
-quit                                     ★接続終了
-221 2.0.0 Bye
-Connection closed by foreign host.
-[akira@jizai ~]$
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">telnetからの接続開始</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-localhostの25番ポートへ接続する。
-</p>
-<pre class="example">
-[akira@jizai ~]$ telnet localhost 25
-Trying 127.0.0.1...
-Connected to localhost.
-Escape character is '^]'.
-220 mail.home ESMTP unknown    ★ 説明：MTAサーバから準備完了応答メッセージ
-</pre>
-
-<p>
-tcpdumpの出力にtcpの3ウェイ・ハンドシェイク処理(1-3行目)と
-MTAサーバから最初の応答メッセージ(4-5行目)が表示される。
-</p>
-<pre class="example">
-11:49:33.684755 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [S], seq 1483942186, win 43690, options [mss 65495,sackOK,TS val 2064872 ecr 0,nop,wscale 7], length 0
-11:49:33.684770 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [S.], seq 2082428713, ack 1483942187, win 43690, options [mss 65495,sackOK,TS val 2064872 ecr 2064872,nop,wscale 7], length 0
-11:49:33.684787 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 1, win 342, options [nop,nop,TS val 2064872 ecr 2064872], length 0
-11:49:33.685184 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 1:30, ack 1, win 342, options [nop,nop,TS val 2064872 ecr 2064872], length 29
-11:49:33.685214 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 30, win 342, options [nop,nop,TS val 2064872 ecr 2064872], length 0
-</pre>
-<p>
-気になること、tcpdumpの出力に途中からシーケンス番号が1に変わった。調べてみた結果、
-tcpdump がわかりやすく表示するためでした。 <code>-S</code> を付けることでオリジナルのシーケンス
-番号をそのまま出力することができる。
-</p>
-
-<p>
-MTAログにクライアントからの接続跡が記録された。
-</p>
-<pre class="example">
-Jun 13 11:49:33 localhost postfix/smtpd[4873]: warning: hostname jizai does not resolve to address 192.168.100.3
-Jun 13 11:49:33 localhost postfix/smtpd[4873]: connect from unknown[192.168.100.3]
-</pre>
-<p>
-MTAサーバでHELOからの名前解決にまだ問題が残っているようです。
-DNSサーバに名前登録したはずです。さあ、どうしよう！
-</p>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">メール送信の開始を宣言する</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-<code>HELO &lt;クライアントのホスト名&gt;</code> コマンドでメールサーバに
-にてメール送信の開始を宣言する。
-</p>
-<pre class="example">
-[akira@jizai ~]$ telnet localhost 25
-Trying 127.0.0.1...
-Connected to localhost.
-Escape character is '^]'.
-220 mail.home ESMTP unknown
-HELO jizai.home        ★ HELOコマンド実行
-250 mail.home          ★ サーバからの250応答
-</pre>
-
-<p>
-tcpdumpの出力、クライアントのPUSH（１行目）とサーバのACK（２行目）、
-そしてサーバから応答時のPUSHとクライアントの受信ACKで合計４通が表示された。
-</p>
-<pre class="example">
-10:51:18.385531 IP 127.0.0.1.55748 &gt; 127.0.0.1.25: Flags [P.], seq 1:18, ack 30, win 342, options [nop,nop,TS val 1016282 ecr 1012424], length 17
-10:51:18.385568 IP 127.0.0.1.25 &gt; 127.0.0.1.55748: Flags [.], ack 18, win 342, options [nop,nop,TS val 1016282 ecr 1016282], length 0
-10:51:18.385682 IP 127.0.0.1.25 &gt; 127.0.0.1.55748: Flags [P.], seq 30:45, ack 18, win 342, options [nop,nop,TS val 1016282 ecr 1016282], length 15
-10:51:18.385711 IP 127.0.0.1.55748 &gt; 127.0.0.1.25: Flags [.], ack 45, win 342, options [nop,nop,TS val 1016282 ecr 1016282], length 0
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">送信元を指定する</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-<code>MAIL FROM: &lt;送信元メール&gt;</code> コマンドにて送信元メールアドレスを設定する。
-</p>
-<pre class="example">
-MAIL FROM: &lt;akira@mail.home&gt;
-250 2.1.0 Ok       ★応答コード 250
-</pre>
-
-<p>
-tcpdumpの出力、サーバからのACKと応答メッセージのPUSHが纏めて送信されたため
-TCPやり取りが３通で表示された。
-</p>
-<pre class="example">
-11:50:09.768768 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 18:48, ack 45, win 342, options [nop,nop,TS val 2075697 ecr 2070308], length 30
-11:50:09.768944 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 45:59, ack 48, win 342, options [nop,nop,TS val 2075697 ecr 2075697], length 14
-11:50:09.768976 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 59, win 342, options [nop,nop,TS val 2075697 ecr 2075697], length 0
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">送信先を指定する</h2>
-<div class="outline-text-2" id="text-5">
-<p>
-<code>RCPT TO: &lt;送信先メール&gt;</code> コマンドにて送信先メールアドレスを設定する。
-</p>
-<pre class="example">
-MAIL FROM: &lt;root@mail.home&gt;
-250 2.1.5 Ok     ★応答コード 250
-</pre>
-
-<p>
-tcpdumpの出力、サーバからのACKと応答メッセージのPUSHが纏めて送信されたため
-TCPやり取りが３通で表示された。
-</p>
-<pre class="example">
-11:50:22.696751 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 48:75, ack 59, win 342, options [nop,nop,TS val 2079575 ecr 2075697], length 27
-11:50:22.703097 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 59:73, ack 75, win 342, options [nop,nop,TS val 2079577 ecr 2079575], length 14
-11:50:22.703135 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 73, win 342, options [nop,nop,TS val 2079577 ecr 2079577], length 0
-</pre>
-
-<p>
-また <code>RCPT TO</code> コマンドがMTAサーバに届くと、サーバ側のsmtpdプロセスでメール
-キューイングIDの払出、送信先アドレスのチェック処理が実施される。以下はMTAログです。
-</p>
-<pre class="example">
-Jun 13 11:50:22 localhost postfix/smtpd[4873]: AB9BF8A107E: client=unknown[192.168.100.3]
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6">メール本文を開始する</h2>
-<div class="outline-text-2" id="text-6">
-<p>
-<code>DATA</code> コマンドにてメール本文開始要求をサーバへ送信する。
-</p>
-<pre class="example">
-DATA
-354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;  ★応答コード 354
-</pre>
-
-<p>
-tcpdumpの出力
-</p>
-<pre class="example">
-11:50:44.461274 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 75:81, ack 73, win 342, options [nop,nop,TS val 2086105 ecr 2079577], length 6
-11:50:44.461442 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 73:110, ack 81, win 342, options [nop,nop,TS val 2086105 ecr 2086105], length 37
-11:50:44.461474 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 110, win 342, options [nop,nop,TS val 2086105 ecr 2086105], length 0
-</pre>
-
-<p>
-<span class="underline">telnetターミナルからメール本文を入力する、観測結果から見ると改行が入力されるたびに</span>
-<span class="underline">入力されたテキストがサーバへ送信される。</span>
-</p>
-<pre class="example">
-This is a Test mail from telnet       ★改行１
-Hello root!                           ★改行２
-</pre>
-
-<p>
-tcpdumpの出力
-</p>
-<pre class="example">
-★改行１
-11:50:58.590306 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 81:114, ack 110, win 342, options [nop,nop,TS val 2090343 ecr 2086105], length 33
-11:50:58.628041 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [.], ack 114, win 342, options [nop,nop,TS val 2090355 ecr 2090343], length 0
-
-★改行２
-11:51:09.655315 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 114:127, ack 110, win 342, options [nop,nop,TS val 2093663 ecr 2090355], length 13
-11:51:09.655352 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [.], ack 127, win 342, options [nop,nop,TS val 2093663 ecr 2093663], length 0
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-7" class="outline-2">
-<h2 id="sec-7">メール本文終了</h2>
-<div class="outline-text-2" id="text-7">
-<p>
-.（ピリオド）を入力して、メール本文終了要求をサーバへ送信する。
-</p>
-<pre class="example">
-.
-250 2.0.0 Ok: queued as AB9BF8A107E
-</pre>
-
-<p>
-.（ピリオド）の送信とサーバからの250正常応答受信合計４通。
-</p>
-<pre class="example">
-11:51:21.982567 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 127:130, ack 110, win 342, options [nop,nop,TS val 2097361 ecr 2093663], length 3
-11:51:21.982599 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [.], ack 130, win 342, options [nop,nop,TS val 2097361 ecr 2097361], length 0
-11:51:22.014030 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 110:147, ack 130, win 342, options [nop,nop,TS val 2097370 ecr 2097361], length 37
-11:51:22.014070 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 147, win 342, options [nop,nop,TS val 2097370 ecr 2097370], length 0
-</pre>
-
-<p>
-MTAログにメールのキューイング処理と転送処理の記録が出力された。
-メールヘッダのmessage-id項目がこの時点で払いだされたようです。
-</p>
-<ul class="org-ul">
-<li>形式： <code>yyyymmdd999999.キューイングID@ドメイン名</code>
-</li>
-</ul>
-<pre class="example">
-Jun 13 11:51:21 localhost postfix/cleanup[5028]: AB9BF8A107E: message-id=&lt;20140613025022.AB9BF8A107E@mail.home&gt;
-Jun 13 11:51:22 localhost postfix/qmgr[920]: AB9BF8A107E: from=&lt;akira@mail.home&gt;, size=333, nrcpt=1 (queue active)
-Jun 13 11:51:22 localhost postfix/local[5058]: AB9BF8A107E: to=&lt;akira@mail.home&gt;, orig_to=&lt;root@mail.home&gt;, relay=local, delay=72, delays=72/0.01/0/0.02, dsn=2.0.0, status=sent (delivered to maildir)
-Jun 13 11:51:22 localhost postfix/qmgr[920]: AB9BF8A107E: removed
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-8" class="outline-2">
-<h2 id="sec-8">接続終了</h2>
-<div class="outline-text-2" id="text-8">
-<p>
-<code>quit</code> コマンドにて接続切断する。
-</p>
-<pre class="example">
-quit                 ★ 切断送信
-221 2.0.0 Bye        ★ 211応答
-Connection closed by foreign host.
-</pre>
-
-<pre class="example">
-★ 切断送信
-11:51:42.503665 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [P.], seq 130:136, ack 147, win 342, options [nop,nop,TS val 2103517 ecr 2097370], length 6
-
-★ 211応答
-11:51:42.503825 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [P.], seq 147:162, ack 136, win 342, options [nop,nop,TS val 2103517 ecr 2103517], length 15
-11:51:42.503856 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [.], ack 162, win 342, options [nop,nop,TS val 2103517 ecr 2103517], length 0
-
-★ tcpセッション終了
-11:51:42.503867 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [F.], seq 162, ack 136, win 342, options [nop,nop,TS val 2103517 ecr 2103517], length 0
-11:51:42.503969 IP 192.168.100.3.30760 &gt; 192.168.100.3.25: Flags [F.], seq 136, ack 163, win 342, options [nop,nop,TS val 2103517 ecr 2103517], length 0
-11:51:42.503999 IP 192.168.100.3.25 &gt; 192.168.100.3.30760: Flags [.], ack 137, win 342, options [nop,nop,TS val 2103517 ecr 2103517], length 0
-</pre>
-
-<p>
-MTAログにクライアント切断跡が残ります。
-</p>
-<pre class="example">
-Jun 13 11:51:42 localhost postfix/smtpd[4873]: disconnect from unknown[192.168.100.3]
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-9" class="outline-2">
-<h2 id="sec-9">ncコマンドでファイルからメール送信テスト</h2>
-<div class="outline-text-2" id="text-9">
-<p>
-telnetで入力した内容を <code>sendmail_test.txt</code> に保存し、ncに渡せばコマン１行
-でメール送信することができた。
-</p>
-
-<p>
-<code>sendmail_test.txt</code> の内容。
-</p>
-<pre class="example">
-HELO jizai.home
-MAIL FROM: &lt;akira@mail.home&gt;
-RCPT TO: &lt;root@mail.home&gt;
-DATA
-This is a Test mail from nc
-Hello root!
-.
-</pre>
-
-<p>
-メール送信したみた。
-</p>
-<pre class="example">
-[akira@jizai temp]$ cat sendmail_test.txt | nc localhost 25
-220 mail.home ESMTP unknown
-250 mail.home
-250 2.1.0 Ok
-250 2.1.5 Ok
-354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;
-250 2.0.0 Ok: queued as BE5B98A107E
-[akira@jizai temp]$
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-10" class="outline-2">
-<h2 id="sec-10">習ったこと</h2>
-<div class="outline-text-2" id="text-10">
-<ul class="org-ul">
-<li>tcpdumpのシーケンス番号の出力ルール
-</li>
-<li>DATAブロック内であっても、telnetターミナルで改行すると内容がサーバに送信される
-</li>
-<li>キューイングIDとメールメッセージIDの払出タイミング
-</li>
-</ul>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-11" class="outline-2">
-<h2 id="sec-11">参考</h2>
-<div class="outline-text-2" id="text-11">
-<ul class="org-ul">
-<li><a href="http://www.atmarkit.co.jp/ait/articles/0304/22/news001.html">http://www.atmarkit.co.jp/ait/articles/0304/22/news001.html</a>
-</li>
-</ul>
 </div>
 </div>
 

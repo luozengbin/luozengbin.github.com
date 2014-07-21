@@ -9,11 +9,9 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="Table of Contents 1. IOPSとは
-2. 実機検証 2.1. 環境確認
-2.2. テスト用プログラム
-2.3. sarコマンドでIOPSを確認する
-2.4. 測定結果 3. 参考リンク 商用（本番運用）にて、なんらかの障害発生時にログがロストしないようにトランザクション &hellip;">
+  <meta name="description" content="Table of Contents 1. 特定のウィンドウを録画する
+2. 全画面を録画する
+3. サンプル ffmpeg と xwininfo コマンドでスクリンキャストを取るシェールスクリプトを作成してみた。 1 特定のウィンドウを録画する 第一引数に録画ビデオファイルの保存パスを指定する &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -69,6 +67,200 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html">[メモ]ffmpegでスクリンキャストを取る</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-21T00:00:00+09:00" pubdate data-updated="true">2014-07-21 (Mon)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 特定のウィンドウを録画する</a></li>
+<li><a href="#sec-2">2. 全画面を録画する</a></li>
+<li><a href="#sec-3">3. サンプル</a></li>
+</ul>
+</div>
+</div>
+<p>
+<code>ffmpeg</code> と <code>xwininfo</code> コマンドでスクリンキャストを取るシェールスクリプトを作成してみた。
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 特定のウィンドウを録画する</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+第一引数に録画ビデオファイルの保存パスを指定する。
+</p>
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+
+<span style="color: #74af68;">###########################################################################</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">fsc-window.sh - take screen video cast for selected window</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">Authors: Luo Zengbin <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">GNU General Public License for more details.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/">&lt;http://www.gnu.org/licenses/&gt;</a>.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">Usage:</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">$fsc-window.sh $1 &#31532;&#19968;&#24341;&#25968;&#12395;&#37682;&#30011;&#12499;&#12487;&#12458;&#12501;&#12449;&#12452;&#12523;&#12398;&#20445;&#23384;&#12497;&#12473;&#12434;&#25351;&#23450;&#12377;&#12427;&#12290;</span>
+<span style="color: #74af68;">###########################################################################</span>
+
+<span style="color: #74af68;">####################################</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">&#22855;&#25968;&#12434;&#20598;&#25968;&#12395;&#22793;&#25563;&#12377;&#12427;&#20966;&#29702;</span>
+<span style="color: #74af68;">####################################</span>
+<span style="color: #ffad29; font-weight: bold;">function</span> <span style="color: #00ede1; font-weight: bold;">even_round</span> {
+    <span style="color: #ffad29; font-weight: bold;">if</span> [ <span style="color: #fa8072;">`expr $1 % 2`</span> == 0 ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+        <span style="color: #23d7d7;">echo</span> $<span style="color: #dbdb95;">1</span>
+    <span style="color: #ffad29; font-weight: bold;">else</span>
+        <span style="color: #23d7d7;">echo</span> $(($<span style="color: #dbdb95;">1</span> - 1))
+    <span style="color: #ffad29; font-weight: bold;">fi</span>
+}
+
+<span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"&#37682;&#30011;&#23550;&#35937;Window&#12434;&#12459;&#12540;&#12477;&#12523;&#12391;&#36984;&#25246;&#12375;&#12390;&#12367;&#12384;&#12373;&#12356;&#12290;"</span>
+<span style="color: #dbdb95;">VFILE</span>=$<span style="color: #dbdb95;">1</span>
+<span style="color: #dbdb95;">INFO</span>=$(<span style="color: #fa8072;">xwininfo</span> -frame)
+
+<span style="color: #dbdb95;">WIN_GEO</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">INFO</span> | grep -oEe <span style="color: #e67128;">'geometry [0-9]+x[0-9]+'</span> | grep -oEe <span style="color: #e67128;">'[0-9]+x[0-9]+'</span>)
+<span style="color: #dbdb95;">WIN_XY</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">INFO</span> | grep -oEe <span style="color: #e67128;">'Corners:\s+\+[0-9]+\+[0-9]+'</span> | grep -oEe <span style="color: #e67128;">'[0-9]+\+[0-9]+'</span> | sed -e <span style="color: #e67128;">'s/\+/,/'</span> )
+
+<span style="color: #74af68;"># </span><span style="color: #74af68;">Windows&#12398;&#27178;&#12469;&#12452;&#12474;&#12392;&#32294;&#12469;&#12452;&#12474;&#12434;&#20598;&#25968;&#12395;&#12377;&#12427;</span>
+<span style="color: #dbdb95;">WIN_GEO_X</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">WIN_GEO</span> | cut -d <span style="color: #e67128;">'x'</span> -f 1)
+<span style="color: #dbdb95;">WIN_GEO_Y</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">WIN_GEO</span> | cut -d <span style="color: #e67128;">'x'</span> -f 2)
+
+<span style="color: #dbdb95;">WIN_GEO</span>=<span style="color: #e67128;">"$(</span><span style="color: #fa8072;">even_round</span><span style="color: #e67128;"> $WIN_GEO_X)x$(</span><span style="color: #fa8072;">even_round</span><span style="color: #e67128;"> $WIN_GEO_Y)"</span>
+
+<span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"&#30011;&#38754;&#12469;&#12452;&#12474;&#65306;$WIN_GEO"</span>
+<span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"&#30011;&#38754;&#20301;&#32622;  &#65306;$WIN_XY"</span>
+
+<span style="color: #74af68;"># </span><span style="color: #74af68;">&#37682;&#30011;&#38283;&#22987;</span>
+ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: #dbdb95;">WIN_GEO</span> -i :0.0+$<span style="color: #dbdb95;">WIN_XY</span> <span style="color: #e67128;">\</span>
+       -dcodec copy -pix_fmt yuv420p -c:v libx264 -preset veryfast -qscale 1 -y $<span style="color: #dbdb95;">VFILE</span>
+</pre>
+</div>
+
+<p>
+ハマッたところ
+</p>
+<ul class="org-ul">
+<li>ビデオの横と縦のサイズを偶数にしないと、iphoneで再生時に真っグリンな画面しか見れない
+</li>
+<li>shell関数の戻り値は <code>return</code> じゃなくて、 <code>echo</code> を使うべき。 <code>return</code> はプロセスの
+実行結果ステータスと同じ使い方、ステータスを示すに使う
+</li>
+</ul>
+
+<p>
+コマンドの便利なオプション
+</p>
+<ul class="org-ul">
+<li><code>xwininfo -frame</code> 対象のウィンドウをカーソルで選択できるオプション
+</li>
+<li><code>ffmpeg -show_region 1</code> 録画対象範囲を点線で囲んで分かりやすくするオプション、1は点
+線の太さを示す
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 全画面を録画する</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+<code>xwininfo -root</code> でフルスクリーンの情報を取得することができます。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+
+<span style="color: #74af68;">###########################################################################</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">fsc-full.sh - take full screen video cast</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">Authors: Luo Zengbin <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">GNU General Public License for more details.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/">&lt;http://www.gnu.org/licenses/&gt;</a>.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">Usage:</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">$fsc-full.sh $1 &#31532;&#19968;&#24341;&#25968;&#12395;&#37682;&#30011;&#12499;&#12487;&#12458;&#12501;&#12449;&#12452;&#12523;&#12398;&#20445;&#23384;&#12497;&#12473;&#12434;&#25351;&#23450;&#12377;&#12427;&#12290;</span>
+<span style="color: #74af68;">###########################################################################</span>
+
+<span style="color: #dbdb95;">WIN_GEO</span>=$(<span style="color: #fa8072;">xwininfo</span> -root | grep <span style="color: #e67128;">'geometry'</span> | awk <span style="color: #e67128;">'{print $2;}'</span> | cut -d <span style="color: #e67128;">'+'</span> -f 1)
+
+<span style="color: #74af68;"># </span><span style="color: #74af68;">&#37682;&#30011;&#38283;&#22987;</span>
+ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: #dbdb95;">WIN_GEO</span> -i :0.0 <span style="color: #e67128;">\</span>
+       -dcodec copy -pix_fmt yuv420p -c:v libx264 -preset veryfast -qscale 1 -y $<span style="color: #dbdb95;">1</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> サンプル</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+録画テストサンプル
+</p>
+<video controls>
+   <source src="video/2014-07-21-ffmpeg-test.mp4">
+</video>
+
+<p>
+ばっちりだね。 めでたしめでたし。
+</p>
+</div>
+</div>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -432,7 +624,32 @@ default_asides: [...., custom/asides/qrcode.html, ..... ]
   </header>
 
 
-  <div class="entry-content"><p>
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. SSHトンネリング</a></li>
+<li><a href="#sec-2">2. TUNデバイス利用方式</a>
+<ul>
+<li><a href="#sec-2-1">2.1. 1.sshdに対してトンネリングを有効化する</a></li>
+<li><a href="#sec-2-2">2.2. 2.rootユーザログインできるように公開鍵を登録する</a></li>
+<li><a href="#sec-2-3">2.3. 3.SSHトンネルを開設する</a></li>
+<li><a href="#sec-2-4">2.4. 4.各TUNデバイスにIPアドレスを付与する</a></li>
+<li><a href="#sec-2-5">2.5. 5.区間１トンネルと区間２トンネルを結び付ける</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. TAPデバイス利用方式</a>
+<ul>
+<li><a href="#sec-3-1">3.1. 区間１の設定</a></li>
+<li><a href="#sec-3-2">3.2. 区間２の設定</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. おまけに</a></li>
+<li><a href="#sec-5">5. 参考リンク</a></li>
+</ul>
+</div>
+</div>
+<p>
 友人に自宅のLAN内のコンテンツを共有するため、VPNについて検証しました。
 自宅のルータはYamahaのRTX810です。このルータのVPN機能を使えば簡単に出来てしまうので面
 白くないと思って、敢えてSSHのトンネル機能を使って0円VPN環境を構築してみた。
@@ -483,7 +700,24 @@ default_asides: [...., custom/asides/qrcode.html, ..... ]
   </header>
 
 
-  <div class="entry-content"><p>
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 考案</a></li>
+<li><a href="#sec-2">2. <code>skk-kakasi.el</code> の導入手順</a>
+<ul>
+<li><a href="#sec-2-1">2.1. KAKASIのインストール</a></li>
+<li><a href="#sec-2-2">2.2. ddskk のインストール</a></li>
+<li><a href="#sec-2-3">2.3. 動作確認</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. 更に自動化する</a></li>
+<li><a href="#sec-4">4. もう一歩</a></li>
+</ul>
+</div>
+</div>
+<p>
 Emacsをドキュメントビューアとして使っていますが、時々漢字の読み方がわからないことに遭
 遇します。漢字から意味を読み取ったとしても、読み方がわからない場合が多いい。いままで
 一々ブラウザに切り替えて調べました。せっかくEmacsを使っているので自動化してみました。
@@ -529,7 +763,20 @@ Emacsをドキュメントビューアとして使っていますが、時々漢
   </header>
 
 
-  <div class="entry-content"><p>
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 検証環境</a></li>
+<li><a href="#sec-2">2. xhostによるXアプリを起動する方式</a></li>
+<li><a href="#sec-3">3. SSH X11フォワード方式</a></li>
+<li><a href="#sec-4">4. VNC方式</a></li>
+<li><a href="#sec-5">5. ローカルで異なるユーザでXアプリの起動</a></li>
+<li><a href="#sec-6">6. 参考サイト</a></li>
+</ul>
+</div>
+</div>
+<p>
 リモートLinuxサーバでXアプリを利用するケースはしばしばあります。
 実現方式について調べてみた。
 </p>
@@ -603,7 +850,7 @@ VNCとXRDP以外のサーバとクライアントの役割
 </ul>
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">検証環境</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> 検証環境</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
 <li>クライアント: GDM経由でGnome3が動いているGUI環境
@@ -660,13 +907,25 @@ VNCとXRDP以外のサーバとクライアントの役割
   </header>
 
 
-  <div class="entry-content"><p>
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 検証内容</a></li>
+<li><a href="#sec-2">2. af:showPrintablePageBehaviorタグの使い方</a></li>
+<li><a href="#sec-3">3. 印刷内容の制御</a></li>
+<li><a href="#sec-4">4. IE印刷プレビュー画面を出す</a></li>
+<li><a href="#sec-5">5. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
 Oracle ADFの印刷機能にたずさわる機会がありましたので、一部調査した内容を
 ここでメモしておきます。サンプルコードは <a href="https://github.com/luozengbin/ADFSamples/tree/master/PrintPreview">Github</a> に登録しています。
 </p>
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">検証内容</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> 検証内容</h2>
 <div class="outline-text-2" id="text-1">
 <ol class="org-ol">
 <li><code>af:showPrintablePageBehavior</code> タグの使い方
@@ -954,12 +1213,12 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">org-octopress</span>)
-(setq org-octopress-directory-top       (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source"</span>))
-(setq org-octopress-directory-posts     (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source/_posts"</span>))
-(setq org-octopress-directory-org-top   (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source"</span>))
-(setq org-octopress-directory-org-posts (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source/blog"</span>))
-(setq org-octopress-setup-file          (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/setupfile.org"</span>))
+<pre class="src src-emacs-lisp">(<span style="color: #ffad29; font-weight: bold;">require</span> '<span style="color: #008b8b;">org-octopress</span>)
+(setq org-octopress-directory-top       (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-posts     (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/source/_posts"</span>))
+(setq org-octopress-directory-org-top   (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-org-posts (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/source/blog"</span>))
+(setq org-octopress-setup-file          (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/setupfile.org"</span>))
 </pre>
 </div>
 
@@ -991,23 +1250,23 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">defvar</span> <span style="color: #ff6347;">org-octopress-top</span>
-  (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/"</span>)
-  <span style="color: #888a85;">"octopress&#12502;&#12525;&#12464;&#12486;&#12531;&#12503;&#12524;&#12540;&#12488;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;"</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #ffad29; font-weight: bold;">defvar</span> <span style="color: #dbdb95;">org-octopress-top</span>
+  (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/"</span>)
+  <span style="color: #e67128;">"octopress&#12502;&#12525;&#12464;&#12486;&#12531;&#12503;&#12524;&#12540;&#12488;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;"</span>)
 
-(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">org-octopress-preview</span> ()
-  <span style="color: #888a85;">"preview octopress content by call external shell script."</span>
+(<span style="color: #ffad29; font-weight: bold;">defun</span> <span style="color: #00ede1; font-weight: bold;">org-octopress-preview</span> ()
+  <span style="color: #e67128;">"preview octopress content by call external shell script."</span>
   (interactive)
-  (message <span style="color: #ad7fa8; font-style: italic;">"preview octopress content ...."</span>)
-  (<span style="color: #729fcf; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top)
-                 (preview-url <span style="color: #ad7fa8; font-style: italic;">"http://localhost:4000"</span>))
+  (message <span style="color: #e67128;">"preview octopress content ...."</span>)
+  (<span style="color: #ffad29; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top)
+                 (preview-url <span style="color: #e67128;">"http://localhost:4000"</span>))
     (deferred:$
-      (deferred:process-shell <span style="color: #ad7fa8; font-style: italic;">"blog_preview.sh"</span> org-octopress-top)
+      (deferred:process-shell <span style="color: #e67128;">"blog_preview.sh"</span> org-octopress-top)
       (deferred:nextc it
-        (<span style="color: #729fcf; font-weight: bold;">lambda</span> (x)
-          (message <span style="color: #ad7fa8; font-style: italic;">"*** preview blog ***"</span>)
+        (<span style="color: #ffad29; font-weight: bold;">lambda</span> (x)
+          (message <span style="color: #e67128;">"*** preview blog ***"</span>)
           (message x)
-          (message <span style="color: #ad7fa8; font-style: italic;">"launch preview url %s"</span> preview-url)
+          (message <span style="color: #e67128;">"launch preview url %s"</span> preview-url)
           (browse-url preview-url))))))
 </pre>
 </div>
@@ -1017,37 +1276,37 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Usage: blog_preview.sh</span>
-<span style="color: #888a85;">##</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
-<span style="color: #888a85;">##</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
-<span style="color: #888a85;">##          </span><span style="color: #888a85;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12503;&#12524;&#12499;&#12517;&#12540;</span>
-<span style="color: #888a85;">##################################################################### </span>
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Usage: blog_preview.sh</span>
+<span style="color: #74af68;">##</span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #74af68;">##</span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #74af68;">##          </span><span style="color: #74af68;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12503;&#12524;&#12499;&#12517;&#12540;</span>
+<span style="color: #74af68;">##################################################################### </span>
 
-<span style="color: #ff6347;">RUBY_VER</span>=<span style="color: #ad7fa8; font-style: italic;">"1.9.3-p0"</span>
-<span style="color: #ff6347;">OCTOPRESS_DIR</span>=$<span style="color: #ff6347;">1</span>
+<span style="color: #dbdb95;">RUBY_VER</span>=<span style="color: #e67128;">"1.9.3-p0"</span>
+<span style="color: #dbdb95;">OCTOPRESS_DIR</span>=$<span style="color: #dbdb95;">1</span>
 
 which rbenv
-<span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">?</span> = 0 ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-    <span style="color: #888a85;"># </span><span style="color: #888a85;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
-    rbenv global $<span style="color: #ff6347;">RUBY_VER</span>
+<span style="color: #ffad29; font-weight: bold;">if</span> [ $<span style="color: #dbdb95;">?</span> = 0 ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+    <span style="color: #74af68;"># </span><span style="color: #74af68;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #dbdb95;">RUBY_VER</span>
     rbenv rehash
-    <span style="color: #ff6347;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
-    <span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">global_ver</span> = $<span style="color: #ff6347;">RUBY_VER</span> ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-        <span style="color: #888a85;"># </span><span style="color: #888a85;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-        <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"run rake with `ruby --version`"</span>
-        <span style="color: #729fcf;">pushd</span> $<span style="color: #ff6347;">OCTOPRESS_DIR</span>
+    <span style="color: #dbdb95;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #ffad29; font-weight: bold;">if</span> [ $<span style="color: #dbdb95;">global_ver</span> = $<span style="color: #dbdb95;">RUBY_VER</span> ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+        <span style="color: #74af68;"># </span><span style="color: #74af68;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"run rake with `ruby --version`"</span>
+        <span style="color: #23d7d7;">pushd</span> $<span style="color: #dbdb95;">OCTOPRESS_DIR</span>
         rake generate
-        <span style="color: #729fcf; font-weight: bold;">if</span> [ -z <span style="color: #ad7fa8; font-style: italic;">"`netstat -nutl | grep 4000`"</span> ] ; <span style="color: #729fcf; font-weight: bold;">then</span>
-            <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"&gt;&gt;&gt; Startup Preview"</span>
+        <span style="color: #ffad29; font-weight: bold;">if</span> [ -z <span style="color: #e67128;">"`netstat -nutl | grep 4000`"</span> ] ; <span style="color: #ffad29; font-weight: bold;">then</span>
+            <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"&gt;&gt;&gt; Startup Preview"</span>
             rake preview &amp;
             sleep 2
-        <span style="color: #729fcf; font-weight: bold;">fi</span>
-        <span style="color: #729fcf;">popd</span>
-    <span style="color: #729fcf; font-weight: bold;">fi</span>
-<span style="color: #729fcf; font-weight: bold;">fi</span>
+        <span style="color: #ffad29; font-weight: bold;">fi</span>
+        <span style="color: #23d7d7;">popd</span>
+    <span style="color: #ffad29; font-weight: bold;">fi</span>
+<span style="color: #ffad29; font-weight: bold;">fi</span>
 </pre>
 </div>
 
@@ -1056,16 +1315,16 @@ which rbenv
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">org-octopress-deploy</span> ()
-  <span style="color: #888a85;">"deploy octopress content to github page service."</span>
+<pre class="src src-emacs-lisp">(<span style="color: #ffad29; font-weight: bold;">defun</span> <span style="color: #00ede1; font-weight: bold;">org-octopress-deploy</span> ()
+  <span style="color: #e67128;">"deploy octopress content to github page service."</span>
   (interactive)
-  (message <span style="color: #ad7fa8; font-style: italic;">"deploy octopress content ...."</span>)
-  (<span style="color: #729fcf; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top))
+  (message <span style="color: #e67128;">"deploy octopress content ...."</span>)
+  (<span style="color: #ffad29; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top))
     (deferred:$
-      (deferred:process-shell <span style="color: #ad7fa8; font-style: italic;">"blog_deploy.sh"</span> org-octopress-top)
+      (deferred:process-shell <span style="color: #e67128;">"blog_deploy.sh"</span> org-octopress-top)
       (deferred:nextc it
-        (<span style="color: #729fcf; font-weight: bold;">lambda</span> (x)
-          (message <span style="color: #ad7fa8; font-style: italic;">"*** deploy blog ***"</span>)
+        (<span style="color: #ffad29; font-weight: bold;">lambda</span> (x)
+          (message <span style="color: #e67128;">"*** deploy blog ***"</span>)
           (message x))))))
 </pre>
 </div>
@@ -1075,34 +1334,34 @@ which rbenv
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
-<span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/sh</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Usage: blog_deploy.sh</span>
-<span style="color: #888a85;">##</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
-<span style="color: #888a85;">##   </span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
-<span style="color: #888a85;">##          </span><span style="color: #888a85;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-<span style="color: #888a85;">##################################################################### </span>
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+<span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/sh</span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Usage: blog_deploy.sh</span>
+<span style="color: #74af68;">##</span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #74af68;">##   </span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #74af68;">##          </span><span style="color: #74af68;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+<span style="color: #74af68;">##################################################################### </span>
 
-<span style="color: #ff6347;">RUBY_VER</span>=<span style="color: #ad7fa8; font-style: italic;">"1.9.3-p0"</span>
-<span style="color: #ff6347;">OCTOPRESS_DIR</span>=$<span style="color: #ff6347;">1</span>
+<span style="color: #dbdb95;">RUBY_VER</span>=<span style="color: #e67128;">"1.9.3-p0"</span>
+<span style="color: #dbdb95;">OCTOPRESS_DIR</span>=$<span style="color: #dbdb95;">1</span>
 
 which rbenv
-<span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">?</span> = 0 ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-    <span style="color: #888a85;"># </span><span style="color: #888a85;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
-    rbenv global $<span style="color: #ff6347;">RUBY_VER</span>
+<span style="color: #ffad29; font-weight: bold;">if</span> [ $<span style="color: #dbdb95;">?</span> = 0 ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+    <span style="color: #74af68;"># </span><span style="color: #74af68;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #dbdb95;">RUBY_VER</span>
     rbenv rehash
-    <span style="color: #ff6347;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
-    <span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">global_ver</span> = $<span style="color: #ff6347;">RUBY_VER</span> ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-        <span style="color: #888a85;"># </span><span style="color: #888a85;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-        <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"run rake with `ruby --version`"</span>
-        <span style="color: #729fcf;">pushd</span> $<span style="color: #ff6347;">OCTOPRESS_DIR</span>
+    <span style="color: #dbdb95;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #ffad29; font-weight: bold;">if</span> [ $<span style="color: #dbdb95;">global_ver</span> = $<span style="color: #dbdb95;">RUBY_VER</span> ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+        <span style="color: #74af68;"># </span><span style="color: #74af68;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"run rake with `ruby --version`"</span>
+        <span style="color: #23d7d7;">pushd</span> $<span style="color: #dbdb95;">OCTOPRESS_DIR</span>
         rake generate
         rake deploy
-        <span style="color: #729fcf;">popd</span>
-    <span style="color: #729fcf; font-weight: bold;">fi</span>
-<span style="color: #729fcf; font-weight: bold;">fi</span>
+        <span style="color: #23d7d7;">popd</span>
+    <span style="color: #ffad29; font-weight: bold;">fi</span>
+<span style="color: #ffad29; font-weight: bold;">fi</span>
 </pre>
 </div>
 </div>
@@ -1142,14 +1401,32 @@ which rbenv
   </header>
 
 
-  <div class="entry-content"><p>
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 概要</a></li>
+<li><a href="#sec-2">2. telnetからの接続開始</a></li>
+<li><a href="#sec-3">3. メール送信の開始を宣言する</a></li>
+<li><a href="#sec-4">4. 送信元を指定する</a></li>
+<li><a href="#sec-5">5. 送信先を指定する</a></li>
+<li><a href="#sec-6">6. メール本文を開始する</a></li>
+<li><a href="#sec-7">7. メール本文終了</a></li>
+<li><a href="#sec-8">8. 接続終了</a></li>
+<li><a href="#sec-9">9. ncコマンドでファイルからメール送信テスト</a></li>
+<li><a href="#sec-10">10. 習ったこと</a></li>
+<li><a href="#sec-11">11. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
 自宅のPC環境にMTA(postfix)サーバを構築しました。
 １周間ほど保持したので、telnet、nc、tcpdumpコマンドから
 メール送信処理の中身を観測してみたいと思います。
 </p>
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">概要</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> 概要</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 VM環境を立てるのが面倒のため、loopbackインタフェースを通して
@@ -1170,70 +1447,6 @@ VM環境を立てるのが面倒のため、loopbackインタフェースを通�
   
     <footer>
       <a rel="full-article" href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html">LPIC Lv2-201試験準備メモ１</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-06-12T00:00:00+09:00" pubdate data-updated="true">2014-06-12 (Thu)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">MBRパーティショニング</h2>
-<div class="outline-text-2" id="text-1">
-<ul class="org-ul">
-<li>基本パテーション：MBR仕様の制限で基本パテーションは最大４つ
-</li>
-<li>拡張パテーション：一つ基本パテーションとして計算する
-</li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">LVMスナップショート</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-スナップショートとはあるLVのカレント状態をバックアップする機能。
-バックアップ方式としてファイルの増分内容を記録LV領域を作成しそのLV
-領域にスナップショート作成時点からの変化履歴を記録する。
-増分バックアップ方式であるため、初期作成時は容量消費しない。
-対象LVに上ファイル変化があったたびにスナップショートLVに
-変化内容が書き込まれるため、領域が消費される。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html">Read on &rarr;</a>
     </footer>
   
 
@@ -1273,6 +1486,10 @@ VM環境を立てるのが面倒のため、loopbackインタフェースを通�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html">[メモ]ffmpegでスクリンキャストを取る</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-07-08-%5B%E6%A4%9C%E8%A8%BC%5Dsync%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%82%B3%E3%83%BC%E3%83%AB%E3%81%AE%E6%80%A7%E8%83%BD%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[検証]syncシステムコールの性能について</a>
       </li>
     
@@ -1308,10 +1525,6 @@ VM環境を立てるのが面倒のため、loopbackインタフェースを通�
         <a href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">[検証]SMTPプロトコール監視してみた</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html">LPIC Lv2-201試験準備メモ１</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -1319,11 +1532,11 @@ VM環境を立てるのが面倒のため、loopbackインタフェースを通�
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (2)</a></li><li><a href='/blog/categories/linux/'>linux (6)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (2)</a></li><li><a href='/blog/categories/linux/'>linux (7)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/categories/emacs' style='font-size: 117.14285714285714%'>emacs(2)</a> <a href='/blog/categories/java' style='font-size: 117.14285714285714%'>java(2)</a> <a href='/blog/categories/linux' style='font-size: 160.0%'>linux(7)</a> <a href='/blog/categories/misc' style='font-size: 108.57142857142857%'>misc(1)</a> </span>
 </section>
 
 <section>

@@ -9,7 +9,11 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="利用可能なJavaバージョン Java SE Advanced （アドバンスド） Java SE Suite ローカルJavaプロセスの監視 監視対象Javaプロセス起動時に以下のオプションを追加する。 +UnlockCommercialFeatures：商用オプションロックを解除する + &hellip;">
+  <meta name="description" content="Table of Contents 1. 利用可能なJavaバージョン
+2. ローカルJavaプロセスの監視
+3. リモートJavaプロセスの監視
+4. 有用なJavaオプション 4.1. -XX:StartFlightRecording
+4.2. -XX:+PrintFlagsFinal 5 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -91,8 +95,26 @@
   </header>
 
 
-<div class="entry-content"><div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">利用可能なJavaバージョン</h2>
+<div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 利用可能なJavaバージョン</a></li>
+<li><a href="#sec-2">2. ローカルJavaプロセスの監視</a></li>
+<li><a href="#sec-3">3. リモートJavaプロセスの監視</a></li>
+<li><a href="#sec-4">4. 有用なJavaオプション</a>
+<ul>
+<li><a href="#sec-4-1">4.1. -XX:StartFlightRecording</a></li>
+<li><a href="#sec-4-2">4.2. -XX:+PrintFlagsFinal</a></li>
+</ul>
+</li>
+<li><a href="#sec-5">5. よく使うコマンド</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 利用可能なJavaバージョン</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
 <li>Java SE Advanced （アドバンスド）
@@ -104,7 +126,7 @@
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">ローカルJavaプロセスの監視</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> ローカルJavaプロセスの監視</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 監視対象Javaプロセス起動時に以下のオプションを追加する。
@@ -189,7 +211,7 @@ Must provide either name or recording.
 </div>
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">リモートJavaプロセスの監視</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> リモートJavaプロセスの監視</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 JMXポートを公開する、一番手軽な方法、jcmdコマンドを用いて、JMX remote port を臨時で空
@@ -206,10 +228,10 @@ jcmd &lt;pid&gt; ManagementAgent.start jmxremote.port=7091 jmxremote.authenticat
 </div>
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">有用なJavaオプション</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> 有用なJavaオプション</h2>
 <div class="outline-text-2" id="text-4">
 </div><div id="outline-container-sec-4-1" class="outline-3">
-<h3 id="sec-4-1">-XX:StartFlightRecording</h3>
+<h3 id="sec-4-1"><span class="section-number-3">4.1</span> -XX:StartFlightRecording</h3>
 <div class="outline-text-3" id="text-4-1">
 <p>
 JRockit JVMで実行されるアプリケーションのフライト・レコーダ記録を開始するには、このオ
@@ -225,7 +247,7 @@ java -XX:+FlightRecorder -XX:FlightRecorderOptions=disk=true,maxchunksize=10M -X
 </div>
 
 <div id="outline-container-sec-4-2" class="outline-3">
-<h3 id="sec-4-2">-XX:+PrintFlagsFinal</h3>
+<h3 id="sec-4-2"><span class="section-number-3">4.2</span> -XX:+PrintFlagsFinal</h3>
 <div class="outline-text-3" id="text-4-2">
 <p>
 JVM終了時にXXパラメータの値を標準出力にダンプする。
@@ -235,7 +257,7 @@ JVM終了時にXXパラメータの値を標準出力にダンプする。
 </div>
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">よく使うコマンド</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> よく使うコマンド</h2>
 <div class="outline-text-2" id="text-5">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -400,6 +422,10 @@ JVM終了時にXXパラメータの値を標準出力にダンプする。
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html">[メモ]ffmpegでスクリンキャストを取る</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-07-08-%5B%E6%A4%9C%E8%A8%BC%5Dsync%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%82%B3%E3%83%BC%E3%83%AB%E3%81%AE%E6%80%A7%E8%83%BD%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[検証]syncシステムコールの性能について</a>
       </li>
     
@@ -435,10 +461,6 @@ JVM終了時にXXパラメータの値を標準出力にダンプする。
         <a href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">[検証]SMTPプロトコール監視してみた</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html">LPIC Lv2-201試験準備メモ１</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -446,11 +468,11 @@ JVM終了時にXXパラメータの値を標準出力にダンプする。
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (2)</a></li><li><a href='/blog/categories/linux/'>linux (6)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (2)</a></li><li><a href='/blog/categories/linux/'>linux (7)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/categories/emacs' style='font-size: 117.14285714285714%'>emacs(2)</a> <a href='/blog/categories/java' style='font-size: 117.14285714285714%'>java(2)</a> <a href='/blog/categories/linux' style='font-size: 160.0%'>linux(7)</a> <a href='/blog/categories/misc' style='font-size: 108.57142857142857%'>misc(1)</a> </span>
 </section>
 
 <section>

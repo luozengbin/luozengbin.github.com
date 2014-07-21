@@ -9,9 +9,11 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="友人に自宅のLAN内のコンテンツを共有するため、VPNについて検証しました。
-自宅のルータはYamahaのRTX810です。このルータのVPN機能を使えば簡単に出来てしまうので面
-白くないと思って、敢えてSSHのトンネル機能を使って0円VPN環境を構築してみた。 更に難易度を上げて、 &hellip;">
+  <meta name="description" content="Table of Contents 1. SSHトンネリング
+2. TUNデバイス利用方式 2.1. 1.sshdに対してトンネリングを有効化する
+2.2. 2.rootユーザログインできるように公開鍵を登録する
+2.3. 3.SSHトンネルを開設する
+2.4. 4. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -93,7 +95,32 @@
   </header>
 
 
-<div class="entry-content"><p>
+<div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. SSHトンネリング</a></li>
+<li><a href="#sec-2">2. TUNデバイス利用方式</a>
+<ul>
+<li><a href="#sec-2-1">2.1. 1.sshdに対してトンネリングを有効化する</a></li>
+<li><a href="#sec-2-2">2.2. 2.rootユーザログインできるように公開鍵を登録する</a></li>
+<li><a href="#sec-2-3">2.3. 3.SSHトンネルを開設する</a></li>
+<li><a href="#sec-2-4">2.4. 4.各TUNデバイスにIPアドレスを付与する</a></li>
+<li><a href="#sec-2-5">2.5. 5.区間１トンネルと区間２トンネルを結び付ける</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. TAPデバイス利用方式</a>
+<ul>
+<li><a href="#sec-3-1">3.1. 区間１の設定</a></li>
+<li><a href="#sec-3-2">3.2. 区間２の設定</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. おまけに</a></li>
+<li><a href="#sec-5">5. 参考リンク</a></li>
+</ul>
+</div>
+</div>
+<p>
 友人に自宅のLAN内のコンテンツを共有するため、VPNについて検証しました。
 自宅のルータはYamahaのRTX810です。このルータのVPN機能を使えば簡単に出来てしまうので面
 白くないと思って、敢えてSSHのトンネル機能を使って0円VPN環境を構築してみた。
@@ -144,7 +171,7 @@
 </pre>
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">SSHトンネリング</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> SSHトンネリング</h2>
 <div class="outline-text-2" id="text-1">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -228,37 +255,37 @@ vermagic:       3.15.2-1-ARCH SMP preempt mod_unload modversions
 
 <div class="org-src-container">
 
-<pre class="src src-c"><span style="color: #888a85;">/* </span><span style="color: #888a85;">Initialize net device. </span><span style="color: #888a85;">*/</span>
-<span style="color: #729fcf; font-weight: bold;">static</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">tun_net_init</span>(<span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">net_device</span> *<span style="color: #ff6347;">dev</span>)
+<pre class="src src-c"><span style="color: #74af68;">/* </span><span style="color: #74af68;">Initialize net device. </span><span style="color: #74af68;">*/</span>
+<span style="color: #ffad29; font-weight: bold;">static</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">tun_net_init</span>(<span style="color: #ffad29; font-weight: bold;">struct</span> <span style="color: #34cae2;">net_device</span> *<span style="color: #dbdb95;">dev</span>)
 {
-    <span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">tun_struct</span> *<span style="color: #ff6347;">tun</span> = netdev_priv(dev);
+    <span style="color: #ffad29; font-weight: bold;">struct</span> <span style="color: #34cae2;">tun_struct</span> *<span style="color: #dbdb95;">tun</span> = netdev_priv(dev);
 
-    <span style="color: #729fcf; font-weight: bold;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
-    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TUN_DEV:
+    <span style="color: #ffad29; font-weight: bold;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
+    <span style="color: #ffad29; font-weight: bold;">case</span> TUN_TUN_DEV:
         dev-&gt;netdev_ops = &amp;tun_netdev_ops;
 
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Point-to-Point TUN Device </span><span style="color: #888a85;">*/</span>
+        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Point-to-Point TUN Device </span><span style="color: #74af68;">*/</span>
         dev-&gt;hard_header_len = 0;
         dev-&gt;addr_len = 0;
         dev-&gt;mtu = 1500;
 
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Zero header length </span><span style="color: #888a85;">*/</span>
+        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Zero header length </span><span style="color: #74af68;">*/</span>
         dev-&gt;type = ARPHRD_NONE;
         dev-&gt;flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
-        <span style="color: #729fcf; font-weight: bold;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #74af68;">/* </span><span style="color: #74af68;">We prefer our own queue length </span><span style="color: #74af68;">*/</span>
+        <span style="color: #ffad29; font-weight: bold;">break</span>;
 
-    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TAP_DEV:
+    <span style="color: #ffad29; font-weight: bold;">case</span> TUN_TAP_DEV:
         dev-&gt;netdev_ops = &amp;tap_netdev_ops;
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Ethernet TAP Device </span><span style="color: #888a85;">*/</span>
+        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Ethernet TAP Device </span><span style="color: #74af68;">*/</span>
         ether_setup(dev);
         dev-&gt;priv_flags &amp;= ~IFF_TX_SKB_SHARING;
         dev-&gt;priv_flags |= IFF_LIVE_ADDR_CHANGE;
 
         eth_hw_addr_random(dev);
 
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
-        <span style="color: #729fcf; font-weight: bold;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #74af68;">/* </span><span style="color: #74af68;">We prefer our own queue length </span><span style="color: #74af68;">*/</span>
+        <span style="color: #ffad29; font-weight: bold;">break</span>;
     }
 }
 </pre>
@@ -272,7 +299,7 @@ TUNデバイスのIP-in-IP方式とppp方式どちらもPPPプロトコルを使
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">TUNデバイス利用方式</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> TUNデバイス利用方式</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 TUNデバイスでトンネリングする、iptablesとルーティングテーブルで交通を整理する。
@@ -330,7 +357,7 @@ TUNデバイスでトンネリングする、iptablesとルーティングテー
 </div>
 
 <div id="outline-container-sec-2-1" class="outline-3">
-<h3 id="sec-2-1">1.sshdに対してトンネリングを有効化する</h3>
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> 1.sshdに対してトンネリングを有効化する</h3>
 <div class="outline-text-3" id="text-2-1">
 <p>
 AmazonEC2インスタンスとRaspberryPiが設定対象となります。 <code>/etc/ssh/sshd_config</code> ファイ
@@ -351,7 +378,7 @@ PermitTunnel yes
 </div>
 
 <div id="outline-container-sec-2-2" class="outline-3">
-<h3 id="sec-2-2">2.rootユーザログインできるように公開鍵を登録する</h3>
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> 2.rootユーザログインできるように公開鍵を登録する</h3>
 <div class="outline-text-3" id="text-2-2">
 <p>
 区間１はAmazonEC2へのログインですので、EC2インスタンス作成時に生成された秘密鍵でログ
@@ -371,7 +398,7 @@ PermitTunnel yes
 </div>
 
 <div id="outline-container-sec-2-3" class="outline-3">
-<h3 id="sec-2-3">3.SSHトンネルを開設する</h3>
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> 3.SSHトンネルを開設する</h3>
 <div class="outline-text-3" id="text-2-3">
 <p>
 rootユーザでsshコマンドにオプションを付けてログインすることでSSHトンネルが開設される。
@@ -487,7 +514,7 @@ tun1: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500
 </div>
 
 <div id="outline-container-sec-2-4" class="outline-3">
-<h3 id="sec-2-4">4.各TUNデバイスにIPアドレスを付与する</h3>
+<h3 id="sec-2-4"><span class="section-number-3">2.4</span> 4.各TUNデバイスにIPアドレスを付与する</h3>
 <div class="outline-text-3" id="text-2-4">
 <p>
 Tomodatiの <code>tun0</code> デバイスに <code>192.168.3.1</code> アドレスを指定する、Point-To-Point通信のた
@@ -571,7 +598,7 @@ tun1: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500
 </div>
 
 <div id="outline-container-sec-2-5" class="outline-3">
-<h3 id="sec-2-5">5.区間１トンネルと区間２トンネルを結び付ける</h3>
+<h3 id="sec-2-5"><span class="section-number-3">2.5</span> 5.区間１トンネルと区間２トンネルを結び付ける</h3>
 <div class="outline-text-3" id="text-2-5">
 <p>
 AmazonEC2にてiptablesのSNAT機能を用いて区間１と区間２のパケットをルーティングさせる。
@@ -638,7 +665,7 @@ RaspberryPiに <code>192.168.100.0/24</code> への転送ルートを定義す�
 </div>
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">TAPデバイス利用方式</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> TAPデバイス利用方式</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 TAPデバイスはLayer2(Ethernet)をエミュレートできるため <code>bridge</code> カーネルモジュールや
@@ -705,7 +732,7 @@ VPNネットワーク構成概要
 </div>
 
 <div id="outline-container-sec-3-1" class="outline-3">
-<h3 id="sec-3-1">区間１の設定</h3>
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> 区間１の設定</h3>
 <div class="outline-text-3" id="text-3-1">
 <p>
 Tomodati <code>/root/.ssh/config</code> ：SSHクライアント設定
@@ -768,7 +795,7 @@ brctl addif br0 tap0
 </div>
 
 <div id="outline-container-sec-3-2" class="outline-3">
-<h3 id="sec-3-2">区間２の設定</h3>
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> 区間２の設定</h3>
 <div class="outline-text-3" id="text-3-2">
 <p>
 AmazonEC2 <code>/root/.ssh/config</code> ：SSHクライアント設定
@@ -829,7 +856,7 @@ sysctl -w net.ipv4.conf.eth0.proxy_arp=1
 
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">おまけに</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> おまけに</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 今後機会があれば、TUNデバイス方式とTAPデバイス方式の性能を比較したいと思います。
@@ -842,7 +869,7 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
 </div>
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">参考リンク</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> 参考リンク</h2>
 <div class="outline-text-2" id="text-5">
 <ul class="org-ul">
 <li><a href="http://www.komoto.org/vpn/index.html">VPN技術について</a>
@@ -962,6 +989,10 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html">[メモ]ffmpegでスクリンキャストを取る</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-07-08-%5B%E6%A4%9C%E8%A8%BC%5Dsync%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%82%B3%E3%83%BC%E3%83%AB%E3%81%AE%E6%80%A7%E8%83%BD%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[検証]syncシステムコールの性能について</a>
       </li>
     
@@ -997,10 +1028,6 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
         <a href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">[検証]SMTPプロトコール監視してみた</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html">LPIC Lv2-201試験準備メモ１</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -1008,11 +1035,11 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (2)</a></li><li><a href='/blog/categories/linux/'>linux (6)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (2)</a></li><li><a href='/blog/categories/linux/'>linux (7)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/categories/emacs' style='font-size: 117.14285714285714%'>emacs(2)</a> <a href='/blog/categories/java' style='font-size: 117.14285714285714%'>java(2)</a> <a href='/blog/categories/linux' style='font-size: 160.0%'>linux(7)</a> <a href='/blog/categories/misc' style='font-size: 108.57142857142857%'>misc(1)</a> </span>
 </section>
 
 <section>

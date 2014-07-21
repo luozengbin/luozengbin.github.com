@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-09T13:43:25+09:00</updated>
+  <updated>2014-07-21T20:45:44+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -18,7 +18,21 @@
     <link href="http://luozengbin.github.io/blog/2014-06-18-%5B%E6%A4%9C%E8%A8%BC%5Dadf%E5%8D%B0%E5%88%B7%E3%83%97%E3%83%AC%E3%83%93%E3%83%A5%E3%83%BC.html"/>
     <updated>2014-06-18T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[検証]adf印刷プレビュー</id>
-    <content type="html"><![CDATA[<p>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 検証内容</a></li>
+<li><a href="#sec-2">2. af:showPrintablePageBehaviorタグの使い方</a></li>
+<li><a href="#sec-3">3. 印刷内容の制御</a></li>
+<li><a href="#sec-4">4. IE印刷プレビュー画面を出す</a></li>
+<li><a href="#sec-5">5. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
 Oracle ADFの印刷機能にたずさわる機会がありましたので、一部調査した内容を
 ここでメモしておきます。サンプルコードは <a href="https://github.com/luozengbin/ADFSamples/tree/master/PrintPreview">Github</a> に登録しています。
 </p>
@@ -27,7 +41,7 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">検証内容</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> 検証内容</h2>
 <div class="outline-text-2" id="text-1">
 <ol class="org-ol">
 <li><code>af:showPrintablePageBehavior</code> タグの使い方
@@ -48,7 +62,7 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">af:showPrintablePageBehaviorタグの使い方</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> af:showPrintablePageBehaviorタグの使い方</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 <code>af:showPrintablePageBehavior</code> タグを画面に任意のcommandコンポネントの子コンポネント
@@ -62,7 +76,7 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">印刷内容の制御</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> 印刷内容の制御</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 基本的に全画面(同じjspx)の内容が印刷プレビュー画面に表示される。一部コンポネント
@@ -155,26 +169,26 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 </p>
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">beforePhaseMethod</span>(<span style="color: #8ae234; font-weight: bold;">PhaseEvent</span> <span style="color: #ff6347;">phaseEvent</span>) {
+<pre class="src src-java"><span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">beforePhaseMethod</span>(<span style="color: #34cae2;">PhaseEvent</span> <span style="color: #dbdb95;">phaseEvent</span>) {
 
-    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"----------   phaseEvent   -------------"</span>);
-    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
+    System.out.println(<span style="color: #e67128;">"----------   phaseEvent   -------------"</span>);
+    System.out.println(<span style="color: #e67128;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
 
-    <span style="color: #888a85;">//</span><span style="color: #888a85;">only perform action if RENDER_RESPONSE phase is reached</span>
-    <span style="color: #729fcf; font-weight: bold;">if</span> (phaseEvent.getPhaseId() == <span style="color: #8ae234;">PhaseId</span>.RENDER_RESPONSE) {
+    <span style="color: #74af68;">//</span><span style="color: #74af68;">only perform action if RENDER_RESPONSE phase is reached</span>
+    <span style="color: #ffad29; font-weight: bold;">if</span> (phaseEvent.getPhaseId() == <span style="color: #008b8b;">PhaseId</span>.RENDER_RESPONSE) {
 
-        <span style="color: #8ae234; font-weight: bold;">FacesContext</span> <span style="color: #ff6347;">fctx</span> = FacesContext.getCurrentInstance();
-        <span style="color: #888a85;">//</span><span style="color: #888a85;">check internal request parameter</span>
-        <span style="color: #8ae234; font-weight: bold;">Map</span> <span style="color: #ff6347;">requestMap</span> = fctx.getExternalContext().getRequestMap();
+        <span style="color: #34cae2;">FacesContext</span> <span style="color: #dbdb95;">fctx</span> = FacesContext.getCurrentInstance();
+        <span style="color: #74af68;">//</span><span style="color: #74af68;">check internal request parameter</span>
+        <span style="color: #34cae2;">Map</span> <span style="color: #dbdb95;">requestMap</span> = fctx.getExternalContext().getRequestMap();
 
-        <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
-        <span style="color: #8ae234; font-weight: bold;">Object</span> <span style="color: #ff6347;">showPrintableBehavior</span> = requestMap.get(<span style="color: #ad7fa8; font-style: italic;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
-        <span style="color: #729fcf; font-weight: bold;">if</span> (showPrintableBehavior != <span style="color: #8ae234;">null</span>) {
-            <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
-            <span style="color: #729fcf; font-weight: bold;">if</span> (<span style="color: #8ae234;">Boolean</span>.TRUE == showPrintableBehavior) {
-                <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
-                UiComponentControlUtil.setUnRendered(<span style="color: #ad7fa8; font-style: italic;">"mb1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it2"</span>);
-                UiComponentControlUtil.callbackJavascript(<span style="color: #ad7fa8; font-style: italic;">"customPrint();"</span>);
+        <span style="color: #74af68;">// </span><span style="color: #74af68;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
+        <span style="color: #34cae2;">Object</span> <span style="color: #dbdb95;">showPrintableBehavior</span> = requestMap.get(<span style="color: #e67128;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
+        <span style="color: #ffad29; font-weight: bold;">if</span> (showPrintableBehavior != <span style="color: #008b8b;">null</span>) {
+            <span style="color: #74af68;">// </span><span style="color: #74af68;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
+            <span style="color: #ffad29; font-weight: bold;">if</span> (<span style="color: #008b8b;">Boolean</span>.TRUE == showPrintableBehavior) {
+                <span style="color: #74af68;">// </span><span style="color: #74af68;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
+                UiComponentControlUtil.setUnRendered(<span style="color: #e67128;">"mb1"</span>, <span style="color: #e67128;">"it1"</span>, <span style="color: #e67128;">"it2"</span>);
+                UiComponentControlUtil.callbackJavascript(<span style="color: #e67128;">"customPrint();"</span>);
             }
         }
     }
@@ -188,7 +202,7 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">IE印刷プレビュー画面を出す</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> IE印刷プレビュー画面を出す</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 いい方法が見つからない、とりあえずWebBrowserというIEに含まれたActiveXコンポーネントを
@@ -197,24 +211,24 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
 <div class="org-src-container">
 
-<pre class="src src-js"><span style="color: #729fcf; font-weight: bold;">function</span> <span style="color: #edd400; font-weight: bold;">customPrint</span>() {
-  <span style="color: #729fcf; font-weight: bold;">if</span> (getBrowser().indexOf(<span style="color: #ad7fa8; font-style: italic;">'ie8'</span>) !== -1 ) {
-    <span style="color: #729fcf; font-weight: bold;">if</span>(window.ActiveXObject == <span style="color: #8ae234;">null</span> || document.body.insertAdjacentHTML == <span style="color: #8ae234;">null</span>) {
-      <span style="color: #729fcf; font-weight: bold;">return</span>;
+<pre class="src src-js"><span style="color: #ffad29; font-weight: bold;">function</span> <span style="color: #00ede1; font-weight: bold;">customPrint</span>() {
+  <span style="color: #ffad29; font-weight: bold;">if</span> (getBrowser().indexOf(<span style="color: #e67128;">'ie8'</span>) !== -1 ) {
+    <span style="color: #ffad29; font-weight: bold;">if</span>(window.ActiveXObject == <span style="color: #008b8b;">null</span> || document.body.insertAdjacentHTML == <span style="color: #008b8b;">null</span>) {
+      <span style="color: #ffad29; font-weight: bold;">return</span>;
     }
-    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">sWebBrowserCode</span> = <span style="color: #ad7fa8; font-style: italic;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
-    document.body.insertAdjacentHTML(<span style="color: #ad7fa8; font-style: italic;">'beforeEnd'</span>, sWebBrowserCode);
-    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">objWebBrowser</span> = document.body.lastChild;
-    <span style="color: #729fcf; font-weight: bold;">if</span>(objWebBrowser == <span style="color: #8ae234;">null</span>) <span style="color: #729fcf; font-weight: bold;">return</span>;
+    <span style="color: #ffad29; font-weight: bold;">var</span> <span style="color: #dbdb95;">sWebBrowserCode</span> = <span style="color: #e67128;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
+    document.body.insertAdjacentHTML(<span style="color: #e67128;">'beforeEnd'</span>, sWebBrowserCode);
+    <span style="color: #ffad29; font-weight: bold;">var</span> <span style="color: #dbdb95;">objWebBrowser</span> = document.body.lastChild;
+    <span style="color: #ffad29; font-weight: bold;">if</span>(objWebBrowser == <span style="color: #008b8b;">null</span>) <span style="color: #ffad29; font-weight: bold;">return</span>;
     objWebBrowser.ExecWB(7, 1);
     document.body.removeChild(objWebBrowser);
-  } <span style="color: #729fcf; font-weight: bold;">else</span> {
+  } <span style="color: #ffad29; font-weight: bold;">else</span> {
     window.print();
   }
 
-  <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
-  window.onfocus = <span style="color: #729fcf; font-weight: bold;">function</span>(){
-   (window.open(<span style="color: #ad7fa8; font-style: italic;">''</span>,<span style="color: #ad7fa8; font-style: italic;">'_self'</span>).opener=window).close(); 
+  <span style="color: #74af68;">// </span><span style="color: #74af68;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
+  window.onfocus = <span style="color: #ffad29; font-weight: bold;">function</span>(){
+   (window.open(<span style="color: #e67128;">''</span>,<span style="color: #e67128;">'_self'</span>).opener=window).close(); 
   };
 }
 </pre>
@@ -230,7 +244,7 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">参考</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> 参考</h2>
 <div class="outline-text-2" id="text-5">
 <p>
 Oracle Fusion Middleware Tag Reference for Oracle ADF Faces 11g Release 1 (11.1.1.5.0)
@@ -247,8 +261,29 @@ Oracle Fusion Middleware Tag Reference for Oracle ADF Faces 11g Release 1 (11.1.
     <link href="http://luozengbin.github.io/blog/2014-06-12-java-mission-control%E3%83%A1%E3%83%A2.html"/>
     <updated>2014-06-12T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/java-mission-controlメモ</id>
-    <content type="html"><![CDATA[<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">利用可能なJavaバージョン</h2>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 利用可能なJavaバージョン</a></li>
+<li><a href="#sec-2">2. ローカルJavaプロセスの監視</a></li>
+<li><a href="#sec-3">3. リモートJavaプロセスの監視</a></li>
+<li><a href="#sec-4">4. 有用なJavaオプション</a>
+<ul>
+<li><a href="#sec-4-1">4.1. -XX:StartFlightRecording</a></li>
+<li><a href="#sec-4-2">4.2. -XX:+PrintFlagsFinal</a></li>
+</ul>
+</li>
+<li><a href="#sec-5">5. よく使うコマンド</a></li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 利用可能なJavaバージョン</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
 <li>Java SE Advanced （アドバンスド）
@@ -263,7 +298,7 @@ Oracle Fusion Middleware Tag Reference for Oracle ADF Faces 11g Release 1 (11.1.
 
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">ローカルJavaプロセスの監視</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> ローカルJavaプロセスの監視</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 監視対象Javaプロセス起動時に以下のオプションを追加する。
@@ -351,7 +386,7 @@ Must provide either name or recording.
 
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">リモートJavaプロセスの監視</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> リモートJavaプロセスの監視</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 JMXポートを公開する、一番手軽な方法、jcmdコマンドを用いて、JMX remote port を臨時で空
@@ -371,10 +406,10 @@ jcmd &lt;pid&gt; ManagementAgent.start jmxremote.port=7091 jmxremote.authenticat
 
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">有用なJavaオプション</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> 有用なJavaオプション</h2>
 <div class="outline-text-2" id="text-4">
 </div><div id="outline-container-sec-4-1" class="outline-3">
-<h3 id="sec-4-1">-XX:StartFlightRecording</h3>
+<h3 id="sec-4-1"><span class="section-number-3">4.1</span> -XX:StartFlightRecording</h3>
 <div class="outline-text-3" id="text-4-1">
 <p>
 JRockit JVMで実行されるアプリケーションのフライト・レコーダ記録を開始するには、このオ
@@ -390,7 +425,7 @@ java -XX:+FlightRecorder -XX:FlightRecorderOptions=disk=true,maxchunksize=10M -X
 </div>
 
 <div id="outline-container-sec-4-2" class="outline-3">
-<h3 id="sec-4-2">-XX:+PrintFlagsFinal</h3>
+<h3 id="sec-4-2"><span class="section-number-3">4.2</span> -XX:+PrintFlagsFinal</h3>
 <div class="outline-text-3" id="text-4-2">
 <p>
 JVM終了時にXXパラメータの値を標準出力にダンプする。
@@ -403,7 +438,7 @@ JVM終了時にXXパラメータの値を標準出力にダンプする。
 
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">よく使うコマンド</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> よく使うコマンド</h2>
 <div class="outline-text-2" id="text-5">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 

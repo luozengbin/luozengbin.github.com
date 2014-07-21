@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-09T13:43:25+09:00</updated>
+  <updated>2014-07-21T20:45:44+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,173 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]ffmpegでスクリンキャストを取る]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html"/>
+    <updated>2014-07-21T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]ffmpegでスクリンキャストを取る</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 特定のウィンドウを録画する</a></li>
+<li><a href="#sec-2">2. 全画面を録画する</a></li>
+<li><a href="#sec-3">3. サンプル</a></li>
+</ul>
+</div>
+</div>
+<p>
+<code>ffmpeg</code> と <code>xwininfo</code> コマンドでスクリンキャストを取るシェールスクリプトを作成してみた。
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 特定のウィンドウを録画する</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+第一引数に録画ビデオファイルの保存パスを指定する。
+</p>
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+
+<span style="color: #74af68;">###########################################################################</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">fsc-window.sh - take screen video cast for selected window</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">Authors: Luo Zengbin <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">GNU General Public License for more details.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/">&lt;http://www.gnu.org/licenses/&gt;</a>.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">Usage:</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">$fsc-window.sh $1 &#31532;&#19968;&#24341;&#25968;&#12395;&#37682;&#30011;&#12499;&#12487;&#12458;&#12501;&#12449;&#12452;&#12523;&#12398;&#20445;&#23384;&#12497;&#12473;&#12434;&#25351;&#23450;&#12377;&#12427;&#12290;</span>
+<span style="color: #74af68;">###########################################################################</span>
+
+<span style="color: #74af68;">####################################</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">&#22855;&#25968;&#12434;&#20598;&#25968;&#12395;&#22793;&#25563;&#12377;&#12427;&#20966;&#29702;</span>
+<span style="color: #74af68;">####################################</span>
+<span style="color: #ffad29; font-weight: bold;">function</span> <span style="color: #00ede1; font-weight: bold;">even_round</span> {
+    <span style="color: #ffad29; font-weight: bold;">if</span> [ <span style="color: #fa8072;">`expr $1 % 2`</span> == 0 ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+        <span style="color: #23d7d7;">echo</span> $<span style="color: #dbdb95;">1</span>
+    <span style="color: #ffad29; font-weight: bold;">else</span>
+        <span style="color: #23d7d7;">echo</span> $(($<span style="color: #dbdb95;">1</span> - 1))
+    <span style="color: #ffad29; font-weight: bold;">fi</span>
+}
+
+<span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"&#37682;&#30011;&#23550;&#35937;Window&#12434;&#12459;&#12540;&#12477;&#12523;&#12391;&#36984;&#25246;&#12375;&#12390;&#12367;&#12384;&#12373;&#12356;&#12290;"</span>
+<span style="color: #dbdb95;">VFILE</span>=$<span style="color: #dbdb95;">1</span>
+<span style="color: #dbdb95;">INFO</span>=$(<span style="color: #fa8072;">xwininfo</span> -frame)
+
+<span style="color: #dbdb95;">WIN_GEO</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">INFO</span> | grep -oEe <span style="color: #e67128;">'geometry [0-9]+x[0-9]+'</span> | grep -oEe <span style="color: #e67128;">'[0-9]+x[0-9]+'</span>)
+<span style="color: #dbdb95;">WIN_XY</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">INFO</span> | grep -oEe <span style="color: #e67128;">'Corners:\s+\+[0-9]+\+[0-9]+'</span> | grep -oEe <span style="color: #e67128;">'[0-9]+\+[0-9]+'</span> | sed -e <span style="color: #e67128;">'s/\+/,/'</span> )
+
+<span style="color: #74af68;"># </span><span style="color: #74af68;">Windows&#12398;&#27178;&#12469;&#12452;&#12474;&#12392;&#32294;&#12469;&#12452;&#12474;&#12434;&#20598;&#25968;&#12395;&#12377;&#12427;</span>
+<span style="color: #dbdb95;">WIN_GEO_X</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">WIN_GEO</span> | cut -d <span style="color: #e67128;">'x'</span> -f 1)
+<span style="color: #dbdb95;">WIN_GEO_Y</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #dbdb95;">WIN_GEO</span> | cut -d <span style="color: #e67128;">'x'</span> -f 2)
+
+<span style="color: #dbdb95;">WIN_GEO</span>=<span style="color: #e67128;">"$(</span><span style="color: #fa8072;">even_round</span><span style="color: #e67128;"> $WIN_GEO_X)x$(</span><span style="color: #fa8072;">even_round</span><span style="color: #e67128;"> $WIN_GEO_Y)"</span>
+
+<span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"&#30011;&#38754;&#12469;&#12452;&#12474;&#65306;$WIN_GEO"</span>
+<span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"&#30011;&#38754;&#20301;&#32622;  &#65306;$WIN_XY"</span>
+
+<span style="color: #74af68;"># </span><span style="color: #74af68;">&#37682;&#30011;&#38283;&#22987;</span>
+ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: #dbdb95;">WIN_GEO</span> -i :0.0+$<span style="color: #dbdb95;">WIN_XY</span> <span style="color: #e67128;">\</span>
+       -dcodec copy -pix_fmt yuv420p -c:v libx264 -preset veryfast -qscale 1 -y $<span style="color: #dbdb95;">VFILE</span>
+</pre>
+</div>
+
+<p>
+ハマッたところ
+</p>
+<ul class="org-ul">
+<li>ビデオの横と縦のサイズを偶数にしないと、iphoneで再生時に真っグリンな画面しか見れない
+</li>
+<li>shell関数の戻り値は <code>return</code> じゃなくて、 <code>echo</code> を使うべき。 <code>return</code> はプロセスの
+実行結果ステータスと同じ使い方、ステータスを示すに使う
+</li>
+</ul>
+
+<p>
+コマンドの便利なオプション
+</p>
+<ul class="org-ul">
+<li><code>xwininfo -frame</code> 対象のウィンドウをカーソルで選択できるオプション
+</li>
+<li><code>ffmpeg -show_region 1</code> 録画対象範囲を点線で囲んで分かりやすくするオプション、1は点
+線の太さを示す
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 全画面を録画する</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+<code>xwininfo -root</code> でフルスクリーンの情報を取得することができます。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+
+<span style="color: #74af68;">###########################################################################</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">fsc-full.sh - take full screen video cast</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">Authors: Luo Zengbin <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">GNU General Public License for more details.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/">&lt;http://www.gnu.org/licenses/&gt;</a>.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">Usage:</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">$fsc-full.sh $1 &#31532;&#19968;&#24341;&#25968;&#12395;&#37682;&#30011;&#12499;&#12487;&#12458;&#12501;&#12449;&#12452;&#12523;&#12398;&#20445;&#23384;&#12497;&#12473;&#12434;&#25351;&#23450;&#12377;&#12427;&#12290;</span>
+<span style="color: #74af68;">###########################################################################</span>
+
+<span style="color: #dbdb95;">WIN_GEO</span>=$(<span style="color: #fa8072;">xwininfo</span> -root | grep <span style="color: #e67128;">'geometry'</span> | awk <span style="color: #e67128;">'{print $2;}'</span> | cut -d <span style="color: #e67128;">'+'</span> -f 1)
+
+<span style="color: #74af68;"># </span><span style="color: #74af68;">&#37682;&#30011;&#38283;&#22987;</span>
+ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: #dbdb95;">WIN_GEO</span> -i :0.0 <span style="color: #e67128;">\</span>
+       -dcodec copy -pix_fmt yuv420p -c:v libx264 -preset veryfast -qscale 1 -y $<span style="color: #dbdb95;">1</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> サンプル</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+録画テストサンプル
+</p>
+<video controls>
+   <source src="video/2014-07-21-ffmpeg-test.mp4">
+</video>
+
+<p>
+ばっちりだね。 めでたしめでたし。
+</p>
+</div>
+</div>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[検証]syncシステムコールの性能について]]></title>
@@ -243,33 +410,33 @@ $
 
 <div class="org-src-container">
 
-<pre class="src src-perl"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/usr/bin/perl</span>
-<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">strict</span>;
-<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">warnings</span>;
-<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">IO</span>::File;
-<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">Time</span>::HiRes qw<span style="color: #bcee68; font-style: italic;">( usleep gettimeofday tv_interval )</span>;
-<span style="color: #00bfff; font-weight: bold;">use</span> <span style="color: #8ae234;">constant</span> DATA =&gt; <span style="color: #bcee68; font-style: italic;">"12345678"</span> x 128;   <span style="color: #888a85;"># 1KB&#12398;&#12487;&#12540;&#12479;</span>
+<pre class="src src-perl"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/usr/bin/perl</span>
+<span style="color: #ffad29; font-weight: bold;">use</span> <span style="color: #008b8b;">strict</span>;
+<span style="color: #ffad29; font-weight: bold;">use</span> <span style="color: #008b8b;">warnings</span>;
+<span style="color: #ffad29; font-weight: bold;">use</span> <span style="color: #008b8b;">IO</span>::File;
+<span style="color: #ffad29; font-weight: bold;">use</span> <span style="color: #008b8b;">Time</span>::HiRes qw<span style="color: #e67128;">( usleep gettimeofday tv_interval )</span>;
+<span style="color: #ffad29; font-weight: bold;">use</span> <span style="color: #008b8b;">constant</span> DATA =&gt; <span style="color: #e67128;">"12345678"</span> x 128;   <span style="color: #74af68;"># 1KB&#12398;&#12487;&#12540;&#12479;</span>
 
-<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">io</span> = IO::File-&gt;new(<span style="color: #bcee68; font-style: italic;">"test.dat"</span>, <span style="color: #bcee68; font-style: italic;">'w'</span>) or <span style="color: #00bfff; font-weight: bold;">die</span> $!;
-<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">write_count</span> = 0;
-<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">current_second</span> = 0;
-<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">last_second</span> = 0;
-<span style="color: #8ae234; font-weight: bold;">my</span> $<span style="color: #ff6347;">start_time</span> = Time::HiRes::time;
+<span style="color: #34cae2;">my</span> $<span style="color: #dbdb95;">io</span> = IO::File-&gt;new(<span style="color: #e67128;">"test.dat"</span>, <span style="color: #e67128;">'w'</span>) or <span style="color: #ffad29; font-weight: bold;">die</span> $!;
+<span style="color: #34cae2;">my</span> $<span style="color: #dbdb95;">write_count</span> = 0;
+<span style="color: #34cae2;">my</span> $<span style="color: #dbdb95;">current_second</span> = 0;
+<span style="color: #34cae2;">my</span> $<span style="color: #dbdb95;">last_second</span> = 0;
+<span style="color: #34cae2;">my</span> $<span style="color: #dbdb95;">start_time</span> = Time::HiRes::time;
 
-<span style="color: #00bfff; font-weight: bold;">while</span> (1) {
+<span style="color: #ffad29; font-weight: bold;">while</span> (1) {
 
-    $<span style="color: #ff6347;">io</span>-&gt;syswrite(DATA);
-    <span style="color: #888a85;"># &#24375;&#21046;&#26360;&#12365;&#36796;&#12415;</span>
-    IO::Handle::sync($<span style="color: #ff6347;">io</span>);
+    $<span style="color: #dbdb95;">io</span>-&gt;syswrite(DATA);
+    <span style="color: #74af68;"># &#24375;&#21046;&#26360;&#12365;&#36796;&#12415;</span>
+    IO::Handle::sync($<span style="color: #dbdb95;">io</span>);
 
-    <span style="color: #888a85;"># &#26178;&#21051;&#24773;&#22577;&#12392;&#26360;&#12365;&#36796;&#12415;&#22238;&#25968;&#12398;&#20986;&#21147;&#20966;&#29702;</span>
-    $<span style="color: #ff6347;">current_second</span> = sprintf(<span style="color: #bcee68; font-style: italic;">"%.0f"</span>, Time::HiRes::time - $<span style="color: #ff6347;">start_time</span>);
-    <span style="color: #00bfff; font-weight: bold;">if</span> ($<span style="color: #ff6347;">current_second</span> != $<span style="color: #ff6347;">last_second</span>) {
-        print STDOUT <span style="color: #bcee68; font-style: italic;">"$last_second \t$write_count\n"</span>;
-        $<span style="color: #ff6347;">last_second</span> = $<span style="color: #ff6347;">current_second</span>;
-        $<span style="color: #ff6347;">write_count</span> = 0;
+    <span style="color: #74af68;"># &#26178;&#21051;&#24773;&#22577;&#12392;&#26360;&#12365;&#36796;&#12415;&#22238;&#25968;&#12398;&#20986;&#21147;&#20966;&#29702;</span>
+    $<span style="color: #dbdb95;">current_second</span> = sprintf(<span style="color: #e67128;">"%.0f"</span>, Time::HiRes::time - $<span style="color: #dbdb95;">start_time</span>);
+    <span style="color: #ffad29; font-weight: bold;">if</span> ($<span style="color: #dbdb95;">current_second</span> != $<span style="color: #dbdb95;">last_second</span>) {
+        print STDOUT <span style="color: #e67128;">"$last_second \t$write_count\n"</span>;
+        $<span style="color: #dbdb95;">last_second</span> = $<span style="color: #dbdb95;">current_second</span>;
+        $<span style="color: #dbdb95;">write_count</span> = 0;
     }
-    $<span style="color: #ff6347;">write_count</span> += 1;
+    $<span style="color: #dbdb95;">write_count</span> += 1;
 }
 </pre>
 </div>
@@ -642,7 +809,32 @@ default_asides: [...., custom/asides/qrcode.html, ..... ]
     <link href="http://luozengbin.github.io/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html"/>
     <updated>2014-06-30T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[検証]SSHトンネル機能でVPN環境の構築</id>
-    <content type="html"><![CDATA[<p>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. SSHトンネリング</a></li>
+<li><a href="#sec-2">2. TUNデバイス利用方式</a>
+<ul>
+<li><a href="#sec-2-1">2.1. 1.sshdに対してトンネリングを有効化する</a></li>
+<li><a href="#sec-2-2">2.2. 2.rootユーザログインできるように公開鍵を登録する</a></li>
+<li><a href="#sec-2-3">2.3. 3.SSHトンネルを開設する</a></li>
+<li><a href="#sec-2-4">2.4. 4.各TUNデバイスにIPアドレスを付与する</a></li>
+<li><a href="#sec-2-5">2.5. 5.区間１トンネルと区間２トンネルを結び付ける</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. TAPデバイス利用方式</a>
+<ul>
+<li><a href="#sec-3-1">3.1. 区間１の設定</a></li>
+<li><a href="#sec-3-2">3.2. 区間２の設定</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. おまけに</a></li>
+<li><a href="#sec-5">5. 参考リンク</a></li>
+</ul>
+</div>
+</div>
+<p>
 友人に自宅のLAN内のコンテンツを共有するため、VPNについて検証しました。
 自宅のルータはYamahaのRTX810です。このルータのVPN機能を使えば簡単に出来てしまうので面
 白くないと思って、敢えてSSHのトンネル機能を使って0円VPN環境を構築してみた。
@@ -693,7 +885,7 @@ default_asides: [...., custom/asides/qrcode.html, ..... ]
 </pre>
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">SSHトンネリング</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> SSHトンネリング</h2>
 <div class="outline-text-2" id="text-1">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -777,37 +969,37 @@ vermagic:       3.15.2-1-ARCH SMP preempt mod_unload modversions
 
 <div class="org-src-container">
 
-<pre class="src src-c"><span style="color: #888a85;">/* </span><span style="color: #888a85;">Initialize net device. </span><span style="color: #888a85;">*/</span>
-<span style="color: #729fcf; font-weight: bold;">static</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">tun_net_init</span>(<span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">net_device</span> *<span style="color: #ff6347;">dev</span>)
+<pre class="src src-c"><span style="color: #74af68;">/* </span><span style="color: #74af68;">Initialize net device. </span><span style="color: #74af68;">*/</span>
+<span style="color: #ffad29; font-weight: bold;">static</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">tun_net_init</span>(<span style="color: #ffad29; font-weight: bold;">struct</span> <span style="color: #34cae2;">net_device</span> *<span style="color: #dbdb95;">dev</span>)
 {
-    <span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">tun_struct</span> *<span style="color: #ff6347;">tun</span> = netdev_priv(dev);
+    <span style="color: #ffad29; font-weight: bold;">struct</span> <span style="color: #34cae2;">tun_struct</span> *<span style="color: #dbdb95;">tun</span> = netdev_priv(dev);
 
-    <span style="color: #729fcf; font-weight: bold;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
-    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TUN_DEV:
+    <span style="color: #ffad29; font-weight: bold;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
+    <span style="color: #ffad29; font-weight: bold;">case</span> TUN_TUN_DEV:
         dev-&gt;netdev_ops = &amp;tun_netdev_ops;
 
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Point-to-Point TUN Device </span><span style="color: #888a85;">*/</span>
+        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Point-to-Point TUN Device </span><span style="color: #74af68;">*/</span>
         dev-&gt;hard_header_len = 0;
         dev-&gt;addr_len = 0;
         dev-&gt;mtu = 1500;
 
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Zero header length </span><span style="color: #888a85;">*/</span>
+        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Zero header length </span><span style="color: #74af68;">*/</span>
         dev-&gt;type = ARPHRD_NONE;
         dev-&gt;flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
-        <span style="color: #729fcf; font-weight: bold;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #74af68;">/* </span><span style="color: #74af68;">We prefer our own queue length </span><span style="color: #74af68;">*/</span>
+        <span style="color: #ffad29; font-weight: bold;">break</span>;
 
-    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TAP_DEV:
+    <span style="color: #ffad29; font-weight: bold;">case</span> TUN_TAP_DEV:
         dev-&gt;netdev_ops = &amp;tap_netdev_ops;
-        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Ethernet TAP Device </span><span style="color: #888a85;">*/</span>
+        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Ethernet TAP Device </span><span style="color: #74af68;">*/</span>
         ether_setup(dev);
         dev-&gt;priv_flags &amp;= ~IFF_TX_SKB_SHARING;
         dev-&gt;priv_flags |= IFF_LIVE_ADDR_CHANGE;
 
         eth_hw_addr_random(dev);
 
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
-        <span style="color: #729fcf; font-weight: bold;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #74af68;">/* </span><span style="color: #74af68;">We prefer our own queue length </span><span style="color: #74af68;">*/</span>
+        <span style="color: #ffad29; font-weight: bold;">break</span>;
     }
 }
 </pre>
@@ -821,7 +1013,7 @@ TUNデバイスのIP-in-IP方式とppp方式どちらもPPPプロトコルを使
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">TUNデバイス利用方式</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> TUNデバイス利用方式</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 TUNデバイスでトンネリングする、iptablesとルーティングテーブルで交通を整理する。
@@ -879,7 +1071,7 @@ TUNデバイスでトンネリングする、iptablesとルーティングテー
 </div>
 
 <div id="outline-container-sec-2-1" class="outline-3">
-<h3 id="sec-2-1">1.sshdに対してトンネリングを有効化する</h3>
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> 1.sshdに対してトンネリングを有効化する</h3>
 <div class="outline-text-3" id="text-2-1">
 <p>
 AmazonEC2インスタンスとRaspberryPiが設定対象となります。 <code>/etc/ssh/sshd_config</code> ファイ
@@ -900,7 +1092,7 @@ PermitTunnel yes
 </div>
 
 <div id="outline-container-sec-2-2" class="outline-3">
-<h3 id="sec-2-2">2.rootユーザログインできるように公開鍵を登録する</h3>
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> 2.rootユーザログインできるように公開鍵を登録する</h3>
 <div class="outline-text-3" id="text-2-2">
 <p>
 区間１はAmazonEC2へのログインですので、EC2インスタンス作成時に生成された秘密鍵でログ
@@ -920,7 +1112,7 @@ PermitTunnel yes
 </div>
 
 <div id="outline-container-sec-2-3" class="outline-3">
-<h3 id="sec-2-3">3.SSHトンネルを開設する</h3>
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> 3.SSHトンネルを開設する</h3>
 <div class="outline-text-3" id="text-2-3">
 <p>
 rootユーザでsshコマンドにオプションを付けてログインすることでSSHトンネルが開設される。
@@ -1036,7 +1228,7 @@ tun1: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500
 </div>
 
 <div id="outline-container-sec-2-4" class="outline-3">
-<h3 id="sec-2-4">4.各TUNデバイスにIPアドレスを付与する</h3>
+<h3 id="sec-2-4"><span class="section-number-3">2.4</span> 4.各TUNデバイスにIPアドレスを付与する</h3>
 <div class="outline-text-3" id="text-2-4">
 <p>
 Tomodatiの <code>tun0</code> デバイスに <code>192.168.3.1</code> アドレスを指定する、Point-To-Point通信のた
@@ -1120,7 +1312,7 @@ tun1: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500
 </div>
 
 <div id="outline-container-sec-2-5" class="outline-3">
-<h3 id="sec-2-5">5.区間１トンネルと区間２トンネルを結び付ける</h3>
+<h3 id="sec-2-5"><span class="section-number-3">2.5</span> 5.区間１トンネルと区間２トンネルを結び付ける</h3>
 <div class="outline-text-3" id="text-2-5">
 <p>
 AmazonEC2にてiptablesのSNAT機能を用いて区間１と区間２のパケットをルーティングさせる。
@@ -1187,7 +1379,7 @@ RaspberryPiに <code>192.168.100.0/24</code> への転送ルートを定義す�
 </div>
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">TAPデバイス利用方式</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> TAPデバイス利用方式</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 TAPデバイスはLayer2(Ethernet)をエミュレートできるため <code>bridge</code> カーネルモジュールや
@@ -1254,7 +1446,7 @@ VPNネットワーク構成概要
 </div>
 
 <div id="outline-container-sec-3-1" class="outline-3">
-<h3 id="sec-3-1">区間１の設定</h3>
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> 区間１の設定</h3>
 <div class="outline-text-3" id="text-3-1">
 <p>
 Tomodati <code>/root/.ssh/config</code> ：SSHクライアント設定
@@ -1317,7 +1509,7 @@ brctl addif br0 tap0
 </div>
 
 <div id="outline-container-sec-3-2" class="outline-3">
-<h3 id="sec-3-2">区間２の設定</h3>
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> 区間２の設定</h3>
 <div class="outline-text-3" id="text-3-2">
 <p>
 AmazonEC2 <code>/root/.ssh/config</code> ：SSHクライアント設定
@@ -1378,7 +1570,7 @@ sysctl -w net.ipv4.conf.eth0.proxy_arp=1
 
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">おまけに</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> おまけに</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 今後機会があれば、TUNデバイス方式とTAPデバイス方式の性能を比較したいと思います。
@@ -1391,7 +1583,7 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
 </div>
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">参考リンク</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> 参考リンク</h2>
 <div class="outline-text-2" id="text-5">
 <ul class="org-ul">
 <li><a href="http://www.komoto.org/vpn/index.html">VPN技術について</a>
@@ -1421,7 +1613,24 @@ MultiCastが出来ない部分とネットワークセグメント間のパケ�
     <link href="http://luozengbin.github.io/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html"/>
     <updated>2014-06-29T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[メモ]emacsで漢字→かな変換</id>
-    <content type="html"><![CDATA[<p>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 考案</a></li>
+<li><a href="#sec-2">2. <code>skk-kakasi.el</code> の導入手順</a>
+<ul>
+<li><a href="#sec-2-1">2.1. KAKASIのインストール</a></li>
+<li><a href="#sec-2-2">2.2. ddskk のインストール</a></li>
+<li><a href="#sec-2-3">2.3. 動作確認</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. 更に自動化する</a></li>
+<li><a href="#sec-4">4. もう一歩</a></li>
+</ul>
+</div>
+</div>
+<p>
 Emacsをドキュメントビューアとして使っていますが、時々漢字の読み方がわからないことに遭
 遇します。漢字から意味を読み取ったとしても、読み方がわからない場合が多いい。いままで
 一々ブラウザに切り替えて調べました。せっかくEmacsを使っているので自動化してみました。
@@ -1432,7 +1641,7 @@ Emacsをドキュメントビューアとして使っていますが、時々漢
 </p>
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">考案</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> 考案</h2>
 <div class="outline-text-2" id="text-1">
 <ol class="org-ol">
 <li>スクラップ開発：選択テキストを漢字なか変換Webサービスに投げって応答を表示する
@@ -1474,7 +1683,7 @@ skk-hurigana-regionとすると漢字 [かんじ] の混ざ [まざ] った文�
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><code>skk-kakasi.el</code> の導入手順</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> <code>skk-kakasi.el</code> の導入手順</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 <code>skk-kakasi.el</code> の導入に必要なもの
@@ -1488,7 +1697,7 @@ skk-hurigana-regionとすると漢字 [かんじ] の混ざ [まざ] った文�
 </div>
 
 <div id="outline-container-sec-2-1" class="outline-3">
-<h3 id="sec-2-1">KAKASIのインストール</h3>
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> KAKASIのインストール</h3>
 <div class="outline-text-3" id="text-2-1">
 <p>
 Archlinuxをお使いなので <code>sudo pacman -S kakasi</code> で一発でインストールが出来ました。
@@ -1544,7 +1753,7 @@ kakasi /usr/share/man/man1/kakasi.1.gz
 </div>
 
 <div id="outline-container-sec-2-2" class="outline-3">
-<h3 id="sec-2-2">ddskk のインストール</h3>
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> ddskk のインストール</h3>
 <div class="outline-text-3" id="text-2-2">
 <p>
 ddskk のインストール手順はいくつがあります。詳細はddskkのインストールマニュアルへ参照する。
@@ -1564,16 +1773,16 @@ $ cd ddskk-20140622
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp"><span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#36766;&#26360;&#12501;&#12449;&#12452;&#12523;&#12398;&#26684;&#32013;&#20808;</span>
-(setq SKK_DATADIR <span style="color: #ad7fa8; font-style: italic;">"~/.emacs.d/etc/skk"</span>)
+<pre class="src src-emacs-lisp"><span style="color: #74af68;">;;; </span><span style="color: #74af68;">&#36766;&#26360;&#12501;&#12449;&#12452;&#12523;&#12398;&#26684;&#32013;&#20808;</span>
+(setq SKK_DATADIR <span style="color: #e67128;">"~/.emacs.d/etc/skk"</span>)
 
-<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#12489;&#12461;&#12517;&#12513;&#12531;&#12488;</span>
-(setq SKK_INFODIR <span style="color: #ad7fa8; font-style: italic;">"~/.emacs.d/share/info-ja/skk"</span>)
+<span style="color: #74af68;">;;; </span><span style="color: #74af68;">&#12489;&#12461;&#12517;&#12513;&#12531;&#12488;</span>
+(setq SKK_INFODIR <span style="color: #e67128;">"~/.emacs.d/share/info-ja/skk"</span>)
 
-<span style="color: #888a85;">;;; </span><span style="color: #888a85;">skk lisp&#26412;&#20307;</span>
-(setq SKK_LISPDIR <span style="color: #ad7fa8; font-style: italic;">"~/.emacs.d/lisp/skk"</span>)
+<span style="color: #74af68;">;;; </span><span style="color: #74af68;">skk lisp&#26412;&#20307;</span>
+(setq SKK_LISPDIR <span style="color: #e67128;">"~/.emacs.d/lisp/skk"</span>)
 
-<span style="color: #888a85;">;;; </span><span style="color: #888a85;">skk-large-jisyo &#12398;&#20516;&#12434;&#33258;&#21205;&#35373;&#23450;&#12377;&#12427;</span>
+<span style="color: #74af68;">;;; </span><span style="color: #74af68;">skk-large-jisyo &#12398;&#20516;&#12434;&#33258;&#21205;&#35373;&#23450;&#12377;&#12427;</span>
 (setq SKK_SET_JISYO t)
 </pre>
 </div>
@@ -1592,7 +1801,7 @@ $ make install
 </div>
 
 <div id="outline-container-sec-2-3" class="outline-3">
-<h3 id="sec-2-3">動作確認</h3>
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> 動作確認</h3>
 <div class="outline-text-3" id="text-2-3">
 <p>
 <code>(require 'skk-kakasi)</code> でskk-kakasi.elをロードし、適当に漢字を含むテキストを選択し
@@ -1608,7 +1817,7 @@ $ make install
 </div>
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">更に自動化する</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> 更に自動化する</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 <code>pos-tip.el</code> と連携してtooltip形でカッコ良く表示する。漢字の読み方をチラ見に便利。
@@ -1616,18 +1825,18 @@ $ make install
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-autoloads</span>)
-(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-kakasi</span>)
-(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">pos-tip</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #ffad29; font-weight: bold;">require</span> '<span style="color: #008b8b;">skk-autoloads</span>)
+(<span style="color: #ffad29; font-weight: bold;">require</span> '<span style="color: #008b8b;">skk-kakasi</span>)
+(<span style="color: #ffad29; font-weight: bold;">require</span> '<span style="color: #008b8b;">pos-tip</span>)
 
-<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12434;pos-tip&#12391;&#34920;&#31034;&#12377;&#12427;</span>
-(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">skk-hurigana-tip</span> (start end <span style="color: #8ae234; font-weight: bold;">&amp;optional</span> all)
-  <span style="color: #888a85;">"&#38936;&#22495;&#12398;&#28450;&#23383;&#12395;&#20840;&#12390;&#12405;&#12426;&#12364;&#12394;&#12434;&#20184;&#12369;&#12289;&#12509;&#12483;&#12503;&#12450;&#12483;&#12503;&#12377;&#12427;&#12290;"</span>
-  (interactive <span style="color: #ad7fa8; font-style: italic;">"r\nP"</span>)
+<span style="color: #74af68;">;;; </span><span style="color: #74af68;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12434;pos-tip&#12391;&#34920;&#31034;&#12377;&#12427;</span>
+(<span style="color: #ffad29; font-weight: bold;">defun</span> <span style="color: #00ede1; font-weight: bold;">skk-hurigana-tip</span> (start end <span style="color: #34cae2;">&amp;optional</span> all)
+  <span style="color: #e67128;">"&#38936;&#22495;&#12398;&#28450;&#23383;&#12395;&#20840;&#12390;&#12405;&#12426;&#12364;&#12394;&#12434;&#20184;&#12369;&#12289;&#12509;&#12483;&#12503;&#12450;&#12483;&#12503;&#12377;&#12427;&#12290;"</span>
+  (interactive <span style="color: #e67128;">"r\nP"</span>)
   (pos-tip-show (skk-hurigana-1 start end all)))
 
-<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
-(global-set-key (kbd <span style="color: #ad7fa8; font-style: italic;">"C-x x"</span>) 'skk-hurigana-tip)
+<span style="color: #74af68;">;;; </span><span style="color: #74af68;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
+(global-set-key (kbd <span style="color: #e67128;">"C-x x"</span>) 'skk-hurigana-tip)
 </pre>
 </div>
 
@@ -1638,31 +1847,31 @@ $ make install
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-autoloads</span>)
-(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">skk-kakasi</span>)
-(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">popwin</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #ffad29; font-weight: bold;">require</span> '<span style="color: #008b8b;">skk-autoloads</span>)
+(<span style="color: #ffad29; font-weight: bold;">require</span> '<span style="color: #008b8b;">skk-kakasi</span>)
+(<span style="color: #ffad29; font-weight: bold;">require</span> '<span style="color: #008b8b;">popwin</span>)
 
-<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;</span>
-(<span style="color: #729fcf; font-weight: bold;">defvar</span> <span style="color: #ff6347;">skk-kakasi-popbuf-name</span> <span style="color: #ad7fa8; font-style: italic;">" *skk-kakasi*"</span> <span style="color: #888a85;">"&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;"</span>)
+<span style="color: #74af68;">;;; </span><span style="color: #74af68;">&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;</span>
+(<span style="color: #ffad29; font-weight: bold;">defvar</span> <span style="color: #dbdb95;">skk-kakasi-popbuf-name</span> <span style="color: #e67128;">" *skk-kakasi*"</span> <span style="color: #e67128;">"&#12405;&#12426;&#20206;&#21517;&#22793;&#25563;&#32080;&#26524;&#12496;&#12483;&#12501;&#12449;&#21517;"</span>)
 
-(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">skk-hurigana-popup</span> (start end <span style="color: #8ae234; font-weight: bold;">&amp;optional</span> all)
-  (interactive <span style="color: #ad7fa8; font-style: italic;">"r\nP"</span>)
-  (<span style="color: #729fcf; font-weight: bold;">let</span> ((str0 (buffer-substring-no-properties start end))
+(<span style="color: #ffad29; font-weight: bold;">defun</span> <span style="color: #00ede1; font-weight: bold;">skk-hurigana-popup</span> (start end <span style="color: #34cae2;">&amp;optional</span> all)
+  (interactive <span style="color: #e67128;">"r\nP"</span>)
+  (<span style="color: #ffad29; font-weight: bold;">let</span> ((str0 (buffer-substring-no-properties start end))
         (str1 (skk-hurigana-1 start end all))
         (str2 (skk-gyakubiki-1 start end all)))
-    (<span style="color: #729fcf; font-weight: bold;">with-current-buffer</span> (get-buffer-create skk-kakasi-popbuf-name)
+    (<span style="color: #ffad29; font-weight: bold;">with-current-buffer</span> (get-buffer-create skk-kakasi-popbuf-name)
       (setq buffer-read-only nil)
       (erase-buffer)
-      (insert <span style="color: #ad7fa8; font-style: italic;">"KAKASI - &#28450;&#23383;&#8594;&#12363;&#12394;(&#12525;&#12540;&#12510;&#23383;)&#22793;&#25563;&#32080;&#26524;:\n"</span>)
-      (insert <span style="color: #ad7fa8; font-style: italic;">"-------------------------------------\n\n"</span>)
-      (insert str0 <span style="color: #ad7fa8; font-style: italic;">"\n\n"</span>)
-      (insert str1 <span style="color: #ad7fa8; font-style: italic;">"\n\n"</span>)
-      (insert str2 <span style="color: #ad7fa8; font-style: italic;">"\n\n"</span>)
+      (insert <span style="color: #e67128;">"KAKASI - &#28450;&#23383;&#8594;&#12363;&#12394;(&#12525;&#12540;&#12510;&#23383;)&#22793;&#25563;&#32080;&#26524;:\n"</span>)
+      (insert <span style="color: #e67128;">"-------------------------------------\n\n"</span>)
+      (insert str0 <span style="color: #e67128;">"\n\n"</span>)
+      (insert str1 <span style="color: #e67128;">"\n\n"</span>)
+      (insert str2 <span style="color: #e67128;">"\n\n"</span>)
       (setq buffer-read-only t))
     (display-buffer (get-buffer skk-kakasi-popbuf-name))))
 
-<span style="color: #888a85;">;;; </span><span style="color: #888a85;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
-(global-set-key (kbd <span style="color: #ad7fa8; font-style: italic;">"C-x X"</span>) 'skk-hurigana-popup)
+<span style="color: #74af68;">;;; </span><span style="color: #74af68;">&#36969;&#24403;&#12395;&#12461;&#12540;&#12434;&#21106;&#12426;&#24403;&#12390;&#12377;&#12427;</span>
+(global-set-key (kbd <span style="color: #e67128;">"C-x X"</span>) 'skk-hurigana-popup)
 </pre>
 </div>
 
@@ -1674,7 +1883,7 @@ $ make install
 </div>
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">もう一歩</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> もう一歩</h2>
 <div class="outline-text-2" id="text-4">
 <ul class="org-ul">
 <li>オンライン辞書サービスを使って単語の解釈を表示したい
@@ -1692,7 +1901,20 @@ $ make install
     <link href="http://luozengbin.github.io/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html"/>
     <updated>2014-06-21T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[メモ]リモートxの接続方法</id>
-    <content type="html"><![CDATA[<p>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 検証環境</a></li>
+<li><a href="#sec-2">2. xhostによるXアプリを起動する方式</a></li>
+<li><a href="#sec-3">3. SSH X11フォワード方式</a></li>
+<li><a href="#sec-4">4. VNC方式</a></li>
+<li><a href="#sec-5">5. ローカルで異なるユーザでXアプリの起動</a></li>
+<li><a href="#sec-6">6. 参考サイト</a></li>
+</ul>
+</div>
+</div>
+<p>
 リモートLinuxサーバでXアプリを利用するケースはしばしばあります。
 実現方式について調べてみた。
 </p>
@@ -1766,7 +1988,7 @@ VNCとXRDP以外のサーバとクライアントの役割
 </ul>
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">検証環境</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> 検証環境</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
 <li>クライアント: GDM経由でGnome3が動いているGUI環境
@@ -1790,7 +2012,7 @@ VNCとXRDP以外のサーバとクライアントの役割
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">xhostによるXアプリを起動する方式</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> xhostによるXアプリを起動する方式</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 通信イメージ
@@ -1858,7 +2080,7 @@ DISPLAY=192.168.100.13:0.0
 </div>
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">SSH X11フォワード方式</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> SSH X11フォワード方式</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 通信イメージ
@@ -2031,7 +2253,7 @@ leafpad: can't save config file - /home/akira/.config/leafpad/leafpadrc
 </div>
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">VNC方式</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> VNC方式</h2>
 <div class="outline-text-2" id="text-4">
 <ul class="org-ul">
 <li><a href="https://wiki.archlinux.org/index.php/Vncserver_%2528%25E6%2597%25A5%25E6%259C%25AC%25E8%25AA%259E%2529">Archlinux Wiki: Vncserver (日本語)</a>
@@ -2041,7 +2263,7 @@ leafpad: can't save config file - /home/akira/.config/leafpad/leafpadrc
 </div>
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">ローカルで異なるユーザでXアプリの起動</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> ローカルで異なるユーザでXアプリの起動</h2>
 <div class="outline-text-2" id="text-5">
 <p>
 以下のようにコンソールからローカルの環境の別ユーザでXアプリを起動しようとするとエラー
@@ -2086,7 +2308,7 @@ leafpad: ディスプレイをオープンできません:
 </div>
 
 <div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6">参考サイト</h2>
+<h2 id="sec-6"><span class="section-number-2">6</span> 参考サイト</h2>
 <div class="outline-text-2" id="text-6">
 <ul class="org-ul">
 <li><a href="http://vega.sra-tohoku.co.jp/~kabe/vsd/ssh-x.html">最近の豪華なX11環境でsshを使ってＸプロトコルを中継する</a>
@@ -2104,13 +2326,25 @@ leafpad: ディスプレイをオープンできません:
     <link href="http://luozengbin.github.io/blog/2014-06-18-%5B%E6%A4%9C%E8%A8%BC%5Dadf%E5%8D%B0%E5%88%B7%E3%83%97%E3%83%AC%E3%83%93%E3%83%A5%E3%83%BC.html"/>
     <updated>2014-06-18T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[検証]adf印刷プレビュー</id>
-    <content type="html"><![CDATA[<p>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 検証内容</a></li>
+<li><a href="#sec-2">2. af:showPrintablePageBehaviorタグの使い方</a></li>
+<li><a href="#sec-3">3. 印刷内容の制御</a></li>
+<li><a href="#sec-4">4. IE印刷プレビュー画面を出す</a></li>
+<li><a href="#sec-5">5. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
 Oracle ADFの印刷機能にたずさわる機会がありましたので、一部調査した内容を
 ここでメモしておきます。サンプルコードは <a href="https://github.com/luozengbin/ADFSamples/tree/master/PrintPreview">Github</a> に登録しています。
 </p>
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">検証内容</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> 検証内容</h2>
 <div class="outline-text-2" id="text-1">
 <ol class="org-ol">
 <li><code>af:showPrintablePageBehavior</code> タグの使い方
@@ -2128,7 +2362,7 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">af:showPrintablePageBehaviorタグの使い方</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> af:showPrintablePageBehaviorタグの使い方</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 <code>af:showPrintablePageBehavior</code> タグを画面に任意のcommandコンポネントの子コンポネント
@@ -2139,7 +2373,7 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 </div>
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">印刷内容の制御</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> 印刷内容の制御</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 基本的に全画面(同じjspx)の内容が印刷プレビュー画面に表示される。一部コンポネント
@@ -2232,26 +2466,26 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 </p>
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">beforePhaseMethod</span>(<span style="color: #8ae234; font-weight: bold;">PhaseEvent</span> <span style="color: #ff6347;">phaseEvent</span>) {
+<pre class="src src-java"><span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">beforePhaseMethod</span>(<span style="color: #34cae2;">PhaseEvent</span> <span style="color: #dbdb95;">phaseEvent</span>) {
 
-    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"----------   phaseEvent   -------------"</span>);
-    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
+    System.out.println(<span style="color: #e67128;">"----------   phaseEvent   -------------"</span>);
+    System.out.println(<span style="color: #e67128;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
 
-    <span style="color: #888a85;">//</span><span style="color: #888a85;">only perform action if RENDER_RESPONSE phase is reached</span>
-    <span style="color: #729fcf; font-weight: bold;">if</span> (phaseEvent.getPhaseId() == <span style="color: #8ae234;">PhaseId</span>.RENDER_RESPONSE) {
+    <span style="color: #74af68;">//</span><span style="color: #74af68;">only perform action if RENDER_RESPONSE phase is reached</span>
+    <span style="color: #ffad29; font-weight: bold;">if</span> (phaseEvent.getPhaseId() == <span style="color: #008b8b;">PhaseId</span>.RENDER_RESPONSE) {
 
-        <span style="color: #8ae234; font-weight: bold;">FacesContext</span> <span style="color: #ff6347;">fctx</span> = FacesContext.getCurrentInstance();
-        <span style="color: #888a85;">//</span><span style="color: #888a85;">check internal request parameter</span>
-        <span style="color: #8ae234; font-weight: bold;">Map</span> <span style="color: #ff6347;">requestMap</span> = fctx.getExternalContext().getRequestMap();
+        <span style="color: #34cae2;">FacesContext</span> <span style="color: #dbdb95;">fctx</span> = FacesContext.getCurrentInstance();
+        <span style="color: #74af68;">//</span><span style="color: #74af68;">check internal request parameter</span>
+        <span style="color: #34cae2;">Map</span> <span style="color: #dbdb95;">requestMap</span> = fctx.getExternalContext().getRequestMap();
 
-        <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
-        <span style="color: #8ae234; font-weight: bold;">Object</span> <span style="color: #ff6347;">showPrintableBehavior</span> = requestMap.get(<span style="color: #ad7fa8; font-style: italic;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
-        <span style="color: #729fcf; font-weight: bold;">if</span> (showPrintableBehavior != <span style="color: #8ae234;">null</span>) {
-            <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
-            <span style="color: #729fcf; font-weight: bold;">if</span> (<span style="color: #8ae234;">Boolean</span>.TRUE == showPrintableBehavior) {
-                <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
-                UiComponentControlUtil.setUnRendered(<span style="color: #ad7fa8; font-style: italic;">"mb1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it2"</span>);
-                UiComponentControlUtil.callbackJavascript(<span style="color: #ad7fa8; font-style: italic;">"customPrint();"</span>);
+        <span style="color: #74af68;">// </span><span style="color: #74af68;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
+        <span style="color: #34cae2;">Object</span> <span style="color: #dbdb95;">showPrintableBehavior</span> = requestMap.get(<span style="color: #e67128;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
+        <span style="color: #ffad29; font-weight: bold;">if</span> (showPrintableBehavior != <span style="color: #008b8b;">null</span>) {
+            <span style="color: #74af68;">// </span><span style="color: #74af68;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
+            <span style="color: #ffad29; font-weight: bold;">if</span> (<span style="color: #008b8b;">Boolean</span>.TRUE == showPrintableBehavior) {
+                <span style="color: #74af68;">// </span><span style="color: #74af68;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
+                UiComponentControlUtil.setUnRendered(<span style="color: #e67128;">"mb1"</span>, <span style="color: #e67128;">"it1"</span>, <span style="color: #e67128;">"it2"</span>);
+                UiComponentControlUtil.callbackJavascript(<span style="color: #e67128;">"customPrint();"</span>);
             }
         }
     }
@@ -2262,7 +2496,7 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 </div>
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">IE印刷プレビュー画面を出す</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> IE印刷プレビュー画面を出す</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 いい方法が見つからない、とりあえずWebBrowserというIEに含まれたActiveXコンポーネントを
@@ -2271,24 +2505,24 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
 <div class="org-src-container">
 
-<pre class="src src-js"><span style="color: #729fcf; font-weight: bold;">function</span> <span style="color: #edd400; font-weight: bold;">customPrint</span>() {
-  <span style="color: #729fcf; font-weight: bold;">if</span> (getBrowser().indexOf(<span style="color: #ad7fa8; font-style: italic;">'ie8'</span>) !== -1 ) {
-    <span style="color: #729fcf; font-weight: bold;">if</span>(window.ActiveXObject == <span style="color: #8ae234;">null</span> || document.body.insertAdjacentHTML == <span style="color: #8ae234;">null</span>) {
-      <span style="color: #729fcf; font-weight: bold;">return</span>;
+<pre class="src src-js"><span style="color: #ffad29; font-weight: bold;">function</span> <span style="color: #00ede1; font-weight: bold;">customPrint</span>() {
+  <span style="color: #ffad29; font-weight: bold;">if</span> (getBrowser().indexOf(<span style="color: #e67128;">'ie8'</span>) !== -1 ) {
+    <span style="color: #ffad29; font-weight: bold;">if</span>(window.ActiveXObject == <span style="color: #008b8b;">null</span> || document.body.insertAdjacentHTML == <span style="color: #008b8b;">null</span>) {
+      <span style="color: #ffad29; font-weight: bold;">return</span>;
     }
-    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">sWebBrowserCode</span> = <span style="color: #ad7fa8; font-style: italic;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
-    document.body.insertAdjacentHTML(<span style="color: #ad7fa8; font-style: italic;">'beforeEnd'</span>, sWebBrowserCode);
-    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">objWebBrowser</span> = document.body.lastChild;
-    <span style="color: #729fcf; font-weight: bold;">if</span>(objWebBrowser == <span style="color: #8ae234;">null</span>) <span style="color: #729fcf; font-weight: bold;">return</span>;
+    <span style="color: #ffad29; font-weight: bold;">var</span> <span style="color: #dbdb95;">sWebBrowserCode</span> = <span style="color: #e67128;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
+    document.body.insertAdjacentHTML(<span style="color: #e67128;">'beforeEnd'</span>, sWebBrowserCode);
+    <span style="color: #ffad29; font-weight: bold;">var</span> <span style="color: #dbdb95;">objWebBrowser</span> = document.body.lastChild;
+    <span style="color: #ffad29; font-weight: bold;">if</span>(objWebBrowser == <span style="color: #008b8b;">null</span>) <span style="color: #ffad29; font-weight: bold;">return</span>;
     objWebBrowser.ExecWB(7, 1);
     document.body.removeChild(objWebBrowser);
-  } <span style="color: #729fcf; font-weight: bold;">else</span> {
+  } <span style="color: #ffad29; font-weight: bold;">else</span> {
     window.print();
   }
 
-  <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
-  window.onfocus = <span style="color: #729fcf; font-weight: bold;">function</span>(){
-   (window.open(<span style="color: #ad7fa8; font-style: italic;">''</span>,<span style="color: #ad7fa8; font-style: italic;">'_self'</span>).opener=window).close(); 
+  <span style="color: #74af68;">// </span><span style="color: #74af68;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
+  window.onfocus = <span style="color: #ffad29; font-weight: bold;">function</span>(){
+   (window.open(<span style="color: #e67128;">''</span>,<span style="color: #e67128;">'_self'</span>).opener=window).close(); 
   };
 }
 </pre>
@@ -2302,7 +2536,7 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">参考</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> 参考</h2>
 <div class="outline-text-2" id="text-5">
 <p>
 Oracle Fusion Middleware Tag Reference for Oracle ADF Faces 11g Release 1 (11.1.1.5.0)
@@ -3407,12 +3641,12 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">org-octopress</span>)
-(setq org-octopress-directory-top       (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source"</span>))
-(setq org-octopress-directory-posts     (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source/_posts"</span>))
-(setq org-octopress-directory-org-top   (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source"</span>))
-(setq org-octopress-directory-org-posts (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source/blog"</span>))
-(setq org-octopress-setup-file          (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/setupfile.org"</span>))
+<pre class="src src-emacs-lisp">(<span style="color: #ffad29; font-weight: bold;">require</span> '<span style="color: #008b8b;">org-octopress</span>)
+(setq org-octopress-directory-top       (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-posts     (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/source/_posts"</span>))
+(setq org-octopress-directory-org-top   (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/source"</span>))
+(setq org-octopress-directory-org-posts (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/source/blog"</span>))
+(setq org-octopress-setup-file          (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/setupfile.org"</span>))
 </pre>
 </div>
 
@@ -3444,23 +3678,23 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">defvar</span> <span style="color: #ff6347;">org-octopress-top</span>
-  (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/"</span>)
-  <span style="color: #888a85;">"octopress&#12502;&#12525;&#12464;&#12486;&#12531;&#12503;&#12524;&#12540;&#12488;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;"</span>)
+<pre class="src src-emacs-lisp">(<span style="color: #ffad29; font-weight: bold;">defvar</span> <span style="color: #dbdb95;">org-octopress-top</span>
+  (concat user-emacs-directory <span style="color: #e67128;">"blogs/octopress/"</span>)
+  <span style="color: #e67128;">"octopress&#12502;&#12525;&#12464;&#12486;&#12531;&#12503;&#12524;&#12540;&#12488;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;"</span>)
 
-(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">org-octopress-preview</span> ()
-  <span style="color: #888a85;">"preview octopress content by call external shell script."</span>
+(<span style="color: #ffad29; font-weight: bold;">defun</span> <span style="color: #00ede1; font-weight: bold;">org-octopress-preview</span> ()
+  <span style="color: #e67128;">"preview octopress content by call external shell script."</span>
   (interactive)
-  (message <span style="color: #ad7fa8; font-style: italic;">"preview octopress content ...."</span>)
-  (<span style="color: #729fcf; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top)
-                 (preview-url <span style="color: #ad7fa8; font-style: italic;">"http://localhost:4000"</span>))
+  (message <span style="color: #e67128;">"preview octopress content ...."</span>)
+  (<span style="color: #ffad29; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top)
+                 (preview-url <span style="color: #e67128;">"http://localhost:4000"</span>))
     (deferred:$
-      (deferred:process-shell <span style="color: #ad7fa8; font-style: italic;">"blog_preview.sh"</span> org-octopress-top)
+      (deferred:process-shell <span style="color: #e67128;">"blog_preview.sh"</span> org-octopress-top)
       (deferred:nextc it
-        (<span style="color: #729fcf; font-weight: bold;">lambda</span> (x)
-          (message <span style="color: #ad7fa8; font-style: italic;">"*** preview blog ***"</span>)
+        (<span style="color: #ffad29; font-weight: bold;">lambda</span> (x)
+          (message <span style="color: #e67128;">"*** preview blog ***"</span>)
           (message x)
-          (message <span style="color: #ad7fa8; font-style: italic;">"launch preview url %s"</span> preview-url)
+          (message <span style="color: #e67128;">"launch preview url %s"</span> preview-url)
           (browse-url preview-url))))))
 </pre>
 </div>
@@ -3470,37 +3704,37 @@ permalink: /blog/:year-:month-:day-:title.html
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Usage: blog_preview.sh</span>
-<span style="color: #888a85;">##</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
-<span style="color: #888a85;">##</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
-<span style="color: #888a85;">##          </span><span style="color: #888a85;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12503;&#12524;&#12499;&#12517;&#12540;</span>
-<span style="color: #888a85;">##################################################################### </span>
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Usage: blog_preview.sh</span>
+<span style="color: #74af68;">##</span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #74af68;">##</span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #74af68;">##          </span><span style="color: #74af68;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12503;&#12524;&#12499;&#12517;&#12540;</span>
+<span style="color: #74af68;">##################################################################### </span>
 
-<span style="color: #ff6347;">RUBY_VER</span>=<span style="color: #ad7fa8; font-style: italic;">"1.9.3-p0"</span>
-<span style="color: #ff6347;">OCTOPRESS_DIR</span>=$<span style="color: #ff6347;">1</span>
+<span style="color: #dbdb95;">RUBY_VER</span>=<span style="color: #e67128;">"1.9.3-p0"</span>
+<span style="color: #dbdb95;">OCTOPRESS_DIR</span>=$<span style="color: #dbdb95;">1</span>
 
 which rbenv
-<span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">?</span> = 0 ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-    <span style="color: #888a85;"># </span><span style="color: #888a85;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
-    rbenv global $<span style="color: #ff6347;">RUBY_VER</span>
+<span style="color: #ffad29; font-weight: bold;">if</span> [ $<span style="color: #dbdb95;">?</span> = 0 ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+    <span style="color: #74af68;"># </span><span style="color: #74af68;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #dbdb95;">RUBY_VER</span>
     rbenv rehash
-    <span style="color: #ff6347;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
-    <span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">global_ver</span> = $<span style="color: #ff6347;">RUBY_VER</span> ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-        <span style="color: #888a85;"># </span><span style="color: #888a85;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-        <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"run rake with `ruby --version`"</span>
-        <span style="color: #729fcf;">pushd</span> $<span style="color: #ff6347;">OCTOPRESS_DIR</span>
+    <span style="color: #dbdb95;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #ffad29; font-weight: bold;">if</span> [ $<span style="color: #dbdb95;">global_ver</span> = $<span style="color: #dbdb95;">RUBY_VER</span> ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+        <span style="color: #74af68;"># </span><span style="color: #74af68;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"run rake with `ruby --version`"</span>
+        <span style="color: #23d7d7;">pushd</span> $<span style="color: #dbdb95;">OCTOPRESS_DIR</span>
         rake generate
-        <span style="color: #729fcf; font-weight: bold;">if</span> [ -z <span style="color: #ad7fa8; font-style: italic;">"`netstat -nutl | grep 4000`"</span> ] ; <span style="color: #729fcf; font-weight: bold;">then</span>
-            <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"&gt;&gt;&gt; Startup Preview"</span>
+        <span style="color: #ffad29; font-weight: bold;">if</span> [ -z <span style="color: #e67128;">"`netstat -nutl | grep 4000`"</span> ] ; <span style="color: #ffad29; font-weight: bold;">then</span>
+            <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"&gt;&gt;&gt; Startup Preview"</span>
             rake preview &amp;
             sleep 2
-        <span style="color: #729fcf; font-weight: bold;">fi</span>
-        <span style="color: #729fcf;">popd</span>
-    <span style="color: #729fcf; font-weight: bold;">fi</span>
-<span style="color: #729fcf; font-weight: bold;">fi</span>
+        <span style="color: #ffad29; font-weight: bold;">fi</span>
+        <span style="color: #23d7d7;">popd</span>
+    <span style="color: #ffad29; font-weight: bold;">fi</span>
+<span style="color: #ffad29; font-weight: bold;">fi</span>
 </pre>
 </div>
 
@@ -3509,16 +3743,16 @@ which rbenv
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">org-octopress-deploy</span> ()
-  <span style="color: #888a85;">"deploy octopress content to github page service."</span>
+<pre class="src src-emacs-lisp">(<span style="color: #ffad29; font-weight: bold;">defun</span> <span style="color: #00ede1; font-weight: bold;">org-octopress-deploy</span> ()
+  <span style="color: #e67128;">"deploy octopress content to github page service."</span>
   (interactive)
-  (message <span style="color: #ad7fa8; font-style: italic;">"deploy octopress content ...."</span>)
-  (<span style="color: #729fcf; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top))
+  (message <span style="color: #e67128;">"deploy octopress content ...."</span>)
+  (<span style="color: #ffad29; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top))
     (deferred:$
-      (deferred:process-shell <span style="color: #ad7fa8; font-style: italic;">"blog_deploy.sh"</span> org-octopress-top)
+      (deferred:process-shell <span style="color: #e67128;">"blog_deploy.sh"</span> org-octopress-top)
       (deferred:nextc it
-        (<span style="color: #729fcf; font-weight: bold;">lambda</span> (x)
-          (message <span style="color: #ad7fa8; font-style: italic;">"*** deploy blog ***"</span>)
+        (<span style="color: #ffad29; font-weight: bold;">lambda</span> (x)
+          (message <span style="color: #e67128;">"*** deploy blog ***"</span>)
           (message x))))))
 </pre>
 </div>
@@ -3528,34 +3762,34 @@ which rbenv
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
-<span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/sh</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Usage: blog_deploy.sh</span>
-<span style="color: #888a85;">##</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
-<span style="color: #888a85;">##   </span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
-<span style="color: #888a85;">##          </span><span style="color: #888a85;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-<span style="color: #888a85;">##################################################################### </span>
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+<span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/sh</span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Usage: blog_deploy.sh</span>
+<span style="color: #74af68;">##</span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
+<span style="color: #74af68;">##   </span>
+<span style="color: #74af68;">## </span><span style="color: #74af68;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
+<span style="color: #74af68;">##          </span><span style="color: #74af68;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+<span style="color: #74af68;">##################################################################### </span>
 
-<span style="color: #ff6347;">RUBY_VER</span>=<span style="color: #ad7fa8; font-style: italic;">"1.9.3-p0"</span>
-<span style="color: #ff6347;">OCTOPRESS_DIR</span>=$<span style="color: #ff6347;">1</span>
+<span style="color: #dbdb95;">RUBY_VER</span>=<span style="color: #e67128;">"1.9.3-p0"</span>
+<span style="color: #dbdb95;">OCTOPRESS_DIR</span>=$<span style="color: #dbdb95;">1</span>
 
 which rbenv
-<span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">?</span> = 0 ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-    <span style="color: #888a85;"># </span><span style="color: #888a85;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
-    rbenv global $<span style="color: #ff6347;">RUBY_VER</span>
+<span style="color: #ffad29; font-weight: bold;">if</span> [ $<span style="color: #dbdb95;">?</span> = 0 ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+    <span style="color: #74af68;"># </span><span style="color: #74af68;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
+    rbenv global $<span style="color: #dbdb95;">RUBY_VER</span>
     rbenv rehash
-    <span style="color: #ff6347;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
-    <span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">global_ver</span> = $<span style="color: #ff6347;">RUBY_VER</span> ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-        <span style="color: #888a85;"># </span><span style="color: #888a85;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-        <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"run rake with `ruby --version`"</span>
-        <span style="color: #729fcf;">pushd</span> $<span style="color: #ff6347;">OCTOPRESS_DIR</span>
+    <span style="color: #dbdb95;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
+    <span style="color: #ffad29; font-weight: bold;">if</span> [ $<span style="color: #dbdb95;">global_ver</span> = $<span style="color: #dbdb95;">RUBY_VER</span> ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+        <span style="color: #74af68;"># </span><span style="color: #74af68;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
+        <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"run rake with `ruby --version`"</span>
+        <span style="color: #23d7d7;">pushd</span> $<span style="color: #dbdb95;">OCTOPRESS_DIR</span>
         rake generate
         rake deploy
-        <span style="color: #729fcf;">popd</span>
-    <span style="color: #729fcf; font-weight: bold;">fi</span>
-<span style="color: #729fcf; font-weight: bold;">fi</span>
+        <span style="color: #23d7d7;">popd</span>
+    <span style="color: #ffad29; font-weight: bold;">fi</span>
+<span style="color: #ffad29; font-weight: bold;">fi</span>
 </pre>
 </div>
 </div>
@@ -3568,14 +3802,32 @@ which rbenv
     <link href="http://luozengbin.github.io/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html"/>
     <updated>2014-06-13T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[検証]smtpプロトコール監視してみた</id>
-    <content type="html"><![CDATA[<p>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 概要</a></li>
+<li><a href="#sec-2">2. telnetからの接続開始</a></li>
+<li><a href="#sec-3">3. メール送信の開始を宣言する</a></li>
+<li><a href="#sec-4">4. 送信元を指定する</a></li>
+<li><a href="#sec-5">5. 送信先を指定する</a></li>
+<li><a href="#sec-6">6. メール本文を開始する</a></li>
+<li><a href="#sec-7">7. メール本文終了</a></li>
+<li><a href="#sec-8">8. 接続終了</a></li>
+<li><a href="#sec-9">9. ncコマンドでファイルからメール送信テスト</a></li>
+<li><a href="#sec-10">10. 習ったこと</a></li>
+<li><a href="#sec-11">11. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
 自宅のPC環境にMTA(postfix)サーバを構築しました。
 １周間ほど保持したので、telnet、nc、tcpdumpコマンドから
 メール送信処理の中身を観測してみたいと思います。
 </p>
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">概要</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> 概要</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 VM環境を立てるのが面倒のため、loopbackインタフェースを通して
@@ -3666,7 +3918,7 @@ Connection closed by foreign host.
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">telnetからの接続開始</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> telnetからの接続開始</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 localhostの25番ポートへ接続する。
@@ -3711,7 +3963,7 @@ DNSサーバに名前登録したはずです。さあ、どうしよう！
 </div>
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">メール送信の開始を宣言する</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> メール送信の開始を宣言する</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 <code>HELO &lt;クライアントのホスト名&gt;</code> コマンドでメールサーバに
@@ -3741,7 +3993,7 @@ tcpdumpの出力、クライアントのPUSH（１行目）とサーバのACK（
 </div>
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">送信元を指定する</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> 送信元を指定する</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 <code>MAIL FROM: &lt;送信元メール&gt;</code> コマンドにて送信元メールアドレスを設定する。
@@ -3764,7 +4016,7 @@ TCPやり取りが３通で表示された。
 </div>
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">送信先を指定する</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> 送信先を指定する</h2>
 <div class="outline-text-2" id="text-5">
 <p>
 <code>RCPT TO: &lt;送信先メール&gt;</code> コマンドにて送信先メールアドレスを設定する。
@@ -3795,7 +4047,7 @@ Jun 13 11:50:22 localhost postfix/smtpd[4873]: AB9BF8A107E: client=unknown[192.1
 </div>
 
 <div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6">メール本文を開始する</h2>
+<h2 id="sec-6"><span class="section-number-2">6</span> メール本文を開始する</h2>
 <div class="outline-text-2" id="text-6">
 <p>
 <code>DATA</code> コマンドにてメール本文開始要求をサーバへ送信する。
@@ -3839,7 +4091,7 @@ tcpdumpの出力
 </div>
 
 <div id="outline-container-sec-7" class="outline-2">
-<h2 id="sec-7">メール本文終了</h2>
+<h2 id="sec-7"><span class="section-number-2">7</span> メール本文終了</h2>
 <div class="outline-text-2" id="text-7">
 <p>
 .（ピリオド）を入力して、メール本文終了要求をサーバへ送信する。
@@ -3877,7 +4129,7 @@ Jun 13 11:51:22 localhost postfix/qmgr[920]: AB9BF8A107E: removed
 </div>
 
 <div id="outline-container-sec-8" class="outline-2">
-<h2 id="sec-8">接続終了</h2>
+<h2 id="sec-8"><span class="section-number-2">8</span> 接続終了</h2>
 <div class="outline-text-2" id="text-8">
 <p>
 <code>quit</code> コマンドにて接続切断する。
@@ -3912,7 +4164,7 @@ Jun 13 11:51:42 localhost postfix/smtpd[4873]: disconnect from unknown[192.168.1
 </div>
 
 <div id="outline-container-sec-9" class="outline-2">
-<h2 id="sec-9">ncコマンドでファイルからメール送信テスト</h2>
+<h2 id="sec-9"><span class="section-number-2">9</span> ncコマンドでファイルからメール送信テスト</h2>
 <div class="outline-text-2" id="text-9">
 <p>
 telnetで入力した内容を <code>sendmail_test.txt</code> に保存し、ncに渡せばコマン１行
@@ -3949,7 +4201,7 @@ Hello root!
 </div>
 
 <div id="outline-container-sec-10" class="outline-2">
-<h2 id="sec-10">習ったこと</h2>
+<h2 id="sec-10"><span class="section-number-2">10</span> 習ったこと</h2>
 <div class="outline-text-2" id="text-10">
 <ul class="org-ul">
 <li>tcpdumpのシーケンス番号の出力ルール
@@ -3963,7 +4215,7 @@ Hello root!
 </div>
 
 <div id="outline-container-sec-11" class="outline-2">
-<h2 id="sec-11">参考</h2>
+<h2 id="sec-11"><span class="section-number-2">11</span> 参考</h2>
 <div class="outline-text-2" id="text-11">
 <ul class="org-ul">
 <li><a href="http://www.atmarkit.co.jp/ait/articles/0304/22/news001.html">http://www.atmarkit.co.jp/ait/articles/0304/22/news001.html</a>
@@ -3979,8 +4231,21 @@ Hello root!
     <link href="http://luozengbin.github.io/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html"/>
     <updated>2014-06-12T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/lpic-lv2-201試験準備メモ１</id>
-    <content type="html"><![CDATA[<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">MBRパーティショニング</h2>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. MBRパーティショニング</a></li>
+<li><a href="#sec-2">2. LVMスナップショート</a></li>
+<li><a href="#sec-3">3. ARP (Address Resolution Protocol) コマンド</a></li>
+<li><a href="#sec-4">4. ネットワーク設定ファイルのパス</a></li>
+<li><a href="#sec-5">5. 忘れがち知識</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> MBRパーティショニング</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
 <li>基本パテーション：MBR仕様の制限で基本パテーションは最大４つ
@@ -3992,7 +4257,7 @@ Hello root!
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">LVMスナップショート</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> LVMスナップショート</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 スナップショートとはあるLVのカレント状態をバックアップする機能。
@@ -4010,7 +4275,7 @@ Hello root!
 </div>
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">ARP (Address Resolution Protocol) コマンド</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> ARP (Address Resolution Protocol) コマンド</h2>
 <div class="outline-text-2" id="text-3">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -4056,7 +4321,7 @@ Hello root!
 </div>
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">ネットワーク設定ファイルのパス</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> ネットワーク設定ファイルのパス</h2>
 <div class="outline-text-2" id="text-4">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -4097,7 +4362,7 @@ Hello root!
 </div>
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">忘れがち知識</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> 忘れがち知識</h2>
 <div class="outline-text-2" id="text-5">
 <ul class="org-ul">
 <li>/etc/sysconfig/network ファイルにおいて IPv6 アドレス有効化こと項目：NETWORKING_IPV6
@@ -4123,8 +4388,26 @@ Hello root!
     <link href="http://luozengbin.github.io/blog/2014-06-12-java-mission-control%E3%83%A1%E3%83%A2.html"/>
     <updated>2014-06-12T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/java-mission-controlメモ</id>
-    <content type="html"><![CDATA[<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">利用可能なJavaバージョン</h2>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 利用可能なJavaバージョン</a></li>
+<li><a href="#sec-2">2. ローカルJavaプロセスの監視</a></li>
+<li><a href="#sec-3">3. リモートJavaプロセスの監視</a></li>
+<li><a href="#sec-4">4. 有用なJavaオプション</a>
+<ul>
+<li><a href="#sec-4-1">4.1. -XX:StartFlightRecording</a></li>
+<li><a href="#sec-4-2">4.2. -XX:+PrintFlagsFinal</a></li>
+</ul>
+</li>
+<li><a href="#sec-5">5. よく使うコマンド</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 利用可能なJavaバージョン</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
 <li>Java SE Advanced （アドバンスド）
@@ -4136,7 +4419,7 @@ Hello root!
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">ローカルJavaプロセスの監視</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> ローカルJavaプロセスの監視</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 監視対象Javaプロセス起動時に以下のオプションを追加する。
@@ -4221,7 +4504,7 @@ Must provide either name or recording.
 </div>
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">リモートJavaプロセスの監視</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> リモートJavaプロセスの監視</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 JMXポートを公開する、一番手軽な方法、jcmdコマンドを用いて、JMX remote port を臨時で空
@@ -4238,10 +4521,10 @@ jcmd &lt;pid&gt; ManagementAgent.start jmxremote.port=7091 jmxremote.authenticat
 </div>
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">有用なJavaオプション</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> 有用なJavaオプション</h2>
 <div class="outline-text-2" id="text-4">
 </div><div id="outline-container-sec-4-1" class="outline-3">
-<h3 id="sec-4-1">-XX:StartFlightRecording</h3>
+<h3 id="sec-4-1"><span class="section-number-3">4.1</span> -XX:StartFlightRecording</h3>
 <div class="outline-text-3" id="text-4-1">
 <p>
 JRockit JVMで実行されるアプリケーションのフライト・レコーダ記録を開始するには、このオ
@@ -4257,7 +4540,7 @@ java -XX:+FlightRecorder -XX:FlightRecorderOptions=disk=true,maxchunksize=10M -X
 </div>
 
 <div id="outline-container-sec-4-2" class="outline-3">
-<h3 id="sec-4-2">-XX:+PrintFlagsFinal</h3>
+<h3 id="sec-4-2"><span class="section-number-3">4.2</span> -XX:+PrintFlagsFinal</h3>
 <div class="outline-text-3" id="text-4-2">
 <p>
 JVM終了時にXXパラメータの値を標準出力にダンプする。
@@ -4267,7 +4550,7 @@ JVM終了時にXXパラメータの値を標準出力にダンプする。
 </div>
 
 <div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">よく使うコマンド</h2>
+<h2 id="sec-5"><span class="section-number-2">5</span> よく使うコマンド</h2>
 <div class="outline-text-2" id="text-5">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
