@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Weblogic | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/weblogic/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2014-07-22T18:11:31+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[検証]Weblogicのインスツルメンテーション機能]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-07-22-%5B%E6%A4%9C%E8%A8%BC%5Dweblogic%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%84%E3%83%AB%E3%83%A1%E3%83%B3%E3%83%86%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E6%A9%9F%E8%83%BD.html"/>
+    <updated>2014-07-22T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[検証]weblogicのインスツルメンテーション機能</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 検証アプリの作成</a></li>
+<li><a href="#sec-2">2. インスツルメンテーション設定手順</a>
+<ul>
+<li><a href="#sec-2-1">2.1. 診断システム・モジュールの作成</a></li>
+<li><a href="#sec-2-2">2.2. アプリケーションの設定</a></li>
+<li><a href="#sec-2-3">2.3. 採取されたイベントデータの確認</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. 参考リンク</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+トラブルシューティング時にログでアプリケーションの動作を追うことが常套手段と言えるで
+でしょう。しかし、アプリケーションにログ出力処理が実装されていないケースもあり得るで
+しょう。先日そのようなケースに遭遇してまして、メソッドのエントリとリターンのポイント
+ですらログ出力してくれなかった。コード規模が小さいのであれば、すぐログ出力処理を実装
+すればいいでしょうけど、大規模の場合それなりに大変でしょう。
+</p>
+
+
+
+
+<p>
+幸い、Weblogicサーバにはアプリケーションケーションの動作イベントを記録するような機能
+がが提供されている。それはWebLogic診断フレームワークのインスツルメンテーション機能で
+す。以下はインスツルメンテーション機能の使い方を検証します。
+</p>
+
+
+
+
+<p>
+<!-- more -->
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 検証アプリの作成</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>jspxページ１枚、ボタンとテキストを適当に配置する
+</li>
+<li>ボタンイベントをハンドリングするためのManagedBeanを作成する
+</li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> インスツルメンテーション設定手順</h2>
+<div class="outline-text-2" id="text-2">
+</div><div id="outline-container-sec-2-1" class="outline-3">
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> 診断システム・モジュールの作成</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+診断システム・モジュール一覧にモジュールがあればそれを利用する、なければ適当に新規作成
+する。
+</p>
+
+
+<div class="figure">
+<p><img src="img/2014-07-12-wls-01.png" alt="2014-07-12-wls-01.png" />
+</p>
+</div>
+
+<p>
+モジュールをインスツルメンテーション画面へ辿って、「有効」チェックボックスがONである
+状態を確認する。OFFの状態場合、状態をONへ変更する。
+</p>
+
+
+<div class="figure">
+<p><img src="img/2014-07-12-wls-02.png" alt="2014-07-12-wls-02.png" />
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2-2" class="outline-3">
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> アプリケーションの設定</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+デプロイメントリストから検証用アプリの「構成→インスツルメンテーション」設定画面へ辿っ
+て、「有効」チェックボックスをONにする。
+</p>
+
+
+<div class="figure">
+<p><img src="img/2014-07-12-wls-03.png" alt="2014-07-12-wls-03.png" />
+</p>
+</div>
+
+<p>
+同じ画面の下にある「カスタム監視を追加」ボタンから監視ポイントの登録を行う。
+</p>
+
+
+<div class="figure">
+<p><img src="img/2014-07-12-wls-04.png" alt="2014-07-12-wls-04.png" />
+</p>
+</div>
+
+<p>
+<code>ポイントカット</code> に監視対象クラスやメソッドを指定する。ここの例 <code>execution(public *
+view.* *(...))</code> ではviewパッケージ下のすべてのクラスのすべてのメソッドにマッチします。
+</p>
+
+
+<div class="figure">
+<p><img src="img/2014-07-12-wls-05.png" alt="2014-07-12-wls-05.png" />
+</p>
+</div>
+
+<p>
+続いて管理対象イベントを指定する。
+</p>
+
+
+<div class="figure">
+<p><img src="img/2014-07-12-wls-06.png" alt="2014-07-12-wls-06.png" />
+</p>
+</div>
+
+<p>
+<code>TraceAction</code> イベントを選択する。
+</p>
+
+
+<div class="figure">
+<p><img src="img/2014-07-12-wls-07.png" alt="2014-07-12-wls-07.png" />
+</p>
+</div>
+
+<p>
+これで設定が終わります。サーバを再起動する。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2-3" class="outline-3">
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> 採取されたイベントデータの確認</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+ログファイルリストから <code>EventsDataArchive</code> からイベントログを見ることができる。
+<img src="img/2014-07-12-wls-08.png" alt="2014-07-12-wls-08.png" />
+<img src="img/2014-07-12-wls-09.png" alt="2014-07-12-wls-09.png" />
+<img src="img/2014-07-12-wls-10.png" alt="2014-07-12-wls-10.png" />
+</p>
+
+<p>
+イベントログのファイル実体が <code>domain/servers/DefaultServer/data/store/diagnostics/</code>
+の配下に <code>*.DAT</code> バイナリファイルとして保存される。
+</p>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 参考リンク</h2>
+<div class="outline-text-2" id="text-3">
+<ul class="org-ul">
+<li><a href="http://docs.oracle.com/cd/E28389_01/web.1111/b60994/config_instrumentation.htm#i1085781">Oracle® Fusion Middleware Oracle WebLogic Server診断フレームワークの構成と使用 11g リリース1(10.3.6)</a>
+</li>
+<li><a href="http://redstack.wordpress.com/2012/06/19/method-run/">How to know that a method was run, when you didn’t write that method</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

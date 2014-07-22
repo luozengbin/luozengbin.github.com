@@ -1,0 +1,76 @@
+#+TITLE: [検証]Weblogicのインスツルメンテーション機能
+#+DATE: 2014-07-22
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: java
+#+JEKYLL_TAGS: weblogic
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+トラブルシューティング時にログでアプリケーションの動作を追うことが常套手段と言えるで
+でしょう。しかし、アプリケーションにログ出力処理が実装されていないケースもあり得るで
+しょう。先日そのようなケースに遭遇してまして、メソッドのエントリとリターンのポイント
+ですらログ出力してくれなかった。コード規模が小さいのであれば、すぐログ出力処理を実装
+すればいいでしょうけど、大規模の場合それなりに大変でしょう。
+
+幸い、Weblogicサーバにはアプリケーションケーションの動作イベントを記録するような機能
+がが提供されている。それはWebLogic診断フレームワークのインスツルメンテーション機能で
+す。以下はインスツルメンテーション機能の使い方を検証します。
+
+{{{more}}}
+
+* 検証アプリの作成
+- jspxページ１枚、ボタンとテキストを適当に配置する
+- ボタンイベントをハンドリングするためのManagedBeanを作成する
+
+* インスツルメンテーション設定手順
+
+** 診断システム・モジュールの作成
+診断システム・モジュール一覧にモジュールがあればそれを利用する、なければ適当に新規作成
+する。
+
+[[file:img/2014-07-12-wls-01.png]]
+
+モジュールをインスツルメンテーション画面へ辿って、「有効」チェックボックスがONである
+状態を確認する。OFFの状態場合、状態をONへ変更する。
+
+[[file:img/2014-07-12-wls-02.png]]
+
+** アプリケーションの設定
+デプロイメントリストから検証用アプリの「構成→インスツルメンテーション」設定画面へ辿っ
+て、「有効」チェックボックスをONにする。
+
+[[file:img/2014-07-12-wls-03.png]]
+
+同じ画面の下にある「カスタム監視を追加」ボタンから監視ポイントの登録を行う。
+
+[[file:img/2014-07-12-wls-04.png]]
+
+=ポイントカット= に監視対象クラスやメソッドを指定する。ここの例 =execution(public *
+view.* *(...))= ではviewパッケージ下のすべてのクラスのすべてのメソッドにマッチします。
+
+[[file:img/2014-07-12-wls-05.png]]
+
+続いて管理対象イベントを指定する。
+
+[[file:img/2014-07-12-wls-06.png]]
+
+=TraceAction= イベントを選択する。
+
+[[file:img/2014-07-12-wls-07.png]]
+
+これで設定が終わります。サーバを再起動する。
+
+** 採取されたイベントデータの確認
+ログファイルリストから =EventsDataArchive= からイベントログを見ることができる。
+[[
+file:img/2014-07-12-wls-08.png]]
+[[file:img/2014-07-12-wls-09.png]]
+[[file:img/2014-07-12-wls-10.png]]
+
+イベントログのファイル実体が =domain/servers/DefaultServer/data/store/diagnostics/=
+の配下に =*.DAT= バイナリファイルとして保存される。
+
+* 参考リンク
+- [[http://docs.oracle.com/cd/E28389_01/web.1111/b60994/config_instrumentation.htm#i1085781][Oracle® Fusion Middleware Oracle WebLogic Server診断フレームワークの構成と使用 11g リリース1(10.3.6)]]
+- [[http://redstack.wordpress.com/2012/06/19/method-run/][How to know that a method was run, when you didn’t write that method]]

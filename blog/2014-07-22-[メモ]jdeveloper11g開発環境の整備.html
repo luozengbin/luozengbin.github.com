@@ -1,0 +1,586 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>[メモ]JDeveloper 11g 開発環境の整備 - Akira's Tech Notes</title>
+  <meta name="author" content="luozengbin">
+
+  
+  <meta name="description" content="Table of Contents 1. 環境
+2. UnsatisfiedLinkError
+3. 文字化け
+4. メニューバーの動作不具合
+5. ランチャーから起動できるようにする
+6. 未解決問題
+7. 参考したリンク 1 環境 OS: ArchLinux (Linux jizai 3. &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://luozengbin.github.io/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Akira's Tech Notes" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Akira's Tech Notes</a></h1>
+  
+    <h2>Java, Linux, Emacs</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:luozengbin.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">[メモ]JDeveloper 11g 開発環境の整備</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-22T00:00:00+09:00" pubdate data-updated="true">2014-07-22 (Tue)</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. UnsatisfiedLinkError</a></li>
+<li><a href="#sec-3">3. 文字化け</a></li>
+<li><a href="#sec-4">4. メニューバーの動作不具合</a></li>
+<li><a href="#sec-5">5. ランチャーから起動できるようにする</a></li>
+<li><a href="#sec-6">6. 未解決問題</a></li>
+<li><a href="#sec-7">7. 参考したリンク</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 環境</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>OS: ArchLinux (Linux jizai 3.15.5-2-ARCH #1 SMP PREEMPT Fri Jul 11 07:56:02 CEST 2014 x86_64 GNU/Linux)
+</li>
+<li>DE: Gnome 3.12.2
+</li>
+<li>JDeveloper 11g Release 1 (11.1.1.3.0)
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> UnsatisfiedLinkError</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+Archlinux上で <code>JDeveloper 11g</code> インストール直後起動時に以下のようなエラーが起きて起動
+ができない状態でした。
+</p>
+
+<pre class="example">
+$ jdeveloper/jdev/bin/jdev
+
+Oracle JDeveloper 11g Release 1 (11.1.1.3.0)
+ Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
+
+java.lang.UnsatisfiedLinkError: /home/akira/Oracle/Jdev11.1.1.3.0/jdk160_18/jre/lib/i386/xawt/libmawt.so: libXtst.so.6: cannot open shared object file: No such file or directory
+	at java.lang.ClassLoader$NativeLibrary.load(Native Method)
+	at java.lang.ClassLoader.loadLibrary0(ClassLoader.java:1803)
+	at java.lang.ClassLoader.loadLibrary(ClassLoader.java:1699)
+	at java.lang.Runtime.load0(Runtime.java:770)
+	at java.lang.System.load(System.java:1003)
+	at java.lang.ClassLoader$NativeLibrary.load(Native Method)
+	at java.lang.ClassLoader.loadLibrary0(ClassLoader.java:1803)
+	at java.lang.ClassLoader.loadLibrary(ClassLoader.java:1720)
+	at java.lang.Runtime.loadLibrary0(Runtime.java:823)
+	at java.lang.System.loadLibrary(System.java:1028)
+	at sun.security.action.LoadLibraryAction.run(LoadLibraryAction.java:50)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at sun.awt.NativeLibLoader.loadLibraries(NativeLibLoader.java:38)
+	at sun.awt.DebugHelper.&lt;clinit&gt;(DebugHelper.java:29)
+	at java.awt.Component.&lt;clinit&gt;(Component.java:560)
+	at oracle.ide.IdeCore.startupImpl(IdeCore.java:1156)
+	at oracle.ide.Ide.startup(Ide.java:703)
+	at oracle.ideimpl.DefaultIdeStarter.startIde(DefaultIdeStarter.java:35)
+	at oracle.ideimpl.Main.start(Main.java:184)
+	at oracle.ideimpl.Main.main(Main.java:146)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:597)
+	at oracle.ide.boot.PCLMain.callMain(PCLMain.java:62)
+	at oracle.ide.boot.PCLMain.main(PCLMain.java:54)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:597)
+	at oracle.classloader.util.MainClass.invoke(MainClass.java:128)
+	at oracle.ide.boot.IdeLauncher.bootClassLoadersAndMain(IdeLauncher.java:189)
+	at oracle.ide.boot.IdeLauncher.launchImpl(IdeLauncher.java:89)
+	at oracle.ide.boot.IdeLauncher.launch(IdeLauncher.java:65)
+	at oracle.ide.boot.IdeLauncher.main(IdeLauncher.java:54)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:597)
+	at oracle.ide.boot.Launcher.invokeMain(Launcher.java:713)
+	at oracle.ide.boot.Launcher.launchImpl(Launcher.java:115)
+	at oracle.ide.boot.Launcher.launch(Launcher.java:68)
+	at oracle.ide.boot.Launcher.main(Launcher.java:57)
+</pre>
+
+<p>
+<code>awt</code> から利用している <code>libXtst.so.6</code> シェアードライブラリが見つからないようなので
+、 <code>locate</code> で確認したら <code>libxtst</code> パッケージがちゃんと入っている。32bit/64bitの問題だ
+ろうなと思って、Archlinuxのパッケージリポジトリを検索したらやはり <code>lib32-libxtst</code> が
+存在した、これをインストールしたらエラーが解消されました。
+</p>
+
+<p>
+<code>libXtst.so.6</code> ライブラリの確認
+</p>
+<pre class="example">
+$ locate libXtst.so
+/usr/lib/libXtst.so
+/usr/lib/libXtst.so.6
+/usr/lib/libXtst.so.6.1.0
+$ pacman -Qo /usr/lib/libXtst.so.6
+/usr/lib/libXtst.so.6 は libxtst 1.2.2-1 によって保有されています
+</pre>
+
+<p>
+<code>lib32-libxtst</code> をインストールする
+</p>
+<pre class="example">
+★インストール
+$ sudo pacman -S lib32-libxtst
+[sudo] password for akira: 
+依存関係を解決しています...
+相互衝突をチェックしています...
+
+パッケージ (1): lib32-libxtst-1.2.2-1
+
+Total Download Size:    0.01 MiB
+Total Installed Size:   0.02 MiB
+
+:: インストールを行いますか？ [Y/n] 
+:: パッケージを取得します ...
+ lib32-libxtst-1.2.2-1-x86_64                                                                         9.0 KiB  44.4K/s 00:00 [############################################################################] 100%
+(1/1) キーリングのキーを確認                                                                                                 [############################################################################] 100%
+(1/1) パッケージの整合性をチェック                                                                                           [############################################################################] 100%
+(1/1) パッケージファイルのロード                                                                                             [############################################################################] 100%
+(1/1) ファイルの衝突をチェック                                                                                               [############################################################################] 100%
+(1/1) 空き容量を確認                                                                                                         [############################################################################] 100%
+(1/1) インストール lib32-libxtst                                                                                             [############################################################################] 100%
+
+★確認
+$ pacman -Ql lib32-libxtst
+lib32-libxtst /usr/
+lib32-libxtst /usr/lib32/
+lib32-libxtst /usr/lib32/libXtst.so
+lib32-libxtst /usr/lib32/libXtst.so.6
+lib32-libxtst /usr/lib32/libXtst.so.6.1.0
+lib32-libxtst /usr/lib32/pkgconfig/
+lib32-libxtst /usr/lib32/pkgconfig/xtst.pc
+lib32-libxtst /usr/share/
+lib32-libxtst /usr/share/licenses/
+lib32-libxtst /usr/share/licenses/lib32-libxtst
+$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 文字化け</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+起動したら日本語が例の豆腐形状となっていました。JdevにバンドされたJDKの
+<code>Jdev11.1.1.3.0/jdk160_18/jre/lib/fonts</code> の配下に <code>fallback</code> ディレクトリを作成し、日
+本語フォントへのシンボルリンクを貼っておく。また、起動オプションにフォントのアンチエ
+イリアス (anti-aliasing)を有効にしておくとよいでしょう。
+</p>
+
+<p>
+起動時の豆腐状
+</p>
+
+
+<div class="figure">
+<p><img src="img/2014-07-22-jdeveloper-1.png" alt="2014-07-22-jdeveloper-1.png" />
+</p>
+</div>
+
+<p>
+fallbackフォントの設定を実施する
+</p>
+<pre class="example">
+★fallbackフォントの指定
+$ cd ~/Oracle/Jdev11.1.1.3.0/jdk160_18/jre/lib/fonts
+$ mkdir fallback; cd fallback
+$ ln -s /usr/share/fonts/TTF/VL-Gothic-Regular.ttf VL-Gothic-Regular.ttf
+$ ln -s /usr/share/fonts/TTF/VL-PGothic-Regular.ttf VL-PGothic-Regular.ttf
+★起動オプション設定
+$ export _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
+$ cd ~/Oracle/Jdev11.1.1.3.0/
+$ jdeveloper/jdev/bin/jdev
+
+Oracle JDeveloper 11g Release 1 (11.1.1.3.0)
+ Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved. 
+
+Picked up _JAVA_OPTIONS: -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true
+</pre>
+
+
+<div class="figure">
+<p><img src="img/2014-07-22-jdeveloper-2.png" alt="2014-07-22-jdeveloper-2.png" />
+</p>
+</div>
+
+<p>
+もう一度起動してみたら、ばっちりだね。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> メニューバーの動作不具合</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+JDeveloper起動後、ウィンドウを最大化した状態でメニューバーの操作がうまくできない問題
+がある。詳細な原因がよくわからない、GTKウィンドウマネージャとうまく連携出来ていない気
+がする。とりあえず、ウィンドウを最大化せずに問題から逃げた。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> ランチャーから起動できるようにする</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+ランチャー起動できるように <code>~/.local/share/applications/jdev.desktop</code> ファイルを作成
+しておく。
+</p>
+<pre class="example">
+[Desktop Entry]
+Name=JDeveloper
+Exec=/home/akira/Oracle/Jdev11.1.1.3.0/jdeveloper/jdev/bin/jdev
+Icon=/home/akira/Oracle/Jdev11.1.1.3.0/jdeveloper/jdev/bin/coffee.png
+StartupNotify=true
+Terminal=false
+Type=Application
+Categories=Development;Java;
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> 未解決問題</h2>
+<div class="outline-text-2" id="text-6">
+<ul class="org-ul">
+<li>フォントが醜い
+</li>
+<li>GTKLookAndFeelが使えない
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> 参考したリンク</h2>
+<div class="outline-text-2" id="text-7">
+<ul class="org-ul">
+<li><a href="http://d.hatena.ne.jp/longingandtears/20121208/1354972484">Linux版のjavaで文字が□になる問題</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">luozengbin</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-22T00:00:00+09:00" pubdate data-updated="true">2014-07-22 (Tue)</time>
+      
+
+<span class="categories">
+  Posted in
+  
+    <a class='category' href='/blog/categories/java/'>java</a>
+  
+</span>
+
+
+      
+
+<span class="tags">
+  Tagged as
+  
+    <a class='tag' href='/blog/tags/jdev/'>jdev</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://luozengbin.github.io/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html" data-via="" data-counturl="http://luozengbin.github.io/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html" title="Previous Post: [メモ]ffmpegでスクリンキャストを取る">&laquo; [メモ]ffmpegでスクリンキャストを取る</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014-07-22-%5B%E6%A4%9C%E8%A8%BC%5Dweblogic%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%84%E3%83%AB%E3%83%A1%E3%83%B3%E3%83%86%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E6%A9%9F%E8%83%BD.html" title="Next Post: [検証]Weblogicのインスツルメンテーション機能">[検証]Weblogicのインスツルメンテーション機能 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <!-- create at 2017/07/01 
+       Google Chart Tools: Infographics
+       https://developers.google.com/chart/infographics/docs/qr_codes?csw=1
+  -->
+
+  <div style="position: relative; text-align: center">
+
+    <!-- Google Chart API でQRコード取得 -->
+    <img src="http://chart.apis.google.com/chart?chs=180x180&amp;cht=qr&amp;choe=UTF-8&amp;chl=http://luozengbin.github.io/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html" alt="post-qrcode" height="180" width="180" />
+
+    <!-- サイトのfaviconを重ねて表示する -->
+    <div style="position: absolute; top: 75px; width: 100%; margin: 0 auto; text-align: center">
+      <img style="border: 0.2em solid #FFF;" src="/favicon.png" alt="post-qrcode" height="30" width="30" />
+    </div>
+  </div>
+
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014-07-22-%5B%E6%A4%9C%E8%A8%BC%5Dweblogic%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%84%E3%83%AB%E3%83%A1%E3%83%B3%E3%83%86%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E6%A9%9F%E8%83%BD.html">[検証]Weblogicのインスツルメンテーション機能</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">[メモ]JDeveloper 11g 開発環境の整備</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html">[メモ]ffmpegでスクリンキャストを取る</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-08-%5B%E6%A4%9C%E8%A8%BC%5Dsync%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%82%B3%E3%83%BC%E3%83%AB%E3%81%AE%E6%80%A7%E8%83%BD%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[検証]syncシステムコールの性能について</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-01-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%81%AB%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%99%E3%82%8B-%E3%81%9D%E3%81%AE%EF%BC%91.html">[メモ]Otcopressにプラグインを導入する-その１</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">[検証]SSHトンネル機能でVPN環境の構築</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html">[メモ]Emacsで漢字→かな変換</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html">[メモ]リモートXの接続方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-18-%5B%E6%A4%9C%E8%A8%BC%5Dadf%E5%8D%B0%E5%88%B7%E3%83%97%E3%83%AC%E3%83%93%E3%83%A5%E3%83%BC.html">[検証]ADF印刷プレビュー機能</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-16-%5B%E6%A4%9C%E8%A8%BC%5Dfirewalld%E3%82%92%E9%81%8A%E3%82%93%E3%81%A7%E3%81%BF%E3%81%9F.html">[検証]firewalldを遊んでみた</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+<section>
+  <h1>Categories</h1>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (4)</a></li><li><a href='/blog/categories/linux/'>linux (7)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
+</section>
+<section>
+  <h1>Tag Cloud</h1>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/luozengbin">@luozengbin</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'luozengbin',
+            count: 1,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - luozengbin -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'luozengbin';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://luozengbin.github.io/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html';
+        var disqus_url = 'http://luozengbin.github.io/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
