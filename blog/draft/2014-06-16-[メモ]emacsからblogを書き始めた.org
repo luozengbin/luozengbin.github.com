@@ -1,0 +1,81 @@
+#+TITLE: [メモ]emacsからblogを書き始めた
+#+DATE: 2014-06-16
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: emacs
+#+JEKYLL_PUBLISHED: true
+
+* blog書くまでの道
+
+** Google Readerの影響
+2008年からGoogle Readerを情報収集のツールとして利用しはじめた。
+その後Google Bloggerサービスを知って、初めて日本語のブログを公開した。
+
+** emacs
+
+emacsを使い始めた、そのきっかけは大学時代(2004年ごろ)何回かemacsを起動
+していたが使い方が全く分からなかったことが記憶に残っていたからだ。
+
+2011年になって、仕事が落ち着いた時期があって、好奇心の駆使でemacsを
+勉強しはじめました。最初はWindowsやMac環境で遊んでいたが、いろしろ制限
+を感じてGNU/Linuxの世界に入り込んたわけです。元々理科系ですので、技術的
+なところが常に興味を持っている。
+
+{{{more}}}
+
+
+** プレビュー自動化
+
+#+begin_src sh
+RUBY_VER="1.9.3-p0"
+
+which rbenv
+if [ $? = 0 ]; then
+    # ruby バージョン切り替え処理
+    rbenv global $RUBY_VER
+    rbenv rehash
+    global_ver=`rbenv global`
+    if [ $global_ver = $RUBY_VER ]; then
+        # blogコンテンツ生成とデプロイ
+        echo "run rake with `ruby --version`"
+        rake generate
+        if [ -z "`netstat -nutl | grep 4000`" ] ; then
+            echo ">>> Startup Preview"
+            rake preview &
+            sleep 2
+        fi
+    fi
+fi
+#+end_src
+
+#+begin_example
+(defun org-octopress-preview ()
+  "preview octopress content by call external shell script."
+  (interactive)
+  (message "preview octopress content ....")
+  (lexical-let* ((default-directory org-octopress-top)
+                 (preview-url "http://localhost:4000"))
+    (deferred:$
+      (deferred:process-shell "blog_preview.sh")
+      (deferred:nextc it
+        (lambda (x)
+          (message "*** preview blog ***")
+          (message x)
+          (message "launch preview url %s" preview-url)
+          (browse-url preview-url))
+#+end_example
+
+** 自動デプロイ
+#+begin_example
+(defun org-octopress-deploy ()
+  "deploy octopress content to github page service."
+  (interactive)
+  (message "deploy octopress content ....")
+  (lexical-let* ((default-directory org-octopress-top))
+    (deferred:$
+      (deferred:process-shell "blog_deploy.sh")
+      (deferred:nextc it
+        (lambda (x)
+          (message "*** deploy blog ***")
+          (message x))))))
+#+end_example

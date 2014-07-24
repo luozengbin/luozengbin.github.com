@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: ADF | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/adf/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-22T18:14:16+09:00</updated>
+  <updated>2014-07-24T17:16:40+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -96,72 +96,7 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 </p>
 
 <p>
-<div><script src='https://gist.github.com/0094c8013bc3eed1c962.js'></script>
-<noscript><pre><code>&lt;?xml version='1.0' encoding='UTF-8'?&gt;
-&lt;jsp:root xmlns:jsp=&quot;http://java.sun.com/JSP/Page&quot; version=&quot;2.1&quot;
-          xmlns:f=&quot;http://java.sun.com/jsf/core&quot;
-          xmlns:h=&quot;http://java.sun.com/jsf/html&quot;
-          xmlns:af=&quot;http://xmlns.oracle.com/adf/faces/rich&quot;&gt;
-  &lt;jsp:directive.page contentType=&quot;text/html;charset=UTF-8&quot;/&gt;
-
-  &lt;!--★beforePhaseリスナーの登録  --&gt;
-  &lt;f:view beforePhase=&quot;#{pageFlowScope.DataViewBean.beforePhaseMethod}&quot;&gt;
-    &lt;af:document id=&quot;d1&quot;&gt;
-      &lt;af:form id=&quot;f1&quot;&gt;
-        &lt;af:resource type=&quot;javascript&quot; source=&quot;/js/CustomPrint.js&quot;/&gt;
-        &lt;af:panelStretchLayout id=&quot;psl1&quot;&gt;
-          &lt;f:facet name=&quot;bottom&quot;&gt;
-            &lt;af:panelGroupLayout layout=&quot;scroll&quot;
-                                 xmlns:af=&quot;http://xmlns.oracle.com/adf/faces/rich&quot;
-                                 id=&quot;pgl2&quot;&gt;
-              &lt;af:panelGroupLayout id=&quot;pgl3&quot;&gt;
-                &lt;!--  ★印刷ボタンの定義 --&gt;
-                &lt;af:commandButton text=&quot;印刷&quot; id=&quot;cb1&quot;
-                                  inlineStyle=&quot;font-size:large;&quot;&gt;
-                  &lt;af:showPrintablePageBehavior/&gt;
-                &lt;/af:commandButton&gt;
-              &lt;/af:panelGroupLayout&gt;
-            &lt;/af:panelGroupLayout&gt;
-          &lt;/f:facet&gt;
-          &lt;f:facet name=&quot;center&quot;&gt;
-            &lt;af:table var=&quot;row&quot; rowBandingInterval=&quot;0&quot; id=&quot;t1&quot;
-                      value=&quot;#{pageFlowScope.DataViewBean.dataList}&quot;&gt;
-              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列1&quot; id=&quot;c2&quot; width=&quot;200&quot;&gt;
-                &lt;af:outputText value=&quot;#{row.col1}&quot; id=&quot;ot5&quot;/&gt;
-              &lt;/af:column&gt;
-              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列2&quot; id=&quot;c5&quot; width=&quot;200&quot;&gt;
-                &lt;af:outputText value=&quot;#{row.col2}&quot; id=&quot;ot1&quot;/&gt;
-              &lt;/af:column&gt;
-              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列3&quot; id=&quot;c1&quot; width=&quot;200&quot;&gt;
-                &lt;af:outputText value=&quot;#{row.col3}&quot; id=&quot;ot3&quot;/&gt;
-              &lt;/af:column&gt;
-              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列4&quot; id=&quot;c3&quot; width=&quot;200&quot;&gt;
-                &lt;af:outputText value=&quot;#{row.col4}&quot; id=&quot;ot2&quot;/&gt;
-              &lt;/af:column&gt;
-            &lt;/af:table&gt;
-          &lt;/f:facet&gt;
-          &lt;f:facet name=&quot;start&quot;/&gt;
-          &lt;f:facet name=&quot;end&quot;/&gt;
-          &lt;f:facet name=&quot;top&quot;&gt;
-            &lt;af:panelGroupLayout id=&quot;pgl1&quot; layout=&quot;horizontal&quot;&gt;
-              &lt;af:outputLabel value=&quot;印刷プレビューテスト&quot; id=&quot;ol1&quot; inlineStyle=&quot;font-size:xx-large;&quot;/&gt;
-
-              &lt;!-- ★以降は印刷しないように --&gt;
-              &lt;af:menuBar id=&quot;mb1&quot;&gt;
-                &lt;af:menu text=&quot;menu 1&quot; id=&quot;m1&quot;/&gt;
-                &lt;af:menu text=&quot;menu 2&quot; id=&quot;m2&quot;/&gt;
-                &lt;af:menu text=&quot;menu 3&quot; id=&quot;m3&quot;/&gt;
-              &lt;/af:menuBar&gt;
-              &lt;af:inputText label=&quot;Label 1&quot; id=&quot;it1&quot;/&gt;
-              &lt;af:inputText label=&quot;Label 2&quot; id=&quot;it2&quot;/&gt;
-            &lt;/af:panelGroupLayout&gt;
-          &lt;/f:facet&gt;
-        &lt;/af:panelStretchLayout&gt;
-      &lt;/af:form&gt;
-    &lt;/af:document&gt;
-  &lt;/f:view&gt;
-&lt;/jsp:root&gt;</code></pre></noscript></div>
-
+{% gist 0094c8013bc3eed1c962 %}
 </p>
 
 <p>

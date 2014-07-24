@@ -12,7 +12,7 @@
   <meta name="description" content="Table of Contents 1. 検証アプリの作成
 2. インスツルメンテーション設定手順 2.1. 診断システム・モジュールの作成
 2.2. アプリケーションの設定
-2.3. 採取されたイベントデータの確認 3. 参考リンク &hellip;">
+2.3. 採集されたイベントデータの確認 3. 参考リンク &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -106,7 +106,7 @@
 <ul>
 <li><a href="#sec-2-1">2.1. 診断システム・モジュールの作成</a></li>
 <li><a href="#sec-2-2">2.2. アプリケーションの設定</a></li>
-<li><a href="#sec-2-3">2.3. 採取されたイベントデータの確認</a></li>
+<li><a href="#sec-2-3">2.3. 採集されたイベントデータの確認</a></li>
 </ul>
 </li>
 <li><a href="#sec-3">3. 参考リンク</a></li>
@@ -115,7 +115,7 @@
 </div>
 <p>
 トラブルシューティング時にログでアプリケーションの動作を追うことが常套手段と言えるで
-でしょう。しかし、アプリケーションにログ出力処理が実装されていないケースもあり得るで
+しょう。しかし、アプリケーションにログ出力処理が実装されていないケースもあり得るで
 しょう。先日そのようなケースに遭遇してまして、メソッドのエントリとリターンのポイント
 ですらログ出力してくれなかった。コード規模が小さいのであれば、すぐログ出力処理を実装
 すればいいでしょうけど、大規模の場合それなりに大変でしょう。
@@ -123,7 +123,7 @@
 
 <p>
 幸い、Weblogicサーバにはアプリケーションケーションの動作イベントを記録するような機能
-がが提供されている。それはWebLogic診断フレームワークのインスツルメンテーション機能で
+が提供されている。それはWebLogic診断フレームワークのインスツルメンテーション機能で
 す。以下はインスツルメンテーション機能の使い方を検証します。
 </p>
 
@@ -144,7 +144,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">[メモ]JDeveloper 11g 開発環境の整備</a></h1>
+      <h1 class="entry-title"><a href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">[メモ]JDeveloper 11g/12c 開発環境の整備</a></h1>
     
     
       <p class="meta">
@@ -172,17 +172,19 @@
 <div id="text-table-of-contents">
 <ul>
 <li><a href="#sec-1">1. 環境</a></li>
-<li><a href="#sec-2">2. UnsatisfiedLinkError</a></li>
-<li><a href="#sec-3">3. 文字化け</a></li>
-<li><a href="#sec-4">4. メニューバーの動作不具合</a></li>
-<li><a href="#sec-5">5. ランチャーから起動できるようにする</a></li>
-<li><a href="#sec-6">6. 未解決問題</a></li>
-<li><a href="#sec-7">7. 参考したリンク</a></li>
+<li><a href="#sec-2">2. 12cインストール時のtmp領域足りない問題</a></li>
+<li><a href="#sec-3">3. 12c起動時にプロセスクラッシュ問題</a></li>
+<li><a href="#sec-4">4. 32bit版起動時のUnsatisfiedLinkError</a></li>
+<li><a href="#sec-5">5. 文字化け</a></li>
+<li><a href="#sec-6">6. メニューバーの動作不具合</a></li>
+<li><a href="#sec-7">7. ランチャーから起動できるようにする</a></li>
+<li><a href="#sec-8">8. 未解決問題</a></li>
+<li><a href="#sec-9">9. 参考したリンク</a></li>
 </ul>
 </div>
 </div>
 <p>
-Archlinux環境にJDeveloper 11gをインストールしてみました。
+Archlinux環境にJDeveloper 11g/12c 複数バージョンインストール時のメモ。
 </p>
 
 <p>
@@ -1065,7 +1067,7 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
       </li>
     
       <li class="post">
-        <a href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">[メモ]JDeveloper 11g 開発環境の整備</a>
+        <a href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">[メモ]JDeveloper 11g/12c 開発環境の整備</a>
       </li>
     
       <li class="post">

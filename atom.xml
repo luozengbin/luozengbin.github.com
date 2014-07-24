@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-22T18:14:16+09:00</updated>
+  <updated>2014-07-24T17:14:53+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -27,7 +27,7 @@
 <ul>
 <li><a href="#sec-2-1">2.1. 診断システム・モジュールの作成</a></li>
 <li><a href="#sec-2-2">2.2. アプリケーションの設定</a></li>
-<li><a href="#sec-2-3">2.3. 採取されたイベントデータの確認</a></li>
+<li><a href="#sec-2-3">2.3. 採集されたイベントデータの確認</a></li>
 </ul>
 </li>
 <li><a href="#sec-3">3. 参考リンク</a></li>
@@ -36,7 +36,7 @@
 </div>
 <p>
 トラブルシューティング時にログでアプリケーションの動作を追うことが常套手段と言えるで
-でしょう。しかし、アプリケーションにログ出力処理が実装されていないケースもあり得るで
+しょう。しかし、アプリケーションにログ出力処理が実装されていないケースもあり得るで
 しょう。先日そのようなケースに遭遇してまして、メソッドのエントリとリターンのポイント
 ですらログ出力してくれなかった。コード規模が小さいのであれば、すぐログ出力処理を実装
 すればいいでしょうけど、大規模の場合それなりに大変でしょう。
@@ -44,7 +44,7 @@
 
 <p>
 幸い、Weblogicサーバにはアプリケーションケーションの動作イベントを記録するような機能
-がが提供されている。それはWebLogic診断フレームワークのインスツルメンテーション機能で
+が提供されている。それはWebLogic診断フレームワークのインスツルメンテーション機能で
 す。以下はインスツルメンテーション機能の使い方を検証します。
 </p>
 
@@ -119,8 +119,9 @@
 </div>
 
 <p>
-<code>ポイントカット</code> に監視対象クラスやメソッドを指定する。ここの例 <code>execution(public *
-view.* *(...))</code> ではviewパッケージ下のすべてのクラスのすべてのメソッドにマッチします。
+<code>ポイントカット</code> に監視対象クラスやメソッドを指定することができます。ここの例
+<code>execution(public * view.* *(...))</code> ではviewパッケージ下のすべてのクラスのすべての
+メソッドにマッチします。
 </p>
 
 
@@ -130,7 +131,8 @@ view.* *(...))</code> ではviewパッケージ下のすべてのクラスのす
 </div>
 
 <p>
-続いて管理対象イベントを指定する。
+続いて診断アクション（ポイントカットでマッチした箇所が実行された時に実行する診断アク
+ション）を指定する。
 </p>
 
 
@@ -140,7 +142,7 @@ view.* *(...))</code> ではviewパッケージ下のすべてのクラスのす
 </div>
 
 <p>
-<code>TraceAction</code> イベントを選択する。
+ここは <code>TraceAction</code> アクションを選択する。各アクションで取得できる情報は <a href="http://docs.oracle.com/cd/E28389_01/web.1111/b60994/appendix_instrum_library.htm#i1060289">ここ</a> を参照する。
 </p>
 
 
@@ -156,18 +158,32 @@ view.* *(...))</code> ではviewパッケージ下のすべてのクラスのす
 </div>
 
 <div id="outline-container-sec-2-3" class="outline-3">
-<h3 id="sec-2-3"><span class="section-number-3">2.3</span> 採取されたイベントデータの確認</h3>
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> 採集されたイベントデータの確認</h3>
 <div class="outline-text-3" id="text-2-3">
 <p>
-ログファイルリストから <code>EventsDataArchive</code> からイベントログを見ることができる。
-<img src="img/2014-07-12-wls-08.png" alt="2014-07-12-wls-08.png" />
+採集されたイベントデータは <code>EventsDataArchive</code> ログファイルに保存される。ログファイル
+リストの <code>EventsDataArchive</code> から参照することができる。
+</p>
+
+
+<div class="figure">
+<p><img src="img/2014-07-12-wls-08.png" alt="2014-07-12-wls-08.png" />
+</p>
+</div>
+
+<p>
+取れた <code>TraceAction</code> イベントレコード
 <img src="img/2014-07-12-wls-09.png" alt="2014-07-12-wls-09.png" />
+</p>
+
+<p>
+<code>TraceAction</code> イベントレコードの詳細イメージ
 <img src="img/2014-07-12-wls-10.png" alt="2014-07-12-wls-10.png" />
 </p>
 
 <p>
 イベントログのファイル実体が <code>domain/servers/DefaultServer/data/store/diagnostics/</code>
-の配下に <code>*.DAT</code> バイナリファイルとして保存される。
+の配下に <code>*.DAT</code> バイナリファイルとして保存されている。
 </p>
 </div>
 </div>
@@ -177,7 +193,9 @@ view.* *(...))</code> ではviewパッケージ下のすべてのクラスのす
 <h2 id="sec-3"><span class="section-number-2">3</span> 参考リンク</h2>
 <div class="outline-text-2" id="text-3">
 <ul class="org-ul">
-<li><a href="http://docs.oracle.com/cd/E28389_01/web.1111/b60994/config_instrumentation.htm#i1085781">Oracle® Fusion Middleware Oracle WebLogic Server診断フレームワークの構成と使用 11g リリース1(10.3.6)</a>
+<li><a href="http://docs.oracle.com/cd/E28389_01/web.1111/b60994/config_instrumentation.htm#g1105001">インストゥルメンテーションの構成</a>
+</li>
+<li><a href="http://docs.oracle.com/cd/E28389_01/web.1111/b60994/appendix_instrum_library.htm#g1082590">WLDFインストゥルメンテーション・ライブラリ</a>
 </li>
 <li><a href="http://redstack.wordpress.com/2012/06/19/method-run/">How to know that a method was run, when you didn’t write that method</a>
 </li>
@@ -188,7 +206,7 @@ view.* *(...))</code> ではviewパッケージ下のすべてのクラスのす
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[[メモ]JDeveloper 11g 開発環境の整備]]></title>
+    <title type="html"><![CDATA[[メモ]JDeveloper 11g/12c 開発環境の整備]]></title>
     <link href="http://luozengbin.github.io/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html"/>
     <updated>2014-07-22T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[メモ]jdeveloper11g開発環境の整備</id>
@@ -197,17 +215,19 @@ view.* *(...))</code> ではviewパッケージ下のすべてのクラスのす
 <div id="text-table-of-contents">
 <ul>
 <li><a href="#sec-1">1. 環境</a></li>
-<li><a href="#sec-2">2. UnsatisfiedLinkError</a></li>
-<li><a href="#sec-3">3. 文字化け</a></li>
-<li><a href="#sec-4">4. メニューバーの動作不具合</a></li>
-<li><a href="#sec-5">5. ランチャーから起動できるようにする</a></li>
-<li><a href="#sec-6">6. 未解決問題</a></li>
-<li><a href="#sec-7">7. 参考したリンク</a></li>
+<li><a href="#sec-2">2. 12cインストール時のtmp領域足りない問題</a></li>
+<li><a href="#sec-3">3. 12c起動時にプロセスクラッシュ問題</a></li>
+<li><a href="#sec-4">4. 32bit版起動時のUnsatisfiedLinkError</a></li>
+<li><a href="#sec-5">5. 文字化け</a></li>
+<li><a href="#sec-6">6. メニューバーの動作不具合</a></li>
+<li><a href="#sec-7">7. ランチャーから起動できるようにする</a></li>
+<li><a href="#sec-8">8. 未解決問題</a></li>
+<li><a href="#sec-9">9. 参考したリンク</a></li>
 </ul>
 </div>
 </div>
 <p>
-Archlinux環境にJDeveloper 11gをインストールしてみました。
+Archlinux環境にJDeveloper 11g/12c 複数バージョンインストール時のメモ。
 </p>
 
 <p>
@@ -224,16 +244,142 @@ Archlinux環境にJDeveloper 11gをインストールしてみました。
 </li>
 <li>JDeveloper 11g Release 1 (11.1.1.3.0)
 </li>
+<li>JDeveloper 11g Release 1 (11.1.1.7.0)
+</li>
+<li>JDeveloper 11g Release 2 (11.1.2.4.0)
+</li>
+<li>JDeveloper 12c Release 1 (12.1.3.0.0)
+</li>
 </ul>
 </div>
 </div>
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> UnsatisfiedLinkError</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> 12cインストール時のtmp領域足りない問題</h2>
 <div class="outline-text-2" id="text-2">
 <p>
+JDeveloper 12cの <code>Linux-Specific Installer</code> でインストール時に以下のエラーが起きた。
+<code>/tmp</code> 領域が足りないですね。必要な分は <code>2G</code> のようです。メモリに余裕があれば <code>/tmp</code>
+領域を拡大すれば問題解決です。
+</p>
+
+<p>
+tmp足りないエラー
+</p>
+<pre class="example">
+$ ./jdev_suite_121300_linux64.bin
+0%....................................................................................................100%
+Not enough disk space in dir /tmp/sfx_6TUHbe, requires at least 2015 MB disk space
+Error during execution, error code = -1.
+</pre>
+
+<p>
+<code>/tmp</code> 領域のサイズを拡大する。
+</p>
+<pre class="example">
+$ sudo mount -o remount,size=2560m /tmp
+$ ./jdev_suite_121300_linux64.bin
+0%....................................................................................................100%
+ランチャのログ・ファイルは/tmp/OraInstall2014-07-23_01-41-50PM/launcher2014-07-23_01-41-50PM.logです。
+Oracle Universal Installerを起動中です
+
+CPU速度が300MHzを超えていることを確認してください.   実際1794.296MHz    問題なし
+モニターの確認中: 少なくとも256色表示するよう設定されている必要があります.   実際 16777216    問題なし
+スワップ領域の確認中: 512MBを超えている必要があります.   実際5238780MB    問題なし
+このプラットフォームに64-bit JVMが必要かどうかを確認中.   実際 64    問題なし(64-bitは不要)
+一時領域の確認中: 300MBを超えている必要があります.   実際79664MB    問題なし
+</pre>
+
+<p>
+<code>/tmp</code> を拡大するのが難しい場合、 <code>Generic Installer on Linux</code> jar形式の
+インストーラーを使って <code>-Djava.io.tmpdir=$HOME/tmp</code> JAVAオプションにて一時領域
+を変えるようする方法もあります。
+</p>
+
+<p>
+tmp領域のパス変数 <code>TMP</code> <code>TEMP</code> <code>TMP_DIR</code> などを一時変える方法もありますが、実際に検証
+してみたところ何れも失敗しました。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 12c起動時にプロセスクラッシュ問題</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+12c起動時にプロセスクラッシュします。
+</p>
+<pre class="example">
+$ jdeveloper/jdev/bin/jdev
+
+ Oracle JDeveloper 12c 12.1.3.0.0
+ Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
+
+Picked up _JAVA_OPTIONS: -Dawt.useSystemAAFontSettings=on  -Dswing.aatext=true
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  SIGSEGV (0xb) at pc=0x00007f7f30797960, pid=20635, tid=140185120179968
+#
+# JRE version: Java(TM) SE Runtime Environment (7.0_51-b13) (build 1.7.0_51-b13)
+# Java VM: Java HotSpot(TM) 64-Bit Server VM (24.51-b03 mixed mode linux-amd64 compressed oops)
+# Problematic frame:
+# C  0x00007f7f30797960
+#
+# Core dump written. Default location: /home/akira/Oracle/Jdev12.1.3.0.0/jdeveloper/jdev/bin/core or core.20635
+#
+# An error report file with more information is saved as:
+# /home/akira/Oracle/Jdev12.1.3.0.0/jdeveloper/jdev/bin/hs_err_pid20635.log
+#
+# If you would like to submit a bug report, please visit:
+#   http://bugreport.sun.com/bugreport/crash.jsp
+#
+/home/akira/Oracle/Jdev12.1.3.0.0/jdeveloper/jdev/bin/../../ide/bin/launcher.sh: 1207 行: 20635 中止                  (コアダンプ) ${JAVA} "${APP_VM_OPTS[@]}" ${APP_ENV_VARS} -classpath ${APP_CLASSPATH} ${APP_MAIN_CLASS} "${APP_APP_OPTS[@]}"
+Error: JDeveloper can't recognize the JDK version
+$
+</pre>
+
+<p>
+<code>GNOME_DESKTOP_SESSION_ID</code> 環境変数が原因でしたので、Jdev起動シェールに
+<code>GNOME_DESKTOP_SESSION_ID</code> 環境変数をクリアするようにした。
+</p>
+
+<p>
+環境変数を確認する
+</p>
+<pre class="example">
+$ env |grep GNOME 
+GNOME_DESKTOP_SESSION_ID=this-is-deprecated
+XDG_CURRENT_DESKTOP=GNOME
+</pre>
+
+<p>
+<code>Jdev12.1.3.0.0/jdeveloper/jdev/bin/jdev</code> を編集する
+</p>
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #00bfff; font-weight: bold;">bash</span>
+
+<span style="color: #63b8ff;">unset</span> GNOME_DESKTOP_SESSION_ID
+
+<span style="color: #888a85;">#</span><span style="color: #888a85;">=============================================================================</span>
+<span style="color: #888a85;">#  </span><span style="color: #888a85;">Launcher for Oracle JDeveloper 11g Release 2 (11.1.2.4.0)</span>
+<span style="color: #888a85;"># </span><span style="color: #888a85;">Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved. </span>
+<span style="color: #888a85;">#</span><span style="color: #888a85;">=============================================================================</span>
+...........
+&#9733;&#30465;&#30053;&#9733;
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> 32bit版起動時のUnsatisfiedLinkError</h2>
+<div class="outline-text-2" id="text-4">
+<p>
 Archlinux上で <code>JDeveloper 11g</code> インストール直後起動時に以下のようなエラーが起きて起動
-ができない状態でした。
+ができない状態でした。後から分かったのですが、12cでエラーが起きない理由は64bit版であ
+るためでした。
 </p>
 
 <pre class="example">
@@ -349,11 +495,11 @@ $
 </div>
 </div>
 
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> 文字化け</h2>
-<div class="outline-text-2" id="text-3">
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> 文字化け</h2>
+<div class="outline-text-2" id="text-5">
 <p>
-起動したら日本語が例の豆腐形状となっていました。JdevにバンドされたJDKの
+11g 起動したら日本語が例の豆腐形状となっていました。JdevにバンドされたJDKの
 <code>Jdev11.1.1.3.0/jdk160_18/jre/lib/fonts</code> の配下に <code>fallback</code> ディレクトリを作成し、日
 本語フォントへのシンボルリンクを貼っておく。また、起動オプションにフォントのアンチエ
 イリアス (anti-aliasing)を有効にしておくとよいでしょう。
@@ -378,16 +524,22 @@ $ cd ~/Oracle/Jdev11.1.1.3.0/jdk160_18/jre/lib/fonts
 $ mkdir fallback; cd fallback
 $ ln -s /usr/share/fonts/TTF/VL-Gothic-Regular.ttf VL-Gothic-Regular.ttf
 $ ln -s /usr/share/fonts/TTF/VL-PGothic-Regular.ttf VL-PGothic-Regular.ttf
+
 ★起動オプション設定
 $ export _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
 $ cd ~/Oracle/Jdev11.1.1.3.0/
 $ jdeveloper/jdev/bin/jdev
 
 Oracle JDeveloper 11g Release 1 (11.1.1.3.0)
- Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved. 
+ Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
 
 Picked up _JAVA_OPTIONS: -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true
 </pre>
+
+<p>
+<code>_JAVA_OPTIONS</code> をいちいち指定するのは非効率であれば、適当に <code>/etc/profile.d/jdk.sh</code>
+や <code>~/.bash_profile</code> にて定義しておけばよいでしょう。
+</p>
 
 
 <div class="figure">
@@ -401,9 +553,13 @@ Picked up _JAVA_OPTIONS: -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true
 </div>
 </div>
 
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> メニューバーの動作不具合</h2>
-<div class="outline-text-2" id="text-4">
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> メニューバーの動作不具合</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+この問題は <code>11.1.1.3.0</code> だけ起きるようです。
+</p>
+
 <p>
 JDeveloper起動後、ウィンドウを最大化した状態でメニューバーの操作がうまくできない問題
 がある。詳細な原因がよくわからない、GTKウィンドウマネージャとうまく連携出来ていない気
@@ -412,9 +568,9 @@ JDeveloper起動後、ウィンドウを最大化した状態でメニューバ�
 </div>
 </div>
 
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> ランチャーから起動できるようにする</h2>
-<div class="outline-text-2" id="text-5">
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> ランチャーから起動できるようにする</h2>
+<div class="outline-text-2" id="text-7">
 <p>
 ランチャー起動できるように <code>~/.local/share/applications/jdev.desktop</code> ファイルを作成
 しておく。
@@ -432,9 +588,9 @@ Categories=Development;Java;
 </div>
 </div>
 
-<div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6"><span class="section-number-2">6</span> 未解決問題</h2>
-<div class="outline-text-2" id="text-6">
+<div id="outline-container-sec-8" class="outline-2">
+<h2 id="sec-8"><span class="section-number-2">8</span> 未解決問題</h2>
+<div class="outline-text-2" id="text-8">
 <ul class="org-ul">
 <li>フォントが醜い
 </li>
@@ -444,10 +600,14 @@ Categories=Development;Java;
 </div>
 </div>
 
-<div id="outline-container-sec-7" class="outline-2">
-<h2 id="sec-7"><span class="section-number-2">7</span> 参考したリンク</h2>
-<div class="outline-text-2" id="text-7">
+<div id="outline-container-sec-9" class="outline-2">
+<h2 id="sec-9"><span class="section-number-2">9</span> 参考したリンク</h2>
+<div class="outline-text-2" id="text-9">
 <ul class="org-ul">
+<li><a href="http://shebang-beacon.de/2012/05/27/jdeveloper-installation-on-debian-no-space-left-on-device-issue/">JDeveloper Installation on Debian – “no space left on device” Issue</a>
+</li>
+<li><a href="http://lee3star.blogspot.jp/2013/11/jdeveloper-12c-crashes-at-startup.html">JDeveloper 12c crashes at startup</a>
+</li>
 <li><a href="http://d.hatena.ne.jp/longingandtears/20121208/1354972484">Linux版のjavaで文字が□になる問題</a>
 </li>
 </ul>

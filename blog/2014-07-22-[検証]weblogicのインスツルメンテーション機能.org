@@ -8,13 +8,13 @@
 #+JEKYLL_PUBLISHED: true
 
 トラブルシューティング時にログでアプリケーションの動作を追うことが常套手段と言えるで
-でしょう。しかし、アプリケーションにログ出力処理が実装されていないケースもあり得るで
+しょう。しかし、アプリケーションにログ出力処理が実装されていないケースもあり得るで
 しょう。先日そのようなケースに遭遇してまして、メソッドのエントリとリターンのポイント
 ですらログ出力してくれなかった。コード規模が小さいのであれば、すぐログ出力処理を実装
 すればいいでしょうけど、大規模の場合それなりに大変でしょう。
 
 幸い、Weblogicサーバにはアプリケーションケーションの動作イベントを記録するような機能
-がが提供されている。それはWebLogic診断フレームワークのインスツルメンテーション機能で
+が提供されている。それはWebLogic診断フレームワークのインスツルメンテーション機能で
 す。以下はインスツルメンテーション機能の使い方を検証します。
 
 {{{more}}}
@@ -24,7 +24,6 @@
 - ボタンイベントをハンドリングするためのManagedBeanを作成する
 
 * インスツルメンテーション設定手順
-
 ** 診断システム・モジュールの作成
 診断システム・モジュール一覧にモジュールがあればそれを利用する、なければ適当に新規作成
 する。
@@ -46,31 +45,39 @@
 
 [[file:img/2014-07-12-wls-04.png]]
 
-=ポイントカット= に監視対象クラスやメソッドを指定する。ここの例 =execution(public *
-view.* *(...))= ではviewパッケージ下のすべてのクラスのすべてのメソッドにマッチします。
+=ポイントカット= に監視対象クラスやメソッドを指定することができます。ここの例
+=execution(public * view.* *(...))= ではviewパッケージ下のすべてのクラスのすべての
+メソッドにマッチします。
 
 [[file:img/2014-07-12-wls-05.png]]
 
-続いて管理対象イベントを指定する。
+続いて診断アクション（ポイントカットでマッチした箇所が実行された時に実行する診断アク
+ション）を指定する。
 
 [[file:img/2014-07-12-wls-06.png]]
 
-=TraceAction= イベントを選択する。
+ここは =TraceAction= アクションを選択する。各アクションで取得できる情報は [[http://docs.oracle.com/cd/E28389_01/web.1111/b60994/appendix_instrum_library.htm#i1060289][ここ]] を参照する。
 
 [[file:img/2014-07-12-wls-07.png]]
 
 これで設定が終わります。サーバを再起動する。
 
-** 採取されたイベントデータの確認
-ログファイルリストから =EventsDataArchive= からイベントログを見ることができる。
-[[
-file:img/2014-07-12-wls-08.png]]
+** 採集されたイベントデータの確認
+採集されたイベントデータは =EventsDataArchive= ログファイルに保存される。ログファイル
+リストの =EventsDataArchive= から参照することができる。
+
+[[file:img/2014-07-12-wls-08.png]]
+
+取れた =TraceAction= イベントレコード
 [[file:img/2014-07-12-wls-09.png]]
+
+=TraceAction= イベントレコードの詳細イメージ
 [[file:img/2014-07-12-wls-10.png]]
 
 イベントログのファイル実体が =domain/servers/DefaultServer/data/store/diagnostics/=
-の配下に =*.DAT= バイナリファイルとして保存される。
+の配下に =*.DAT= バイナリファイルとして保存されている。
 
 * 参考リンク
-- [[http://docs.oracle.com/cd/E28389_01/web.1111/b60994/config_instrumentation.htm#i1085781][Oracle® Fusion Middleware Oracle WebLogic Server診断フレームワークの構成と使用 11g リリース1(10.3.6)]]
+- [[http://docs.oracle.com/cd/E28389_01/web.1111/b60994/config_instrumentation.htm#g1105001][インストゥルメンテーションの構成]]
+- [[http://docs.oracle.com/cd/E28389_01/web.1111/b60994/appendix_instrum_library.htm#g1082590][WLDFインストゥルメンテーション・ライブラリ]]
 - [[http://redstack.wordpress.com/2012/06/19/method-run/][How to know that a method was run, when you didn’t write that method]]

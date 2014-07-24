@@ -1,4 +1,4 @@
-#+TITLE: [メモ]JDeveloper 11g 開発環境の整備
+#+TITLE: [メモ]JDeveloper 11g/12c 開発環境の整備
 #+DATE: 2014-07-22
 #+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
 #+JEKYLL_LAYOUT: post
@@ -7,7 +7,7 @@
 #+JEKYLL_COMMENTS: true
 #+JEKYLL_PUBLISHED: true
 
-Archlinux環境にJDeveloper 11gをインストールしてみました。
+Archlinux環境にJDeveloper 11g/12c 複数バージョンインストール時のメモ。
 
 {{{more}}}
 
@@ -16,10 +16,107 @@ Archlinux環境にJDeveloper 11gをインストールしてみました。
 - OS: ArchLinux (Linux jizai 3.15.5-2-ARCH #1 SMP PREEMPT Fri Jul 11 07:56:02 CEST 2014 x86_64 GNU/Linux)
 - DE: Gnome 3.12.2
 - JDeveloper 11g Release 1 (11.1.1.3.0)
+- JDeveloper 11g Release 1 (11.1.1.7.0)
+- JDeveloper 11g Release 2 (11.1.2.4.0)
+- JDeveloper 12c Release 1 (12.1.3.0.0)
 
-* UnsatisfiedLinkError
+* 12cインストール時のtmp領域足りない問題
+JDeveloper 12cの =Linux-Specific Installer= でインストール時に以下のエラーが起きた。
+=/tmp= 領域が足りないですね。必要な分は =2G= のようです。メモリに余裕があれば =/tmp=
+領域を拡大すれば問題解決です。
+
+tmp足りないエラー
+#+begin_example
+$ ./jdev_suite_121300_linux64.bin
+0%....................................................................................................100%
+Not enough disk space in dir /tmp/sfx_6TUHbe, requires at least 2015 MB disk space
+Error during execution, error code = -1.
+#+end_example
+
+=/tmp= 領域のサイズを拡大する。
+#+begin_example
+$ sudo mount -o remount,size=2560m /tmp
+$ ./jdev_suite_121300_linux64.bin
+0%....................................................................................................100%
+ランチャのログ・ファイルは/tmp/OraInstall2014-07-23_01-41-50PM/launcher2014-07-23_01-41-50PM.logです。
+Oracle Universal Installerを起動中です
+
+CPU速度が300MHzを超えていることを確認してください.   実際1794.296MHz    問題なし
+モニターの確認中: 少なくとも256色表示するよう設定されている必要があります.   実際 16777216    問題なし
+スワップ領域の確認中: 512MBを超えている必要があります.   実際5238780MB    問題なし
+このプラットフォームに64-bit JVMが必要かどうかを確認中.   実際 64    問題なし(64-bitは不要)
+一時領域の確認中: 300MBを超えている必要があります.   実際79664MB    問題なし
+
+#+end_example
+
+=/tmp= を拡大するのが難しい場合、 =Generic Installer on Linux= jar形式の
+インストーラーを使って =-Djava.io.tmpdir=$HOME/tmp= JAVAオプションにて一時領域
+を変えるようする方法もあります。
+
+tmp領域のパス変数 =TMP= =TEMP= =TMP_DIR= などを一時変える方法もありますが、実際に検証
+してみたところ何れも失敗しました。
+
+* 12c起動時にプロセスクラッシュ問題
+
+12c起動時にプロセスクラッシュします。
+#+begin_example
+$ jdeveloper/jdev/bin/jdev
+
+ Oracle JDeveloper 12c 12.1.3.0.0
+ Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
+
+Picked up _JAVA_OPTIONS: -Dawt.useSystemAAFontSettings=on  -Dswing.aatext=true
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  SIGSEGV (0xb) at pc=0x00007f7f30797960, pid=20635, tid=140185120179968
+#
+# JRE version: Java(TM) SE Runtime Environment (7.0_51-b13) (build 1.7.0_51-b13)
+# Java VM: Java HotSpot(TM) 64-Bit Server VM (24.51-b03 mixed mode linux-amd64 compressed oops)
+# Problematic frame:
+# C  0x00007f7f30797960
+#
+# Core dump written. Default location: /home/akira/Oracle/Jdev12.1.3.0.0/jdeveloper/jdev/bin/core or core.20635
+#
+# An error report file with more information is saved as:
+# /home/akira/Oracle/Jdev12.1.3.0.0/jdeveloper/jdev/bin/hs_err_pid20635.log
+#
+# If you would like to submit a bug report, please visit:
+#   http://bugreport.sun.com/bugreport/crash.jsp
+#
+/home/akira/Oracle/Jdev12.1.3.0.0/jdeveloper/jdev/bin/../../ide/bin/launcher.sh: 1207 行: 20635 中止                  (コアダンプ) ${JAVA} "${APP_VM_OPTS[@]}" ${APP_ENV_VARS} -classpath ${APP_CLASSPATH} ${APP_MAIN_CLASS} "${APP_APP_OPTS[@]}"
+Error: JDeveloper can't recognize the JDK version
+$
+#+end_example
+
+=GNOME_DESKTOP_SESSION_ID= 環境変数が原因でしたので、Jdev起動シェールに
+=GNOME_DESKTOP_SESSION_ID= 環境変数をクリアするようにした。
+
+環境変数を確認する
+#+begin_example
+$ env |grep GNOME 
+GNOME_DESKTOP_SESSION_ID=this-is-deprecated
+XDG_CURRENT_DESKTOP=GNOME
+#+end_example
+
+=Jdev12.1.3.0.0/jdeveloper/jdev/bin/jdev= を編集する
+#+begin_src sh
+#!/bin/bash
+
+unset GNOME_DESKTOP_SESSION_ID
+
+#=============================================================================
+#  Launcher for Oracle JDeveloper 11g Release 2 (11.1.2.4.0)
+# Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved. 
+#=============================================================================
+...........
+★省略★
+#+end_src
+
+* 32bit版起動時のUnsatisfiedLinkError
 Archlinux上で =JDeveloper 11g= インストール直後起動時に以下のようなエラーが起きて起動
-ができない状態でした。
+ができない状態でした。後から分かったのですが、12cでエラーが起きない理由は64bit版であ
+るためでした。
 
 #+begin_example
 $ jdeveloper/jdev/bin/jdev
@@ -127,7 +224,7 @@ $
 #+end_example
 
 * 文字化け
-起動したら日本語が例の豆腐形状となっていました。JdevにバンドされたJDKの
+11g 起動したら日本語が例の豆腐形状となっていました。JdevにバンドされたJDKの
 =Jdev11.1.1.3.0/jdk160_18/jre/lib/fonts= の配下に =fallback= ディレクトリを作成し、日
 本語フォントへのシンボルリンクを貼っておく。また、起動オプションにフォントのアンチエ
 イリアス (anti-aliasing)を有効にしておくとよいでしょう。
@@ -143,23 +240,28 @@ $ cd ~/Oracle/Jdev11.1.1.3.0/jdk160_18/jre/lib/fonts
 $ mkdir fallback; cd fallback
 $ ln -s /usr/share/fonts/TTF/VL-Gothic-Regular.ttf VL-Gothic-Regular.ttf
 $ ln -s /usr/share/fonts/TTF/VL-PGothic-Regular.ttf VL-PGothic-Regular.ttf
+
 ★起動オプション設定
 $ export _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
 $ cd ~/Oracle/Jdev11.1.1.3.0/
 $ jdeveloper/jdev/bin/jdev
 
 Oracle JDeveloper 11g Release 1 (11.1.1.3.0)
- Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved. 
+ Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
 
 Picked up _JAVA_OPTIONS: -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true
-
 #+end_example
+
+=_JAVA_OPTIONS= をいちいち指定するのは非効率であれば、適当に =/etc/profile.d/jdk.sh=
+や =~/.bash_profile= にて定義しておけばよいでしょう。
 
 [[file:img/2014-07-22-jdeveloper-2.png]]
 
 もう一度起動してみたら、ばっちりだね。
 
 * メニューバーの動作不具合
+この問題は =11.1.1.3.0= だけ起きるようです。
+
 JDeveloper起動後、ウィンドウを最大化した状態でメニューバーの操作がうまくできない問題
 がある。詳細な原因がよくわからない、GTKウィンドウマネージャとうまく連携出来ていない気
 がする。とりあえず、ウィンドウを最大化せずに問題から逃げた。
@@ -183,5 +285,6 @@ Categories=Development;Java;
 - GTKLookAndFeelが使えない
 
 * 参考したリンク
+- [[http://shebang-beacon.de/2012/05/27/jdeveloper-installation-on-debian-no-space-left-on-device-issue/][JDeveloper Installation on Debian – “no space left on device” Issue]]
+- [[http://lee3star.blogspot.jp/2013/11/jdeveloper-12c-crashes-at-startup.html][JDeveloper 12c crashes at startup]]
 - [[http://d.hatena.ne.jp/longingandtears/20121208/1354972484][Linux版のjavaで文字が□になる問題]]
-
