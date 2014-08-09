@@ -1,0 +1,116 @@
+#+TITLE: [メモ]Raspbianへの移行記録その１
+#+DATE: 2014-08-03
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: raspberrypi
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+2013/08〜2014/08 １年間Archlinux on RaspberryPi環境上いくつのサービスを安定に運用
+して来ました。
+
+- Apache HTTP Server
+- UPnP MediaServer (mediatomb)
+- DNSサーバ (BIND9)
+- ストレージサーバ(NFS)
+- VPN踏み台サーバ
+
+また、いくつサービスを試行段階で、RaspberryPiの非力なパーワーが原因で諦めました。
+- Own Cloud
+- Tiny Tiny RSS
+- Plex Media Server
+
+近日AirPlayサーバを構築する際に、Archlinux上だと音声再生時にひどい遅延が発生する[fn:1]、
+試しにRaspbianへ乗り換えたら音声遅延が発生しないことが分かりました。Raspbianの方が
+RaspberryPiに最適化されていることを実感しました。そこ、ものものサービスをRaspbianへ
+段階的に移行することを決めました。
+
+{{{more}}}
+
+* Raspbian起動用SDカードの準備
+
+http://www.raspberrypi.org/downloads/ からRaspbianのOSイメージファイルのアーカイブをダ
+ウンロードする。解凍してddコマンドでSDカードに焼き付ける。
+
+#+begin_example
+$ sudo dd if=2014-06-20-wheezy-raspbian.img of=/dev/sdb
+[sudo] password for akira:
+
+5785600+0 レコード入力
+5785600+0 レコード出力
+2962227200 バイト (3.0 GB) コピーされました、 1578.67 秒、 1.9 MB/秒
+#+end_example
+
+SDカード中身を確認する
+#+begin_example
+$ df -h /dev/sdb*
+ファイルシス   サイズ  使用  残り 使用% マウント位置
+dev              1.9G     0  1.9G    0% /dev
+/dev/sdb1         56M  9.5M   47M   17% /run/media/akira/boot
+/dev/sdb2        3.6G  3.6G     0  100% /run/media/akira/5d18be51-3217-4679-9c72-a54e0fc53d6b
+
+★ブートパーティション
+$ tree /run/media/akira/boot
+/run/media/akira/boot
+├── LICENSE.oracle
+├── bootcode.bin
+├── cmdline.txt
+├── config.txt
+├── fixup.dat
+├── fixup_cd.dat
+├── fixup_x.dat
+├── issue.txt
+├── kernel.img
+├── start.elf
+├── start_cd.elf
+└── start_x.elf
+
+0 directories, 12 files
+
+★ルートパーティション
+$ ls -al /run/media/akira/5d18be51-3217-4679-9c72-a54e0fc53d6b
+合計 96
+drwxr-xr-x   22 root root  4096  8月  3 15:21 .
+drwxr-x---+   4 root root    80  8月  3 19:29 ..
+drwxr-xr-x    2 root root  4096  6月 20 17:55 bin
+drwxr-xr-x    2 root root  4096  6月 20 14:51 boot
+drwxr-xr-x    3 root root  4096  6月 20 17:55 dev
+drwxr-xr-x  100 root root  4096  8月  3 18:19 etc
+drwxr-xr-x    3 root root  4096  6月 20 14:48 home
+drwxr-xr-x   12 root root  4096  8月  3 16:02 lib
+drwx------    2 root root 16384  6月 20 14:34 lost+found
+drwxr-xr-x    5 root root  4096  8月  3 15:23 media
+drwxr-xr-x    5 root root  4096  8月  3 17:56 mnt
+drwxr-xr-x    5 root root  4096  6月 20 18:24 opt
+drwxr-xr-x    2 root root  4096  5月  1 07:48 proc
+drwx------    2 root root  4096  8月  3 18:19 root
+drwxr-xr-x    8 root root  4096  1月  1  1970 run
+drwxr-xr-x    2 root root  4096  8月  3 17:50 sbin
+drwxr-xr-x    2 root root  4096  6月 20  2012 selinux
+drwxr-xr-x    2 root root  4096  6月 20 14:36 srv
+drwxr-xr-x    2 root root  4096 10月 13  2013 sys
+drwxrwxrwt    4 root root  4096  8月  3 19:17 tmp
+drwxr-xr-x   10 root root  4096  6月 20 14:36 usr
+drwxr-xr-x   15 root root  4096  8月  3 18:28 var
+#+end_example
+
+* Raspbian設定
+初回起動後 =raspi-config= 画面が表示されて、適当に設定を入れておく。
+
+- ホスト名の変更
+- ユーザ =pi= のパスワードの変更
+- CPUオーバークロック
+- 表示言語の指定
+- SSHサービスの有効化
+
+* 高速化対応
+SDよりHDDの方が早そうなので、=/boot= 以外のファイルをHDDへ移動します。
+#+begin_example
+                    ★移動対象ディレクトリ                                                         ★移動先
+$ sudo cp --archive /bin /home /run /selinux /usr /etc /lib /media /opt /root /sbin /srv /tmp /var /mnt/my_hdd
+#+end_example
+
+
+* Footnotes
+[fn:1] http://archlinuxarm.org/forum/viewtopic.php?f=5&t=1023

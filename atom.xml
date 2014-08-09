@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-24T17:14:53+09:00</updated>
+  <updated>2014-08-09T23:23:48+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,2134 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]findでファイル更新日付順で表示する]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-08-07-%5B%E3%83%A1%E3%83%A2%5Dfind%E3%81%A7%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%9B%B4%E6%96%B0%E6%97%A5%E4%BB%98%E9%A0%86%E3%81%A7%E8%A1%A8%E7%A4%BA%E3%81%99%E3%82%8B.html"/>
+    <updated>2014-08-07T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]findでファイル更新日付順で表示する</id>
+    <content type="html"><![CDATA[<p>
+PJではメンバたち日々の作業成果物がどこかの共有ディレクトリに格納されているでしょう。
+共有ディレクトリに最近更新や追加されたファイルを見たい時がよくあることです。
+いちいち作業担当者に聞くのもうざいので。 <code>find</code> 、 <code>xargs</code> コマンドを駆使して実現して
+みた。
+</p>
+
+<pre class="example">
+$ find . -type f -print0 | xargs -0 ls -alt
+</pre>
+
+<ul class="org-ul">
+<li><code>find -type f</code> はファイルのみを対象とする
+</li>
+<li><code>find -print0</code> は検出されたファイルのフルパスをNULLキャラクターで分割して出力する
+</li>
+<li><code>xargs -0</code> もしくは <code>xargs --null</code> 入力ストリームの分割はNULLキャラクターを用いる
+</li>
+</ul>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[検証]ArchlinuxにJenkins導入]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-07-31-%5B%E6%A4%9C%E8%A8%BC%5Darchlinux%E3%81%ABjenkins%E5%B0%8E%E5%85%A5.html"/>
+    <updated>2014-07-31T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[検証]archlinuxにjenkins導入</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. インストール</a></li>
+<li><a href="#sec-2">2. パッケージ構成</a></li>
+<li><a href="#sec-3">3. 設定ファイル</a></li>
+<li><a href="#sec-4">4. サービス制御ファイル</a></li>
+<li><a href="#sec-5">5. サービス実行アカウントの確認</a></li>
+<li><a href="#sec-6">6. サービスを起動してみる</a></li>
+<li><a href="#sec-7">7. 次やりたいこと</a></li>
+</ul>
+</div>
+</div>
+<p>
+久々Jenkinsを触っていないので、今回Archlinux入れて検証したいと思います。
+</p>
+
+<p>
+<!-- more -->
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> インストール</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+<code>pacman</code> コマンド一発です。
+</p>
+<pre class="example">
+$ sudo pacman -S jenkins
+[sudo] password for akira: 
+依存関係を解決しています...
+相互衝突をチェックしています...
+
+パッケージ (1): jenkins-1.574-1
+
+Total Download Size:    56.23 MiB
+Total Installed Size:   64.72 MiB
+
+:: インストールを行いますか？ [Y/n] 
+:: パッケージを取得します ...
+ jenkins-1.574-1-any                                                                                 56.2 MiB  1149K/s 00:50 [############################################################################] 100%
+(1/1) キーリングのキーを確認                                                                                                 [############################################################################] 100%
+(1/1) パッケージの整合性をチェック                                                                                           [############################################################################] 100%
+(1/1) パッケージファイルのロード                                                                                             [############################################################################] 100%
+(1/1) ファイルの衝突をチェック                                                                                               [############################################################################] 100%
+(1/1) 空き容量を確認                                                                                                         [############################################################################] 100%
+(1/1) インストール jenkins                                                                                                   [############################################################################] 100%
+This installation of Jenkins uses port 8090 by default.
+</pre>
+<p>
+デフォルトポートが <code>8090</code> って言っています！
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> パッケージ構成</h2>
+<div class="outline-text-2" id="text-2">
+<pre class="example">
+$ pacman -Ql jenkins
+jenkins /etc/
+jenkins /etc/conf.d/
+jenkins /etc/conf.d/jenkins                     ★Jenkins起動パラメータの設定ファイル
+jenkins /usr/
+jenkins /usr/lib/
+jenkins /usr/lib/systemd/
+jenkins /usr/lib/systemd/system/
+jenkins /usr/lib/systemd/system/jenkins.service ★サービス実行制御ファイル
+jenkins /usr/lib/tmpfiles.d/
+jenkins /usr/lib/tmpfiles.d/jenkins.conf        ★謎う？
+jenkins /usr/share/
+jenkins /usr/share/java/
+jenkins /usr/share/java/jenkins/
+jenkins /usr/share/java/jenkins/jenkins.war     ★Jenkins本体
+jenkins /usr/share/licenses/
+jenkins /usr/share/licenses/jenkins/
+jenkins /usr/share/licenses/jenkins/LICENSE     ★MITライセンスファイル
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 設定ファイル</h2>
+<div class="outline-text-2" id="text-3">
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #ff6347;">JAVA</span>=/usr/bin/java
+<span style="color: #ff6347;">JAVA_ARGS</span>=-Xmx512m
+<span style="color: #ff6347;">JAVA_OPTS</span>=
+<span style="color: #ff6347;">JENKINS_USER</span>=jenkins
+<span style="color: #ff6347;">JENKINS_HOME</span>=/var/lib/jenkins                   &#9733;Jenkins&#12518;&#12540;&#12470;&#12398;&#12507;&#12540;&#12512;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;(&#12503;&#12521;&#12464;&#12452;&#12531;&#12289;&#12472;&#12519;&#12502;&#23450;&#32681;&#12394;&#12393;)
+<span style="color: #ff6347;">JENKINS_WAR</span>=/usr/share/java/jenkins/jenkins.war
+<span style="color: #ff6347;">JENKINS_WEBROOT</span>=--webroot=/var/cache/jenkins    &#9733;&#23455;&#34892;&#26178;&#12395;WAR&#12364;&#12371;&#12371;&#12395;&#23637;&#38283;&#12373;&#12428;&#12427;
+<span style="color: #ff6347;">JENKINS_PORT</span>=--httpPort=8090
+<span style="color: #ff6347;">JENKINS_AJPPORT</span>=--ajp13Port=-1
+<span style="color: #ff6347;">JENKINS_OPTS</span>=
+<span style="color: #ff6347;">JENKINS_COMMAND_LINE</span>=<span style="color: #bcee68; font-style: italic;">"$JAVA $JAVA_ARGS $JAVA_OPTS -jar $JENKINS_WAR $JENKINS_WEBROOT $JENKINS_PORT $JENKINS_AJPPORT $JENKINS_OPTS"</span>
+
+<span style="color: #888a85;"># </span><span style="color: #888a85;">vim:set ts=2 sw=2 et:</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> サービス制御ファイル</h2>
+<div class="outline-text-2" id="text-4">
+<div class="org-src-container">
+
+<pre class="src src-sh">$ cat /usr/lib/systemd/system/jenkins.service
+[Unit]
+<span style="color: #ff6347;">Description</span>=Extendable continuous integration server
+<span style="color: #ff6347;">After</span>=network.target
+
+[Service]
+<span style="color: #ff6347;">User</span>=jenkins                                 &#9733;&#12469;&#12540;&#12499;&#12473;&#12398;&#23455;&#34892;&#12518;&#12540;&#12470;
+<span style="color: #ff6347;">Type</span>=simple
+<span style="color: #ff6347;">EnvironmentFile</span>=/etc/conf.d/jenkins
+<span style="color: #ff6347;">StandardOutput</span>=syslog                        &#9733;&#27161;&#28310;&#12525;&#12464;&#20986;&#21147;&#20808;
+<span style="color: #ff6347;">StandardError</span>=syslog                         &#9733;&#27161;&#28310;&#12456;&#12521;&#12540;&#12525;&#12464;&#20986;&#21147;&#20808;
+<span style="color: #ff6347;">SyslogIdentifier</span>=jenkins                     &#9733;&#12471;&#12473;&#12486;&#12512;&#12459;&#12486;&#12468;&#12522;&#21517;
+<span style="color: #ff6347;">ExecStart</span>=/bin/sh -c <span style="color: #bcee68; font-style: italic;">'eval $JENKINS_COMMAND_LINE'</span>
+<span style="color: #888a85;">#</span><span style="color: #888a85;">MemoryLimit=768M</span>
+<span style="color: #ff6347;">OOMScoreAdjust</span>=-1000
+<span style="color: #ff6347;">LimitCPU</span>=infinity
+<span style="color: #ff6347;">LimitFSIZE</span>=infinity
+<span style="color: #ff6347;">LimitDATA</span>=infinity
+<span style="color: #ff6347;">LimitCORE</span>=0
+<span style="color: #ff6347;">LimitAS</span>=infinity
+<span style="color: #ff6347;">LimitLOCKS</span>=infinity
+
+[Install]
+<span style="color: #ff6347;">WantedBy</span>=multi-user.target
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> サービス実行アカウントの確認</h2>
+<div class="outline-text-2" id="text-5">
+<pre class="example">
+$ cat /etc/passwd
+jenkins:x:997:996::/var/lib/jenkins:/bin/bash
+</pre>
+</div>
+</div>
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> サービスを起動してみる</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+起動コマンド
+</p>
+<pre class="example">
+$ sudo systemctl start jenkins
+</pre>
+
+<p>
+シスログ
+</p>
+<pre class="example">
+$ sudo tail -f /var/log/everything.log
+Jul 31 09:18:00 hakusai systemd[1]: Starting Extendable continuous integration server...
+Jul 31 09:18:00 hakusai systemd[1]: Started Extendable continuous integration server.
+Jul 31 09:18:02 hakusai jenkins[30946]: Running from: /usr/share/java/jenkins/jenkins.war
+Jul 31 09:18:02 hakusai jenkins[30946]: 7 31, 2014 9:18:02 午前 winstone.Logger logInternal
+Jul 31 09:18:02 hakusai jenkins[30946]: 情報: Beginning extraction from war file
+Jul 31 09:18:03 hakusai jenkins[30946]: 7 31, 2014 9:18:03 午前 org.eclipse.jetty.util.log.JavaUtilLog info
+Jul 31 09:18:03 hakusai jenkins[30946]: 情報: jetty-8.y.z-SNAPSHOT
+Jul 31 09:18:05 hakusai jenkins[30946]: 7 31, 2014 9:18:05 午前 org.eclipse.jetty.util.log.JavaUtilLog info
+Jul 31 09:18:05 hakusai jenkins[30946]: 情報: NO JSP Support for , did not find org.apache.jasper.servlet.JspServlet
+Jul 31 09:18:06 hakusai jenkins[30946]: Jenkins home directory: /var/lib/jenkins found at: EnvVars.masterEnvVars.get("JENKINS_HOME")
+Jul 31 09:18:06 hakusai jenkins[30946]: 7 31, 2014 9:18:06 午前 org.eclipse.jetty.util.log.JavaUtilLog info
+Jul 31 09:18:06 hakusai jenkins[30946]: 情報: Started SelectChannelConnector@0.0.0.0:8090
+Jul 31 09:18:06 hakusai jenkins[30946]: 7 31, 2014 9:18:06 午前 winstone.Logger logInternal
+Jul 31 09:18:06 hakusai jenkins[30946]: 情報: Winstone Servlet Engine v2.0 running: controlPort=disabled
+Jul 31 09:18:07 hakusai jenkins[30946]: 7 31, 2014 9:18:07 午前 jenkins.InitReactorRunner$1 onAttained
+Jul 31 09:18:07 hakusai jenkins[30946]: 情報: Started initialization
+Jul 31 09:18:14 hakusai jenkins[30946]: 7 31, 2014 9:18:14 午前 jenkins.InitReactorRunner$1 onAttained
+Jul 31 09:18:14 hakusai jenkins[30946]: 情報: Listed all plugins
+Jul 31 09:18:14 hakusai jenkins[30946]: 7 31, 2014 9:18:14 午前 jenkins.InitReactorRunner$1 onAttained
+Jul 31 09:18:14 hakusai jenkins[30946]: 情報: Prepared all plugins
+Jul 31 09:18:14 hakusai jenkins[30946]: 7 31, 2014 9:18:14 午前 jenkins.InitReactorRunner$1 onAttained
+Jul 31 09:18:14 hakusai jenkins[30946]: 情報: Started all plugins
+Jul 31 09:18:14 hakusai jenkins[30946]: 7 31, 2014 9:18:14 午前 jenkins.InitReactorRunner$1 onAttained
+Jul 31 09:18:14 hakusai jenkins[30946]: 情報: Augmented all extensions
+Jul 31 09:18:14 hakusai jenkins[30946]: 7 31, 2014 9:18:14 午前 jenkins.InitReactorRunner$1 onAttained
+Jul 31 09:18:14 hakusai jenkins[30946]: 情報: Loaded all jobs
+Jul 31 09:18:17 hakusai jenkins[30946]: 7 31, 2014 9:18:17 午前 org.jenkinsci.main.modules.sshd.SSHD start
+Jul 31 09:18:17 hakusai jenkins[30946]: 情報: Started SSHD at port 42690
+Jul 31 09:18:17 hakusai jenkins[30946]: 7 31, 2014 9:18:17 午前 jenkins.InitReactorRunner$1 onAttained
+Jul 31 09:18:17 hakusai jenkins[30946]: 情報: Completed initialization
+Jul 31 09:18:17 hakusai jenkins[30946]: 7 31, 2014 9:18:17 午前 hudson.WebAppMain$3 run
+Jul 31 09:18:17 hakusai jenkins[30946]: 情報: Jenkins is fully up and running
+</pre>
+
+<p>
+起動後 <code>/var/lib/jenkins</code> ディレクトリの様子
+</p>
+<pre class="example">
+/var/lib/jenkins
+├── Fingerprint cleanup.log
+├── hudson.model.UpdateCenter.xml
+├── identity.key.enc
+├── jobs
+├── nodeMonitors.xml
+├── plugins
+│   ├── ant
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── ant
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   └── WEB-INF
+│   │       ├── lib
+│   │       │   └── classes.jar
+│   │       └── licenses.xml
+│   ├── ant.jpi
+│   ├── antisamy-markup-formatter
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── antisamy-markup-formatter
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   └── WEB-INF
+│   │       ├── lib
+│   │       │   ├── antisamy-markup-formatter.jar
+│   │       │   └── owasp-html-sanitizer-r88.jar
+│   │       └── licenses.xml
+│   ├── antisamy-markup-formatter.jpi
+│   ├── credentials
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── credentials
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   ├── WEB-INF
+│   │   │   ├── lib
+│   │   │   │   ├── classes.jar
+│   │   │   │   ├── findbugs-annotations-1.3.9-1.jar
+│   │   │   │   ├── jcip-annotations-1.0.jar
+│   │   │   │   └── jsr305-1.3.9.jar
+│   │   │   └── licenses.xml
+│   │   ├── help
+│   │   │   └── domain
+│   │   │       ├── description.html
+│   │   │       ├── description_ja.html
+│   │   │       ├── name.html
+│   │   │       ├── name_ja.html
+│   │   │       ├── specification.html
+│   │   │       └── specification_ja.html
+│   │   └── images
+│   │       ├── 16x16
+│   │       │   ├── credential.png
+│   │       │   ├── credentials.png
+│   │       │   ├── domain.png
+│   │       │   ├── new-credential.png
+│   │       │   └── new-domain.png
+│   │       ├── 24x24
+│   │       │   ├── credential.png
+│   │       │   ├── credentials.png
+│   │       │   ├── domain.png
+│   │       │   ├── new-credential.png
+│   │       │   └── new-domain.png
+│   │       ├── 32x32
+│   │       │   ├── credential.png
+│   │       │   ├── credentials.png
+│   │       │   ├── domain.png
+│   │       │   ├── new-credential.png
+│   │       │   └── new-domain.png
+│   │       └── 48x48
+│   │           ├── credential.png
+│   │           ├── credentials.png
+│   │           ├── domain.png
+│   │           ├── new-credential.png
+│   │           └── new-domain.png
+│   ├── credentials.jpi
+│   ├── cvs
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── cvs
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   └── WEB-INF
+│   │       ├── lib
+│   │       │   ├── classes.jar
+│   │       │   ├── cvsclient-71-jenkins-11.jar
+│   │       │   └── jsch-0.1.50.jar
+│   │       └── licenses.xml
+│   ├── cvs.jpi
+│   ├── external-monitor-job
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── external-monitor-job
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   └── WEB-INF
+│   │       ├── lib
+│   │       │   └── classes.jar
+│   │       └── licenses.xml
+│   ├── external-monitor-job.jpi
+│   ├── javadoc
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── javadoc
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   └── WEB-INF
+│   │       ├── lib
+│   │       │   └── classes.jar
+│   │       └── licenses.xml
+│   ├── javadoc.jpi
+│   ├── ldap
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── ldap
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   ├── WEB-INF
+│   │   │   ├── lib
+│   │   │   │   └── classes.jar
+│   │   │   └── licenses.xml
+│   │   ├── help-cache.html
+│   │   ├── help-groupMembershipFilter.html
+│   │   └── help-groupSearchFilter.html
+│   ├── ldap.jpi
+│   ├── mailer
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── mailer
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   └── WEB-INF
+│   │       ├── lib
+│   │       │   └── classes.jar
+│   │       └── licenses.xml
+│   ├── mailer.jpi
+│   ├── matrix-auth
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── matrix-auth
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   └── WEB-INF
+│   │       ├── lib
+│   │       │   └── classes.jar
+│   │       └── licenses.xml
+│   ├── matrix-auth.jpi
+│   ├── matrix-project
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── matrix-project
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   ├── WEB-INF
+│   │   │   ├── lib
+│   │   │   │   └── matrix-project.jar
+│   │   │   └── licenses.xml
+│   │   └── help
+│   │       └── matrix
+│   │           ├── axes.html
+│   │           ├── axes_de.html
+│   │           ├── axes_fr.html
+│   │           ├── axes_ja.html
+│   │           ├── axes_nl.html
+│   │           ├── axes_pt_BR.html
+│   │           ├── axes_ru.html
+│   │           ├── axes_tr.html
+│   │           ├── axes_zh_TW.html
+│   │           ├── combinationfilter.html
+│   │           ├── combinationfilter_de.html
+│   │           ├── combinationfilter_fr.html
+│   │           ├── combinationfilter_ja.html
+│   │           ├── combinationfilter_zh_TW.html
+│   │           ├── jdk.html
+│   │           ├── jdk_de.html
+│   │           ├── jdk_fr.html
+│   │           ├── jdk_ja.html
+│   │           ├── jdk_nl.html
+│   │           ├── jdk_pt_BR.html
+│   │           ├── jdk_ru.html
+│   │           ├── jdk_tr.html
+│   │           └── jdk_zh_TW.html
+│   ├── matrix-project.jpi
+│   ├── maven-plugin
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.main
+│   │   │           └── maven-plugin
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   ├── WEB-INF
+│   │   │   ├── lib
+│   │   │   │   ├── aether-api-0.9.0.M3.jar
+│   │   │   │   ├── aether-connector-wagon-0.9.0.M2.jar
+│   │   │   │   ├── aether-impl-0.9.0.M3.jar
+│   │   │   │   ├── aether-spi-0.9.0.M3.jar
+│   │   │   │   ├── aether-transport-wagon-0.9.0.M3.jar
+│   │   │   │   ├── aether-util-0.9.0.M3.jar
+│   │   │   │   ├── ant-1.9.2.jar
+│   │   │   │   ├── ant-launcher-1.9.2.jar
+│   │   │   │   ├── aopalliance-1.0.jar
+│   │   │   │   ├── cdi-api-1.0.jar
+│   │   │   │   ├── classes.jar
+│   │   │   │   ├── commons-cli-1.2.jar
+│   │   │   │   ├── commons-codec-1.6.jar
+│   │   │   │   ├── commons-httpclient-3.1.jar
+│   │   │   │   ├── commons-io-2.2.jar
+│   │   │   │   ├── commons-lang-2.6.jar
+│   │   │   │   ├── commons-logging-1.1.1.jar
+│   │   │   │   ├── commons-net-3.1.jar
+│   │   │   │   ├── doxia-sink-api-1.0.jar
+│   │   │   │   ├── guava-11.0.1.jar
+│   │   │   │   ├── guice-4.0-beta.jar
+│   │   │   │   ├── httpclient-4.2.5.jar
+│   │   │   │   ├── httpcore-4.2.4.jar
+│   │   │   │   ├── jackrabbit-webdav-2.5.2.jar
+│   │   │   │   ├── javax.inject-1.jar
+│   │   │   │   ├── jsch-0.1.44-1.jar
+│   │   │   │   ├── jsoup-1.7.1.jar
+│   │   │   │   ├── jsr250-api-1.0.jar
+│   │   │   │   ├── jsr305-1.3.9.jar
+│   │   │   │   ├── lib-jenkins-maven-artifact-manager-1.2.jar
+│   │   │   │   ├── lib-jenkins-maven-embedder-3.11.jar
+│   │   │   │   ├── maven-aether-provider-3.1.0.jar
+│   │   │   │   ├── maven-agent-1.5.jar
+│   │   │   │   ├── maven-artifact-3.1.0.jar
+│   │   │   │   ├── maven-compat-3.1.0.jar
+│   │   │   │   ├── maven-core-3.1.0.jar
+│   │   │   │   ├── maven-embedder-3.1.0.jar
+│   │   │   │   ├── maven-interceptor-1.5.jar
+│   │   │   │   ├── maven-model-3.1.0.jar
+│   │   │   │   ├── maven-model-builder-3.1.0.jar
+│   │   │   │   ├── maven-plugin-api-3.1.0.jar
+│   │   │   │   ├── maven-reporting-api-3.0.jar
+│   │   │   │   ├── maven-repository-metadata-3.1.0.jar
+│   │   │   │   ├── maven-settings-3.1.0.jar
+│   │   │   │   ├── maven-settings-builder-3.1.0.jar
+│   │   │   │   ├── maven2.1-interceptor-1.2.jar
+│   │   │   │   ├── maven3-agent-1.5.jar
+│   │   │   │   ├── maven3-interceptor-1.5.jar
+│   │   │   │   ├── maven3-interceptor-commons-1.5.jar
+│   │   │   │   ├── maven31-agent-1.5.jar
+│   │   │   │   ├── maven31-interceptor-1.5.jar
+│   │   │   │   ├── org.eclipse.sisu.inject-0.0.0.M5.jar
+│   │   │   │   ├── org.eclipse.sisu.plexus-0.0.0.M5.jar
+│   │   │   │   ├── plexus-cipher-1.7.jar
+│   │   │   │   ├── plexus-classworlds-2.5.1.jar
+│   │   │   │   ├── plexus-component-annotations-1.5.5.jar
+│   │   │   │   ├── plexus-interactivity-api-1.0-alpha-6.jar
+│   │   │   │   ├── plexus-interpolation-1.16.jar
+│   │   │   │   ├── plexus-sec-dispatcher-1.3.jar
+│   │   │   │   ├── plexus-utils-3.0.10.jar
+│   │   │   │   ├── slf4j-api-1.7.4.jar
+│   │   │   │   ├── wagon-file-2.4.jar
+│   │   │   │   ├── wagon-ftp-2.4.jar
+│   │   │   │   ├── wagon-http-2.4.jar
+│   │   │   │   ├── wagon-http-shared-2.4.jar
+│   │   │   │   ├── wagon-http-shared4-2.4.jar
+│   │   │   │   ├── wagon-provider-api-2.4.jar
+│   │   │   │   ├── wagon-ssh-2.4.jar
+│   │   │   │   ├── wagon-ssh-common-2.4.jar
+│   │   │   │   ├── wagon-ssh-external-2.4.jar
+│   │   │   │   └── wagon-webdav-jackrabbit-2.4.jar
+│   │   │   └── licenses.xml
+│   │   ├── aggregator.html
+│   │   ├── aggregator_de.html
+│   │   ├── aggregator_fr.html
+│   │   ├── aggregator_ja.html
+│   │   ├── aggregator_pt_BR.html
+│   │   ├── aggregator_ru.html
+│   │   ├── aggregator_tr.html
+│   │   ├── aggregator_zh_TW.html
+│   │   ├── archivingDisabled.html
+│   │   ├── archivingDisabled_de.html
+│   │   ├── archivingDisabled_ja.html
+│   │   ├── archivingDisabled_zh_TW.html
+│   │   ├── downstreamDisabled.html
+│   │   ├── downstreamDisabled_de.html
+│   │   ├── downstreamDisabled_ja.html
+│   │   ├── downstreamDisabled_zh_TW.html
+│   │   ├── fingerprintingDisabled.html
+│   │   ├── goals.html
+│   │   ├── goals_de.html
+│   │   ├── goals_fr.html
+│   │   ├── goals_ja.html
+│   │   ├── goals_pt_BR.html
+│   │   ├── goals_ru.html
+│   │   ├── goals_tr.html
+│   │   ├── goals_zh_TW.html
+│   │   ├── ignore-upstrem-changes.html
+│   │   ├── ignore-upstrem-changes_de.html
+│   │   ├── ignore-upstrem-changes_fr.html
+│   │   ├── ignore-upstrem-changes_ja.html
+│   │   ├── ignore-upstrem-changes_zh_TW.html
+│   │   ├── incremental.html
+│   │   ├── incremental_de.html
+│   │   ├── incremental_zh_TW.html
+│   │   ├── maven-opts.html
+│   │   ├── maven-opts_de.html
+│   │   ├── maven-opts_fr.html
+│   │   ├── maven-opts_ja.html
+│   │   ├── maven-opts_pt_BR.html
+│   │   ├── maven-opts_ru.html
+│   │   ├── maven-opts_tr.html
+│   │   ├── maven-opts_zh_CN.html
+│   │   ├── maven-opts_zh_TW.html
+│   │   ├── module-goals.html
+│   │   ├── module-goals_de.html
+│   │   ├── module-goals_fr.html
+│   │   ├── module-goals_ja.html
+│   │   ├── module-goals_pt_BR.html
+│   │   ├── module-goals_ru.html
+│   │   ├── module-goals_tr.html
+│   │   ├── module-goals_zh_TW.html
+│   │   ├── per-module-email.html
+│   │   ├── per-module-email_de.html
+│   │   ├── per-module-email_ja.html
+│   │   ├── per-module-email_zh_TW.html
+│   │   ├── private-repository.html
+│   │   ├── private-repository_de.html
+│   │   ├── private-repository_fr.html
+│   │   ├── private-repository_ja.html
+│   │   ├── private-repository_tr.html
+│   │   ├── private-repository_zh_TW.html
+│   │   ├── root-pom.html
+│   │   ├── root-pom_de.html
+│   │   ├── root-pom_fr.html
+│   │   ├── root-pom_ja.html
+│   │   ├── root-pom_pt_BR.html
+│   │   ├── root-pom_ru.html
+│   │   ├── root-pom_tr.html
+│   │   ├── root-pom_zh_TW.html
+│   │   ├── run-headless.html
+│   │   ├── run-headless_de.html
+│   │   ├── run-headless_fr.html
+│   │   ├── run-headless_ja.html
+│   │   ├── run-headless_zh_TW.html
+│   │   ├── siteArchivingDisabled.html
+│   │   └── siteArchivingDisabled_de.html
+│   ├── maven-plugin.jpi
+│   ├── pam-auth
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── pam-auth
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   └── WEB-INF
+│   │       ├── lib
+│   │       │   ├── classes.jar
+│   │       │   ├── jna-3.4.0.jar
+│   │       │   └── libpam4j-1.6.jar
+│   │       └── licenses.xml
+│   ├── pam-auth.jpi
+│   ├── ssh-credentials
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── ssh-credentials
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   └── WEB-INF
+│   │       ├── lib
+│   │       │   └── classes.jar
+│   │       └── licenses.xml
+│   ├── ssh-credentials.jpi
+│   ├── ssh-slaves
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── ssh-slaves
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   └── WEB-INF
+│   │       ├── lib
+│   │       │   └── classes.jar
+│   │       └── licenses.xml
+│   ├── ssh-slaves.jpi
+│   ├── subversion
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── subversion
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   ├── WEB-INF
+│   │   │   ├── lib
+│   │   │   │   ├── antlr-runtime-3.4.jar
+│   │   │   │   ├── classes.jar
+│   │   │   │   ├── sequence-library-1.0.2.jar
+│   │   │   │   ├── sqljet-1.1.7.jar
+│   │   │   │   ├── svnkit-1.7.10-jenkins-1.jar
+│   │   │   │   └── trilead-ssh2-build217-jenkins-3.jar
+│   │   │   └── licenses.xml
+│   │   ├── pass-phrase.html
+│   │   ├── pass-phrase_de.html
+│   │   ├── pass-phrase_fr.html
+│   │   ├── pass-phrase_ja.html
+│   │   ├── pass-phrase_pt_BR.html
+│   │   ├── pass-phrase_ru.html
+│   │   ├── pass-phrase_tr.html
+│   │   └── pass-phrase_zh_TW.html
+│   ├── subversion.jpi
+│   ├── translation
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── translation
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   ├── WEB-INF
+│   │   │   ├── lib
+│   │   │   │   └── classes.jar
+│   │   │   └── licenses.xml
+│   │   ├── dialog.js
+│   │   └── flags.png
+│   ├── translation.jpi
+│   ├── windows-slaves
+│   │   ├── META-INF
+│   │   │   ├── MANIFEST.MF
+│   │   │   └── maven
+│   │   │       └── org.jenkins-ci.plugins
+│   │   │           └── windows-slaves
+│   │   │               ├── pom.properties
+│   │   │               └── pom.xml
+│   │   └── WEB-INF
+│   │       ├── lib
+│   │       │   ├── j-interop-2.0.6-kohsuke-1.jar
+│   │       │   ├── j-interopdeps-2.0.6-kohsuke-1.jar
+│   │       │   ├── jcifs-1.3.17-kohsuke-1.jar
+│   │       │   ├── jinterop-proxy-1.1.jar
+│   │       │   ├── jinterop-wmi-1.1.jar
+│   │       │   ├── tiger-types-1.1.jar
+│   │       │   ├── windows-remote-command-1.4.jar
+│   │       │   └── windows-slaves.jar
+│   │       └── licenses.xml
+│   └── windows-slaves.jpi
+├── secret.key
+├── secret.key.not-so-secret
+├── secrets
+│   ├── master.key
+│   └── org.jenkinsci.main.modules.instance_identity.InstanceIdentity.KEY
+└── userContent
+    └── readme.txt
+</pre>
+
+<p>
+起動後 <code>/var/lib/jenkins</code> ディレクトリの様子
+</p>
+<pre class="example">
+/var/cache/jenkins
+├── ColorFormatter.class
+├── JNLPMain.class
+├── LogFileOutputStream$1.class
+├── LogFileOutputStream$2.class
+├── LogFileOutputStream.class
+├── META-INF
+│   ├── JENKINS.RSA
+│   ├── JENKINS.SF
+│   ├── MANIFEST.MF
+│   └── maven
+│       └── org.jenkins-ci.main
+│           └── jenkins-war
+│               ├── pom.properties
+│               └── pom.xml
+├── Main$FileAndDescription.class
+├── Main.class
+├── MainDialog$1$1.class
+├── MainDialog$1.class
+├── MainDialog.class
+├── WEB-INF
+│   ├── classes
+│   │   ├── META-INF
+│   │   │   ├── licenses.html
+│   │   │   └── licenses.xml
+│   │   └── dependencies.txt
+│   ├── hudson
+│   ├── ibm-web-bnd.xmi
+│   ├── jenkins-cli.jar
+│   ├── jonas-web.xml
+│   ├── lib
+│   │   ├── access-modifier-annotation-1.4.jar
+│   │   ├── acegi-security-1.0.7.jar
+│   │   ├── activation-1.1.1-hudson-1.jar
+│   │   ├── akuma-1.9.jar
+│   │   ├── annotation-indexer-1.7.jar
+│   │   ├── ant-1.8.3.jar
+│   │   ├── ant-launcher-1.8.3.jar
+│   │   ├── antlr-2.7.6.jar
+│   │   ├── aopalliance-1.0.jar
+│   │   ├── args4j-2.0.23.jar
+│   │   ├── asm-4.0.jar
+│   │   ├── asm-analysis-4.0.jar
+│   │   ├── asm-commons-4.0.jar
+│   │   ├── asm-tree-4.0.jar
+│   │   ├── asm-util-4.0.jar
+│   │   ├── asm5-5.0.1.jar
+│   │   ├── bcpkix-jdk15on-1.47.jar
+│   │   ├── bcprov-jdk15on-1.47.jar
+│   │   ├── bridge-method-annotation-1.9.jar
+│   │   ├── bytecode-compatibility-transformer-1.5.jar
+│   │   ├── cli-1.574.jar
+│   │   ├── commons-beanutils-1.8.3.jar
+│   │   ├── commons-codec-1.8.jar
+│   │   ├── commons-collections-3.2.1.jar
+│   │   ├── commons-digester-2.1.jar
+│   │   ├── commons-discovery-0.4.jar
+│   │   ├── commons-fileupload-1.2.1.jar
+│   │   ├── commons-httpclient-3.1.jar
+│   │   ├── commons-io-2.4.jar
+│   │   ├── commons-jelly-1.1-jenkins-20120928.jar
+│   │   ├── commons-jelly-tags-define-1.0.1-hudson-20071021.jar
+│   │   ├── commons-jelly-tags-fmt-1.0.jar
+│   │   ├── commons-jelly-tags-xml-1.1.jar
+│   │   ├── commons-jexl-1.1-jenkins-20111212.jar
+│   │   ├── commons-lang-2.6.jar
+│   │   ├── commons-logging-1.1.3.jar
+│   │   ├── constant-pool-scanner-1.2.jar
+│   │   ├── crypto-util-1.1.jar
+│   │   ├── dom4j-1.6.1-hudson-3.jar
+│   │   ├── embedded_su4j-1.1.jar
+│   │   ├── ezmorph-1.0.6.jar
+│   │   ├── groovy-all-1.8.9.jar
+│   │   ├── guava-11.0.1.jar
+│   │   ├── guice-4.0-beta-no_aop.jar
+│   │   ├── hamcrest-core-1.3.jar
+│   │   ├── instance-identity-1.4.jar
+│   │   ├── j-interop-2.0.6-kohsuke-1.jar
+│   │   ├── j-interopdeps-2.0.6-kohsuke-1.jar
+│   │   ├── jansi-1.9.jar
+│   │   ├── javax.annotation-api-1.2.jar
+│   │   ├── javax.inject-1.jar
+│   │   ├── jaxen-1.1-beta-11.jar
+│   │   ├── jbcrypt-0.3m.jar
+│   │   ├── jcifs-1.3.17-kohsuke-1.jar
+│   │   ├── jcommon-1.0.12.jar
+│   │   ├── jenkins-core-1.574.jar
+│   │   ├── jffi-1.2.7-native.jar
+│   │   ├── jffi-1.2.7.jar
+│   │   ├── jfreechart-1.0.9.jar
+│   │   ├── jline-0.9.94.jar
+│   │   ├── jmdns-3.4.0-jenkins-3.jar
+│   │   ├── jna-3.3.0-jenkins-3.jar
+│   │   ├── jna-posix-1.0.3.jar
+│   │   ├── jnr-constants-0.8.5.jar
+│   │   ├── jnr-ffi-1.0.7.jar
+│   │   ├── jnr-posix-3.0.1.jar
+│   │   ├── jnr-x86asm-1.0.2.jar
+│   │   ├── json-lib-2.4-jenkins-2.jar
+│   │   ├── jsr305-1.3.9.jar
+│   │   ├── jstl-1.1.0.jar
+│   │   ├── jtidy-4aug2000r7-dev-hudson-1.jar
+│   │   ├── junit-4.11.jar
+│   │   ├── jzlib-1.1.3-kohsuke-1.jar
+│   │   ├── launchd-slave-installer-1.2.jar
+│   │   ├── libpam4j-1.6.jar
+│   │   ├── libzfs-0.5.jar
+│   │   ├── localizer-1.10.jar
+│   │   ├── log4j-1.2.9.jar
+│   │   ├── mail-1.4.4.jar
+│   │   ├── memory-monitor-1.8.jar
+│   │   ├── mina-core-2.0.5.jar
+│   │   ├── oro-2.0.8.jar
+│   │   ├── relaxngDatatype-20020414.jar
+│   │   ├── remoting-2.43.jar
+│   │   ├── robust-http-client-1.2.jar
+│   │   ├── sezpoz-1.9.jar
+│   │   ├── slave-installer-1.3.jar
+│   │   ├── slf4j-api-1.7.7.jar
+│   │   ├── slf4j-jdk14-1.7.7.jar
+│   │   ├── spring-aop-2.5.6.SEC03.jar
+│   │   ├── spring-beans-2.5.6.SEC03.jar
+│   │   ├── spring-context-2.5.6.SEC03.jar
+│   │   ├── spring-context-support-2.5.6.SEC03.jar
+│   │   ├── spring-core-2.5.6.SEC03.jar
+│   │   ├── spring-dao-1.2.9.jar
+│   │   ├── spring-jdbc-1.2.9.jar
+│   │   ├── spring-web-2.5.6.SEC03.jar
+│   │   ├── spring-webmvc-2.5.6.SEC03.jar
+│   │   ├── ssh-cli-auth-1.2.jar
+│   │   ├── sshd-1.6.jar
+│   │   ├── sshd-core-0.8.0.jar
+│   │   ├── stapler-1.227.jar
+│   │   ├── stapler-adjunct-codemirror-1.3.jar
+│   │   ├── stapler-adjunct-timeline-1.4.jar
+│   │   ├── stapler-adjunct-zeroclipboard-1.1.7-1.jar
+│   │   ├── stapler-groovy-1.227.jar
+│   │   ├── stapler-jelly-1.227.jar
+│   │   ├── stapler-jrebel-1.227.jar
+│   │   ├── stax-api-1.0-2.jar
+│   │   ├── stax-api-1.0.1.jar
+│   │   ├── systemd-slave-installer-1.1.jar
+│   │   ├── task-reactor-1.4.jar
+│   │   ├── tiger-types-1.3.jar
+│   │   ├── trilead-putty-extension-1.2.jar
+│   │   ├── trilead-ssh2-build217-jenkins-5.jar
+│   │   ├── txw2-20110809.jar
+│   │   ├── upstart-slave-installer-1.1.jar
+│   │   ├── version-number-1.1.jar
+│   │   ├── windows-package-checker-1.0.jar
+│   │   ├── windows-slave-installer-1.4.jar
+│   │   ├── winp-1.20.jar
+│   │   ├── wstx-asl-3.2.9.jar
+│   │   ├── xpp3-1.1.4c.jar
+│   │   └── xstream-1.4.7-jenkins-1.jar
+│   ├── plugins
+│   │   ├── ant.hpi
+│   │   ├── antisamy-markup-formatter.hpi
+│   │   ├── credentials.hpi
+│   │   ├── cvs.hpi
+│   │   ├── external-monitor-job.hpi
+│   │   ├── javadoc.hpi
+│   │   ├── ldap.hpi
+│   │   ├── mailer.hpi
+│   │   ├── matrix-auth.hpi
+│   │   ├── matrix-project.hpi
+│   │   ├── maven-plugin.hpi
+│   │   ├── pam-auth.hpi
+│   │   ├── ssh-credentials.hpi
+│   │   ├── ssh-slaves.hpi
+│   │   ├── subversion.hpi
+│   │   ├── translation.hpi
+│   │   └── windows-slaves.hpi
+│   ├── remoting.jar
+│   ├── security
+│   │   ├── AbstractPasswordBasedSecurityRealm.groovy
+│   │   └── SecurityFilters.groovy
+│   ├── slave.jar
+│   ├── sun-web.xml
+│   ├── update-center-rootCAs
+│   │   ├── hudson-community
+│   │   ├── hudson-community.txt
+│   │   ├── jenkins-update-center-root-ca
+│   │   └── jenkins-update-center-root-ca.txt
+│   └── web.xml
+├── css
+│   ├── color.css
+│   ├── responsive-grid.css
+│   └── style.css
+├── dc-license.txt
+├── executable
+│   └── Executable.class
+├── favicon.ico
+├── help
+│   ├── LogRecorder
+│   │   ├── logger.html
+│   │   ├── logger_de.html
+│   │   ├── logger_fr.html
+│   │   ├── logger_ja.html
+│   │   ├── logger_zh_TW.html
+│   │   ├── name.html
+│   │   ├── name_de.html
+│   │   ├── name_fr.html
+│   │   ├── name_ja.html
+│   │   └── name_zh_TW.html
+│   ├── parameter
+│   │   ├── boolean-default.html
+│   │   ├── boolean-default_de.html
+│   │   ├── boolean-default_fr.html
+│   │   ├── boolean-default_ja.html
+│   │   ├── boolean-default_zh_TW.html
+│   │   ├── boolean.html
+│   │   ├── boolean_de.html
+│   │   ├── boolean_fr.html
+│   │   ├── boolean_ja.html
+│   │   ├── boolean_zh_TW.html
+│   │   ├── choice-choices.html
+│   │   ├── choice-choices_de.html
+│   │   ├── choice-choices_fr.html
+│   │   ├── choice-choices_ja.html
+│   │   ├── choice-choices_zh_TW.html
+│   │   ├── choice.html
+│   │   ├── choice_de.html
+│   │   ├── choice_fr.html
+│   │   ├── choice_ja.html
+│   │   ├── choice_zh_TW.html
+│   │   ├── description.html
+│   │   ├── description_de.html
+│   │   ├── description_fr.html
+│   │   ├── description_ja.html
+│   │   ├── description_zh_TW.html
+│   │   ├── file-name.html
+│   │   ├── file-name_de.html
+│   │   ├── file-name_fr.html
+│   │   ├── file-name_ja.html
+│   │   ├── file-name_zh_TW.html
+│   │   ├── file.html
+│   │   ├── file_de.html
+│   │   ├── file_fr.html
+│   │   ├── file_ja.html
+│   │   ├── file_zh_TW.html
+│   │   ├── name.html
+│   │   ├── name_de.html
+│   │   ├── name_fr.html
+│   │   ├── name_ja.html
+│   │   ├── name_zh_TW.html
+│   │   ├── run-filter.html
+│   │   ├── run-project.html
+│   │   ├── run-project_de.html
+│   │   ├── run-project_fr.html
+│   │   ├── run-project_ja.html
+│   │   ├── run-project_zh_TW.html
+│   │   ├── run.html
+│   │   ├── run_de.html
+│   │   ├── run_fr.html
+│   │   ├── run_ja.html
+│   │   ├── run_zh_TW.html
+│   │   ├── string-default.html
+│   │   ├── string-default_de.html
+│   │   ├── string-default_fr.html
+│   │   ├── string-default_ja.html
+│   │   ├── string-default_zh_TW.html
+│   │   ├── string.html
+│   │   ├── string_de.html
+│   │   ├── string_fr.html
+│   │   ├── string_ja.html
+│   │   └── string_zh_TW.html
+│   ├── project-config
+│   │   ├── batch.html
+│   │   ├── batch_de.html
+│   │   ├── batch_fr.html
+│   │   ├── batch_ja.html
+│   │   ├── batch_pt_BR.html
+│   │   ├── batch_ru.html
+│   │   ├── batch_tr.html
+│   │   ├── batch_zh_TW.html
+│   │   ├── block-downstream-building.html
+│   │   ├── block-downstream-building_ja.html
+│   │   ├── block-downstream-building_zh_TW.html
+│   │   ├── block-upstream-building.html
+│   │   ├── block-upstream-building_de.html
+│   │   ├── block-upstream-building_ja.html
+│   │   ├── block-upstream-building_zh_TW.html
+│   │   ├── custom-workspace.html
+│   │   ├── custom-workspace_de.html
+│   │   ├── custom-workspace_fr.html
+│   │   ├── custom-workspace_ja.html
+│   │   ├── custom-workspace_tr.html
+│   │   ├── custom-workspace_zh_TW.html
+│   │   ├── defaultView.html
+│   │   ├── defaultView_de.html
+│   │   ├── defaultView_ja.html
+│   │   ├── defaultView_zh_TW.html
+│   │   ├── description.html
+│   │   ├── description_de.html
+│   │   ├── description_fr.html
+│   │   ├── description_ja.html
+│   │   ├── description_pt_BR.html
+│   │   ├── description_ru.html
+│   │   ├── description_tr.html
+│   │   ├── description_zh_TW.html
+│   │   ├── disable.html
+│   │   ├── disable_de.html
+│   │   ├── disable_fr.html
+│   │   ├── disable_ja.html
+│   │   ├── disable_pt_BR.html
+│   │   ├── disable_ru.html
+│   │   ├── disable_tr.html
+│   │   ├── disable_zh_TW.html
+│   │   ├── downstream.html
+│   │   ├── downstream_de.html
+│   │   ├── downstream_fr.html
+│   │   ├── downstream_ja.html
+│   │   ├── downstream_pt_BR.html
+│   │   ├── downstream_ru.html
+│   │   ├── downstream_tr.html
+│   │   ├── downstream_zh_TW.html
+│   │   ├── fingerprint.html
+│   │   ├── fingerprint_de.html
+│   │   ├── fingerprint_fr.html
+│   │   ├── fingerprint_ja.html
+│   │   ├── fingerprint_pt_BR.html
+│   │   ├── fingerprint_ru.html
+│   │   ├── fingerprint_tr.html
+│   │   ├── fingerprint_zh_TW.html
+│   │   ├── javadoc-keep-all.html
+│   │   ├── javadoc-keep-all_de.html
+│   │   ├── javadoc-keep-all_fr.html
+│   │   ├── javadoc-keep-all_ja.html
+│   │   ├── javadoc-keep-all_tr.html
+│   │   ├── javadoc-keep-all_zh_TW.html
+│   │   ├── log-rotation.html
+│   │   ├── log-rotation_de.html
+│   │   ├── log-rotation_fr.html
+│   │   ├── log-rotation_ja.html
+│   │   ├── log-rotation_pt_BR.html
+│   │   ├── log-rotation_ru.html
+│   │   ├── log-rotation_tr.html
+│   │   ├── log-rotation_zh_TW.html
+│   │   ├── parameterized-build.html
+│   │   ├── parameterized-build_de.html
+│   │   ├── parameterized-build_fr.html
+│   │   ├── parameterized-build_ja.html
+│   │   ├── parameterized-build_tr.html
+│   │   ├── parameterized-build_zh_TW.html
+│   │   ├── scmCheckoutRetryCount.html
+│   │   ├── scmCheckoutRetryCount_de.html
+│   │   ├── scmCheckoutRetryCount_ja.html
+│   │   ├── scmCheckoutRetryCount_zh_CN.html
+│   │   ├── scmCheckoutRetryCount_zh_TW.html
+│   │   ├── triggerRemotely.html
+│   │   ├── triggerRemotely_de.html
+│   │   ├── triggerRemotely_fr.html
+│   │   ├── triggerRemotely_ja.html
+│   │   ├── triggerRemotely_pt_BR.html
+│   │   ├── triggerRemotely_ru.html
+│   │   ├── triggerRemotely_tr.html
+│   │   └── triggerRemotely_zh_TW.html
+│   ├── run-config
+│   │   ├── description.html
+│   │   ├── description_de.html
+│   │   ├── description_ja.html
+│   │   ├── description_zh_TW.html
+│   │   ├── displayName.html
+│   │   ├── displayName_de.html
+│   │   ├── displayName_ja.html
+│   │   └── displayName_zh_TW.html
+│   ├── scm-browsers
+│   │   ├── list.html
+│   │   ├── list_de.html
+│   │   ├── list_ja.html
+│   │   └── list_zh_TW.html
+│   ├── security
+│   │   ├── container-realm.html
+│   │   ├── container-realm_de.html
+│   │   ├── container-realm_fr.html
+│   │   ├── container-realm_ja.html
+│   │   ├── container-realm_pt_BR.html
+│   │   ├── container-realm_ru.html
+│   │   ├── container-realm_tr.html
+│   │   ├── container-realm_zh_CN.html
+│   │   ├── container-realm_zh_TW.html
+│   │   ├── full-control-once-logged-in.html
+│   │   ├── full-control-once-logged-in_de.html
+│   │   ├── full-control-once-logged-in_fr.html
+│   │   ├── full-control-once-logged-in_ja.html
+│   │   ├── full-control-once-logged-in_pt_BR.html
+│   │   ├── full-control-once-logged-in_ru.html
+│   │   ├── full-control-once-logged-in_tr.html
+│   │   ├── full-control-once-logged-in_zh_CN.html
+│   │   ├── full-control-once-logged-in_zh_TW.html
+│   │   ├── ldap
+│   │   │   ├── groupSearchBase.html
+│   │   │   ├── groupSearchBase_de.html
+│   │   │   ├── groupSearchBase_fr.html
+│   │   │   ├── groupSearchBase_ja.html
+│   │   │   ├── groupSearchBase_tr.html
+│   │   │   ├── groupSearchBase_zh_TW.html
+│   │   │   ├── managerDN.html
+│   │   │   ├── managerDN_de.html
+│   │   │   ├── managerDN_fr.html
+│   │   │   ├── managerDN_ja.html
+│   │   │   ├── managerDN_pt_BR.html
+│   │   │   ├── managerDN_tr.html
+│   │   │   ├── managerDN_zh_TW.html
+│   │   │   ├── managerPassword.html
+│   │   │   ├── managerPassword_de.html
+│   │   │   ├── managerPassword_fr.html
+│   │   │   ├── managerPassword_ja.html
+│   │   │   ├── managerPassword_pt_BR.html
+│   │   │   ├── managerPassword_tr.html
+│   │   │   ├── managerPassword_zh_TW.html
+│   │   │   ├── rootDN.html
+│   │   │   ├── rootDN_de.html
+│   │   │   ├── rootDN_fr.html
+│   │   │   ├── rootDN_ja.html
+│   │   │   ├── rootDN_pt_BR.html
+│   │   │   ├── rootDN_ru.html
+│   │   │   ├── rootDN_tr.html
+│   │   │   ├── rootDN_zh_TW.html
+│   │   │   ├── server.html
+│   │   │   ├── server_de.html
+│   │   │   ├── server_fr.html
+│   │   │   ├── server_ja.html
+│   │   │   ├── server_pt_BR.html
+│   │   │   ├── server_ru.html
+│   │   │   ├── server_tr.html
+│   │   │   ├── server_zh_TW.html
+│   │   │   ├── userSearchBase.html
+│   │   │   ├── userSearchBase_de.html
+│   │   │   ├── userSearchBase_fr.html
+│   │   │   ├── userSearchBase_ja.html
+│   │   │   ├── userSearchBase_pt_BR.html
+│   │   │   ├── userSearchBase_ru.html
+│   │   │   ├── userSearchBase_tr.html
+│   │   │   ├── userSearchBase_zh_TW.html
+│   │   │   ├── userSearchFilter.html
+│   │   │   ├── userSearchFilter_de.html
+│   │   │   ├── userSearchFilter_fr.html
+│   │   │   ├── userSearchFilter_ja.html
+│   │   │   ├── userSearchFilter_pt_BR.html
+│   │   │   ├── userSearchFilter_ru.html
+│   │   │   ├── userSearchFilter_tr.html
+│   │   │   └── userSearchFilter_zh_TW.html
+│   │   ├── legacy-auth-strategy.html
+│   │   ├── legacy-auth-strategy_de.html
+│   │   ├── legacy-auth-strategy_fr.html
+│   │   ├── legacy-auth-strategy_ja.html
+│   │   ├── legacy-auth-strategy_pt_BR.html
+│   │   ├── legacy-auth-strategy_ru.html
+│   │   ├── legacy-auth-strategy_tr.html
+│   │   ├── legacy-auth-strategy_zh_CN.html
+│   │   ├── legacy-auth-strategy_zh_TW.html
+│   │   ├── no-authorization.html
+│   │   ├── no-authorization_de.html
+│   │   ├── no-authorization_fr.html
+│   │   ├── no-authorization_ja.html
+│   │   ├── no-authorization_pt_BR.html
+│   │   ├── no-authorization_ru.html
+│   │   ├── no-authorization_tr.html
+│   │   ├── no-authorization_zh_CN.html
+│   │   ├── no-authorization_zh_TW.html
+│   │   ├── private-realm
+│   │   │   ├── allow-signup.html
+│   │   │   ├── allow-signup_de.html
+│   │   │   ├── allow-signup_fr.html
+│   │   │   ├── allow-signup_ja.html
+│   │   │   ├── allow-signup_tr.html
+│   │   │   ├── allow-signup_zh_CN.html
+│   │   │   └── allow-signup_zh_TW.html
+│   │   ├── private-realm.html
+│   │   ├── private-realm_de.html
+│   │   ├── private-realm_fr.html
+│   │   ├── private-realm_ja.html
+│   │   ├── private-realm_pt_BR.html
+│   │   ├── private-realm_ru.html
+│   │   ├── private-realm_tr.html
+│   │   ├── private-realm_zh_CN.html
+│   │   └── private-realm_zh_TW.html
+│   ├── shell
+│   │   ├── shellexe.html
+│   │   ├── shellexe_de.html
+│   │   ├── shellexe_fr.html
+│   │   ├── shellexe_ja.html
+│   │   ├── shellexe_nl.html
+│   │   ├── shellexe_pt_BR.html
+│   │   ├── shellexe_zh_CN.html
+│   │   └── shellexe_zh_TW.html
+│   ├── system-config
+│   │   ├── cvs-browser.html
+│   │   ├── cvs-browser_de.html
+│   │   ├── cvs-browser_fr.html
+│   │   ├── cvs-browser_ja.html
+│   │   ├── cvs-browser_pt_BR.html
+│   │   ├── cvs-browser_ru.html
+│   │   ├── cvs-browser_tr.html
+│   │   ├── cvs-browser_zh_TW.html
+│   │   ├── defaultJobNamingStrategy.html
+│   │   ├── defaultJobNamingStrategy_de.html
+│   │   ├── defaultJobNamingStrategy_ja.html
+│   │   ├── defaultJobNamingStrategy_zh_TW.html
+│   │   ├── globalEnvironmentVariables.html
+│   │   ├── globalEnvironmentVariables_de.html
+│   │   ├── globalEnvironmentVariables_fr.html
+│   │   ├── globalEnvironmentVariables_ja.html
+│   │   ├── globalEnvironmentVariables_zh_CN.html
+│   │   ├── globalEnvironmentVariables_zh_TW.html
+│   │   ├── homeDirectory.html
+│   │   ├── homeDirectory_de.html
+│   │   ├── homeDirectory_fr.html
+│   │   ├── homeDirectory_ja.html
+│   │   ├── homeDirectory_pt_BR.html
+│   │   ├── homeDirectory_ru.html
+│   │   ├── homeDirectory_tr.html
+│   │   ├── homeDirectory_zh_CN.html
+│   │   ├── homeDirectory_zh_TW.html
+│   │   ├── master-slave
+│   │   │   ├── availability.html
+│   │   │   ├── availability_de.html
+│   │   │   ├── availability_fr.html
+│   │   │   ├── availability_ja.html
+│   │   │   ├── availability_nl.html
+│   │   │   ├── availability_tr.html
+│   │   │   ├── availability_zh_TW.html
+│   │   │   ├── clock.html
+│   │   │   ├── clock_de.html
+│   │   │   ├── clock_fr.html
+│   │   │   ├── clock_ja.html
+│   │   │   ├── clock_nl.html
+│   │   │   ├── clock_pt_BR.html
+│   │   │   ├── clock_ru.html
+│   │   │   ├── clock_tr.html
+│   │   │   ├── clock_zh_TW.html
+│   │   │   ├── demand
+│   │   │   │   ├── idleDelay.html
+│   │   │   │   ├── idleDelay_de.html
+│   │   │   │   ├── idleDelay_fr.html
+│   │   │   │   ├── idleDelay_ja.html
+│   │   │   │   ├── idleDelay_nl.html
+│   │   │   │   ├── idleDelay_tr.html
+│   │   │   │   ├── idleDelay_zh_TW.html
+│   │   │   │   ├── inDemandDelay.html
+│   │   │   │   ├── inDemandDelay_de.html
+│   │   │   │   ├── inDemandDelay_fr.html
+│   │   │   │   ├── inDemandDelay_ja.html
+│   │   │   │   ├── inDemandDelay_nl.html
+│   │   │   │   ├── inDemandDelay_tr.html
+│   │   │   │   └── inDemandDelay_zh_TW.html
+│   │   │   ├── description.html
+│   │   │   ├── description_de.html
+│   │   │   ├── description_fr.html
+│   │   │   ├── description_ja.html
+│   │   │   ├── description_pt_BR.html
+│   │   │   ├── description_ru.html
+│   │   │   ├── description_tr.html
+│   │   │   ├── description_zh_TW.html
+│   │   │   ├── jnlp-tunnel.html
+│   │   │   ├── jnlp-tunnel_de.html
+│   │   │   ├── jnlp-tunnel_fr.html
+│   │   │   ├── jnlp-tunnel_ja.html
+│   │   │   ├── jnlp-tunnel_zh_TW.html
+│   │   │   ├── jnlpSecurity.html
+│   │   │   ├── jnlpSecurity_de.html
+│   │   │   ├── jnlpSecurity_fr.html
+│   │   │   ├── jnlpSecurity_ja.html
+│   │   │   ├── jnlpSecurity_pt_BR.html
+│   │   │   ├── jnlpSecurity_ru.html
+│   │   │   ├── jnlpSecurity_tr.html
+│   │   │   ├── jnlpSecurity_zh_TW.html
+│   │   │   ├── numExecutors.html
+│   │   │   ├── numExecutors_de.html
+│   │   │   ├── numExecutors_fr.html
+│   │   │   ├── numExecutors_ja.html
+│   │   │   ├── numExecutors_pt_BR.html
+│   │   │   ├── numExecutors_ru.html
+│   │   │   ├── numExecutors_tr.html
+│   │   │   ├── numExecutors_zh_CN.html
+│   │   │   ├── numExecutors_zh_TW.html
+│   │   │   ├── usage.html
+│   │   │   ├── usage_de.html
+│   │   │   ├── usage_fr.html
+│   │   │   ├── usage_ja.html
+│   │   │   ├── usage_pt_BR.html
+│   │   │   ├── usage_ru.html
+│   │   │   ├── usage_tr.html
+│   │   │   ├── usage_zh_CN.html
+│   │   │   └── usage_zh_TW.html
+│   │   ├── nodeEnvironmentVariables.html
+│   │   ├── nodeEnvironmentVariables_de.html
+│   │   ├── nodeEnvironmentVariables_fr.html
+│   │   ├── nodeEnvironmentVariables_ja.html
+│   │   ├── nodeEnvironmentVariables_zh_TW.html
+│   │   ├── patternJobNamingStrategy.html
+│   │   ├── patternJobNamingStrategy_de.html
+│   │   ├── patternJobNamingStrategy_ja.html
+│   │   ├── patternJobNamingStrategy_zh_TW.html
+│   │   ├── quietPeriod.html
+│   │   ├── quietPeriod_de.html
+│   │   ├── quietPeriod_fr.html
+│   │   ├── quietPeriod_ja.html
+│   │   ├── quietPeriod_pt_BR.html
+│   │   ├── quietPeriod_ru.html
+│   │   ├── quietPeriod_tr.html
+│   │   ├── quietPeriod_zh_TW.html
+│   │   ├── systemMessage.html
+│   │   ├── systemMessage_de.html
+│   │   ├── systemMessage_fr.html
+│   │   ├── systemMessage_ja.html
+│   │   ├── systemMessage_pt_BR.html
+│   │   ├── systemMessage_ru.html
+│   │   ├── systemMessage_tr.html
+│   │   ├── systemMessage_zh_CN.html
+│   │   └── systemMessage_zh_TW.html
+│   ├── tasks
+│   │   ├── aggregate-test
+│   │   │   ├── auto-aggregate.html
+│   │   │   ├── auto-aggregate_de.html
+│   │   │   ├── auto-aggregate_fr.html
+│   │   │   ├── auto-aggregate_ja.html
+│   │   │   ├── auto-aggregate_nl.html
+│   │   │   ├── auto-aggregate_pt_BR.html
+│   │   │   ├── auto-aggregate_tr.html
+│   │   │   ├── auto-aggregate_zh_TW.html
+│   │   │   ├── help.html
+│   │   │   ├── help_de.html
+│   │   │   ├── help_fr.html
+│   │   │   ├── help_ja.html
+│   │   │   ├── help_nl.html
+│   │   │   ├── help_pt_BR.html
+│   │   │   ├── help_tr.html
+│   │   │   ├── help_zh_TW.html
+│   │   │   ├── manual-list.html
+│   │   │   ├── manual-list_de.html
+│   │   │   ├── manual-list_fr.html
+│   │   │   ├── manual-list_ja.html
+│   │   │   ├── manual-list_nl.html
+│   │   │   ├── manual-list_pt_BR.html
+│   │   │   ├── manual-list_tr.html
+│   │   │   └── manual-list_zh_TW.html
+│   │   ├── fingerprint
+│   │   │   ├── keepDependencies.html
+│   │   │   ├── keepDependencies_de.html
+│   │   │   ├── keepDependencies_fr.html
+│   │   │   ├── keepDependencies_ja.html
+│   │   │   ├── keepDependencies_nl.html
+│   │   │   ├── keepDependencies_pt_BR.html
+│   │   │   ├── keepDependencies_ru.html
+│   │   │   ├── keepDependencies_tr.html
+│   │   │   └── keepDependencies_zh_TW.html
+│   │   ├── junit
+│   │   │   ├── report.html
+│   │   │   ├── report_de.html
+│   │   │   ├── report_fr.html
+│   │   │   ├── report_ja.html
+│   │   │   ├── report_nl.html
+│   │   │   ├── report_pt_BR.html
+│   │   │   ├── report_ru.html
+│   │   │   ├── report_tr.html
+│   │   │   └── report_zh_TW.html
+│   │   └── maven
+│   │       ├── properties.html
+│   │       ├── properties_de.html
+│   │       ├── properties_fr.html
+│   │       ├── properties_ja.html
+│   │       └── properties_zh_TW.html
+│   ├── tools
+│   │   ├── help-label.html
+│   │   ├── help-label_de.html
+│   │   ├── help-label_ja.html
+│   │   ├── help-label_zh_CN.html
+│   │   ├── help-label_zh_TW.html
+│   │   ├── tool-location-node-property.html
+│   │   ├── tool-location-node-property_de.html
+│   │   ├── tool-location-node-property_fr.html
+│   │   ├── tool-location-node-property_ja.html
+│   │   ├── tool-location-node-property_zh_CN.html
+│   │   └── tool-location-node-property_zh_TW.html
+│   ├── user
+│   │   ├── description.html
+│   │   ├── description_de.html
+│   │   ├── description_fr.html
+│   │   ├── description_ja.html
+│   │   ├── description_nl.html
+│   │   ├── description_pt_BR.html
+│   │   ├── description_ru.html
+│   │   ├── description_tr.html
+│   │   ├── description_zh_TW.html
+│   │   ├── fullName.html
+│   │   ├── fullName_de.html
+│   │   ├── fullName_fr.html
+│   │   ├── fullName_ja.html
+│   │   ├── fullName_nl.html
+│   │   ├── fullName_pt_BR.html
+│   │   ├── fullName_ru.html
+│   │   ├── fullName_tr.html
+│   │   └── fullName_zh_TW.html
+│   └── view-config
+│       ├── description.html
+│       ├── description_de.html
+│       ├── description_fr.html
+│       ├── description_ja.html
+│       ├── description_nl.html
+│       ├── description_pt_BR.html
+│       ├── description_ru.html
+│       ├── description_tr.html
+│       ├── description_zh_TW.html
+│       ├── filter-executors.html
+│       ├── filter-executors_de.html
+│       ├── filter-executors_ja.html
+│       ├── filter-executors_zh_TW.html
+│       ├── filter-queue.html
+│       ├── filter-queue_de.html
+│       ├── filter-queue_ja.html
+│       ├── filter-queue_zh_TW.html
+│       ├── includeregex.html
+│       ├── includeregex_de.html
+│       ├── includeregex_fr.html
+│       ├── includeregex_ja.html
+│       ├── includeregex_nl.html
+│       ├── includeregex_pt_BR.html
+│       ├── includeregex_ru.html
+│       ├── includeregex_tr.html
+│       ├── includeregex_zh_TW.html
+│       ├── statusFilter.html
+│       ├── statusFilter_ja.html
+│       └── statusFilter_zh_TW.html
+├── images
+│   ├── 16x16
+│   │   ├── aborted.gif
+│   │   ├── aborted.png
+│   │   ├── aborted_anime.gif
+│   │   ├── accept.png
+│   │   ├── attribute.png
+│   │   ├── blue.gif
+│   │   ├── blue.png
+│   │   ├── blue_anime.gif
+│   │   ├── clock.gif
+│   │   ├── clock.png
+│   │   ├── clock_anime.gif
+│   │   ├── collapse.png
+│   │   ├── computer-flash.gif
+│   │   ├── computer-x.gif
+│   │   ├── computer-x.png
+│   │   ├── computer.gif
+│   │   ├── computer.png
+│   │   ├── disabled.gif
+│   │   ├── disabled.png
+│   │   ├── disabled_anime.gif
+│   │   ├── document_add.gif
+│   │   ├── document_add.png
+│   │   ├── document_delete.gif
+│   │   ├── document_delete.png
+│   │   ├── document_edit.gif
+│   │   ├── document_edit.png
+│   │   ├── edit-delete.gif
+│   │   ├── edit-delete.png
+│   │   ├── edit-select-all.gif
+│   │   ├── edit-select-all.png
+│   │   ├── empty.gif
+│   │   ├── empty.png
+│   │   ├── error.gif
+│   │   ├── error.png
+│   │   ├── expand.png
+│   │   ├── fingerprint.gif
+│   │   ├── fingerprint.png
+│   │   ├── folder-error.gif
+│   │   ├── folder-error.png
+│   │   ├── folder-open.gif
+│   │   ├── folder-open.png
+│   │   ├── folder.gif
+│   │   ├── folder.png
+│   │   ├── gear2.gif
+│   │   ├── gear2.png
+│   │   ├── go-next.gif
+│   │   ├── go-next.png
+│   │   ├── green.gif
+│   │   ├── green_anime.gif
+│   │   ├── grey.gif
+│   │   ├── grey.png
+│   │   ├── grey_anime.gif
+│   │   ├── health-00to19.gif
+│   │   ├── health-00to19.png
+│   │   ├── health-20to39.gif
+│   │   ├── health-20to39.png
+│   │   ├── health-40to59.gif
+│   │   ├── health-40to59.png
+│   │   ├── health-60to79.gif
+│   │   ├── health-60to79.png
+│   │   ├── health-80plus.gif
+│   │   ├── health-80plus.png
+│   │   ├── help.gif
+│   │   ├── help.png
+│   │   ├── hourglass.gif
+│   │   ├── hourglass.png
+│   │   ├── lock.gif
+│   │   ├── lock.png
+│   │   ├── nobuilt.gif
+│   │   ├── nobuilt.png
+│   │   ├── nobuilt_anime.gif
+│   │   ├── notepad.gif
+│   │   ├── notepad.png
+│   │   ├── orange-square.png
+│   │   ├── package.gif
+│   │   ├── package.png
+│   │   ├── person.gif
+│   │   ├── person.png
+│   │   ├── plugin.gif
+│   │   ├── plugin.png
+│   │   ├── red.gif
+│   │   ├── red.png
+│   │   ├── red_anime.gif
+│   │   ├── redo.gif
+│   │   ├── redo.png
+│   │   ├── save.gif
+│   │   ├── save.png
+│   │   ├── search.gif
+│   │   ├── search.png
+│   │   ├── secure.png
+│   │   ├── setting.png
+│   │   ├── star-gold.gif
+│   │   ├── star-gold.png
+│   │   ├── star.gif
+│   │   ├── star.png
+│   │   ├── stop.gif
+│   │   ├── stop.png
+│   │   ├── terminal.gif
+│   │   ├── terminal.png
+│   │   ├── text-error.gif
+│   │   ├── text-error.png
+│   │   ├── text.gif
+│   │   ├── text.png
+│   │   ├── user.gif
+│   │   ├── user.png
+│   │   ├── warning.gif
+│   │   ├── warning.png
+│   │   ├── yellow.gif
+│   │   ├── yellow.png
+│   │   └── yellow_anime.gif
+│   ├── 24x24
+│   │   ├── aborted.gif
+│   │   ├── aborted.png
+│   │   ├── aborted_anime.gif
+│   │   ├── accept.png
+│   │   ├── attribute.png
+│   │   ├── blue.gif
+│   │   ├── blue.png
+│   │   ├── blue_anime.gif
+│   │   ├── clipboard.gif
+│   │   ├── clipboard.png
+│   │   ├── clock.gif
+│   │   ├── clock.png
+│   │   ├── clock_anime.gif
+│   │   ├── computer-flash.gif
+│   │   ├── computer-x.gif
+│   │   ├── computer-x.png
+│   │   ├── computer.gif
+│   │   ├── computer.png
+│   │   ├── delete-document.gif
+│   │   ├── delete-document.png
+│   │   ├── disabled.gif
+│   │   ├── disabled.png
+│   │   ├── disabled_anime.gif
+│   │   ├── document-properties.gif
+│   │   ├── document-properties.png
+│   │   ├── document.gif
+│   │   ├── document.png
+│   │   ├── edit-delete.gif
+│   │   ├── edit-delete.png
+│   │   ├── empty.gif
+│   │   ├── empty.png
+│   │   ├── fingerprint.gif
+│   │   ├── fingerprint.png
+│   │   ├── folder-delete.gif
+│   │   ├── folder-delete.png
+│   │   ├── folder.gif
+│   │   ├── folder.png
+│   │   ├── gear.gif
+│   │   ├── gear.png
+│   │   ├── gear2.gif
+│   │   ├── gear2.png
+│   │   ├── graph.gif
+│   │   ├── graph.png
+│   │   ├── green.gif
+│   │   ├── green_anime.gif
+│   │   ├── grey.gif
+│   │   ├── grey.png
+│   │   ├── grey_anime.gif
+│   │   ├── health-00to19.gif
+│   │   ├── health-00to19.png
+│   │   ├── health-20to39.gif
+│   │   ├── health-20to39.png
+│   │   ├── health-40to59.gif
+│   │   ├── health-40to59.png
+│   │   ├── health-60to79.gif
+│   │   ├── health-60to79.png
+│   │   ├── health-80plus.gif
+│   │   ├── health-80plus.png
+│   │   ├── help.gif
+│   │   ├── help.png
+│   │   ├── installer.gif
+│   │   ├── installer.png
+│   │   ├── lock.png
+│   │   ├── monitor.gif
+│   │   ├── monitor.png
+│   │   ├── new-computer.gif
+│   │   ├── new-computer.png
+│   │   ├── new-document.gif
+│   │   ├── new-document.png
+│   │   ├── new-package.gif
+│   │   ├── new-package.png
+│   │   ├── new-user.gif
+│   │   ├── new-user.png
+│   │   ├── next.gif
+│   │   ├── next.png
+│   │   ├── nobuilt.gif
+│   │   ├── nobuilt.png
+│   │   ├── nobuilt_anime.gif
+│   │   ├── notepad.gif
+│   │   ├── notepad.png
+│   │   ├── orange-square.gif
+│   │   ├── orange-square.png
+│   │   ├── package.gif
+│   │   ├── package.png
+│   │   ├── plugin.png
+│   │   ├── previous.gif
+│   │   ├── previous.png
+│   │   ├── red.gif
+│   │   ├── red.png
+│   │   ├── red_anime.gif
+│   │   ├── redo.gif
+│   │   ├── redo.png
+│   │   ├── refresh.gif
+│   │   ├── refresh.png
+│   │   ├── save.gif
+│   │   ├── save.png
+│   │   ├── search.gif
+│   │   ├── search.png
+│   │   ├── secure.png
+│   │   ├── setting.gif
+│   │   ├── setting.png
+│   │   ├── star-gold.gif
+│   │   ├── star-gold.png
+│   │   ├── star.gif
+│   │   ├── star.png
+│   │   ├── terminal.gif
+│   │   ├── terminal.png
+│   │   ├── up.gif
+│   │   ├── up.png
+│   │   ├── user.gif
+│   │   ├── user.png
+│   │   ├── yellow.gif
+│   │   ├── yellow.png
+│   │   └── yellow_anime.gif
+│   ├── 32x32
+│   │   ├── aborted.gif
+│   │   ├── aborted.png
+│   │   ├── aborted_anime.gif
+│   │   ├── accept.png
+│   │   ├── attribute.png
+│   │   ├── blue.gif
+│   │   ├── blue.png
+│   │   ├── blue_anime.gif
+│   │   ├── clipboard.gif
+│   │   ├── clipboard.png
+│   │   ├── clock.gif
+│   │   ├── clock.png
+│   │   ├── clock_anime.gif
+│   │   ├── computer-flash.gif
+│   │   ├── computer-x.gif
+│   │   ├── computer-x.png
+│   │   ├── computer.gif
+│   │   ├── computer.png
+│   │   ├── disabled.gif
+│   │   ├── disabled.png
+│   │   ├── disabled_anime.gif
+│   │   ├── empty.gif
+│   │   ├── empty.png
+│   │   ├── error.gif
+│   │   ├── error.png
+│   │   ├── folder.gif
+│   │   ├── folder.png
+│   │   ├── gear2.png
+│   │   ├── graph.gif
+│   │   ├── graph.png
+│   │   ├── green.gif
+│   │   ├── green_anime.gif
+│   │   ├── grey.gif
+│   │   ├── grey.png
+│   │   ├── grey_anime.gif
+│   │   ├── health-00to19.gif
+│   │   ├── health-00to19.png
+│   │   ├── health-20to39.gif
+│   │   ├── health-20to39.png
+│   │   ├── health-40to59.gif
+│   │   ├── health-40to59.png
+│   │   ├── health-60to79.gif
+│   │   ├── health-60to79.png
+│   │   ├── health-80plus.gif
+│   │   ├── health-80plus.png
+│   │   ├── lock.png
+│   │   ├── nobuilt.gif
+│   │   ├── nobuilt.png
+│   │   ├── nobuilt_anime.gif
+│   │   ├── orange-square.png
+│   │   ├── package.png
+│   │   ├── plugin.gif
+│   │   ├── plugin.png
+│   │   ├── red.gif
+│   │   ├── red.png
+│   │   ├── red_anime.gif
+│   │   ├── secure.png
+│   │   ├── setting.gif
+│   │   ├── setting.png
+│   │   ├── star-gold.gif
+│   │   ├── star-gold.png
+│   │   ├── star.gif
+│   │   ├── star.png
+│   │   ├── user.gif
+│   │   ├── user.png
+│   │   ├── yellow.gif
+│   │   ├── yellow.png
+│   │   └── yellow_anime.gif
+│   ├── 48x48
+│   │   ├── aborted.gif
+│   │   ├── aborted.png
+│   │   ├── aborted_anime.gif
+│   │   ├── accept.png
+│   │   ├── attribute.png
+│   │   ├── blue.gif
+│   │   ├── blue.png
+│   │   ├── blue_anime.gif
+│   │   ├── clipboard.gif
+│   │   ├── clipboard.png
+│   │   ├── computer-flash.gif
+│   │   ├── computer-x.gif
+│   │   ├── computer-x.png
+│   │   ├── computer.gif
+│   │   ├── computer.png
+│   │   ├── disabled.gif
+│   │   ├── disabled.png
+│   │   ├── disabled_anime.gif
+│   │   ├── document.gif
+│   │   ├── document.png
+│   │   ├── empty.gif
+│   │   ├── empty.png
+│   │   ├── error.gif
+│   │   ├── error.png
+│   │   ├── fingerprint.gif
+│   │   ├── fingerprint.png
+│   │   ├── folder-delete.gif
+│   │   ├── folder-delete.png
+│   │   ├── folder.gif
+│   │   ├── folder.png
+│   │   ├── gear2.gif
+│   │   ├── gear2.png
+│   │   ├── graph.gif
+│   │   ├── graph.png
+│   │   ├── green.gif
+│   │   ├── green_anime.gif
+│   │   ├── grey.gif
+│   │   ├── grey.png
+│   │   ├── grey_anime.gif
+│   │   ├── health-00to19.gif
+│   │   ├── health-00to19.png
+│   │   ├── health-20to39.gif
+│   │   ├── health-20to39.png
+│   │   ├── health-40to59.gif
+│   │   ├── health-40to59.png
+│   │   ├── health-60to79.gif
+│   │   ├── health-60to79.png
+│   │   ├── health-80plus.gif
+│   │   ├── health-80plus.png
+│   │   ├── help.gif
+│   │   ├── help.png
+│   │   ├── installer.gif
+│   │   ├── installer.png
+│   │   ├── lock.png
+│   │   ├── monitor.gif
+│   │   ├── monitor.png
+│   │   ├── network.gif
+│   │   ├── network.png
+│   │   ├── nobuilt.gif
+│   │   ├── nobuilt.png
+│   │   ├── nobuilt_anime.gif
+│   │   ├── notepad.gif
+│   │   ├── notepad.png
+│   │   ├── orange-square.gif
+│   │   ├── orange-square.png
+│   │   ├── package.gif
+│   │   ├── package.png
+│   │   ├── plugin.gif
+│   │   ├── plugin.png
+│   │   ├── red.gif
+│   │   ├── red.png
+│   │   ├── red_anime.gif
+│   │   ├── redo.gif
+│   │   ├── redo.png
+│   │   ├── refresh.gif
+│   │   ├── refresh.png
+│   │   ├── search.gif
+│   │   ├── search.png
+│   │   ├── secure.gif
+│   │   ├── secure.png
+│   │   ├── setting.gif
+│   │   ├── setting.png
+│   │   ├── star-gold.gif
+│   │   ├── star-gold.png
+│   │   ├── star.gif
+│   │   ├── star.png
+│   │   ├── system-log-out.gif
+│   │   ├── system-log-out.png
+│   │   ├── terminal.gif
+│   │   ├── terminal.png
+│   │   ├── user.gif
+│   │   ├── user.png
+│   │   ├── warning.gif
+│   │   ├── warning.png
+│   │   ├── yellow.gif
+│   │   ├── yellow.png
+│   │   └── yellow_anime.gif
+│   ├── RRZEIconSet-License.url
+│   ├── RRZEIconSet.url
+│   ├── TangoProject-License.url
+│   ├── atom-license.txt
+│   ├── atom.gif
+│   ├── bottom-sticker-top-edge.png
+│   ├── grip.png
+│   ├── headless.png
+│   ├── jenkins-redbg.png
+│   ├── jenkins.png
+│   ├── none.gif
+│   ├── progress-unknown-red.gif
+│   ├── progress-unknown.gif
+│   ├── rage.png
+│   ├── spinner.gif
+│   ├── textarea-handle.gif
+│   ├── title.png
+│   ├── title.svg
+│   ├── title.xcf
+│   ├── top-sticker-bottom-edge.png
+│   ├── topbar.png
+│   ├── topbar.svg
+│   └── webstart.gif
+├── robots.txt
+├── scripts
+│   ├── behavior.js
+│   ├── combobox-readme.txt
+│   ├── combobox.js
+│   ├── hudson-behavior.js
+│   ├── msie.js
+│   ├── prototype.js
+│   ├── sortable.js
+│   ├── utilities.js
+│   └── yui
+│       ├── animation
+│       │   ├── animation-debug.js
+│       │   └── animation-min.js
+│       ├── assets
+│       │   └── skins
+│       │       └── sam
+│       │           ├── ajax-loader.gif
+│       │           ├── asc.gif
+│       │           ├── autocomplete.css
+│       │           ├── back-h.png
+│       │           ├── back-v.png
+│       │           ├── bar-h.png
+│       │           ├── bar-v.png
+│       │           ├── bg-h.gif
+│       │           ├── bg-v.gif
+│       │           ├── blankimage.png
+│       │           ├── button.css
+│       │           ├── calendar.css
+│       │           ├── carousel.css
+│       │           ├── check0.gif
+│       │           ├── check1.gif
+│       │           ├── check2.gif
+│       │           ├── colorpicker.css
+│       │           ├── container.css
+│       │           ├── datatable.css
+│       │           ├── desc.gif
+│       │           ├── dt-arrow-dn.png
+│       │           ├── dt-arrow-up.png
+│       │           ├── editor-knob.gif
+│       │           ├── editor-sprite-active.gif
+│       │           ├── editor-sprite.gif
+│       │           ├── editor.css
+│       │           ├── header_background.png
+│       │           ├── hue_bg.png
+│       │           ├── imagecropper.css
+│       │           ├── layout.css
+│       │           ├── layout_sprite.png
+│       │           ├── loading.gif
+│       │           ├── logger.css
+│       │           ├── menu-button-arrow-disabled.png
+│       │           ├── menu-button-arrow.png
+│       │           ├── menu.css
+│       │           ├── menubaritem_submenuindicator.png
+│       │           ├── menubaritem_submenuindicator_disabled.png
+│       │           ├── menuitem_checkbox.png
+│       │           ├── menuitem_checkbox_disabled.png
+│       │           ├── menuitem_submenuindicator.png
+│       │           ├── menuitem_submenuindicator_disabled.png
+│       │           ├── paginator.css
+│       │           ├── picker_mask.png
+│       │           ├── profilerviewer.css
+│       │           ├── progressbar.css
+│       │           ├── resize.css
+│       │           ├── simpleeditor.css
+│       │           ├── skin.css
+│       │           ├── slider.css
+│       │           ├── split-button-arrow-active.png
+│       │           ├── split-button-arrow-disabled.png
+│       │           ├── split-button-arrow-focus.png
+│       │           ├── split-button-arrow-hover.png
+│       │           ├── split-button-arrow.png
+│       │           ├── sprite.png
+│       │           ├── sprite.psd
+│       │           ├── tabview.css
+│       │           ├── treeview-loading.gif
+│       │           ├── treeview-sprite.gif
+│       │           ├── treeview.css
+│       │           ├── wait.gif
+│       │           └── yuitest.css
+│       ├── autocomplete
+│       │   ├── assets
+│       │   │   ├── autocomplete-core.css
+│       │   │   └── skins
+│       │   │       └── sam
+│       │   │           ├── autocomplete-skin.css
+│       │   │           └── autocomplete.css
+│       │   ├── autocomplete-debug.js
+│       │   └── autocomplete-min.js
+│       ├── base
+│       │   ├── base-min.css
+│       │   └── base.css
+│       ├── button
+│       │   ├── assets
+│       │   │   ├── button-core.css
+│       │   │   └── skins
+│       │   │       └── sam
+│       │   │           ├── button-skin.css
+│       │   │           ├── button.css
+│       │   │           ├── menu-button-arrow-disabled.png
+│       │   │           ├── menu-button-arrow.png
+│       │   │           ├── split-button-arrow-active.png
+│       │   │           ├── split-button-arrow-disabled.png
+│       │   │           ├── split-button-arrow-focus.png
+│       │   │           ├── split-button-arrow-hover.png
+│       │   │           └── split-button-arrow.png
+│       │   ├── button-debug.js
+│       │   └── button-min.js
+│       ├── connection
+│       │   ├── connection-debug.js
+│       │   ├── connection-min.js
+│       │   ├── connection.swf
+│       │   ├── connection_core-debug.js
+│       │   └── connection_core-min.js
+│       ├── container
+│       │   ├── assets
+│       │   │   ├── alrt16_1.gif
+│       │   │   ├── blck16_1.gif
+│       │   │   ├── close12_1.gif
+│       │   │   ├── container-core.css
+│       │   │   ├── container.css
+│       │   │   ├── hlp16_1.gif
+│       │   │   ├── info16_1.gif
+│       │   │   ├── skins
+│       │   │   │   └── sam
+│       │   │   │       ├── container-skin.css
+│       │   │   │       └── container.css
+│       │   │   ├── tip16_1.gif
+│       │   │   └── warn16_1.gif
+│       │   ├── container-debug.js
+│       │   ├── container-min.js
+│       │   ├── container_core-debug.js
+│       │   └── container_core-min.js
+│       ├── cookie
+│       │   ├── cookie-debug.js
+│       │   └── cookie-min.js
+│       ├── cutdown.sh
+│       ├── datasource
+│       │   ├── datasource-debug.js
+│       │   └── datasource-min.js
+│       ├── dom
+│       │   ├── dom-debug.js
+│       │   └── dom-min.js
+│       ├── dragdrop
+│       │   ├── dragdrop-debug.js
+│       │   └── dragdrop-min.js
+│       ├── editor
+│       │   ├── assets
+│       │   │   ├── editor-core.css
+│       │   │   ├── simpleeditor-core.css
+│       │   │   └── skins
+│       │   │       └── sam
+│       │   │           ├── blankimage.png
+│       │   │           ├── editor-knob.gif
+│       │   │           ├── editor-skin.css
+│       │   │           ├── editor-sprite-active.gif
+│       │   │           ├── editor-sprite.gif
+│       │   │           ├── editor.css
+│       │   │           ├── simpleeditor-skin.css
+│       │   │           └── simpleeditor.css
+│       │   ├── editor-debug.js
+│       │   ├── editor-min.js
+│       │   ├── simpleeditor-debug.js
+│       │   └── simpleeditor-min.js
+│       ├── element
+│       │   ├── element-debug.js
+│       │   └── element-min.js
+│       ├── event
+│       │   ├── event-debug.js
+│       │   └── event-min.js
+│       ├── fonts
+│       │   ├── fonts-min.css
+│       │   └── fonts.css
+│       ├── logger
+│       │   ├── assets
+│       │   │   ├── logger-core.css
+│       │   │   ├── logger.css
+│       │   │   └── skins
+│       │   │       └── sam
+│       │   │           ├── logger-skin.css
+│       │   │           └── logger.css
+│       │   ├── logger-debug.js
+│       │   └── logger-min.js
+│       ├── menu
+│       │   ├── assets
+│       │   │   ├── menu-core.css
+│       │   │   ├── menu.css
+│       │   │   ├── menu_down_arrow.png
+│       │   │   ├── menu_down_arrow_disabled.png
+│       │   │   ├── menu_up_arrow.png
+│       │   │   ├── menu_up_arrow_disabled.png
+│       │   │   ├── menubaritem_submenuindicator.png
+│       │   │   ├── menubaritem_submenuindicator_disabled.png
+│       │   │   ├── menubaritem_submenuindicator_selected.png
+│       │   │   ├── menuitem_checkbox.png
+│       │   │   ├── menuitem_checkbox_disabled.png
+│       │   │   ├── menuitem_checkbox_selected.png
+│       │   │   ├── menuitem_submenuindicator.png
+│       │   │   ├── menuitem_submenuindicator_disabled.png
+│       │   │   ├── menuitem_submenuindicator_selected.png
+│       │   │   └── skins
+│       │   │       └── sam
+│       │   │           ├── menu-skin.css
+│       │   │           ├── menu.css
+│       │   │           ├── menubaritem_submenuindicator.png
+│       │   │           ├── menubaritem_submenuindicator_disabled.png
+│       │   │           ├── menuitem_checkbox.png
+│       │   │           ├── menuitem_checkbox_disabled.png
+│       │   │           ├── menuitem_submenuindicator.png
+│       │   │           └── menuitem_submenuindicator_disabled.png
+│       │   ├── menu-debug.js
+│       │   └── menu-min.js
+│       ├── resize
+│       │   ├── assets
+│       │   │   ├── resize-core.css
+│       │   │   └── skins
+│       │   │       └── sam
+│       │   │           ├── layout_sprite.png
+│       │   │           ├── resize-skin.css
+│       │   │           └── resize.css
+│       │   ├── resize-debug.js
+│       │   └── resize-min.js
+│       ├── storage
+│       │   ├── storage-debug.js
+│       │   └── storage-min.js
+│       ├── tabview
+│       │   ├── assets
+│       │   │   ├── border_tabs.css
+│       │   │   ├── loading.gif
+│       │   │   ├── skin-sam.css
+│       │   │   ├── skins
+│       │   │   │   └── sam
+│       │   │   │       ├── tabview-skin.css
+│       │   │   │       └── tabview.css
+│       │   │   ├── tabview-core.css
+│       │   │   └── tabview.css
+│       │   ├── tabview-debug.js
+│       │   └── tabview-min.js
+│       ├── treeview
+│       │   ├── assets
+│       │   │   ├── skins
+│       │   │   │   └── sam
+│       │   │   │       ├── check0.gif
+│       │   │   │       ├── check1.gif
+│       │   │   │       ├── check2.gif
+│       │   │   │       ├── loading.gif
+│       │   │   │       ├── treeview-loading.gif
+│       │   │   │       ├── treeview-skin.css
+│       │   │   │       ├── treeview-sprite.gif
+│       │   │   │       └── treeview.css
+│       │   │   └── treeview-core.css
+│       │   ├── treeview-debug.js
+│       │   └── treeview-min.js
+│       └── yahoo
+│           ├── yahoo-debug.js
+│           └── yahoo-min.js
+└── winstone.jar
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> 次やりたいこと</h2>
+<div class="outline-text-2" id="text-7">
+<ul class="org-ul">
+<li>Jenkins Master-Slave構成の構築
+</li>
+<li>音声キャストサービスとの連携（喋るようにする）
+</li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[検証]Weblogicのインスツルメンテーション機能]]></title>
@@ -2923,232 +5051,6 @@ leafpad: ディスプレイをオープンできません:
 <li><a href="http://www.ibm.com/developerworks/jp/linux/tutorials/l-basics/">Linux ビギナーのための基本タスク</a>
 </li>
 </ul>
-</div>
-</div>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[検証]ADF印刷プレビュー機能]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-06-18-%5B%E6%A4%9C%E8%A8%BC%5Dadf%E5%8D%B0%E5%88%B7%E3%83%97%E3%83%AC%E3%83%93%E3%83%A5%E3%83%BC.html"/>
-    <updated>2014-06-18T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[検証]adf印刷プレビュー</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 検証内容</a></li>
-<li><a href="#sec-2">2. af:showPrintablePageBehaviorタグの使い方</a></li>
-<li><a href="#sec-3">3. 印刷内容の制御</a></li>
-<li><a href="#sec-4">4. IE印刷プレビュー画面を出す</a></li>
-<li><a href="#sec-5">5. 参考</a></li>
-</ul>
-</div>
-</div>
-<p>
-Oracle ADFの印刷機能にたずさわる機会がありましたので、一部調査した内容を
-ここでメモしておきます。サンプルコードは <a href="https://github.com/luozengbin/ADFSamples/tree/master/PrintPreview">Github</a> に登録しています。
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 検証内容</h2>
-<div class="outline-text-2" id="text-1">
-<ol class="org-ol">
-<li><code>af:showPrintablePageBehavior</code> タグの使い方
-</li>
-<li>印刷内容の制御
-</li>
-<li>IE印刷プレビュー画面を出す
-</li>
-</ol>
-
-<p>
-<!-- more -->
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> af:showPrintablePageBehaviorタグの使い方</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-<code>af:showPrintablePageBehavior</code> タグを画面に任意のcommandコンポネントの子コンポネント
-として入れれば、そのcommandコンポネントがトリガーされると印刷プレビュー画面が新規ブラ
-ウザ画面にて表示される。
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> 印刷内容の制御</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-基本的に全画面(同じjspx)の内容が印刷プレビュー画面に表示される。一部コンポネント
-(例： <code>af:menuBar</code> ) は表示しない仕様となっている。またレイアウトコンテナに
-<code>af:panelSplitter</code> や <code>af:panelAccordion</code> が使用された場合、アクティビティとなってい
-るレイアウトアイテムしかが印刷画面に表示しない。 <code>af:showPrintablePageBehavior</code> タグ
-の配置場所にもよります。
-</p>
-
-<p>
-また、 <code>f:view</code> タグの <code>beforePhase</code> リスナーにて印刷プレビュー画面に表示する内容を
-カスタマイズ(非表示制御)することができる。
-</p>
-
-<p>
-サンプル <code>DataView.jspx</code> の定義
-</p>
-
-<p>
-<div><script src='https://gist.github.com/0094c8013bc3eed1c962.js'></script>
-<noscript><pre><code>&lt;?xml version='1.0' encoding='UTF-8'?&gt;
-&lt;jsp:root xmlns:jsp=&quot;http://java.sun.com/JSP/Page&quot; version=&quot;2.1&quot;
-          xmlns:f=&quot;http://java.sun.com/jsf/core&quot;
-          xmlns:h=&quot;http://java.sun.com/jsf/html&quot;
-          xmlns:af=&quot;http://xmlns.oracle.com/adf/faces/rich&quot;&gt;
-  &lt;jsp:directive.page contentType=&quot;text/html;charset=UTF-8&quot;/&gt;
-
-  &lt;!--★beforePhaseリスナーの登録  --&gt;
-  &lt;f:view beforePhase=&quot;#{pageFlowScope.DataViewBean.beforePhaseMethod}&quot;&gt;
-    &lt;af:document id=&quot;d1&quot;&gt;
-      &lt;af:form id=&quot;f1&quot;&gt;
-        &lt;af:resource type=&quot;javascript&quot; source=&quot;/js/CustomPrint.js&quot;/&gt;
-        &lt;af:panelStretchLayout id=&quot;psl1&quot;&gt;
-          &lt;f:facet name=&quot;bottom&quot;&gt;
-            &lt;af:panelGroupLayout layout=&quot;scroll&quot;
-                                 xmlns:af=&quot;http://xmlns.oracle.com/adf/faces/rich&quot;
-                                 id=&quot;pgl2&quot;&gt;
-              &lt;af:panelGroupLayout id=&quot;pgl3&quot;&gt;
-                &lt;!--  ★印刷ボタンの定義 --&gt;
-                &lt;af:commandButton text=&quot;印刷&quot; id=&quot;cb1&quot;
-                                  inlineStyle=&quot;font-size:large;&quot;&gt;
-                  &lt;af:showPrintablePageBehavior/&gt;
-                &lt;/af:commandButton&gt;
-              &lt;/af:panelGroupLayout&gt;
-            &lt;/af:panelGroupLayout&gt;
-          &lt;/f:facet&gt;
-          &lt;f:facet name=&quot;center&quot;&gt;
-            &lt;af:table var=&quot;row&quot; rowBandingInterval=&quot;0&quot; id=&quot;t1&quot;
-                      value=&quot;#{pageFlowScope.DataViewBean.dataList}&quot;&gt;
-              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列1&quot; id=&quot;c2&quot; width=&quot;200&quot;&gt;
-                &lt;af:outputText value=&quot;#{row.col1}&quot; id=&quot;ot5&quot;/&gt;
-              &lt;/af:column&gt;
-              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列2&quot; id=&quot;c5&quot; width=&quot;200&quot;&gt;
-                &lt;af:outputText value=&quot;#{row.col2}&quot; id=&quot;ot1&quot;/&gt;
-              &lt;/af:column&gt;
-              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列3&quot; id=&quot;c1&quot; width=&quot;200&quot;&gt;
-                &lt;af:outputText value=&quot;#{row.col3}&quot; id=&quot;ot3&quot;/&gt;
-              &lt;/af:column&gt;
-              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列4&quot; id=&quot;c3&quot; width=&quot;200&quot;&gt;
-                &lt;af:outputText value=&quot;#{row.col4}&quot; id=&quot;ot2&quot;/&gt;
-              &lt;/af:column&gt;
-            &lt;/af:table&gt;
-          &lt;/f:facet&gt;
-          &lt;f:facet name=&quot;start&quot;/&gt;
-          &lt;f:facet name=&quot;end&quot;/&gt;
-          &lt;f:facet name=&quot;top&quot;&gt;
-            &lt;af:panelGroupLayout id=&quot;pgl1&quot; layout=&quot;horizontal&quot;&gt;
-              &lt;af:outputLabel value=&quot;印刷プレビューテスト&quot; id=&quot;ol1&quot; inlineStyle=&quot;font-size:xx-large;&quot;/&gt;
-
-              &lt;!-- ★以降は印刷しないように --&gt;
-              &lt;af:menuBar id=&quot;mb1&quot;&gt;
-                &lt;af:menu text=&quot;menu 1&quot; id=&quot;m1&quot;/&gt;
-                &lt;af:menu text=&quot;menu 2&quot; id=&quot;m2&quot;/&gt;
-                &lt;af:menu text=&quot;menu 3&quot; id=&quot;m3&quot;/&gt;
-              &lt;/af:menuBar&gt;
-              &lt;af:inputText label=&quot;Label 1&quot; id=&quot;it1&quot;/&gt;
-              &lt;af:inputText label=&quot;Label 2&quot; id=&quot;it2&quot;/&gt;
-            &lt;/af:panelGroupLayout&gt;
-          &lt;/f:facet&gt;
-        &lt;/af:panelStretchLayout&gt;
-      &lt;/af:form&gt;
-    &lt;/af:document&gt;
-  &lt;/f:view&gt;
-&lt;/jsp:root&gt;</code></pre></noscript></div>
-
-</p>
-
-<p>
-サンプル <code>beforePhase</code> リスナー
-</p>
-<div class="org-src-container">
-
-<pre class="src src-java"><span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">beforePhaseMethod</span>(<span style="color: #34cae2;">PhaseEvent</span> <span style="color: #dbdb95;">phaseEvent</span>) {
-
-    System.out.println(<span style="color: #e67128;">"----------   phaseEvent   -------------"</span>);
-    System.out.println(<span style="color: #e67128;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
-
-    <span style="color: #74af68;">//</span><span style="color: #74af68;">only perform action if RENDER_RESPONSE phase is reached</span>
-    <span style="color: #ffad29; font-weight: bold;">if</span> (phaseEvent.getPhaseId() == <span style="color: #008b8b;">PhaseId</span>.RENDER_RESPONSE) {
-
-        <span style="color: #34cae2;">FacesContext</span> <span style="color: #dbdb95;">fctx</span> = FacesContext.getCurrentInstance();
-        <span style="color: #74af68;">//</span><span style="color: #74af68;">check internal request parameter</span>
-        <span style="color: #34cae2;">Map</span> <span style="color: #dbdb95;">requestMap</span> = fctx.getExternalContext().getRequestMap();
-
-        <span style="color: #74af68;">// </span><span style="color: #74af68;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
-        <span style="color: #34cae2;">Object</span> <span style="color: #dbdb95;">showPrintableBehavior</span> = requestMap.get(<span style="color: #e67128;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
-        <span style="color: #ffad29; font-weight: bold;">if</span> (showPrintableBehavior != <span style="color: #008b8b;">null</span>) {
-            <span style="color: #74af68;">// </span><span style="color: #74af68;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
-            <span style="color: #ffad29; font-weight: bold;">if</span> (<span style="color: #008b8b;">Boolean</span>.TRUE == showPrintableBehavior) {
-                <span style="color: #74af68;">// </span><span style="color: #74af68;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
-                UiComponentControlUtil.setUnRendered(<span style="color: #e67128;">"mb1"</span>, <span style="color: #e67128;">"it1"</span>, <span style="color: #e67128;">"it2"</span>);
-                UiComponentControlUtil.callbackJavascript(<span style="color: #e67128;">"customPrint();"</span>);
-            }
-        }
-    }
-}
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> IE印刷プレビュー画面を出す</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-いい方法が見つからない、とりあえずWebBrowserというIEに含まれたActiveXコンポーネントを
-利用します。
-</p>
-
-<div class="org-src-container">
-
-<pre class="src src-js"><span style="color: #ffad29; font-weight: bold;">function</span> <span style="color: #00ede1; font-weight: bold;">customPrint</span>() {
-  <span style="color: #ffad29; font-weight: bold;">if</span> (getBrowser().indexOf(<span style="color: #e67128;">'ie8'</span>) !== -1 ) {
-    <span style="color: #ffad29; font-weight: bold;">if</span>(window.ActiveXObject == <span style="color: #008b8b;">null</span> || document.body.insertAdjacentHTML == <span style="color: #008b8b;">null</span>) {
-      <span style="color: #ffad29; font-weight: bold;">return</span>;
-    }
-    <span style="color: #ffad29; font-weight: bold;">var</span> <span style="color: #dbdb95;">sWebBrowserCode</span> = <span style="color: #e67128;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
-    document.body.insertAdjacentHTML(<span style="color: #e67128;">'beforeEnd'</span>, sWebBrowserCode);
-    <span style="color: #ffad29; font-weight: bold;">var</span> <span style="color: #dbdb95;">objWebBrowser</span> = document.body.lastChild;
-    <span style="color: #ffad29; font-weight: bold;">if</span>(objWebBrowser == <span style="color: #008b8b;">null</span>) <span style="color: #ffad29; font-weight: bold;">return</span>;
-    objWebBrowser.ExecWB(7, 1);
-    document.body.removeChild(objWebBrowser);
-  } <span style="color: #ffad29; font-weight: bold;">else</span> {
-    window.print();
-  }
-
-  <span style="color: #74af68;">// </span><span style="color: #74af68;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
-  window.onfocus = <span style="color: #ffad29; font-weight: bold;">function</span>(){
-   (window.open(<span style="color: #e67128;">''</span>,<span style="color: #e67128;">'_self'</span>).opener=window).close(); 
-  };
-}
-</pre>
-</div>
-
-<p>
-ブラウザのセキュリティ設定に注意が必要です。
-</p>
-</div>
-</div>
-
-
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> 参考</h2>
-<div class="outline-text-2" id="text-5">
-<p>
-Oracle Fusion Middleware Tag Reference for Oracle ADF Faces 11g Release 1 (11.1.1.5.0)
-<a href="http://docs.oracle.com/cd/E21764_01/apirefs.1111/e12419/tagdoc/af_showPrintablePageBehavior.html">http://docs.oracle.com/cd/E21764_01/apirefs.1111/e12419/tagdoc/af_showPrintablePageBehavior.html</a>
-</p>
 </div>
 </div>
 ]]></content>

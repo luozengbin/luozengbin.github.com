@@ -1,0 +1,1197 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Vpn - Akira's Tech Notes</title>
+  <meta name="author" content="luozengbin">
+
+  
+  <meta name="description" content="Table of Contents 1. 素材 1.1. hakusai
+1.2. amazon
+1.3. pipi
+1.4. nwtwork
+1.5. ifconfig
+1.6. iptables
+1.7. route
+1.8. ping 2. 参考リンク 1 素材 1.1 hakusai &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://luozengbin.github.io/blog/draft/vpn.html">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Akira's Tech Notes" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Akira's Tech Notes</a></h1>
+  
+    <h2>Java, Linux, Emacs</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:luozengbin.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Vpn</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+
+
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 素材</a>
+<ul>
+<li><a href="#sec-1-1">1.1. hakusai</a></li>
+<li><a href="#sec-1-2">1.2. amazon</a></li>
+<li><a href="#sec-1-3">1.3. pipi</a></li>
+<li><a href="#sec-1-4">1.4. nwtwork</a></li>
+<li><a href="#sec-1-5">1.5. ifconfig</a></li>
+<li><a href="#sec-1-6">1.6. iptables</a></li>
+<li><a href="#sec-1-7">1.7. route</a></li>
+<li><a href="#sec-1-8">1.8. ping</a></li>
+</ul>
+</li>
+<li><a href="#sec-2">2. 参考リンク</a></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 素材</h2>
+<div class="outline-text-2" id="text-1">
+</div><div id="outline-container-sec-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> hakusai</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+~/usr/bin/ssh-vpn
+</p>
+<pre class="example">
+#!/bin/sh
+
+## start Tunnel hakusai &lt;--&gt; jizai-ec2
+sudo ssh jizai-vpn &amp;
+
+## start Tunnel jizai-ec2 &lt;--&gt; pipi
+
+expect -c "
+set timeout 20
+spawn ssh jizai-ec2
+expect \"$ \" ; send \"sudo ssh pipi-vpn &amp;\r\"
+expect \"$ \" ; send \"exit\r\"
+"
+</pre>
+
+<p>
+<i>root</i>.ssh/config
+</p>
+<pre class="example">
+ServerAliveInterval 60
+ServerAliveCountMax 3
+
+Host     jizai-vpn
+  HostName        ec2.jizai.mydns.jp
+  User            root
+  IdentityFile    /home/akira/.ssh/pems/jizai-ec2.pem
+  LogLevel        DEBUG
+  Tunnel          point-to-point
+  TunnelDevice    0:0
+  RequestTTY      no
+  PermitLocalCommand yes
+  LocalCommand    /root/.ssh/00_setup_tun0_client
+</pre>
+
+<p>
+<i>root</i>.ssh/00<sub>setup</sub><sub>tun0</sub><sub>client</sub>
+</p>
+<pre class="example">
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> amazon</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+-&#x2014;&#x2014;&#x2014;&#x2014;&#x2014; tun0&#x2014;&#x2014;&#x2014;&#x2014;&#x2014;&#x2014;
+</p>
+
+<p>
+/etc/ssh/sshd<sub>config</sub>
+</p>
+<pre class="example">
+PermitRootLogin without-password
+PermitTunnel yes
+</pre>
+
+<p>
+<i>root</i>.ssh/authorized<sub>keys</sub>
+</p>
+<pre class="example">
+no-port-forwarding,no-agent-forwarding,no-X11-forwarding,command="/root/.ssh/00_setup_tun0" ssh-rsa xxxxxxxx
+</pre>
+
+<p>
+<i>root</i>.ssh/00<sub>setup</sub><sub>tun0</sub>
+</p>
+<pre class="example">
+#!/bin/sh
+
+## vpnトンネル用の仮想IP指定(クライアント側)
+ifconfig tun0 192.168.3.2 pointopoint 192.168.3.1
+
+## pipi側への転送を許可する
+sysctl -w net.ipv4.ip_forward=1
+iptables -D FORWARD -i tun0 -p tcp -d 192.168.100.0/24 -j ACCEPT
+iptables -A FORWARD -i tun0 -p tcp -d 192.168.100.0/24 -j ACCEPT
+
+## pipi へルーティング時にMASQUERADEを行う
+iptables -t nat -D POSTROUTING -o tun1 -s 192.168.3.0/24 -j MASQUERADE
+iptables -t nat -A POSTROUTING -o tun1 -s 192.168.3.0/24 -j MASQUERADE
+</pre>
+
+<p>
+-&#x2014;&#x2014;&#x2014;&#x2014;&#x2014; tun1 &#x2014;&#x2014;&#x2014;&#x2014;&#x2014;&#x2014;
+<i>root</i>.ssh/config
+</p>
+<pre class="example">
+Host    pipi-vpn
+  HostName        jizai.mydns.jp
+  User            root
+  Port            50089
+  LogLevel        DEBUG
+  Tunnel          point-to-point
+  TunnelDevice    1:1
+  RequestTTY      no
+  PermitLocalCommand yes
+  LocalCommand    /root/.ssh/00_setup_tun1_client
+</pre>
+
+<p>
+<i>root</i>.ssh/00<sub>setup</sub><sub>tun1</sub><sub>client</sub>
+</p>
+<pre class="example">
+#!/bin/sh
+
+## vpnトンネル用の仮想IP指定(クライアント側)
+ifconfig tun1 192.168.4.1 pointopoint 192.168.4.2
+
+## VPN対向のローカルネットワークと通信するためのルーティングテーブル定義
+ip route add 192.168.100.0/24 via 192.168.4.2 dev tun1
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> pipi</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+/etc/ssh/sshd<sub>config</sub>
+</p>
+<pre class="example">
+PermitRootLogin forced-commands-only
+PermitTunnel yes
+</pre>
+
+<p>
+<i>root</i>.ssh/authorized<sub>keys</sub>
+</p>
+<pre class="example">
+command="/root/.ssh/00_setup_tun1" ssh-rsa xxxxxxxxxxxx
+</pre>
+
+<p>
+<i>root</i>.ssh/00<sub>setup</sub><sub>tun1</sub>
+</p>
+<pre class="example">
+#!/bin/sh
+
+## vpnトンネル用の仮想IP指定(サーバ側)
+ifconfig tun1 192.168.4.2 pointopoint 192.168.4.1
+
+## ローカルサブネットへルーティング時のDNAT設定
+sysctl -w net.ipv4.ip_forward=1
+iptables -t nat -D POSTROUTING -o eth0 -s 192.168.4.0/24 -j MASQUERADE
+iptables -t nat -A POSTROUTING -o eth0 -s 192.168.4.0/24 -j MASQUERADE
+</pre>
+</div>
+</div>
+<div id="outline-container-sec-1-4" class="outline-3">
+<h3 id="sec-1-4"><span class="section-number-3">1.4</span> nwtwork</h3>
+<div class="outline-text-3" id="text-1-4">
+<pre class="example">
+           インターネット
+                  │ gw [192.168.0.254]
+                  │
+──────┬──┴────────── 192.168.0.0/24
+            │
+            │ eth1 [192.168.0.1]
+        ┌─┴─┐
+        │  gw  │
+        └─┬─┘
+            │ eth0 [10.0.0.1]
+            │
+──────┴──┬────────── 10.0.0.0/24
+                  │
+              　  │ eth0 [10.0.0.2]
+              ┌─┴─┐
+              │  w1  │
+              └───┘
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-5" class="outline-3">
+<h3 id="sec-1-5"><span class="section-number-3">1.5</span> ifconfig</h3>
+<div class="outline-text-3" id="text-1-5">
+<p>
+<span class="underline">pipi ifconfig</span>
+</p>
+<pre class="example">
+eth0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
+        inet 192.168.100.4  netmask 255.255.255.0  broadcast 192.168.100.255
+        ether b8:27:eb:0d:8d:3a  txqueuelen 1000  (Ethernet)
+        RX packets 3163221  bytes 26468658 (25.2 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 213229  bytes 170231964 (162.3 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73&lt;UP,LOOPBACK,RUNNING&gt;  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        loop  txqueuelen 0  (Local Loopback)
+        RX packets 389  bytes 64372 (62.8 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 389  bytes 64372 (62.8 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+tun1: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500
+        inet 192.168.4.2  netmask 255.255.255.255  destination 192.168.4.1
+        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
+        RX packets 8203  bytes 466324 (455.3 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 8324  bytes 2054668 (1.9 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+</pre>
+
+<p>
+<span class="underline">amazon ifconfig</span>
+</p>
+
+<pre class="example">
+eth0      Link encap:Ethernet  HWaddr 0a:c3:1c:e4:75:eb  
+          inet addr:172.31.20.68  Bcast:172.31.31.255  Mask:255.255.240.0
+          inet6 addr: fe80::8c3:1cff:fee4:75eb/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:145455 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:77470 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:146206935 (146.2 MB)  TX bytes:10614504 (10.6 MB)
+
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:731301 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:731301 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:276880969 (276.8 MB)  TX bytes:276880969 (276.8 MB)
+
+tun0      Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  
+          inet addr:192.168.3.2  P-t-P:192.168.3.1  Mask:255.255.255.255
+          UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1500  Metric:1
+          RX packets:8208 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:8334 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:500 
+          RX bytes:466584 (466.5 KB)  TX bytes:2057320 (2.0 MB)
+
+tun1      Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  
+          inet addr:192.168.4.1  P-t-P:192.168.4.2  Mask:255.255.255.255
+          UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1500  Metric:1
+          RX packets:8334 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:8208 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:500 
+          RX bytes:2057320 (2.0 MB)  TX bytes:466584 (466.5 KB)
+</pre>
+
+<p>
+<span class="underline">hakusai ifconfig</span>
+</p>
+
+<pre class="example">
+eth0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
+        inet 10.81.94.24  netmask 255.255.255.0  broadcast 10.81.94.255
+        inet6 fe80::8e89:a5ff:fe45:1def  prefixlen 64  scopeid 0x20&lt;link&gt;
+        ether 8c:89:a5:45:1d:ef  txqueuelen 1000  (Ethernet)
+        RX packets 1345747  bytes 769142460 (733.5 MiB)
+        RX errors 0  dropped 3688  overruns 0  frame 0
+        TX packets 915738  bytes 200630064 (191.3 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+        device interrupt 20  memory 0xfe400000-fe420000  
+
+lo: flags=73&lt;UP,LOOPBACK,RUNNING&gt;  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10&lt;host&gt;
+        loop  txqueuelen 0  (Local Loopback)
+        RX packets 120279  bytes 37190232 (35.4 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 120279  bytes 37190232 (35.4 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+tun0: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500
+        inet 192.168.3.1  netmask 255.255.255.255  destination 192.168.3.2
+        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
+        RX packets 8335  bytes 2057408 (1.9 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 8210  bytes 466740 (455.8 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-6" class="outline-3">
+<h3 id="sec-1-6"><span class="section-number-3">1.6</span> iptables</h3>
+<div class="outline-text-3" id="text-1-6">
+<p>
+<span class="underline">pipi</span>
+</p>
+
+<pre class="example">
+[akira@pipi ~]$ sudo iptables -t nat -L
+Chain PREROUTING (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain POSTROUTING (policy ACCEPT)
+target     prot opt source               destination         
+MASQUERADE  all  --  192.168.4.0/24       anywhere            
+[akira@pipi ~]$
+</pre>
+
+<p>
+<span class="underline">amazon<sub>t</sub><sub>default</sub></span>
+</p>
+<pre class="example">
+ubuntu@ip-172-31-20-68:~$ sudo iptables -L
+Chain INPUT (policy DROP)
+target     prot opt source               destination         
+ufw-before-logging-input  all  --  anywhere             anywhere            
+ufw-before-input  all  --  anywhere             anywhere            
+ufw-after-input  all  --  anywhere             anywhere            
+ufw-after-logging-input  all  --  anywhere             anywhere            
+ufw-reject-input  all  --  anywhere             anywhere            
+ufw-track-input  all  --  anywhere             anywhere            
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination         
+ufw-before-logging-forward  all  --  anywhere             anywhere            
+ufw-before-forward  all  --  anywhere             anywhere            
+ufw-after-forward  all  --  anywhere             anywhere            
+ufw-after-logging-forward  all  --  anywhere             anywhere            
+ufw-reject-forward  all  --  anywhere             anywhere            
+ufw-track-forward  all  --  anywhere             anywhere            
+ACCEPT     tcp  --  anywhere             ip-192-168-100-0.ap-northeast-1.compute.internal/24 
+ACCEPT     tcp  --  anywhere             ip-192-168-100-0.ap-northeast-1.compute.internal/24 
+ACCEPT     tcp  --  anywhere             ip-192-168-100-0.ap-northeast-1.compute.internal/24 
+ACCEPT     tcp  --  anywhere             ip-192-168-100-0.ap-northeast-1.compute.internal/24 
+ACCEPT     tcp  --  anywhere             ip-192-168-100-0.ap-northeast-1.compute.internal/24 
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination         
+ufw-before-logging-output  all  --  anywhere             anywhere            
+ufw-before-output  all  --  anywhere             anywhere            
+ufw-after-output  all  --  anywhere             anywhere            
+ufw-after-logging-output  all  --  anywhere             anywhere            
+ufw-reject-output  all  --  anywhere             anywhere            
+ufw-track-output  all  --  anywhere             anywhere            
+
+Chain ufw-after-forward (1 references)
+target     prot opt source               destination         
+
+Chain ufw-after-input (1 references)
+target     prot opt source               destination         
+ufw-skip-to-policy-input  udp  --  anywhere             anywhere             udp dpt:netbios-ns
+ufw-skip-to-policy-input  udp  --  anywhere             anywhere             udp dpt:netbios-dgm
+ufw-skip-to-policy-input  tcp  --  anywhere             anywhere             tcp dpt:netbios-ssn
+ufw-skip-to-policy-input  tcp  --  anywhere             anywhere             tcp dpt:microsoft-ds
+ufw-skip-to-policy-input  udp  --  anywhere             anywhere             udp dpt:bootps
+ufw-skip-to-policy-input  udp  --  anywhere             anywhere             udp dpt:bootpc
+ufw-skip-to-policy-input  all  --  anywhere             anywhere             ADDRTYPE match dst-type BROADCAST
+
+Chain ufw-after-logging-forward (1 references)
+target     prot opt source               destination         
+
+Chain ufw-after-logging-input (1 references)
+target     prot opt source               destination         
+LOG        all  --  anywhere             anywhere             limit: avg 3/min burst 10 LOG level warning prefix "[UFW BLOCK] "
+
+Chain ufw-after-logging-output (1 references)
+target     prot opt source               destination         
+
+Chain ufw-after-output (1 references)
+target     prot opt source               destination         
+
+Chain ufw-before-forward (1 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere             ctstate RELATED,ESTABLISHED
+ACCEPT     icmp --  anywhere             anywhere             icmp destination-unreachable
+ACCEPT     icmp --  anywhere             anywhere             icmp source-quench
+ACCEPT     icmp --  anywhere             anywhere             icmp time-exceeded
+ACCEPT     icmp --  anywhere             anywhere             icmp parameter-problem
+ACCEPT     icmp --  anywhere             anywhere             icmp echo-request
+ufw-user-forward  all  --  anywhere             anywhere            
+
+Chain ufw-before-input (1 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere            
+ACCEPT     all  --  anywhere             anywhere             ctstate RELATED,ESTABLISHED
+ufw-logging-deny  all  --  anywhere             anywhere             ctstate INVALID
+DROP       all  --  anywhere             anywhere             ctstate INVALID
+ACCEPT     icmp --  anywhere             anywhere             icmp destination-unreachable
+ACCEPT     icmp --  anywhere             anywhere             icmp source-quench
+ACCEPT     icmp --  anywhere             anywhere             icmp time-exceeded
+ACCEPT     icmp --  anywhere             anywhere             icmp parameter-problem
+ACCEPT     icmp --  anywhere             anywhere             icmp echo-request
+ACCEPT     udp  --  anywhere             anywhere             udp spt:bootps dpt:bootpc
+ufw-not-local  all  --  anywhere             anywhere            
+ACCEPT     udp  --  anywhere             224.0.0.251          udp dpt:mdns
+ACCEPT     udp  --  anywhere             239.255.255.250      udp dpt:1900
+ufw-user-input  all  --  anywhere             anywhere            
+
+Chain ufw-before-logging-forward (1 references)
+target     prot opt source               destination         
+
+Chain ufw-before-logging-input (1 references)
+target     prot opt source               destination         
+
+Chain ufw-before-logging-output (1 references)
+target     prot opt source               destination         
+
+Chain ufw-before-output (1 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere            
+ACCEPT     all  --  anywhere             anywhere             ctstate RELATED,ESTABLISHED
+ufw-user-output  all  --  anywhere             anywhere            
+
+Chain ufw-logging-allow (0 references)
+target     prot opt source               destination         
+LOG        all  --  anywhere             anywhere             limit: avg 3/min burst 10 LOG level warning prefix "[UFW ALLOW] "
+
+Chain ufw-logging-deny (2 references)
+target     prot opt source               destination         
+RETURN     all  --  anywhere             anywhere             ctstate INVALID limit: avg 3/min burst 10
+LOG        all  --  anywhere             anywhere             limit: avg 3/min burst 10 LOG level warning prefix "[UFW BLOCK] "
+
+Chain ufw-not-local (1 references)
+target     prot opt source               destination         
+RETURN     all  --  anywhere             anywhere             ADDRTYPE match dst-type LOCAL
+RETURN     all  --  anywhere             anywhere             ADDRTYPE match dst-type MULTICAST
+RETURN     all  --  anywhere             anywhere             ADDRTYPE match dst-type BROADCAST
+ufw-logging-deny  all  --  anywhere             anywhere             limit: avg 3/min burst 10
+DROP       all  --  anywhere             anywhere            
+
+Chain ufw-reject-forward (1 references)
+target     prot opt source               destination         
+
+Chain ufw-reject-input (1 references)
+target     prot opt source               destination         
+
+Chain ufw-reject-output (1 references)
+target     prot opt source               destination         
+
+Chain ufw-skip-to-policy-forward (0 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere            
+
+Chain ufw-skip-to-policy-input (7 references)
+target     prot opt source               destination         
+DROP       all  --  anywhere             anywhere            
+
+Chain ufw-skip-to-policy-output (0 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere            
+
+Chain ufw-track-forward (1 references)
+target     prot opt source               destination         
+ACCEPT     tcp  --  anywhere             anywhere             ctstate NEW
+ACCEPT     udp  --  anywhere             anywhere             ctstate NEW
+
+Chain ufw-track-input (1 references)
+target     prot opt source               destination         
+
+Chain ufw-track-output (1 references)
+target     prot opt source               destination         
+ACCEPT     tcp  --  anywhere             anywhere             ctstate NEW
+ACCEPT     udp  --  anywhere             anywhere             ctstate NEW
+
+Chain ufw-user-forward (1 references)
+target     prot opt source               destination         
+
+Chain ufw-user-input (1 references)
+target     prot opt source               destination         
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:10022
+ACCEPT     udp  --  anywhere             anywhere             udp dpt:10022
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh
+ACCEPT     udp  --  anywhere             anywhere             udp dpt:ssh
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:http
+ACCEPT     udp  --  anywhere             anywhere             udp dpt:http
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:https
+ACCEPT     udp  --  anywhere             anywhere             udp dpt:https
+
+Chain ufw-user-limit (0 references)
+target     prot opt source               destination         
+LOG        all  --  anywhere             anywhere             limit: avg 3/min burst 5 LOG level warning prefix "[UFW LIMIT BLOCK] "
+REJECT     all  --  anywhere             anywhere             reject-with icmp-port-unreachable
+
+Chain ufw-user-limit-accept (0 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere            
+
+Chain ufw-user-logging-forward (0 references)
+target     prot opt source               destination         
+
+Chain ufw-user-logging-input (0 references)
+target     prot opt source               destination         
+
+Chain ufw-user-logging-output (0 references)
+target     prot opt source               destination         
+
+Chain ufw-user-output (1 references)
+target     prot opt source               destination         
+ubuntu@ip-172-31-20-68:~$
+</pre>
+
+<p>
+<span class="underline">amazon<sub>nat</sub></span>
+</p>
+<pre class="example">
+ubuntu@ip-172-31-20-68:~$ sudo -t nat iptables -L
+Chain INPUT (policy DROP)
+target     prot opt source               destination         
+ufw-before-logging-input  all  --  anywhere             anywhere            
+ufw-before-input  all  --  anywhere             anywhere            
+ufw-after-input  all  --  anywhere             anywhere            
+ufw-after-logging-input  all  --  anywhere             anywhere            
+ufw-reject-input  all  --  anywhere             anywhere            
+ufw-track-input  all  --  anywhere             anywhere            
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination         
+ufw-before-logging-forward  all  --  anywhere             anywhere            
+ufw-before-forward  all  --  anywhere             anywhere            
+ufw-after-forward  all  --  anywhere             anywhere            
+ufw-after-logging-forward  all  --  anywhere             anywhere            
+ufw-reject-forward  all  --  anywhere             anywhere            
+ufw-track-forward  all  --  anywhere             anywhere            
+ACCEPT     tcp  --  anywhere             ip-192-168-100-0.ap-northeast-1.compute.internal/24 
+ACCEPT     tcp  --  anywhere             ip-192-168-100-0.ap-northeast-1.compute.internal/24 
+ACCEPT     tcp  --  anywhere             ip-192-168-100-0.ap-northeast-1.compute.internal/24 
+ACCEPT     tcp  --  anywhere             ip-192-168-100-0.ap-northeast-1.compute.internal/24 
+ACCEPT     tcp  --  anywhere             ip-192-168-100-0.ap-northeast-1.compute.internal/24 
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination         
+ufw-before-logging-output  all  --  anywhere             anywhere            
+ufw-before-output  all  --  anywhere             anywhere            
+ufw-after-output  all  --  anywhere             anywhere            
+ufw-after-logging-output  all  --  anywhere             anywhere            
+ufw-reject-output  all  --  anywhere             anywhere            
+ufw-track-output  all  --  anywhere             anywhere            
+
+Chain ufw-after-forward (1 references)
+target     prot opt source               destination         
+
+Chain ufw-after-input (1 references)
+target     prot opt source               destination         
+ufw-skip-to-policy-input  udp  --  anywhere             anywhere             udp dpt:netbios-ns
+ufw-skip-to-policy-input  udp  --  anywhere             anywhere             udp dpt:netbios-dgm
+ufw-skip-to-policy-input  tcp  --  anywhere             anywhere             tcp dpt:netbios-ssn
+ufw-skip-to-policy-input  tcp  --  anywhere             anywhere             tcp dpt:microsoft-ds
+ufw-skip-to-policy-input  udp  --  anywhere             anywhere             udp dpt:bootps
+ufw-skip-to-policy-input  udp  --  anywhere             anywhere             udp dpt:bootpc
+ufw-skip-to-policy-input  all  --  anywhere             anywhere             ADDRTYPE match dst-type BROADCAST
+
+Chain ufw-after-logging-forward (1 references)
+target     prot opt source               destination         
+
+Chain ufw-after-logging-input (1 references)
+target     prot opt source               destination         
+LOG        all  --  anywhere             anywhere             limit: avg 3/min burst 10 LOG level warning prefix "[UFW BLOCK] "
+
+Chain ufw-after-logging-output (1 references)
+target     prot opt source               destination         
+
+Chain ufw-after-output (1 references)
+target     prot opt source               destination         
+
+Chain ufw-before-forward (1 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere             ctstate RELATED,ESTABLISHED
+ACCEPT     icmp --  anywhere             anywhere             icmp destination-unreachable
+ACCEPT     icmp --  anywhere             anywhere             icmp source-quench
+ACCEPT     icmp --  anywhere             anywhere             icmp time-exceeded
+ACCEPT     icmp --  anywhere             anywhere             icmp parameter-problem
+ACCEPT     icmp --  anywhere             anywhere             icmp echo-request
+ufw-user-forward  all  --  anywhere             anywhere            
+
+Chain ufw-before-input (1 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere            
+ACCEPT     all  --  anywhere             anywhere             ctstate RELATED,ESTABLISHED
+ufw-logging-deny  all  --  anywhere             anywhere             ctstate INVALID
+DROP       all  --  anywhere             anywhere             ctstate INVALID
+ACCEPT     icmp --  anywhere             anywhere             icmp destination-unreachable
+ACCEPT     icmp --  anywhere             anywhere             icmp source-quench
+ACCEPT     icmp --  anywhere             anywhere             icmp time-exceeded
+ACCEPT     icmp --  anywhere             anywhere             icmp parameter-problem
+ACCEPT     icmp --  anywhere             anywhere             icmp echo-request
+ACCEPT     udp  --  anywhere             anywhere             udp spt:bootps dpt:bootpc
+ufw-not-local  all  --  anywhere             anywhere            
+ACCEPT     udp  --  anywhere             224.0.0.251          udp dpt:mdns
+ACCEPT     udp  --  anywhere             239.255.255.250      udp dpt:1900
+ufw-user-input  all  --  anywhere             anywhere            
+
+Chain ufw-before-logging-forward (1 references)
+target     prot opt source               destination         
+
+Chain ufw-before-logging-input (1 references)
+target     prot opt source               destination         
+
+Chain ufw-before-logging-output (1 references)
+target     prot opt source               destination         
+
+Chain ufw-before-output (1 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere            
+ACCEPT     all  --  anywhere             anywhere             ctstate RELATED,ESTABLISHED
+ufw-user-output  all  --  anywhere             anywhere            
+
+Chain ufw-logging-allow (0 references)
+target     prot opt source               destination         
+LOG        all  --  anywhere             anywhere             limit: avg 3/min burst 10 LOG level warning prefix "[UFW ALLOW] "
+
+Chain ufw-logging-deny (2 references)
+target     prot opt source               destination         
+RETURN     all  --  anywhere             anywhere             ctstate INVALID limit: avg 3/min burst 10
+LOG        all  --  anywhere             anywhere             limit: avg 3/min burst 10 LOG level warning prefix "[UFW BLOCK] "
+
+Chain ufw-not-local (1 references)
+target     prot opt source               destination         
+RETURN     all  --  anywhere             anywhere             ADDRTYPE match dst-type LOCAL
+RETURN     all  --  anywhere             anywhere             ADDRTYPE match dst-type MULTICAST
+RETURN     all  --  anywhere             anywhere             ADDRTYPE match dst-type BROADCAST
+ufw-logging-deny  all  --  anywhere             anywhere             limit: avg 3/min burst 10
+DROP       all  --  anywhere             anywhere            
+
+Chain ufw-reject-forward (1 references)
+target     prot opt source               destination         
+
+Chain ufw-reject-input (1 references)
+target     prot opt source               destination         
+
+Chain ufw-reject-output (1 references)
+target     prot opt source               destination         
+
+Chain ufw-skip-to-policy-forward (0 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere            
+
+Chain ufw-skip-to-policy-input (7 references)
+target     prot opt source               destination         
+DROP       all  --  anywhere             anywhere            
+
+Chain ufw-skip-to-policy-output (0 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere            
+
+Chain ufw-track-forward (1 references)
+target     prot opt source               destination         
+ACCEPT     tcp  --  anywhere             anywhere             ctstate NEW
+ACCEPT     udp  --  anywhere             anywhere             ctstate NEW
+
+Chain ufw-track-input (1 references)
+target     prot opt source               destination         
+
+Chain ufw-track-output (1 references)
+target     prot opt source               destination         
+ACCEPT     tcp  --  anywhere             anywhere             ctstate NEW
+ACCEPT     udp  --  anywhere             anywhere             ctstate NEW
+
+Chain ufw-user-forward (1 references)
+target     prot opt source               destination         
+
+Chain ufw-user-input (1 references)
+target     prot opt source               destination         
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:10022
+ACCEPT     udp  --  anywhere             anywhere             udp dpt:10022
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh
+ACCEPT     udp  --  anywhere             anywhere             udp dpt:ssh
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:http
+ACCEPT     udp  --  anywhere             anywhere             udp dpt:http
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:https
+ACCEPT     udp  --  anywhere             anywhere             udp dpt:https
+
+Chain ufw-user-limit (0 references)
+target     prot opt source               destination         
+LOG        all  --  anywhere             anywhere             limit: avg 3/min burst 5 LOG level warning prefix "[UFW LIMIT BLOCK] "
+REJECT     all  --  anywhere             anywhere             reject-with icmp-port-unreachable
+
+Chain ufw-user-limit-accept (0 references)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             anywhere            
+
+Chain ufw-user-logging-forward (0 references)
+target     prot opt source               destination         
+
+Chain ufw-user-logging-input (0 references)
+target     prot opt source               destination         
+
+Chain ufw-user-logging-output (0 references)
+target     prot opt source               destination         
+
+Chain ufw-user-output (1 references)
+target     prot opt source               destination         
+ubuntu@ip-172-31-20-68:~$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-7" class="outline-3">
+<h3 id="sec-1-7"><span class="section-number-3">1.7</span> route</h3>
+<div class="outline-text-3" id="text-1-7">
+<p>
+<span class="underline">pipi</span>
+</p>
+<pre class="example">
+[akira@pipi ~]$ route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         192.168.100.1   0.0.0.0         UG    0      0        0 eth0
+192.168.0.0     192.168.100.1   255.255.255.0   UG    0      0        0 eth0
+192.168.4.1     0.0.0.0         255.255.255.255 UH    0      0        0 tun1
+192.168.100.0   0.0.0.0         255.255.255.0   U     0      0        0 eth0
+[akira@pipi ~]$
+</pre>
+
+<p>
+<span class="underline">amazon</span>
+</p>
+<pre class="example">
+ubuntu@ip-172-31-20-68:~$ route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         172.31.16.1     0.0.0.0         UG    0      0        0 eth0
+172.31.16.0     0.0.0.0         255.255.240.0   U     0      0        0 eth0
+192.168.3.1     0.0.0.0         255.255.255.255 UH    0      0        0 tun0
+192.168.4.2     0.0.0.0         255.255.255.255 UH    0      0        0 tun1
+192.168.100.0   192.168.4.2     255.255.255.0   UG    0      0        0 tun1
+ubuntu@ip-172-31-20-68:~$
+</pre>
+
+<p>
+<span class="underline">hakusai</span>
+</p>
+<pre class="example">
+[akira@hakusai .emacs.d]$ route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         10.81.94.254    0.0.0.0         UG    0      0        0 eth0
+10.81.94.0      0.0.0.0         255.255.255.0   U     0      0        0 eth0
+192.168.3.2     0.0.0.0         255.255.255.255 UH    0      0        0 tun0
+192.168.100.0   192.168.3.2     255.255.255.0   UG    0      0        0 tun0
+[akira@hakusai .emacs.d]$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-8" class="outline-3">
+<h3 id="sec-1-8"><span class="section-number-3">1.8</span> ping</h3>
+<div class="outline-text-3" id="text-1-8">
+<p>
+<span class="underline">pipi</span>
+</p>
+<pre class="example">
+[akira@pipi ~]$ ping -c 10 192.168.100.3
+PING 192.168.100.3 (192.168.100.3) 56(84) bytes of data.
+64 bytes from 192.168.100.3: icmp_seq=1 ttl=64 time=0.605 ms
+64 bytes from 192.168.100.3: icmp_seq=2 ttl=64 time=0.495 ms
+64 bytes from 192.168.100.3: icmp_seq=3 ttl=64 time=0.472 ms
+64 bytes from 192.168.100.3: icmp_seq=4 ttl=64 time=0.479 ms
+64 bytes from 192.168.100.3: icmp_seq=5 ttl=64 time=0.477 ms
+64 bytes from 192.168.100.3: icmp_seq=6 ttl=64 time=0.474 ms
+64 bytes from 192.168.100.3: icmp_seq=7 ttl=64 time=0.484 ms
+64 bytes from 192.168.100.3: icmp_seq=8 ttl=64 time=0.467 ms
+64 bytes from 192.168.100.3: icmp_seq=9 ttl=64 time=0.474 ms
+64 bytes from 192.168.100.3: icmp_seq=10 ttl=64 time=0.514 ms
+
+--- 192.168.100.3 ping statistics ---
+10 packets transmitted, 10 received, 0% packet loss, time 9013ms
+rtt min/avg/max/mdev = 0.467/0.494/0.605/0.040 ms
+[akira@pipi ~]$
+</pre>
+
+<p>
+<span class="underline">amazon</span>
+</p>
+<pre class="example">
+ubuntu@ip-172-31-20-68:~$ ping -c 10 192.168.100.3
+PING 192.168.100.3 (192.168.100.3) 56(84) bytes of data.
+64 bytes from 192.168.100.3: icmp_seq=1 ttl=63 time=21.0 ms
+64 bytes from 192.168.100.3: icmp_seq=2 ttl=63 time=20.5 ms
+64 bytes from 192.168.100.3: icmp_seq=3 ttl=63 time=20.9 ms
+64 bytes from 192.168.100.3: icmp_seq=4 ttl=63 time=20.3 ms
+64 bytes from 192.168.100.3: icmp_seq=5 ttl=63 time=20.0 ms
+64 bytes from 192.168.100.3: icmp_seq=6 ttl=63 time=20.5 ms
+64 bytes from 192.168.100.3: icmp_seq=7 ttl=63 time=20.8 ms
+64 bytes from 192.168.100.3: icmp_seq=8 ttl=63 time=20.8 ms
+64 bytes from 192.168.100.3: icmp_seq=9 ttl=63 time=20.7 ms
+64 bytes from 192.168.100.3: icmp_seq=10 ttl=63 time=19.8 ms
+
+--- 192.168.100.3 ping statistics ---
+10 packets transmitted, 10 received, 0% packet loss, time 9013ms
+rtt min/avg/max/mdev = 19.822/20.570/21.034/0.410 ms
+</pre>
+
+<p>
+<span class="underline">hakusai</span>
+</p>
+<pre class="example">
+[akira@hakusai ~]$ ping -c 10 192.168.100.3
+PING 192.168.100.3 (192.168.100.3) 56(84) bytes of data.
+64 bytes from 192.168.100.3: icmp_seq=1 ttl=62 time=38.9 ms
+64 bytes from 192.168.100.3: icmp_seq=2 ttl=62 time=45.5 ms
+64 bytes from 192.168.100.3: icmp_seq=3 ttl=62 time=50.4 ms
+64 bytes from 192.168.100.3: icmp_seq=4 ttl=62 time=52.6 ms
+64 bytes from 192.168.100.3: icmp_seq=5 ttl=62 time=38.6 ms
+64 bytes from 192.168.100.3: icmp_seq=6 ttl=62 time=65.5 ms
+64 bytes from 192.168.100.3: icmp_seq=7 ttl=62 time=45.0 ms
+64 bytes from 192.168.100.3: icmp_seq=8 ttl=62 time=47.8 ms
+64 bytes from 192.168.100.3: icmp_seq=9 ttl=62 time=39.8 ms
+64 bytes from 192.168.100.3: icmp_seq=10 ttl=62 time=36.6 ms
+
+--- 192.168.100.3 ping statistics ---
+10 packets transmitted, 10 received, 0% packet loss, time 9009ms
+rtt min/avg/max/mdev = 36.656/46.131/65.574/8.243 ms
+[akira@hakusai ~]$
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 参考リンク</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+入門OpenSSH - 第6章 すすんだ使い方
+<a href="http://www.unixuser.org/~euske/doc/openssh/book/chap6.html#real-vpn">http://www.unixuser.org/~euske/doc/openssh/book/chap6.html#real-vpn</a>
+</p>
+
+<p>
+SSH でVPNを実現する
+<a href="http://www.usupi.org/sysad/248.html">http://www.usupi.org/sysad/248.html</a>
+</p>
+
+<p>
+Red Hat Enterprise Linux 4: セキュリティガイド
+<a href="http://web.mit.edu/rhel-doc/4/RH-DOCS/rhel-sg-ja-4/s1-firewall-ipt-fwd.html">http://web.mit.edu/rhel-doc/4/RH-DOCS/rhel-sg-ja-4/s1-firewall-ipt-fwd.html</a>
+</p>
+
+<p>
+FORWARD chain 内に DROP のデフォルトポリシーを持っている場合、１つルールを 追加して目
+的地の NAT ルーティングが可能になるように着信 HTTP 要求のフォワー ディングを許可します。
+これを実行するには、次ぎのコマンドを入力します:
+iptables -A FORWARD -i eth0 -p tcp &#x2013;dport 80 -d 172.31.0.23 -j ACCEPT
+</p>
+
+
+<p>
+<a href="http://www.math.kobe-u.ac.jp/~kodama/tips-expect.html">expect. 対話的なコマンド(ssh, telnet, ftp, su等)を自動実行したいとき</a>
+</p>
+
+<p>
+<a href="http://www.mycurse.net/linux%25E3%2582%25B5%25E3%2583%25BC%25E3%2583%2590%25E6%25A7%258B%25E7%25AF%2589/%25E3%2583%2588%25E3%2583%25A9%25E3%2583%2596%25E3%2583%25AB%25E3%2582%25B7%25E3%2583%25A5%25E3%2583%25BC%25E3%2583%2586%25E3%2582%25A3%25E3%2583%25B3%25E3%2582%25B0/iptables%25E3%2581%25A7%25E3%2583%25AB%25E3%2583%25BC%25E3%2583%25AB%25E3%2582%2592%25E3%2581%25B2%25E3%2581%25A8%25E3%2581%25A4%25E5%2589%258A%25E9%2599%25A4/">iptablesのルールをひとつ削除</a>
+</p>
+
+<p>
+sudo 
+<a href="http://x68000.q-e-d.net/~68user/unix/pickup?sudo">http://x68000.q-e-d.net/~68user/unix/pickup?sudo</a>
+</p>
+
+<p>
+<a href="http://www.komoto.org/vpn/index.html">http://www.komoto.org/vpn/index.html</a>
+</p>
+</div>
+</div>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">luozengbin</span></span>
+
+      
+
+
+
+
+
+
+
+
+
+
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://luozengbin.github.io/blog/draft/vpn.html" data-via="" data-counturl="http://luozengbin.github.io/blog/draft/vpn.html" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <!-- create at 2017/07/01 
+       Google Chart Tools: Infographics
+       https://developers.google.com/chart/infographics/docs/qr_codes?csw=1
+  -->
+
+  <div style="position: relative; text-align: center">
+
+    <!-- Google Chart API でQRコード取得 -->
+    <img src="http://chart.apis.google.com/chart?chs=180x180&amp;cht=qr&amp;choe=UTF-8&amp;chl=http://luozengbin.github.io/blog/draft/vpn.html" alt="post-qrcode" height="180" width="180" />
+
+    <!-- サイトのfaviconを重ねて表示する -->
+    <div style="position: absolute; top: 75px; width: 100%; margin: 0 auto; text-align: center">
+      <img style="border: 0.2em solid #FFF;" src="/favicon.png" alt="post-qrcode" height="30" width="30" />
+    </div>
+  </div>
+
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014-08-07-%5B%E3%83%A1%E3%83%A2%5Dfind%E3%81%A7%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%9B%B4%E6%96%B0%E6%97%A5%E4%BB%98%E9%A0%86%E3%81%A7%E8%A1%A8%E7%A4%BA%E3%81%99%E3%82%8B.html">[メモ]findでファイル更新日付順で表示する</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-31-%5B%E6%A4%9C%E8%A8%BC%5Darchlinux%E3%81%ABjenkins%E5%B0%8E%E5%85%A5.html">[検証]ArchlinuxにJenkins導入</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-22-%5B%E6%A4%9C%E8%A8%BC%5Dweblogic%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%84%E3%83%AB%E3%83%A1%E3%83%B3%E3%83%86%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E6%A9%9F%E8%83%BD.html">[検証]Weblogicのインスツルメンテーション機能</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">[メモ]JDeveloper 11g/12c 開発環境の整備</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html">[メモ]ffmpegでスクリンキャストを取る</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-08-%5B%E6%A4%9C%E8%A8%BC%5Dsync%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%82%B3%E3%83%BC%E3%83%AB%E3%81%AE%E6%80%A7%E8%83%BD%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[検証]syncシステムコールの性能について</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-01-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%81%AB%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%99%E3%82%8B-%E3%81%9D%E3%81%AE%EF%BC%91.html">[メモ]Otcopressにプラグインを導入する-その１</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">[検証]SSHトンネル機能でVPN環境の構築</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html">[メモ]Emacsで漢字→かな変換</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html">[メモ]リモートXの接続方法</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+<section>
+  <h1>Categories</h1>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (4)</a></li><li><a href='/blog/categories/linux/'>linux (8)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
+</section>
+<section>
+  <h1>Tag Cloud</h1>
+    <span id="tag-cloud"><a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/luozengbin">@luozengbin</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'luozengbin',
+            count: 1,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - luozengbin -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'luozengbin';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://luozengbin.github.io/blog/draft/vpn.html';
+        var disqus_url = 'http://luozengbin.github.io/blog/draft/vpn.html';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

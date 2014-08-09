@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Find | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/find/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2014-08-09T23:23:48+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]findでファイル更新日付順で表示する]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-08-07-%5B%E3%83%A1%E3%83%A2%5Dfind%E3%81%A7%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%9B%B4%E6%96%B0%E6%97%A5%E4%BB%98%E9%A0%86%E3%81%A7%E8%A1%A8%E7%A4%BA%E3%81%99%E3%82%8B.html"/>
+    <updated>2014-08-07T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]findでファイル更新日付順で表示する</id>
+    <content type="html"><![CDATA[<p>
+PJではメンバたち日々の作業成果物がどこかの共有ディレクトリに格納されているでしょう。
+共有ディレクトリに最近更新や追加されたファイルを見たい時がよくあることです。
+いちいち作業担当者に聞くのもうざいので。 <code>find</code> 、 <code>xargs</code> コマンドを駆使して実現して
+みた。
+</p>
+
+
+
+
+<pre class="example">
+$ find . -type f -print0 | xargs -0 ls -alt
+</pre>
+
+
+
+
+<ul class="org-ul">
+<li><code>find -type f</code> はファイルのみを対象とする
+</li>
+<li><code>find -print0</code> は検出されたファイルのフルパスをNULLキャラクターで分割して出力する
+</li>
+<li><code>xargs -0</code> もしくは <code>xargs --null</code> 入力ストリームの分割はNULLキャラクターを用いる
+</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>

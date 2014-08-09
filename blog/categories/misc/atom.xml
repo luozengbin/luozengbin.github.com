@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Misc | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/misc/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-07-24T17:16:40+09:00</updated>
+  <updated>2014-08-09T23:23:48+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -147,11 +147,11 @@ Google Chart APIで記事URLのQRコードイメージを自動的に生成す�
   &lt;div style="position: relative; text-align: center"&gt;
 
     &lt;!-- Google Chart API でQRコード取得 --&gt;
-    &lt;img src="http://chart.apis.google.com/chart?chs=180x180&amp;amp;cht=qr&amp;amp;choe=UTF-8&amp;amp;chl={{ site.url }}{{ page.url }}" alt="post-qrcode" height="180" width="180" /&gt;
+    &lt;img src="http://chart.apis.google.com/chart?chs=180x180&amp;amp;cht=qr&amp;amp;choe=UTF-8&amp;amp;chl=http://luozengbin.github.io/blog/categories/misc/atom.xml" alt="post-qrcode" height="180" width="180" /&gt;
 
     &lt;!-- サイトのfaviconを重ねて表示する --&gt;
     &lt;div style="position: absolute; top: 75px; width: 100%; margin: 0 auto; text-align: center"&gt;
-      &lt;img style="border: 0.2em solid #FFF;" src="{{ root_url }}/favicon.png" alt="post-qrcode" height="30" width="30" /&gt;
+      &lt;img style="border: 0.2em solid #FFF;" src="/favicon.png" alt="post-qrcode" height="30" width="30" /&gt;
     &lt;/div&gt;
   &lt;/div&gt;
 
