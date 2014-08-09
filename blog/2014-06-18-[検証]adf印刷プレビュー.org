@@ -94,6 +94,6 @@ function customPrint() {
 
 
 * 参考
-Oracle Fusion Middleware Tag Reference for Oracle ADF Faces 11g Release 1 (11.1.1.5.0)
-http://docs.oracle.com/cd/E21764_01/apirefs.1111/e12419/tagdoc/af_showPrintablePageBehavior.html
+- [[http://docs.oracle.com/cd/E21764_01/apirefs.1111/e12419/tagdoc/af_showPrintablePageBehavior.html][Oracle Fusion Middleware Tag Reference for Oracle ADF Faces 11g Release 1 (11.1.1.5.0)]]
+
 

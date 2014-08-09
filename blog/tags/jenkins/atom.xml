@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: Jenkins | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/jenkins/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-08-09T23:23:48+09:00</updated>
+  <updated>2014-08-09T23:30:30+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -129,7 +129,7 @@ jenkins /usr/share/licenses/jenkins/LICENSE     ★MITライセンスファイ�
 <span style="color: #ff6347;">JENKINS_PORT</span>=--httpPort=8090
 <span style="color: #ff6347;">JENKINS_AJPPORT</span>=--ajp13Port=-1
 <span style="color: #ff6347;">JENKINS_OPTS</span>=
-<span style="color: #ff6347;">JENKINS_COMMAND_LINE</span>=<span style="color: #bcee68; font-style: italic;">"$JAVA $JAVA_ARGS $JAVA_OPTS -jar $JENKINS_WAR $JENKINS_WEBROOT $JENKINS_PORT $JENKINS_AJPPORT $JENKINS_OPTS"</span>
+<span style="color: #ff6347;">JENKINS_COMMAND_LINE</span>=<span style="color: #ad7fa8; font-style: italic;">"$JAVA $JAVA_ARGS $JAVA_OPTS -jar $JENKINS_WAR $JENKINS_WEBROOT $JENKINS_PORT $JENKINS_AJPPORT $JENKINS_OPTS"</span>
 
 <span style="color: #888a85;"># </span><span style="color: #888a85;">vim:set ts=2 sw=2 et:</span>
 </pre>
@@ -157,7 +157,7 @@ jenkins /usr/share/licenses/jenkins/LICENSE     ★MITライセンスファイ�
 <span style="color: #ff6347;">StandardOutput</span>=syslog                        &#9733;&#27161;&#28310;&#12525;&#12464;&#20986;&#21147;&#20808;
 <span style="color: #ff6347;">StandardError</span>=syslog                         &#9733;&#27161;&#28310;&#12456;&#12521;&#12540;&#12525;&#12464;&#20986;&#21147;&#20808;
 <span style="color: #ff6347;">SyslogIdentifier</span>=jenkins                     &#9733;&#12471;&#12473;&#12486;&#12512;&#12459;&#12486;&#12468;&#12522;&#21517;
-<span style="color: #ff6347;">ExecStart</span>=/bin/sh -c <span style="color: #bcee68; font-style: italic;">'eval $JENKINS_COMMAND_LINE'</span>
+<span style="color: #ff6347;">ExecStart</span>=/bin/sh -c <span style="color: #ad7fa8; font-style: italic;">'eval $JENKINS_COMMAND_LINE'</span>
 <span style="color: #888a85;">#</span><span style="color: #888a85;">MemoryLimit=768M</span>
 <span style="color: #ff6347;">OOMScoreAdjust</span>=-1000
 <span style="color: #ff6347;">LimitCPU</span>=infinity

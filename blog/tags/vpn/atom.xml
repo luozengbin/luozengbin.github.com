@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: Vpn | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/vpn/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-08-09T23:23:48+09:00</updated>
+  <updated>2014-08-09T23:30:30+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -197,37 +197,37 @@ vermagic:       3.15.2-1-ARCH SMP preempt mod_unload modversions
 
 <div class="org-src-container">
 
-<pre class="src src-c"><span style="color: #74af68;">/* </span><span style="color: #74af68;">Initialize net device. </span><span style="color: #74af68;">*/</span>
-<span style="color: #ffad29; font-weight: bold;">static</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">tun_net_init</span>(<span style="color: #ffad29; font-weight: bold;">struct</span> <span style="color: #34cae2;">net_device</span> *<span style="color: #dbdb95;">dev</span>)
+<pre class="src src-c"><span style="color: #888a85;">/* </span><span style="color: #888a85;">Initialize net device. </span><span style="color: #888a85;">*/</span>
+<span style="color: #729fcf; font-weight: bold;">static</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">tun_net_init</span>(<span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">net_device</span> *<span style="color: #ff6347;">dev</span>)
 {
-    <span style="color: #ffad29; font-weight: bold;">struct</span> <span style="color: #34cae2;">tun_struct</span> *<span style="color: #dbdb95;">tun</span> = netdev_priv(dev);
+    <span style="color: #729fcf; font-weight: bold;">struct</span> <span style="color: #8ae234; font-weight: bold;">tun_struct</span> *<span style="color: #ff6347;">tun</span> = netdev_priv(dev);
 
-    <span style="color: #ffad29; font-weight: bold;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
-    <span style="color: #ffad29; font-weight: bold;">case</span> TUN_TUN_DEV:
+    <span style="color: #729fcf; font-weight: bold;">switch</span> (tun-&gt;flags &amp; TUN_TYPE_MASK) {
+    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TUN_DEV:
         dev-&gt;netdev_ops = &amp;tun_netdev_ops;
 
-        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Point-to-Point TUN Device </span><span style="color: #74af68;">*/</span>
+        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Point-to-Point TUN Device </span><span style="color: #888a85;">*/</span>
         dev-&gt;hard_header_len = 0;
         dev-&gt;addr_len = 0;
         dev-&gt;mtu = 1500;
 
-        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Zero header length </span><span style="color: #74af68;">*/</span>
+        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Zero header length </span><span style="color: #888a85;">*/</span>
         dev-&gt;type = ARPHRD_NONE;
         dev-&gt;flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #74af68;">/* </span><span style="color: #74af68;">We prefer our own queue length </span><span style="color: #74af68;">*/</span>
-        <span style="color: #ffad29; font-weight: bold;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
+        <span style="color: #729fcf; font-weight: bold;">break</span>;
 
-    <span style="color: #ffad29; font-weight: bold;">case</span> TUN_TAP_DEV:
+    <span style="color: #729fcf; font-weight: bold;">case</span> TUN_TAP_DEV:
         dev-&gt;netdev_ops = &amp;tap_netdev_ops;
-        <span style="color: #74af68;">/* </span><span style="color: #74af68;">Ethernet TAP Device </span><span style="color: #74af68;">*/</span>
+        <span style="color: #888a85;">/* </span><span style="color: #888a85;">Ethernet TAP Device </span><span style="color: #888a85;">*/</span>
         ether_setup(dev);
         dev-&gt;priv_flags &amp;= ~IFF_TX_SKB_SHARING;
         dev-&gt;priv_flags |= IFF_LIVE_ADDR_CHANGE;
 
         eth_hw_addr_random(dev);
 
-        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #74af68;">/* </span><span style="color: #74af68;">We prefer our own queue length </span><span style="color: #74af68;">*/</span>
-        <span style="color: #ffad29; font-weight: bold;">break</span>;
+        dev-&gt;tx_queue_len = TUN_READQ_SIZE;  <span style="color: #888a85;">/* </span><span style="color: #888a85;">We prefer our own queue length </span><span style="color: #888a85;">*/</span>
+        <span style="color: #729fcf; font-weight: bold;">break</span>;
     }
 }
 </pre>

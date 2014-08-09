@@ -119,32 +119,32 @@
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #888a85; font-style: italic;">#</span><span style="color: #888a85; font-style: italic;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
+<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
 
-<span style="color: #888a85; font-style: italic;">###########################################################################</span>
-<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">fsc-window.sh - take screen video cast for selected window</span>
-<span style="color: #888a85; font-style: italic;">#</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">Authors: Luo Zengbin <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
-<span style="color: #888a85; font-style: italic;">#</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">This program is free software: you can redistribute it and/or modify</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">it under the terms of the GNU General Public License as published by</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">the Free Software Foundation, version 3 of the License.</span>
-<span style="color: #888a85; font-style: italic;">#</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">This program is distributed in the hope that it will be useful,</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">GNU General Public License for more details.</span>
-<span style="color: #888a85; font-style: italic;">#</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">You should have received a copy of the GNU General Public License</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/">&lt;http://www.gnu.org/licenses/&gt;</a>.</span>
-<span style="color: #888a85; font-style: italic;">#</span>
-<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">Usage:</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">$fsc-window.sh $1 &#31532;&#19968;&#24341;&#25968;&#12395;&#37682;&#30011;&#12499;&#12487;&#12458;&#12501;&#12449;&#12452;&#12523;&#12398;&#20445;&#23384;&#12497;&#12473;&#12434;&#25351;&#23450;&#12377;&#12427;&#12290;</span>
-<span style="color: #888a85; font-style: italic;">###########################################################################</span>
+<span style="color: #888a85;">###########################################################################</span>
+<span style="color: #888a85;"># </span><span style="color: #888a85;">fsc-window.sh - take screen video cast for selected window</span>
+<span style="color: #888a85;">#</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">Authors: Luo Zengbin <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #888a85;">#</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #888a85;">#</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">GNU General Public License for more details.</span>
+<span style="color: #888a85;">#</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/">&lt;http://www.gnu.org/licenses/&gt;</a>.</span>
+<span style="color: #888a85;">#</span>
+<span style="color: #888a85;"># </span><span style="color: #888a85;">Usage:</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">$fsc-window.sh $1 &#31532;&#19968;&#24341;&#25968;&#12395;&#37682;&#30011;&#12499;&#12487;&#12458;&#12501;&#12449;&#12452;&#12523;&#12398;&#20445;&#23384;&#12497;&#12473;&#12434;&#25351;&#23450;&#12377;&#12427;&#12290;</span>
+<span style="color: #888a85;">###########################################################################</span>
 
-<span style="color: #888a85; font-style: italic;">####################################</span>
-<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">&#22855;&#25968;&#12434;&#20598;&#25968;&#12395;&#22793;&#25563;&#12377;&#12427;&#20966;&#29702;</span>
-<span style="color: #888a85; font-style: italic;">####################################</span>
+<span style="color: #888a85;">####################################</span>
+<span style="color: #888a85;"># </span><span style="color: #888a85;">&#22855;&#25968;&#12434;&#20598;&#25968;&#12395;&#22793;&#25563;&#12377;&#12427;&#20966;&#29702;</span>
+<span style="color: #888a85;">####################################</span>
 <span style="color: #729fcf; font-weight: bold;">function</span> <span style="color: #edd400; font-weight: bold;">even_round</span> {
     <span style="color: #729fcf; font-weight: bold;">if</span> [ <span style="color: #fa8072;">`expr $1 % 2`</span> == 0 ]; <span style="color: #729fcf; font-weight: bold;">then</span>
         <span style="color: #729fcf;">echo</span> $<span style="color: #ff6347;">1</span>
@@ -153,24 +153,24 @@
     <span style="color: #729fcf; font-weight: bold;">fi</span>
 }
 
-<span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8;">"&#37682;&#30011;&#23550;&#35937;Window&#12434;&#12459;&#12540;&#12477;&#12523;&#12391;&#36984;&#25246;&#12375;&#12390;&#12367;&#12384;&#12373;&#12356;&#12290;"</span>
+<span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"&#37682;&#30011;&#23550;&#35937;Window&#12434;&#12459;&#12540;&#12477;&#12523;&#12391;&#36984;&#25246;&#12375;&#12390;&#12367;&#12384;&#12373;&#12356;&#12290;"</span>
 <span style="color: #ff6347;">VFILE</span>=$<span style="color: #ff6347;">1</span>
 <span style="color: #ff6347;">INFO</span>=$(<span style="color: #fa8072;">xwininfo</span> -frame)
 
-<span style="color: #ff6347;">WIN_GEO</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ff6347;">INFO</span> | grep -oEe <span style="color: #ad7fa8;">'geometry [0-9]+x[0-9]+'</span> | grep -oEe <span style="color: #ad7fa8;">'[0-9]+x[0-9]+'</span>)
-<span style="color: #ff6347;">WIN_XY</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ff6347;">INFO</span> | grep -oEe <span style="color: #ad7fa8;">'Corners:\s+\+[0-9]+\+[0-9]+'</span> | grep -oEe <span style="color: #ad7fa8;">'[0-9]+\+[0-9]+'</span> | sed -e <span style="color: #ad7fa8;">'s/\+/,/'</span> )
+<span style="color: #ff6347;">WIN_GEO</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ff6347;">INFO</span> | grep -oEe <span style="color: #ad7fa8; font-style: italic;">'geometry [0-9]+x[0-9]+'</span> | grep -oEe <span style="color: #ad7fa8; font-style: italic;">'[0-9]+x[0-9]+'</span>)
+<span style="color: #ff6347;">WIN_XY</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ff6347;">INFO</span> | grep -oEe <span style="color: #ad7fa8; font-style: italic;">'Corners:\s+\+[0-9]+\+[0-9]+'</span> | grep -oEe <span style="color: #ad7fa8; font-style: italic;">'[0-9]+\+[0-9]+'</span> | sed -e <span style="color: #ad7fa8; font-style: italic;">'s/\+/,/'</span> )
 
-<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">Windows&#12398;&#27178;&#12469;&#12452;&#12474;&#12392;&#32294;&#12469;&#12452;&#12474;&#12434;&#20598;&#25968;&#12395;&#12377;&#12427;</span>
-<span style="color: #ff6347;">WIN_GEO_X</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ff6347;">WIN_GEO</span> | cut -d <span style="color: #ad7fa8;">'x'</span> -f 1)
-<span style="color: #ff6347;">WIN_GEO_Y</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ff6347;">WIN_GEO</span> | cut -d <span style="color: #ad7fa8;">'x'</span> -f 2)
+<span style="color: #888a85;"># </span><span style="color: #888a85;">Windows&#12398;&#27178;&#12469;&#12452;&#12474;&#12392;&#32294;&#12469;&#12452;&#12474;&#12434;&#20598;&#25968;&#12395;&#12377;&#12427;</span>
+<span style="color: #ff6347;">WIN_GEO_X</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ff6347;">WIN_GEO</span> | cut -d <span style="color: #ad7fa8; font-style: italic;">'x'</span> -f 1)
+<span style="color: #ff6347;">WIN_GEO_Y</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ff6347;">WIN_GEO</span> | cut -d <span style="color: #ad7fa8; font-style: italic;">'x'</span> -f 2)
 
-<span style="color: #ff6347;">WIN_GEO</span>=<span style="color: #ad7fa8;">"$(</span><span style="color: #fa8072;">even_round</span><span style="color: #ad7fa8;"> $WIN_GEO_X)x$(</span><span style="color: #fa8072;">even_round</span><span style="color: #ad7fa8;"> $WIN_GEO_Y)"</span>
+<span style="color: #ff6347;">WIN_GEO</span>=<span style="color: #ad7fa8; font-style: italic;">"$(</span><span style="color: #fa8072;">even_round</span><span style="color: #ad7fa8; font-style: italic;"> $WIN_GEO_X)x$(</span><span style="color: #fa8072;">even_round</span><span style="color: #ad7fa8; font-style: italic;"> $WIN_GEO_Y)"</span>
 
-<span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8;">"&#30011;&#38754;&#12469;&#12452;&#12474;&#65306;$WIN_GEO"</span>
-<span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8;">"&#30011;&#38754;&#20301;&#32622;  &#65306;$WIN_XY"</span>
+<span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"&#30011;&#38754;&#12469;&#12452;&#12474;&#65306;$WIN_GEO"</span>
+<span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"&#30011;&#38754;&#20301;&#32622;  &#65306;$WIN_XY"</span>
 
-<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">&#37682;&#30011;&#38283;&#22987;</span>
-ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: #ff6347;">WIN_GEO</span> -i :0.0+$<span style="color: #ff6347;">WIN_XY</span> <span style="color: #ad7fa8;">\</span>
+<span style="color: #888a85;"># </span><span style="color: #888a85;">&#37682;&#30011;&#38283;&#22987;</span>
+ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: #ff6347;">WIN_GEO</span> -i :0.0+$<span style="color: #ff6347;">WIN_XY</span> <span style="color: #ad7fa8; font-style: italic;">\</span>
        -dcodec copy -pix_fmt yuv420p -c:v libx264 -preset veryfast -qscale 1 -y $<span style="color: #ff6347;">VFILE</span>
 </pre>
 </div>
@@ -208,33 +208,33 @@ ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: 
 
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #888a85; font-style: italic;">#</span><span style="color: #888a85; font-style: italic;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
+<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
 
-<span style="color: #888a85; font-style: italic;">###########################################################################</span>
-<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">fsc-full.sh - take full screen video cast</span>
-<span style="color: #888a85; font-style: italic;">#</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">Authors: Luo Zengbin <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
-<span style="color: #888a85; font-style: italic;">#</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">This program is free software: you can redistribute it and/or modify</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">it under the terms of the GNU General Public License as published by</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">the Free Software Foundation, version 3 of the License.</span>
-<span style="color: #888a85; font-style: italic;">#</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">This program is distributed in the hope that it will be useful,</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">GNU General Public License for more details.</span>
-<span style="color: #888a85; font-style: italic;">#</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">You should have received a copy of the GNU General Public License</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/">&lt;http://www.gnu.org/licenses/&gt;</a>.</span>
-<span style="color: #888a85; font-style: italic;">#</span>
-<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">Usage:</span>
-<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">$fsc-full.sh $1 &#31532;&#19968;&#24341;&#25968;&#12395;&#37682;&#30011;&#12499;&#12487;&#12458;&#12501;&#12449;&#12452;&#12523;&#12398;&#20445;&#23384;&#12497;&#12473;&#12434;&#25351;&#23450;&#12377;&#12427;&#12290;</span>
-<span style="color: #888a85; font-style: italic;">###########################################################################</span>
+<span style="color: #888a85;">###########################################################################</span>
+<span style="color: #888a85;"># </span><span style="color: #888a85;">fsc-full.sh - take full screen video cast</span>
+<span style="color: #888a85;">#</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">Authors: Luo Zengbin <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #888a85;">#</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #888a85;">#</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">GNU General Public License for more details.</span>
+<span style="color: #888a85;">#</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/">&lt;http://www.gnu.org/licenses/&gt;</a>.</span>
+<span style="color: #888a85;">#</span>
+<span style="color: #888a85;"># </span><span style="color: #888a85;">Usage:</span>
+<span style="color: #888a85;">#    </span><span style="color: #888a85;">$fsc-full.sh $1 &#31532;&#19968;&#24341;&#25968;&#12395;&#37682;&#30011;&#12499;&#12487;&#12458;&#12501;&#12449;&#12452;&#12523;&#12398;&#20445;&#23384;&#12497;&#12473;&#12434;&#25351;&#23450;&#12377;&#12427;&#12290;</span>
+<span style="color: #888a85;">###########################################################################</span>
 
-<span style="color: #ff6347;">WIN_GEO</span>=$(<span style="color: #fa8072;">xwininfo</span> -root | grep <span style="color: #ad7fa8;">'geometry'</span> | awk <span style="color: #ad7fa8;">'{print $2;}'</span> | cut -d <span style="color: #ad7fa8;">'+'</span> -f 1)
+<span style="color: #ff6347;">WIN_GEO</span>=$(<span style="color: #fa8072;">xwininfo</span> -root | grep <span style="color: #ad7fa8; font-style: italic;">'geometry'</span> | awk <span style="color: #ad7fa8; font-style: italic;">'{print $2;}'</span> | cut -d <span style="color: #ad7fa8; font-style: italic;">'+'</span> -f 1)
 
-<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">&#37682;&#30011;&#38283;&#22987;</span>
-ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: #ff6347;">WIN_GEO</span> -i :0.0 <span style="color: #ad7fa8;">\</span>
+<span style="color: #888a85;"># </span><span style="color: #888a85;">&#37682;&#30011;&#38283;&#22987;</span>
+ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: #ff6347;">WIN_GEO</span> -i :0.0 <span style="color: #ad7fa8; font-style: italic;">\</span>
        -dcodec copy -pix_fmt yuv420p -c:v libx264 -preset veryfast -qscale 1 -y $<span style="color: #ff6347;">1</span>
 </pre>
 </div>
@@ -390,11 +390,11 @@ ffmpeg -show_region 1 -f x11grab -framerate 25 -video_size $<span style="color: 
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (4)</a></li><li><a href='/blog/categories/linux/'>linux (8)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (5)</a></li><li><a href='/blog/categories/linux/'>linux (8)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
 </section>
 
 <section>

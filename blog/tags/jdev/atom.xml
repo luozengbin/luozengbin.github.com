@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: Jdev | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/jdev/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-08-09T23:23:48+09:00</updated>
+  <updated>2014-08-09T23:30:30+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -180,9 +180,9 @@ XDG_CURRENT_DESKTOP=GNOME
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #00bfff; font-weight: bold;">bash</span>
+<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">bash</span>
 
-<span style="color: #63b8ff;">unset</span> GNOME_DESKTOP_SESSION_ID
+<span style="color: #729fcf;">unset</span> GNOME_DESKTOP_SESSION_ID
 
 <span style="color: #888a85;">#</span><span style="color: #888a85;">=============================================================================</span>
 <span style="color: #888a85;">#  </span><span style="color: #888a85;">Launcher for Oracle JDeveloper 11g Release 2 (11.1.2.4.0)</span>

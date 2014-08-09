@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-08-09T23:23:48+09:00</updated>
+  <updated>2014-08-09T23:30:30+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -129,7 +129,7 @@ jenkins /usr/share/licenses/jenkins/LICENSE     ★MITライセンスファイ�
 <span style="color: #ff6347;">JENKINS_PORT</span>=--httpPort=8090
 <span style="color: #ff6347;">JENKINS_AJPPORT</span>=--ajp13Port=-1
 <span style="color: #ff6347;">JENKINS_OPTS</span>=
-<span style="color: #ff6347;">JENKINS_COMMAND_LINE</span>=<span style="color: #bcee68; font-style: italic;">"$JAVA $JAVA_ARGS $JAVA_OPTS -jar $JENKINS_WAR $JENKINS_WEBROOT $JENKINS_PORT $JENKINS_AJPPORT $JENKINS_OPTS"</span>
+<span style="color: #ff6347;">JENKINS_COMMAND_LINE</span>=<span style="color: #ad7fa8; font-style: italic;">"$JAVA $JAVA_ARGS $JAVA_OPTS -jar $JENKINS_WAR $JENKINS_WEBROOT $JENKINS_PORT $JENKINS_AJPPORT $JENKINS_OPTS"</span>
 
 <span style="color: #888a85;"># </span><span style="color: #888a85;">vim:set ts=2 sw=2 et:</span>
 </pre>
@@ -157,7 +157,7 @@ jenkins /usr/share/licenses/jenkins/LICENSE     ★MITライセンスファイ�
 <span style="color: #ff6347;">StandardOutput</span>=syslog                        &#9733;&#27161;&#28310;&#12525;&#12464;&#20986;&#21147;&#20808;
 <span style="color: #ff6347;">StandardError</span>=syslog                         &#9733;&#27161;&#28310;&#12456;&#12521;&#12540;&#12525;&#12464;&#20986;&#21147;&#20808;
 <span style="color: #ff6347;">SyslogIdentifier</span>=jenkins                     &#9733;&#12471;&#12473;&#12486;&#12512;&#12459;&#12486;&#12468;&#12522;&#21517;
-<span style="color: #ff6347;">ExecStart</span>=/bin/sh -c <span style="color: #bcee68; font-style: italic;">'eval $JENKINS_COMMAND_LINE'</span>
+<span style="color: #ff6347;">ExecStart</span>=/bin/sh -c <span style="color: #ad7fa8; font-style: italic;">'eval $JENKINS_COMMAND_LINE'</span>
 <span style="color: #888a85;">#</span><span style="color: #888a85;">MemoryLimit=768M</span>
 <span style="color: #ff6347;">OOMScoreAdjust</span>=-1000
 <span style="color: #ff6347;">LimitCPU</span>=infinity
@@ -2517,9 +2517,9 @@ XDG_CURRENT_DESKTOP=GNOME
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #00bfff; font-weight: bold;">bash</span>
+<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">bash</span>
 
-<span style="color: #63b8ff;">unset</span> GNOME_DESKTOP_SESSION_ID
+<span style="color: #729fcf;">unset</span> GNOME_DESKTOP_SESSION_ID
 
 <span style="color: #888a85;">#</span><span style="color: #888a85;">=============================================================================</span>
 <span style="color: #888a85;">#  </span><span style="color: #888a85;">Launcher for Oracle JDeveloper 11g Release 2 (11.1.2.4.0)</span>
@@ -2786,6 +2786,249 @@ Categories=Development;Java;
 <li><a href="http://lee3star.blogspot.jp/2013/11/jdeveloper-12c-crashes-at-startup.html">JDeveloper 12c crashes at startup</a>
 </li>
 <li><a href="http://d.hatena.ne.jp/longingandtears/20121208/1354972484">Linux版のjavaで文字が□になる問題</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[検証]ADF印刷プレビュー機能]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-06-18-%5B%E6%A4%9C%E8%A8%BC%5Dadf%E5%8D%B0%E5%88%B7%E3%83%97%E3%83%AC%E3%83%93%E3%83%A5%E3%83%BC.html"/>
+    <updated>2014-06-18T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[検証]adf印刷プレビュー</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 検証内容</a></li>
+<li><a href="#sec-2">2. af:showPrintablePageBehaviorタグの使い方</a></li>
+<li><a href="#sec-3">3. 印刷内容の制御</a></li>
+<li><a href="#sec-4">4. IE印刷プレビュー画面を出す</a></li>
+<li><a href="#sec-5">5. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+Oracle ADFの印刷機能にたずさわる機会がありましたので、一部調査した内容を
+ここでメモしておきます。サンプルコードは <a href="https://github.com/luozengbin/ADFSamples/tree/master/PrintPreview">Github</a> に登録しています。
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 検証内容</h2>
+<div class="outline-text-2" id="text-1">
+<ol class="org-ol">
+<li><code>af:showPrintablePageBehavior</code> タグの使い方
+</li>
+<li>印刷内容の制御
+</li>
+<li>IE印刷プレビュー画面を出す
+</li>
+</ol>
+
+<p>
+<!-- more -->
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> af:showPrintablePageBehaviorタグの使い方</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+<code>af:showPrintablePageBehavior</code> タグを画面に任意のcommandコンポネントの子コンポネント
+として入れれば、そのcommandコンポネントがトリガーされると印刷プレビュー画面が新規ブラ
+ウザ画面にて表示される。
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 印刷内容の制御</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+基本的に全画面(同じjspx)の内容が印刷プレビュー画面に表示される。一部コンポネント
+(例： <code>af:menuBar</code> ) は表示しない仕様となっている。またレイアウトコンテナに
+<code>af:panelSplitter</code> や <code>af:panelAccordion</code> が使用された場合、アクティビティとなってい
+るレイアウトアイテムしかが印刷画面に表示しない。 <code>af:showPrintablePageBehavior</code> タグ
+の配置場所にもよります。
+</p>
+
+<p>
+また、 <code>f:view</code> タグの <code>beforePhase</code> リスナーにて印刷プレビュー画面に表示する内容を
+カスタマイズ(非表示制御)することができる。
+</p>
+
+<p>
+サンプル <code>DataView.jspx</code> の定義
+</p>
+
+<p>
+<div><script src='https://gist.github.com/0094c8013bc3eed1c962.js'></script>
+<noscript><pre><code>&lt;?xml version='1.0' encoding='UTF-8'?&gt;
+&lt;jsp:root xmlns:jsp=&quot;http://java.sun.com/JSP/Page&quot; version=&quot;2.1&quot;
+          xmlns:f=&quot;http://java.sun.com/jsf/core&quot;
+          xmlns:h=&quot;http://java.sun.com/jsf/html&quot;
+          xmlns:af=&quot;http://xmlns.oracle.com/adf/faces/rich&quot;&gt;
+  &lt;jsp:directive.page contentType=&quot;text/html;charset=UTF-8&quot;/&gt;
+
+  &lt;!--★beforePhaseリスナーの登録  --&gt;
+  &lt;f:view beforePhase=&quot;#{pageFlowScope.DataViewBean.beforePhaseMethod}&quot;&gt;
+    &lt;af:document id=&quot;d1&quot;&gt;
+      &lt;af:form id=&quot;f1&quot;&gt;
+        &lt;af:resource type=&quot;javascript&quot; source=&quot;/js/CustomPrint.js&quot;/&gt;
+        &lt;af:panelStretchLayout id=&quot;psl1&quot;&gt;
+          &lt;f:facet name=&quot;bottom&quot;&gt;
+            &lt;af:panelGroupLayout layout=&quot;scroll&quot;
+                                 xmlns:af=&quot;http://xmlns.oracle.com/adf/faces/rich&quot;
+                                 id=&quot;pgl2&quot;&gt;
+              &lt;af:panelGroupLayout id=&quot;pgl3&quot;&gt;
+                &lt;!--  ★印刷ボタンの定義 --&gt;
+                &lt;af:commandButton text=&quot;印刷&quot; id=&quot;cb1&quot;
+                                  inlineStyle=&quot;font-size:large;&quot;&gt;
+                  &lt;af:showPrintablePageBehavior/&gt;
+                &lt;/af:commandButton&gt;
+              &lt;/af:panelGroupLayout&gt;
+            &lt;/af:panelGroupLayout&gt;
+          &lt;/f:facet&gt;
+          &lt;f:facet name=&quot;center&quot;&gt;
+            &lt;af:table var=&quot;row&quot; rowBandingInterval=&quot;0&quot; id=&quot;t1&quot;
+                      value=&quot;#{pageFlowScope.DataViewBean.dataList}&quot;&gt;
+              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列1&quot; id=&quot;c2&quot; width=&quot;200&quot;&gt;
+                &lt;af:outputText value=&quot;#{row.col1}&quot; id=&quot;ot5&quot;/&gt;
+              &lt;/af:column&gt;
+              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列2&quot; id=&quot;c5&quot; width=&quot;200&quot;&gt;
+                &lt;af:outputText value=&quot;#{row.col2}&quot; id=&quot;ot1&quot;/&gt;
+              &lt;/af:column&gt;
+              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列3&quot; id=&quot;c1&quot; width=&quot;200&quot;&gt;
+                &lt;af:outputText value=&quot;#{row.col3}&quot; id=&quot;ot3&quot;/&gt;
+              &lt;/af:column&gt;
+              &lt;af:column sortable=&quot;false&quot; headerText=&quot;列4&quot; id=&quot;c3&quot; width=&quot;200&quot;&gt;
+                &lt;af:outputText value=&quot;#{row.col4}&quot; id=&quot;ot2&quot;/&gt;
+              &lt;/af:column&gt;
+            &lt;/af:table&gt;
+          &lt;/f:facet&gt;
+          &lt;f:facet name=&quot;start&quot;/&gt;
+          &lt;f:facet name=&quot;end&quot;/&gt;
+          &lt;f:facet name=&quot;top&quot;&gt;
+            &lt;af:panelGroupLayout id=&quot;pgl1&quot; layout=&quot;horizontal&quot;&gt;
+              &lt;af:outputLabel value=&quot;印刷プレビューテスト&quot; id=&quot;ol1&quot; inlineStyle=&quot;font-size:xx-large;&quot;/&gt;
+
+              &lt;!-- ★以降は印刷しないように --&gt;
+              &lt;af:menuBar id=&quot;mb1&quot;&gt;
+                &lt;af:menu text=&quot;menu 1&quot; id=&quot;m1&quot;/&gt;
+                &lt;af:menu text=&quot;menu 2&quot; id=&quot;m2&quot;/&gt;
+                &lt;af:menu text=&quot;menu 3&quot; id=&quot;m3&quot;/&gt;
+              &lt;/af:menuBar&gt;
+              &lt;af:inputText label=&quot;Label 1&quot; id=&quot;it1&quot;/&gt;
+              &lt;af:inputText label=&quot;Label 2&quot; id=&quot;it2&quot;/&gt;
+            &lt;/af:panelGroupLayout&gt;
+          &lt;/f:facet&gt;
+        &lt;/af:panelStretchLayout&gt;
+      &lt;/af:form&gt;
+    &lt;/af:document&gt;
+  &lt;/f:view&gt;
+&lt;/jsp:root&gt;</code></pre></noscript></div>
+
+</p>
+
+<p>
+サンプル <code>beforePhase</code> リスナー
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #8ae234; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">beforePhaseMethod</span>(<span style="color: #8ae234; font-weight: bold;">PhaseEvent</span> <span style="color: #ff6347;">phaseEvent</span>) {
+
+    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"----------   phaseEvent   -------------"</span>);
+    System.out.println(<span style="color: #ad7fa8; font-style: italic;">"phaseEvent.getPhaseId():"</span> + phaseEvent.getPhaseId());
+
+    <span style="color: #888a85;">//</span><span style="color: #888a85;">only perform action if RENDER_RESPONSE phase is reached</span>
+    <span style="color: #729fcf; font-weight: bold;">if</span> (phaseEvent.getPhaseId() == <span style="color: #8ae234;">PhaseId</span>.RENDER_RESPONSE) {
+
+        <span style="color: #8ae234; font-weight: bold;">FacesContext</span> <span style="color: #ff6347;">fctx</span> = FacesContext.getCurrentInstance();
+        <span style="color: #888a85;">//</span><span style="color: #888a85;">check internal request parameter</span>
+        <span style="color: #8ae234; font-weight: bold;">Map</span> <span style="color: #ff6347;">requestMap</span> = fctx.getExternalContext().getRequestMap();
+
+        <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12522;&#12463;&#12456;&#12473;&#12488;&#12467;&#12531;&#12486;&#12461;&#12473;&#12488;&#12395;&#21360;&#21047;&#12425;&#12375;&#12365;&#12461;&#12540;&#12434;&#29305;&#23450;</span>
+        <span style="color: #8ae234; font-weight: bold;">Object</span> <span style="color: #ff6347;">showPrintableBehavior</span> = requestMap.get(<span style="color: #ad7fa8; font-style: italic;">"oracle.adfinternal.view.faces.el.PrintablePage"</span>);
+        <span style="color: #729fcf; font-weight: bold;">if</span> (showPrintableBehavior != <span style="color: #8ae234;">null</span>) {
+            <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#30011;&#38754;&#12398;&#12459;&#12473;&#12479;&#12510;&#12452;&#12474;</span>
+            <span style="color: #729fcf; font-weight: bold;">if</span> (<span style="color: #8ae234;">Boolean</span>.TRUE == showPrintableBehavior) {
+                <span style="color: #888a85;">// </span><span style="color: #888a85;">&#12467;&#12531;&#12509;&#12493;&#12531;&#12488;ID&#12434;&#29992;&#12356;&#12390;&#38560;&#12377;&#20966;&#29702;&#12434;&#23455;&#26045;&#12377;&#12427;</span>
+                UiComponentControlUtil.setUnRendered(<span style="color: #ad7fa8; font-style: italic;">"mb1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it1"</span>, <span style="color: #ad7fa8; font-style: italic;">"it2"</span>);
+                UiComponentControlUtil.callbackJavascript(<span style="color: #ad7fa8; font-style: italic;">"customPrint();"</span>);
+            }
+        }
+    }
+}
+</pre>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> IE印刷プレビュー画面を出す</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+いい方法が見つからない、とりあえずWebBrowserというIEに含まれたActiveXコンポーネントを
+利用します。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-js"><span style="color: #729fcf; font-weight: bold;">function</span> <span style="color: #edd400; font-weight: bold;">customPrint</span>() {
+  <span style="color: #729fcf; font-weight: bold;">if</span> (getBrowser().indexOf(<span style="color: #ad7fa8; font-style: italic;">'ie8'</span>) !== -1 ) {
+    <span style="color: #729fcf; font-weight: bold;">if</span>(window.ActiveXObject == <span style="color: #8ae234;">null</span> || document.body.insertAdjacentHTML == <span style="color: #8ae234;">null</span>) {
+      <span style="color: #729fcf; font-weight: bold;">return</span>;
+    }
+    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">sWebBrowserCode</span> = <span style="color: #ad7fa8; font-style: italic;">'&lt;object width="0" height="0" classid="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"&gt;&lt;/object&gt;'</span>;
+    document.body.insertAdjacentHTML(<span style="color: #ad7fa8; font-style: italic;">'beforeEnd'</span>, sWebBrowserCode);
+    <span style="color: #729fcf; font-weight: bold;">var</span> <span style="color: #ff6347;">objWebBrowser</span> = document.body.lastChild;
+    <span style="color: #729fcf; font-weight: bold;">if</span>(objWebBrowser == <span style="color: #8ae234;">null</span>) <span style="color: #729fcf; font-weight: bold;">return</span>;
+    objWebBrowser.ExecWB(7, 1);
+    document.body.removeChild(objWebBrowser);
+  } <span style="color: #729fcf; font-weight: bold;">else</span> {
+    window.print();
+  }
+
+  <span style="color: #888a85;">// </span><span style="color: #888a85;">&#21360;&#21047;&#12503;&#12524;&#12499;&#12517;&#12540;&#30011;&#38754;&#38281;&#12376;&#12427;&#8594;HTML&#30011;&#38754;&#12434;&#38281;&#12376;&#12427;</span>
+  window.onfocus = <span style="color: #729fcf; font-weight: bold;">function</span>(){
+   (window.open(<span style="color: #ad7fa8; font-style: italic;">''</span>,<span style="color: #ad7fa8; font-style: italic;">'_self'</span>).opener=window).close(); 
+  };
+}
+</pre>
+</div>
+
+<p>
+ブラウザのセキュリティ設定に注意が必要です。
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> 参考</h2>
+<div class="outline-text-2" id="text-5">
+<ul class="org-ul">
+<li><a href="http://docs.oracle.com/cd/E21764_01/apirefs.1111/e12419/tagdoc/af_showPrintablePageBehavior.html">Oracle Fusion Middleware Tag Reference for Oracle ADF Faces 11g Release 1 (11.1.1.5.0)</a>
 </li>
 </ul>
 </div>
