@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Linux | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-08-16T17:46:54+09:00</updated>
+  <updated>2014-08-16T19:37:45+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,100 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[レシピ]Kerbroseパスワード変更ためのPAM設定]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-08-16-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dkerbrose%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E5%A4%89%E6%9B%B4%E3%81%9F%E3%82%81%E3%81%AEpam%E8%A8%AD%E5%AE%9A.html"/>
+    <updated>2014-08-16T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[レシピ]kerbroseパスワード変更ためのpam設定</id>
+    <content type="html"><![CDATA[<p>
+前の記事で <code>pam_krb5</code> モジュールでKerbrose認証を実現しました。ここで <code>passwd</code> コマン
+ドラインでKDCに登録されたプリンシバル鍵のパスワードを変更する方法を紹介します。
+</p>
+
+
+
+
+<p>
+<!-- more -->
+</p>
+
+
+
+
+<p>
+<code>passwd</code> コマンド実行時に裏で動いているのはPAMモジュールですので、
+<code>/etc/pam.d./passwd</code> に <code>pam_kbr5</code> モジュールを適用するようにすれば、パスワード変更時
+に自動的にKDCのデータベースに反映されます。
+</p>
+
+
+
+
+<p>
+<code>/etc/pam.d./passwd</code>
+</p>
+
+
+<pre class="example">
+#%PAM-1.0
+password        requisite       pam_cracklib.so retry=3 difok=1 minlen=8 dcredit=-1
+password        sufficient      pam_unix.so sha512 shadow nullok use_authtok
+password        sufficient      pam_krb5.so   ★ここです
+password        required        pam_deny.so
+</pre>
+
+
+
+
+<p>
+パスワード変更を実行してみましょう。
+</p>
+
+
+<pre class="example">
+[kbr_u01@mimi ~]$ passwd
+Kerberos 5 パスワード:                     ★現在のパスワードが聞かれる
+新しいパスワード:
+新しいパスワードを再入力してください:
+passwd: パスワードは正しく更新されました
+[kbr_u01@mimi ~]$
+</pre>
+
+
+
+
+<p>
+パスワード変更時のシスログ
+</p>
+
+
+<pre class="example">
+Aug 16 19:01:38 mimi passwd[15359]: pam_unix(passwd:chauthtok): user "kbr_u01" does not exist in /etc/passwd
+Aug 16 19:01:38 mimi passwd[15359]: pam_krb5[15359]: password changed for kbr_u01@JIZAI-DOMAIN.JP
+Aug 16 19:01:38 mimi passwd[15359]: pam_krb5[15359]: TGT verified using key for 'host/mimi.jizai-domain.jp@JIZAI-DOMAIN.JP'
+</pre>
+
+
+
+
+<p>
+KDCサーバ側のログ
+</p>
+
+
+<pre class="example">
+2014-08-16T19:34:36+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185276, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for kadmin/changepw@JIZAI-DOMAIN.JP
+2014-08-16T19:34:36+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185276, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for kadmin/changepw@JIZAI-DOMAIN.JP
+
+2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for krbtgt/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP
+2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for krbtgt/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP
+2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  TGS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for host/mimi.jizai-domain.jp@JIZAI-DOMAIN.JP
+2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  TGS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for host/mimi.jizai-domain.jp@JIZAI-DOMAIN.JP
+</pre>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[レシピ]Kerberos認証環境の構築]]></title>
@@ -3632,40 +3726,6 @@ log { source(src); filter(f_everything); destination(d_everything); };
 </ul>
 </div>
 </div>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[メモ]findでファイル更新日付順で表示する]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-08-07-%5B%E3%83%A1%E3%83%A2%5Dfind%E3%81%A7%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%9B%B4%E6%96%B0%E6%97%A5%E4%BB%98%E9%A0%86%E3%81%A7%E8%A1%A8%E7%A4%BA%E3%81%99%E3%82%8B.html"/>
-    <updated>2014-08-07T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[メモ]findでファイル更新日付順で表示する</id>
-    <content type="html"><![CDATA[<p>
-PJではメンバたち日々の作業成果物がどこかの共有ディレクトリに格納されているでしょう。
-共有ディレクトリに最近更新や追加されたファイルを見たい時がよくあることです。
-いちいち作業担当者に聞くのもうざいので。 <code>find</code> 、 <code>xargs</code> コマンドを駆使して実現して
-みた。
-</p>
-
-
-
-
-<pre class="example">
-$ find . -type f -print0 | xargs -0 ls -alt
-</pre>
-
-
-
-
-<ul class="org-ul">
-<li><code>find -type f</code> はファイルのみを対象とする
-</li>
-<li><code>find -print0</code> は検出されたファイルのフルパスをNULLキャラクターで分割して出力する
-</li>
-<li><code>xargs -0</code> もしくは <code>xargs --null</code> 入力ストリームの分割はNULLキャラクターを用いる
-</li>
-</ul>
 
 ]]></content>
   </entry>

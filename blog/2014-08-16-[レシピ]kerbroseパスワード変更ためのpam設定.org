@@ -1,0 +1,54 @@
+#+TITLE: [レシピ]Kerbroseパスワード変更ためのPAM設定
+#+DATE: 2014-08-16
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: kerbrose passwd
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+前の記事で =pam_krb5= モジュールでKerbrose認証を実現しました。ここで =passwd= コマン
+ドラインでKDCに登録されたプリンシバル鍵のパスワードを変更する方法を紹介します。
+
+{{{more}}}
+
+=passwd= コマンド実行時に裏で動いているのはPAMモジュールですので、
+=/etc/pam.d./passwd= に =pam_kbr5= モジュールを適用するようにすれば、パスワード変更時
+に自動的にKDCのデータベースに反映されます。
+
+=/etc/pam.d./passwd=
+#+begin_example 
+#%PAM-1.0
+password        requisite       pam_cracklib.so retry=3 difok=1 minlen=8 dcredit=-1
+password        sufficient      pam_unix.so sha512 shadow nullok use_authtok
+password        sufficient      pam_krb5.so   ★ここです
+password        required        pam_deny.so
+#+end_example
+
+パスワード変更を実行してみましょう。
+#+begin_example
+[kbr_u01@mimi ~]$ passwd
+Kerberos 5 パスワード:                     ★現在のパスワードが聞かれる
+新しいパスワード:
+新しいパスワードを再入力してください:
+passwd: パスワードは正しく更新されました
+[kbr_u01@mimi ~]$ 
+#+end_example
+
+パスワード変更時のシスログ
+#+begin_example
+Aug 16 19:01:38 mimi passwd[15359]: pam_unix(passwd:chauthtok): user "kbr_u01" does not exist in /etc/passwd
+Aug 16 19:01:38 mimi passwd[15359]: pam_krb5[15359]: password changed for kbr_u01@JIZAI-DOMAIN.JP
+Aug 16 19:01:38 mimi passwd[15359]: pam_krb5[15359]: TGT verified using key for 'host/mimi.jizai-domain.jp@JIZAI-DOMAIN.JP'
+#+end_example
+
+KDCサーバ側のログ
+#+begin_example
+2014-08-16T19:34:36+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185276, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for kadmin/changepw@JIZAI-DOMAIN.JP
+2014-08-16T19:34:36+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185276, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for kadmin/changepw@JIZAI-DOMAIN.JP
+
+2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for krbtgt/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP
+2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for krbtgt/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP
+2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  TGS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for host/mimi.jizai-domain.jp@JIZAI-DOMAIN.JP
+2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  TGS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for host/mimi.jizai-domain.jp@JIZAI-DOMAIN.JP
+#+end_example
