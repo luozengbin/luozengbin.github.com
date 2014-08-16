@@ -9,10 +9,12 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="PJではメンバたち日々の作業成果物がどこかの共有ディレクトリに格納されているでしょう。
-共有ディレクトリに最近更新や追加されたファイルを見たい時がよくあることです。
-いちいち作業担当者に聞くのもうざいので。 find 、 xargs コマンドを駆使して実現して
-みた。 $ find . - &hellip;">
+  <meta name="description" content="Table of Contents 1. 時刻を合わせる 1.1. NTPサービス構築手順
+1.2. NTPクライアントの設定 2. Kerbroseサービスの構築手順
+3. KDCにプリンシバルの登録
+4. KDCデータベースのバックアップ
+5. Kerberos認証の流れを確認する
+6. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -68,6 +70,350 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-08-15-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dkerberos%E8%AA%8D%E8%A8%BC%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">[レシピ]Kerberos認証環境の構築</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-15T00:00:00+09:00" pubdate data-updated="true">2014-08-15 (Fri)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 時刻を合わせる</a>
+<ul>
+<li><a href="#sec-1-1">1.1. NTPサービス構築手順</a></li>
+<li><a href="#sec-1-2">1.2. NTPクライアントの設定</a></li>
+</ul>
+</li>
+<li><a href="#sec-2">2. Kerbroseサービスの構築手順</a></li>
+<li><a href="#sec-3">3. KDCにプリンシバルの登録</a></li>
+<li><a href="#sec-4">4. KDCデータベースのバックアップ</a></li>
+<li><a href="#sec-5">5. Kerberos認証の流れを確認する</a></li>
+<li><a href="#sec-6">6. LDAP+pam_krbでLinuxログイン認証</a></li>
+<li><a href="#sec-7">7. 参考情報</a></li>
+</ul>
+</div>
+</div>
+<p>
+夏休み中にKerbrose認証環境の構築復習を行いました。ここでメモしておきます。
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-08-15-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dkerberos%E8%AA%8D%E8%A8%BC%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5D%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%81%AEuid%E3%81%AE%E6%8A%BD%E5%87%BA.html">[レシピ]ローカルシステムのUIDの抽出</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-12T00:00:00+09:00" pubdate data-updated="true">2014-08-12 (Tue)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>
+LDAPにユーザID定義時にローカルシステムのUIDと被らないように、ローカルシステムのUIDと
+GIDを抽出してみた。
+</p>
+
+<p>
+ユーザID、1000番代以下はシステム予約番号のことがすぐわかる。
+</p>
+<pre class="example">
+$ cat /etc/passwd | awk -F: '{print $3 "\t" $1}' | sort -n
+0	root
+1	bin
+2	daemon
+8	mail
+14	ftp
+32	rpc
+33	http
+40	named
+68	uuidd
+74	dovenull
+76	dovecot
+81	dbus
+84	avahi
+87	ntp
+89	mysql
+99	nobody
+102	polkitd
+124	colord
+169	transmission
+191	systemd-journal-gateway
+192	systemd-timesync
+193	systemd-network
+194	systemd-bus-proxy
+195	systemd-resolve
+241	mediatomb
+439	ldap
+998	dnsmasq
+999	git
+1000	akira
+1002	amule
+</pre>
+
+<p>
+グループID一覧
+</p>
+<pre class="example">
+$ cat /etc/group | awk -F: '{print $3 "\t" $1}' | sort -n
+0	root
+1	bin
+2	daemon
+3	sys
+4	adm
+5	tty
+6	disk
+7	lp
+8	mem
+9	kmem
+10	wheel
+11	ftp
+12	mail
+14	uucp
+19	log
+20	utmp
+21	locate
+24	rfkill
+25	smmsp
+32	rpc
+33	http
+40	named
+50	games
+54	lock
+68	uuidd
+74	dovenull
+76	dovecot
+81	dbus
+84	avahi
+87	ntp
+89	mysql
+90	network
+91	video
+92	audio
+93	optical
+94	floppy
+95	storage
+96	scanner
+97	input
+98	power
+99	nobody
+100	users
+102	polkitd
+124	colord
+169	transmission
+190	systemd-journal
+191	systemd-journal-gateway
+192	systemd-timesync
+193	systemd-network
+194	systemd-bus-proxy
+195	systemd-resolve
+241	mediatomb
+439	ldap
+998	dnsmasq
+999	git
+1002	g001
+1003	g002
+1004	g003
+1005	amule
+</pre>
+
+<p>
+<code>sort</code> コマンドで数字順でソートするためのオプションが <code>-n</code> であることを復習致しました。
+</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dldap%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E6%A7%8B%E7%AF%89.html">[レシピ]LDAPサーバの構築</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-12T00:00:00+09:00" pubdate data-updated="true">2014-08-12 (Tue)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 知識のおさらい</a>
+<ul>
+<li><a href="#sec-1-1">1.1. 用語</a></li>
+<li><a href="#sec-1-2">1.2. LDAPの役割</a></li>
+<li><a href="#sec-1-3">1.3. LDAPへ接続時（バインド）の認証方式</a></li>
+<li><a href="#sec-1-4">1.4. LDAPによるLinuxのログイン認証</a></li>
+<li><a href="#sec-1-5">1.5. LDAPによるSambaサーバのユーザ認証</a></li>
+<li><a href="#sec-1-6">1.6. LDAPデータ構造サンプル</a></li>
+<li><a href="#sec-1-7">1.7. よく使用するObjectClass</a></li>
+<li><a href="#sec-1-8">1.8. ldapsearchの使い方</a></li>
+<li><a href="#sec-1-9">1.9. ldapaddの使い方</a></li>
+<li><a href="#sec-1-10">1.10. ldapdeleteの使い方</a></li>
+<li><a href="#sec-1-11">1.11. ldapmodifyの使い方</a></li>
+<li><a href="#sec-1-12">1.12. slapindexの使い方</a></li>
+</ul>
+</li>
+<li><a href="#sec-2">2. 環境構成</a></li>
+<li><a href="#sec-3">3. OpenLDAPのインストール</a></li>
+<li><a href="#sec-4">4. OpenLDAPサーバ設定と起動</a></li>
+<li><a href="#sec-5">5. OpenLDAPログ出力設定</a></li>
+<li><a href="#sec-6">6. LDAPクライアントの設定</a></li>
+<li><a href="#sec-7">7. LDAPクライアントとサーバ間の通信内容</a></li>
+<li><a href="#sec-8">8. LDAPによるLinuxのログイン認証設定</a>
+<ul>
+<li><a href="#sec-8-1">8.1. LDAP連携用ライブラリの導入</a></li>
+<li><a href="#sec-8-2">8.2. LDAP認証PAMモジュールの設定</a></li>
+<li><a href="#sec-8-3">8.3. パスワード変更時の挙動</a></li>
+<li><a href="#sec-8-4">8.4. ログイン時の挙動</a></li>
+</ul>
+</li>
+<li><a href="#sec-9">9. 宿題</a></li>
+<li><a href="#sec-10">10. 参考情報</a></li>
+</ul>
+</div>
+</div>
+<p>
+夏休み中にOpenLDAPの構築復習を行いました。ここでメモしておきます。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dldap%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E6%A7%8B%E7%AF%89.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-08-12-%5B%E3%83%A1%E3%83%A2%5Dsyslog-ng%E3%81%AE%E3%83%AD%E3%82%B0%E5%87%BA%E5%8A%9B%E5%BD%A2%E5%BC%8F%E3%81%AE%E5%A4%89%E6%9B%B4.html">[メモ]syslog-ngのログ出力形式の変更</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-12T00:00:00+09:00" pubdate data-updated="true">2014-08-12 (Tue)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. デフォルトの出力形式</a></li>
+<li><a href="#sec-2">2. 出力形式変更手順</a></li>
+<li><a href="#sec-3">3. 参考情報</a></li>
+</ul>
+</div>
+</div>
+<p>
+Archlinuxでsyslog-ngのデフォルト出力形式は以下のようなイメージになります。ちょっと物
+足りない気がして、形式の変更方法を調べてみました。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-08-12-%5B%E3%83%A1%E3%83%A2%5Dsyslog-ng%E3%81%AE%E3%83%AD%E3%82%B0%E5%87%BA%E5%8A%9B%E5%BD%A2%E5%BC%8F%E3%81%AE%E5%A4%89%E6%9B%B4.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -495,493 +841,6 @@ Archlinux環境にJDeveloper 11g/12c 複数バージョンインストール時�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-07-01-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%81%AB%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%99%E3%82%8B-%E3%81%9D%E3%81%AE%EF%BC%91.html">[メモ]Otcopressにプラグインを導入する-その１</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-07-01T00:00:00+09:00" pubdate data-updated="true">2014-07-01 (Tue)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. TagCloudとカテゴリリスト</a></li>
-<li><a href="#sec-2">2. QRコード</a></li>
-<li><a href="#sec-3">3. 月間アーカイブ</a></li>
-<li><a href="#sec-4">4. 参考リンク</a></li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> TagCloudとカテゴリリスト</h2>
-<div class="outline-text-2" id="text-1">
-<p>
-<a href="https://github.com/tokkonopapa/octopress-tagcloud">このから</a> ダウンロードする
-</p>
-<pre class="example">
-[akira@jizai tmp]$ git clone https://github.com/tokkonopapa/octopress-tagcloud.git
-Cloning into 'octopress-tagcloud'...
-remote: Reusing existing pack: 65, done.
-remote: Total 65 (delta 0), reused 0 (delta 0)
-Unpacking objects: 100% (65/65), done.
-Checking connectivity... done.
-[akira@jizai tmp]$
-</pre>
-
-<p>
-<code>octopress-tagcloud/plugin/</code> 配下のファイルを <code>octopress/plugins</code> へコピーする。
-<code>octopress-tagcloud/source/</code> 配下のファイルを <code>octopress/source</code> へコピーする。
-</p>
-
-<pre class="example">
-[akira@jizai tmp]$ cd octopress-tagcloud/
-[akira@jizai octopress-tagcloud]$ cp -rfv plugins/* ~/.emacs.d/blogs/octopress/plugins
-`plugins/tag_cloud.rb' -&gt; `/home/akira/.emacs.d/blogs/octopress/plugins/tag_cloud.rb'
-[akira@jizai octopress-tagcloud]$ cp -rfv source/* ~/.emacs.d/blogs/octopress/source
-`source/_includes/custom/asides/tag_cloud.html' -&gt; `/home/akira/.emacs.d/blogs/octopress/source/_includes/custom/asides/tag_cloud.html'
-`source/_includes/custom/asides/category_list.html' -&gt; `/home/akira/.emacs.d/blogs/octopress/source/_includes/custom/asides/category_list.html'
-[akira@jizai octopress-tagcloud]$
-</pre>
-
-<p>
-<code>octopress/_config.yml</code> の <code>default_asides</code> 項目に <code>custom/asides/tag_cloud.html</code> と
-<code>custom/asides/category_list.html</code> を追加する。
-</p>
-<pre class="example">
-default_asides: [...., custom/asides/tag_cloud.html, custom/asides/category_list.html, ..... ]
-</pre>
-
-<p>
-このままだとTagCloudカテゴリリストが同じものになったしまうので、<a href="http://komasaru.github.io/blog/2012/12/19/octopress-add-tag-cloud/">ここ</a> と <a href="http://rcmdnk.github.io/blog/2013/04/12/blog-octopress/">ここ</a> の記事を
-参考してカテゴライズ機能を流用してTagCloud機能を実装する。以下TagCloud機能を実現する
-ためには変更及び追加したファイル一覧です。
-</p>
-
-<pre class="example">
-[akira@jizai octopress]$ git status
-Changes not staged for commit:
-  (use "git add &lt;file&gt;..." to update what will be committed)
-  (use "git checkout -- &lt;file&gt;..." to discard changes in working directory)
-  (commit or discard the untracked or modified content in submodules)
-
-	modified:   _config.yml
-	modified:   sass/partials/_archive.scss
-	modified:   sass/partials/_blog.scss
-	modified:   source/_includes/archive_post.html
-	modified:   source/_includes/post/categories.html
-	modified:   source/_layouts/page.html
-	modified:   source/_layouts/post.html
-
-Untracked files:
-  (use "git add &lt;file&gt;..." to include in what will be committed)
-
-	plugins/tag_cloud.old.rb
-	plugins/tag_cloud.rb
-	plugins/tag_generator.rb
-	source/_includes/custom/asides/related.html
-	source/_includes/custom/asides/tag_cloud.html
-	source/_includes/custom/tag_feed.xml
-	source/_includes/post/tags.html
-	source/_layouts/tag_index.html
-</pre>
-
-<p>
-記事書く際にヘッダの属性リストに <code>tags</code> と <code>category</code> を記述するすればOKです。
-</p>
-
-<pre class="example">
----
-title: "[メモ]Otcopressにプラグインを導入する-その１"
-date: 2014-07-01
-layout: post
-category: misc
-tags: Octopress blog
-published: true
-comments: true
----
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> QRコード</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-Google Chart APIで記事URLのQRコードイメージを自動的に生成する。
-</p>
-
-<p>
-<code>octopress/source/_includes/custom/asides/qrcode.html</code>
-</p>
-<pre class="example">
-&lt;section&gt;
-  &lt;!-- create at 2017/07/01 
-       Google Chart Tools: Infographics
-       https://developers.google.com/chart/infographics/docs/qr_codes?csw=1
-  --&gt;
-
-  &lt;div style="position: relative; text-align: center"&gt;
-
-    &lt;!-- Google Chart API でQRコード取得 --&gt;
-    &lt;img src="http://chart.apis.google.com/chart?chs=180x180&amp;amp;cht=qr&amp;amp;choe=UTF-8&amp;amp;chl=http://luozengbin.github.io/blog/2014-07-01-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%81%AB%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%99%E3%82%8B-%E3%81%9D%E3%81%AE%EF%BC%91.html" alt="post-qrcode" height="180" width="180" /&gt;
-
-    &lt;!-- サイトのfaviconを重ねて表示する --&gt;
-    &lt;div style="position: absolute; top: 75px; width: 100%; margin: 0 auto; text-align: center"&gt;
-      &lt;img style="border: 0.2em solid #FFF;" src="/favicon.png" alt="post-qrcode" height="30" width="30" /&gt;
-    &lt;/div&gt;
-  &lt;/div&gt;
-
-&lt;/section&gt;
-</pre>
-
-<p>
-<code>octopress/_config.yml</code> の <code>default_asides</code> 項目に <code>custom/asides/qrcode.html</code> を追加
-する。
-</p>
-<pre class="example">
-default_asides: [...., custom/asides/qrcode.html, ..... ]
-</pre>
-</div>
-</div>
-
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> 月間アーカイブ</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-作成中&#x2026;
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> 参考リンク</h2>
-<div class="outline-text-2" id="text-4">
-<ul class="org-ul">
-<li><a href="http://komasaru.github.io/blog/2012/12/19/octopress-add-tag-cloud/">Octopress - タグクラウドの追加</a>
-</li>
-<li><a href="http://rcmdnk.github.io/blog/2013/04/12/blog-octopress/">Octopressでのタグの運用</a>
-</li>
-<li><a href="http://komasaru.github.io/blog/2013/02/15/octopress-monthly-archives/">Octopress - 月別アーカイブ！</a>
-</li>
-<li><a href="http://rcmdnk.github.io/blog/2013/10/01/blog-octopress/">月間アーカイブ for Octopress</a>
-</li>
-</ul>
-</div>
-</div>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">[検証]SSHトンネル機能でVPN環境の構築</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-06-30T00:00:00+09:00" pubdate data-updated="true">2014-06-30 (Mon)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. SSHトンネリング</a></li>
-<li><a href="#sec-2">2. TUNデバイス利用方式</a>
-<ul>
-<li><a href="#sec-2-1">2.1. 1.sshdに対してトンネリングを有効化する</a></li>
-<li><a href="#sec-2-2">2.2. 2.rootユーザログインできるように公開鍵を登録する</a></li>
-<li><a href="#sec-2-3">2.3. 3.SSHトンネルを開設する</a></li>
-<li><a href="#sec-2-4">2.4. 4.各TUNデバイスにIPアドレスを付与する</a></li>
-<li><a href="#sec-2-5">2.5. 5.区間１トンネルと区間２トンネルを結び付ける</a></li>
-</ul>
-</li>
-<li><a href="#sec-3">3. TAPデバイス利用方式</a>
-<ul>
-<li><a href="#sec-3-1">3.1. 区間１の設定</a></li>
-<li><a href="#sec-3-2">3.2. 区間２の設定</a></li>
-</ul>
-</li>
-<li><a href="#sec-4">4. おまけに</a></li>
-<li><a href="#sec-5">5. 参考リンク</a></li>
-</ul>
-</div>
-</div>
-<p>
-友人に自宅のLAN内のコンテンツを共有するため、VPNについて検証しました。
-自宅のルータはYamahaのRTX810です。このルータのVPN機能を使えば簡単に出来てしまうので面
-白くないと思って、敢えてSSHのトンネル機能を使って0円VPN環境を構築してみた。
-</p>
-
-<p>
-更に難易度を上げて、自宅WAN側のグローバルIPを公開せずにAmazonEC2インスタンスをVPN経路
-に挟むことにしました。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html">[メモ]Emacsで漢字→かな変換</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-06-29T00:00:00+09:00" pubdate data-updated="true">2014-06-29 (Sun)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 考案</a></li>
-<li><a href="#sec-2">2. <code>skk-kakasi.el</code> の導入手順</a>
-<ul>
-<li><a href="#sec-2-1">2.1. KAKASIのインストール</a></li>
-<li><a href="#sec-2-2">2.2. ddskk のインストール</a></li>
-<li><a href="#sec-2-3">2.3. 動作確認</a></li>
-</ul>
-</li>
-<li><a href="#sec-3">3. 更に自動化する</a></li>
-<li><a href="#sec-4">4. もう一歩</a></li>
-</ul>
-</div>
-</div>
-<p>
-Emacsをドキュメントビューアとして使っていますが、時々漢字の読み方がわからないことに遭
-遇します。漢字から意味を読み取ったとしても、読み方がわからない場合が多いい。いままで
-一々ブラウザに切り替えて調べました。せっかくEmacsを使っているので自動化してみました。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html">[メモ]リモートXの接続方法</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-06-21T00:00:00+09:00" pubdate data-updated="true">2014-06-21 (Sat)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 検証環境</a></li>
-<li><a href="#sec-2">2. xhostによるXアプリを起動する方式</a></li>
-<li><a href="#sec-3">3. SSH X11フォワード方式</a></li>
-<li><a href="#sec-4">4. VNC方式</a></li>
-<li><a href="#sec-5">5. ローカルで異なるユーザでXアプリの起動</a></li>
-<li><a href="#sec-6">6. 参考サイト</a></li>
-</ul>
-</div>
-</div>
-<p>
-リモートLinuxサーバでXアプリを利用するケースはしばしばあります。
-実現方式について調べてみた。
-</p>
-
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="right" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<thead>
-<tr>
-<th scope="col" class="right">No</th>
-<th scope="col" class="left">サーバ側</th>
-<th scope="col" class="left">クライアント側</th>
-<th scope="col" class="left">備考</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="right">1</td>
-<td class="left">DISPLAY変数の指定</td>
-<td class="left">xhostよりアクセス許可</td>
-<td class="left">クライアント側6000番ポートの開放が必要</td>
-</tr>
-
-<tr>
-<td class="right">2</td>
-<td class="left">SSH X11 Forwarding</td>
-<td class="left">ssh -X で接続する</td>
-<td class="left">サーバ側：X11Forwarding yes が必要　</td>
-</tr>
-
-<tr>
-<td class="right">3</td>
-<td class="left">Xdmcp(udp:177)</td>
-<td class="left">Xサーバとして動く</td>
-<td class="left">Display Managerがエントリ画面になる</td>
-</tr>
-
-<tr>
-<td class="right">4</td>
-<td class="left">VNCサーバ(tcp:5901〜)</td>
-<td class="left">VNCビューア</td>
-<td class="left">よく使われる</td>
-</tr>
-
-<tr>
-<td class="right">5</td>
-<td class="left">XRDP</td>
-<td class="left">XRDPクライアントソフト</td>
-<td class="left">WindowsのRemote Desktop Procotol</td>
-</tr>
-</tbody>
-</table>
-
-<p>
-VNCとXRDP以外のサーバとクライアントの役割
-</p>
-<ul class="org-ul">
-<li>サーバ側:       Xアプリを動かす側
-</li>
-<li>クライアント側: Xサーバを動かす側
-</li>
-</ul>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 検証環境</h2>
-<div class="outline-text-2" id="text-1">
-<ul class="org-ul">
-<li>クライアント: GDM経由でGnome3が動いているGUI環境
-</li>
-<li>サーバ: CUIモードLinux環境
-</li>
-</ul>
-
-<pre class="example">
-┏━━━━━━━┓      ┏━━━━━━━┓
-┃ クライアント ┃      ┃   サーバ     ┃
-┃  mimi-air    ┣━━━┫    pipi      ┃
-┃192.168.100.13┃      ┃192.169.100.4 ┃
-┗━━━━━━━┛      ┗━━━━━━━┛
-</pre>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -1015,6 +874,22 @@ VNCとXRDP以外のサーバとクライアントの役割
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014-08-15-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dkerberos%E8%AA%8D%E8%A8%BC%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">[レシピ]Kerberos認証環境の構築</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5D%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%81%AEuid%E3%81%AE%E6%8A%BD%E5%87%BA.html">[レシピ]ローカルシステムのUIDの抽出</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dldap%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E6%A7%8B%E7%AF%89.html">[レシピ]LDAPサーバの構築</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-12-%5B%E3%83%A1%E3%83%A2%5Dsyslog-ng%E3%81%AE%E3%83%AD%E3%82%B0%E5%87%BA%E5%8A%9B%E5%BD%A2%E5%BC%8F%E3%81%AE%E5%A4%89%E6%9B%B4.html">[メモ]syslog-ngのログ出力形式の変更</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-08-07-%5B%E3%83%A1%E3%83%A2%5Dfind%E3%81%A7%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%9B%B4%E6%96%B0%E6%97%A5%E4%BB%98%E9%A0%86%E3%81%A7%E8%A1%A8%E7%A4%BA%E3%81%99%E3%82%8B.html">[メモ]findでファイル更新日付順で表示する</a>
       </li>
     
@@ -1038,22 +913,6 @@ VNCとXRDP以外のサーバとクライアントの役割
         <a href="/blog/2014-07-08-%5B%E6%A4%9C%E8%A8%BC%5Dsync%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%82%B3%E3%83%BC%E3%83%AB%E3%81%AE%E6%80%A7%E8%83%BD%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[検証]syncシステムコールの性能について</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2014-07-01-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%81%AB%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%99%E3%82%8B-%E3%81%9D%E3%81%AE%EF%BC%91.html">[メモ]Otcopressにプラグインを導入する-その１</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-06-30-%5B%E6%A4%9C%E8%A8%BC%5DSSH%E3%83%88%E3%83%B3%E3%83%8D%E3%83%AB%E6%A9%9F%E8%83%BD%E3%81%A7VPN%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">[検証]SSHトンネル機能でVPN環境の構築</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-06-29-%5B%E3%83%A1%E3%83%A2%5Demacs%E3%81%A7%E6%BC%A2%E5%AD%97%E2%86%92%E3%81%8B%E3%81%AA%E5%A4%89%E6%8F%9B.html">[メモ]Emacsで漢字→かな変換</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html">[メモ]リモートXの接続方法</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -1061,11 +920,11 @@ VNCとXRDP以外のサーバとクライアントの役割
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (5)</a></li><li><a href='/blog/categories/linux/'>linux (8)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (5)</a></li><li><a href='/blog/categories/linux/'>linux (12)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 130.0%'>passwd(1)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
 </section>
 
 <section>

@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-08-09T23:30:30+09:00</updated>
+  <updated>2014-08-16T17:46:02+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,3541 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[レシピ]Kerberos認証環境の構築]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-08-15-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dkerberos%E8%AA%8D%E8%A8%BC%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html"/>
+    <updated>2014-08-15T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[レシピ]kerberos認証環境の構築</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 時刻を合わせる</a>
+<ul>
+<li><a href="#sec-1-1">1.1. NTPサービス構築手順</a></li>
+<li><a href="#sec-1-2">1.2. NTPクライアントの設定</a></li>
+</ul>
+</li>
+<li><a href="#sec-2">2. Kerbroseサービスの構築手順</a></li>
+<li><a href="#sec-3">3. KDCにプリンシバルの登録</a></li>
+<li><a href="#sec-4">4. KDCデータベースのバックアップ</a></li>
+<li><a href="#sec-5">5. Kerberos認証の流れを確認する</a></li>
+<li><a href="#sec-6">6. LDAP+pam_krbでLinuxログイン認証</a></li>
+<li><a href="#sec-7">7. 参考情報</a></li>
+</ul>
+</div>
+</div>
+<p>
+夏休み中にKerbrose認証環境の構築復習を行いました。ここでメモしておきます。
+<!-- more -->
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 時刻を合わせる</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+kerbroseチケットの有効期限及び、クライアントマシンタイムスタンプチェックをより正確に
+働けるようにするため。同一レルムのマシンの時刻を同期化しておきましょう。
+</p>
+
+<p>
+KDCサーバに <code>ntp</code> サービスを立ち上げて、他のマシンからKDCサーバの <code>ntp</code> サービスを使
+用するようにする。
+</p>
+</div>
+
+<div id="outline-container-sec-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> NTPサービス構築手順</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+<code>sudo pacman -S ntp</code> でntpパッケージをインストールする。インストールされたファイル一
+覧は以下となります。
+</p>
+
+<pre class="example">
+[akira@pipi ~]$ sudo pacman -Ql ntp
+ntp /etc/
+ntp /etc/ntp.conf                       ★NTPサービス設定ファイル
+ntp /usr/
+ntp /usr/bin/
+ntp /usr/bin/calc_tickadj
+ntp /usr/bin/ntp-keygen
+ntp /usr/bin/ntp-wait
+ntp /usr/bin/ntpd
+ntp /usr/bin/ntpdate
+ntp /usr/bin/ntpdc
+ntp /usr/bin/ntpq
+ntp /usr/bin/ntptime
+ntp /usr/bin/ntptrace
+ntp /usr/bin/sntp
+ntp /usr/bin/tickadj
+ntp /usr/lib/
+ntp /usr/lib/systemd/
+ntp /usr/lib/systemd/ntp-units.d/
+ntp /usr/lib/systemd/ntp-units.d/50-ntp.list
+ntp /usr/lib/systemd/system/
+ntp /usr/lib/systemd/system/ntpd.service     ★ntpdデーモン起動用サービス定義ファイル
+ntp /usr/lib/systemd/system/ntpdate.service  ★ntpdプロセスで時刻を同期化するOneShotサービス定義ファイル
+ntp /usr/share/
+ntp /usr/share/doc/
+...中略...
+</pre>
+
+<p>
+<code>/etc/ntp.conf</code> ファイルサンプル
+</p>
+<pre class="example">
+# With the default settings below, ntpd will only synchronize your clock.
+#
+# For details, see:
+# - the ntp.conf man page
+# - http://support.ntp.org/bin/view/Support/GettingStarted
+# - https://wiki.archlinux.org/index.php/Network_Time_Protocol_daemon
+
+# Associate to public NTP pool servers; see http://www.pool.ntp.org/
+server 0.jp.pool.ntp.org iburst             ★物理的に近いサーバープールを使用する
+server 1.jp.pool.ntp.org iburst
+server 2.jp.pool.ntp.org iburst
+server 3.jp.pool.ntp.org iburst
+
+# ネットが繋がらない時に自身を NTP サーバーに変身する
+server 127.127.1.1                          ★LAN内のマシンにntpサービスを継続提供するための設定
+fudge  127.127.1.1 stratum 12
+
+# Only allow read-only access from localhost
+restrict default noquery nopeer
+restrict 127.0.0.1
+restrict ::1
+
+# Location of drift file
+driftfile /var/lib/ntp/ntp.drift
+
+# Location of lof file
+logfile /var/log/ntp.log                     ★ログ出力先の指定
+
+# NOTE: If you run dhcpcd and have lines like 'restrict' and 'fudge' appearing
+# here, be sure to add '-Y -N' to the dhcpcd_ethX variables in /etc/conf.d/net
+</pre>
+
+<p>
+サービスを有効化して起動する。
+</p>
+<pre class="example">
+$ sudo systemctl enable ntpd.service
+Created symlink from /etc/systemd/system/multi-user.target.wants/ntpd.service to /usr/lib/systemd/system/ntpd.service.
+$ sudo systemctl start ntpd.service
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> NTPクライアントの設定</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+ntpクライアントは <code>ntp</code> パッケージの <code>ntpdate.service</code> サービスを利用してマシン起動時
+にLAN内のntpサービスと時刻同期化を行います。
+</p>
+
+<p>
+LAN内のntpサービスを利用するために <code>/etc/ntp.conf</code> にntpサーバのURLをLAN内のntpサー
+バに指すように設定を行う。
+</p>
+<pre class="example">
+[akira@mimi ~]$ cat /etc/ntp.conf
+# LAN内のntpサービスを利用する
+server 192.168.100.4
+
+# Only allow read-only access from localhost
+restrict default noquery nopeer
+restrict 127.0.0.1
+restrict ::1
+
+# Location of drift file
+driftfile /var/lib/ntp/ntp.drift
+</pre>
+
+<p>
+<code>ntpdate.service</code> を起動する
+</p>
+
+<pre class="example">
+$ sudo systemctl enable ntpdate.service 
+Created symlink from /etc/systemd/system/multi-user.target.wants/ntpdate.service to /usr/lib/systemd/system/ntpdate.service.
+$ sudo systemctl start ntpdate.service
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> Kerbroseサービスの構築手順</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+MITの <a href="http://web.mit.edu/kerberos/">KerbroseV</a> を用いて構築します。まず、 <code>pacman</code> で <code>kbr5</code> パッケージをインストー
+ルしましょう。
+</p>
+<pre class="example">
+$ sudo pacman -S krb5
+warning: krb5-1.12.1-1 is up to date -- reinstalling
+resolving dependencies...
+looking for inter-conflicts...
+
+Packages (1): krb5-1.12.1-1
+
+Total Installed Size:   3.60 MiB
+Net Upgrade Size:       0.00 MiB
+
+:: Proceed with installation? [Y/n] 
+(1/1) checking keys in keyring                                                                 [########################################################] 100%
+(1/1) checking package integrity                                                               [########################################################] 100%
+(1/1) loading package files                                                                    [########################################################] 100%
+(1/1) checking for file conflicts                                                              [########################################################] 100%
+(1/1) checking available disk space                                                            [########################################################] 100%
+(1/1) reinstalling krb5                                                                        [########################################################] 100%
+synchronizing filesystem...
+$
+</pre>
+
+<p>
+kbr5パッケージの構成を以下のようになります、主要ファイルの説明は <code>★</code> マークにて解説
+する。
+</p>
+<pre class="example">
+$ sudo pacman -Ql krb5
+krb5 /etc/
+krb5 /etc/krb5.conf                  ★Kerbrose認証システム参加するための設定ファイル
+krb5 /usr/
+krb5 /usr/bin/
+krb5 /usr/bin/gss-client
+krb5 /usr/bin/gss-server
+krb5 /usr/bin/k5srvutil
+krb5 /usr/bin/kadmin                 ★Kerbroseの認証データをメンテナンスするためのツール
+krb5 /usr/bin/kadmin.local           ★kadminと同じが、ローカルのrootユーザでパスワード入力なしで利用可能
+krb5 /usr/bin/kadmind                ★kadminデーモンプロセス、tcp/udpで同じレルムに属するクライアントに管理サービスを提供する
+krb5 /usr/bin/kdb5_ldap_util
+krb5 /usr/bin/kdb5_util              ★KDCデータベースメンテナンス用のツール
+krb5 /usr/bin/kdestroy               ★ローカルマシンに取得済みのKerbroseチケットを破棄するためのツール
+krb5 /usr/bin/kinit                  ★TGTチケット取得用
+krb5 /usr/bin/klist                  ★取得済みチケット一覧表示用
+krb5 /usr/bin/kpasswd                ★プリンシバルの認証パスワード変更用
+krb5 /usr/bin/kprop
+krb5 /usr/bin/kpropd
+krb5 /usr/bin/kproplog
+krb5 /usr/bin/krb5-config
+krb5 /usr/bin/krb5-send-pr
+krb5 /usr/bin/krb5kdc
+krb5 /usr/bin/ksu
+krb5 /usr/bin/kswitch
+krb5 /usr/bin/ktutil
+krb5 /usr/bin/kvno
+krb5 /usr/bin/sclient
+krb5 /usr/bin/sim_client
+krb5 /usr/bin/sim_server
+krb5 /usr/bin/sserver
+krb5 /usr/bin/uuclient
+krb5 /usr/bin/uuserver
+krb5 /usr/include/
+krb5 /usr/include/gssapi.h
+krb5 /usr/include/gssapi/
+krb5 /usr/include/gssapi/gssapi.h
+krb5 /usr/include/gssapi/gssapi_ext.h
+krb5 /usr/include/gssapi/gssapi_generic.h
+krb5 /usr/include/gssapi/gssapi_krb5.h
+krb5 /usr/include/gssapi/mechglue.h
+krb5 /usr/include/gssrpc/
+krb5 /usr/include/gssrpc/auth.h
+krb5 /usr/include/gssrpc/auth_gss.h
+krb5 /usr/include/gssrpc/auth_gssapi.h
+krb5 /usr/include/gssrpc/auth_unix.h
+krb5 /usr/include/gssrpc/clnt.h
+krb5 /usr/include/gssrpc/netdb.h
+krb5 /usr/include/gssrpc/pmap_clnt.h
+krb5 /usr/include/gssrpc/pmap_prot.h
+krb5 /usr/include/gssrpc/pmap_rmt.h
+krb5 /usr/include/gssrpc/rename.h
+krb5 /usr/include/gssrpc/rpc.h
+krb5 /usr/include/gssrpc/rpc_msg.h
+krb5 /usr/include/gssrpc/svc.h
+krb5 /usr/include/gssrpc/svc_auth.h
+krb5 /usr/include/gssrpc/types.h
+krb5 /usr/include/gssrpc/xdr.h
+krb5 /usr/include/kadm5/
+krb5 /usr/include/kadm5/admin.h
+krb5 /usr/include/kadm5/chpass_util_strings.h
+krb5 /usr/include/kadm5/kadm_err.h
+krb5 /usr/include/kdb.h
+krb5 /usr/include/krad.h
+krb5 /usr/include/krb5.h
+krb5 /usr/include/krb5/
+krb5 /usr/include/krb5/ccselect_plugin.h
+krb5 /usr/include/krb5/clpreauth_plugin.h
+krb5 /usr/include/krb5/hostrealm_plugin.h
+krb5 /usr/include/krb5/kadm5_hook_plugin.h
+krb5 /usr/include/krb5/kdcpreauth_plugin.h
+krb5 /usr/include/krb5/krb5.h
+krb5 /usr/include/krb5/localauth_plugin.h
+krb5 /usr/include/krb5/locate_plugin.h
+krb5 /usr/include/krb5/plugin.h
+krb5 /usr/include/krb5/preauth_plugin.h
+krb5 /usr/include/krb5/pwqual_plugin.h
+krb5 /usr/include/profile.h
+krb5 /usr/include/verto-module.h
+krb5 /usr/include/verto.h
+krb5 /usr/lib/
+krb5 /usr/lib/krb5/
+krb5 /usr/lib/krb5/plugins/
+krb5 /usr/lib/krb5/plugins/kdb/
+krb5 /usr/lib/krb5/plugins/kdb/db2.so
+krb5 /usr/lib/krb5/plugins/kdb/kldap.so
+krb5 /usr/lib/krb5/plugins/preauth/
+krb5 /usr/lib/krb5/plugins/preauth/otp.so
+krb5 /usr/lib/krb5/plugins/preauth/pkinit.so
+krb5 /usr/lib/libgssapi_krb5.so
+krb5 /usr/lib/libgssapi_krb5.so.2
+krb5 /usr/lib/libgssapi_krb5.so.2.2
+krb5 /usr/lib/libgssrpc.so
+krb5 /usr/lib/libgssrpc.so.4
+krb5 /usr/lib/libgssrpc.so.4.2
+krb5 /usr/lib/libk5crypto.so
+krb5 /usr/lib/libk5crypto.so.3
+krb5 /usr/lib/libk5crypto.so.3.1
+krb5 /usr/lib/libkadm5clnt.so
+krb5 /usr/lib/libkadm5clnt_mit.so
+krb5 /usr/lib/libkadm5clnt_mit.so.9
+krb5 /usr/lib/libkadm5clnt_mit.so.9.0
+krb5 /usr/lib/libkadm5srv.so
+krb5 /usr/lib/libkadm5srv_mit.so
+krb5 /usr/lib/libkadm5srv_mit.so.9
+krb5 /usr/lib/libkadm5srv_mit.so.9.0
+krb5 /usr/lib/libkdb5.so
+krb5 /usr/lib/libkdb5.so.7
+krb5 /usr/lib/libkdb5.so.7.0
+krb5 /usr/lib/libkdb_ldap.so
+krb5 /usr/lib/libkdb_ldap.so.1
+krb5 /usr/lib/libkdb_ldap.so.1.0
+krb5 /usr/lib/libkrad.so
+krb5 /usr/lib/libkrad.so.0
+krb5 /usr/lib/libkrad.so.0.0
+krb5 /usr/lib/libkrb5.so
+krb5 /usr/lib/libkrb5.so.3
+krb5 /usr/lib/libkrb5.so.3.3
+krb5 /usr/lib/libkrb5support.so
+krb5 /usr/lib/libkrb5support.so.0
+krb5 /usr/lib/libkrb5support.so.0.1
+krb5 /usr/lib/libverto.so
+krb5 /usr/lib/libverto.so.0
+krb5 /usr/lib/libverto.so.0.0
+krb5 /usr/lib/pkgconfig/
+krb5 /usr/lib/pkgconfig/gssrpc.pc
+krb5 /usr/lib/pkgconfig/kadm-client.pc
+krb5 /usr/lib/pkgconfig/kadm-server.pc
+krb5 /usr/lib/pkgconfig/kdb.pc
+krb5 /usr/lib/pkgconfig/krb5-gssapi.pc
+krb5 /usr/lib/pkgconfig/krb5.pc
+krb5 /usr/lib/pkgconfig/mit-krb5-gssapi.pc
+krb5 /usr/lib/pkgconfig/mit-krb5.pc
+krb5 /usr/lib/systemd/
+krb5 /usr/lib/systemd/system/
+krb5 /usr/lib/systemd/system/krb5-kadmind.service    ★KDCデータ管理サービス
+krb5 /usr/lib/systemd/system/krb5-kdc.service        ★KDCサービス
+krb5 /usr/lib/systemd/system/krb5-kpropd.service
+krb5 /usr/lib/systemd/system/krb5-kpropd.socket
+krb5 /usr/lib/systemd/system/krb5-kpropd@.service
+krb5 /usr/share/
+krb5 /usr/share/aclocal/
+krb5 /usr/share/aclocal/ac_check_krb5.m4
+krb5 /usr/share/doc/
+krb5 /usr/share/doc/krb5/
+krb5 /usr/share/doc/krb5/examples/                  ★設定ファイルサンプル
+krb5 /usr/share/doc/krb5/examples/kdc.conf
+krb5 /usr/share/doc/krb5/examples/kerberos.ldif
+krb5 /usr/share/doc/krb5/examples/kerberos.schema
+krb5 /usr/share/doc/krb5/examples/krb5.conf
+krb5 /usr/share/doc/krb5/examples/services.append
+krb5 /usr/share/gnats/
+krb5 /usr/share/gnats/mit
+krb5 /usr/share/licenses/
+krb5 /usr/share/licenses/krb5/
+krb5 /usr/share/licenses/krb5/LICENSE
+krb5 /usr/share/locale/
+krb5 /usr/share/locale/en_US/
+krb5 /usr/share/locale/en_US/LC_MESSAGES/
+krb5 /usr/share/locale/en_US/LC_MESSAGES/mit-krb5.mo
+krb5 /usr/share/man/
+krb5 /usr/share/man/man1/
+krb5 /usr/share/man/man1/k5srvutil.1.gz
+krb5 /usr/share/man/man1/kadmin.1.gz
+krb5 /usr/share/man/man1/kdestroy.1.gz
+krb5 /usr/share/man/man1/kinit.1.gz
+krb5 /usr/share/man/man1/klist.1.gz
+krb5 /usr/share/man/man1/kpasswd.1.gz
+krb5 /usr/share/man/man1/krb5-config.1.gz
+krb5 /usr/share/man/man1/krb5-send-pr.1.gz
+krb5 /usr/share/man/man1/ksu.1.gz
+krb5 /usr/share/man/man1/kswitch.1.gz
+krb5 /usr/share/man/man1/ktutil.1.gz
+krb5 /usr/share/man/man1/kvno.1.gz
+krb5 /usr/share/man/man1/sclient.1.gz
+krb5 /usr/share/man/man5/
+krb5 /usr/share/man/man5/.k5identity.5.gz
+krb5 /usr/share/man/man5/.k5login.5.gz
+krb5 /usr/share/man/man5/k5identity.5.gz
+krb5 /usr/share/man/man5/k5login.5.gz
+krb5 /usr/share/man/man5/kadm5.acl.5.gz
+krb5 /usr/share/man/man5/kdc.conf.5.gz
+krb5 /usr/share/man/man5/krb5.conf.5.gz
+krb5 /usr/share/man/man8/
+krb5 /usr/share/man/man8/kadmin.local.8.gz
+krb5 /usr/share/man/man8/kadmind.8.gz
+krb5 /usr/share/man/man8/kdb5_ldap_util.8.gz
+krb5 /usr/share/man/man8/kdb5_util.8.gz
+krb5 /usr/share/man/man8/kprop.8.gz
+krb5 /usr/share/man/man8/kpropd.8.gz
+krb5 /usr/share/man/man8/kproplog.8.gz
+krb5 /usr/share/man/man8/krb5kdc.8.gz
+krb5 /usr/share/man/man8/sserver.8.gz
+krb5 /var/
+krb5 /var/lib/
+krb5 /var/lib/krb5kdc/
+krb5 /var/lib/krb5kdc/kdc.conf               ★KDC設定ファイル
+$
+</pre>
+
+<p>
+KDCサーバの設定 <code>/var/lib/krb5kdc/kdc.conf</code>
+</p>
+<pre class="example">
+$ cat kdc.conf
+[kdcdefaults]
+	kdc_ports = 750,88
+
+[realms]
+	JIZAI-DOMAIN.JP = {                                       ★レルムの定義
+		database_name = /var/lib/krb5kdc/principal            ★KDCデータベースファイルの格納パス
+		acl_file = /var/lib/krb5kdc/kadm5.acl                 ★プリンシバルのアクセスコントロール定義
+		key_stash_file = /var/lib/krb5kdc/.k5.JIZAI-DOMAIN.JP ★KDCデータベース暗号化パスワードファイル
+		kdc_ports = 750,88                                    ★KDCサービスUDPポート
+		max_life = 10h 0m 0s                                  ★発行チケットの有効時間
+		max_renewable_life = 7d 0h 0m 0s
+	}
+$
+</pre>
+
+<p>
+プリンシバルのアクセスコントロールの定義 <code>kadm5.acl</code>
+</p>
+<pre class="example">
+$ cat /var/lib/krb5kdc/kadm5.acl
+*/admin@JIZAI-DOMAIN.JP *
+$
+</pre>
+
+
+<p>
+レルムに参加するホストに対しての設定 <code>/etc/krb5.conf</code>
+</p>
+<pre class="example">
+$ cat /etc/krb5.conf
+[libdefaults]
+	default_realm = JIZAI-DOMAIN.JP
+    dns_lookup_realm = false
+	dns_lookup_kdc = false
+	ticket_lifetime = 10h
+	renew_lifetime = 7d
+	forwardable = true                                  ★TGTチケットの転送を可能にする
+
+[realms]
+	JIZAI-DOMAIN.JP = {
+        kdc = pipi.jizai-domain.jp:88                   ★KDCサーバ接続情報、DNSから自動取得も可能
+		admin_server = pipi.jizai-domain.jp:749         ★kadminサービス接続情報
+		default_domain = jizai-domain.jp
+	}
+
+[domain_realm]
+	jizai-domain.jp  = JIZAI-DOMAIN.JP
+    .jizai-domain.jp = JIZAI-DOMAIN.JP
+
+[logging]
+        kdc = SYSLOG:INFO:LOCAL5
+        admin_server = SYSLOG:INFO:LOCAL5
+$
+</pre>
+
+<p>
+KDCサーバでデータベースを初期化する
+</p>
+<pre class="example">
+$ sudo kdb5_util create -s
+Loading random data
+Initializing database '/var/lib/krb5kdc/principal' for realm 'JIZAI-DOMAIN.JP',
+master key name 'K/M@JIZAI-DOMAIN.JP'                           ★データベース暗号化用プリンシバル：K/M@JIZAI-DOMAIN.JP
+You will be prompted for the database Master Password.
+It is important that you NOT FORGET this password.
+Enter KDC database master key:                                  ★データベース暗号化用パスワード
+Re-enter KDC database master key to verify: 
+
+$ ls -al /var/lib/krb5kdc                                       ★データベース作成されることを確認する
+total 40
+drwxr-xr-x  2 root root 4096 Aug 15 15:37 .
+drwxr-xr-x 31 root root 4096 Aug 15 00:00 ..
+-rw-------  1 root root   76 Aug 15 15:37 .k5.JIZAI-DOMAIN.JP   ★データベースファイルのパスワードファイル
+-rw-r--r--  1 root root   26 Aug 15 14:44 kadm5.acl             ★アクセスコントロールファイル
+-rw-r--r--  1 root root  288 Aug 15 14:40 kdc.conf
+-rw-------  1 root root 8192 Aug 15 15:37 principal             ★データベースファイル本体
+-rw-------  1 root root 8192 Aug 15 15:37 principal.kadm5
+-rw-------  1 root root    0 Aug 15 15:37 principal.kadm5.lock
+-rw-------  1 root root    0 Aug 15 15:37 principal.ok
+$
+</pre>
+
+<p>
+KDCサーバにてrootアカウントでKDC管理用 <code>root/admin</code> プリンシバルを登録する。
+</p>
+<pre class="example">
+$ sudo kadmin.local -p root/admin -q "addprinc root/admin"
+Authenticating as principal root/admin with password.
+WARNING: no policy specified for root/admin@JIZAI-DOMAIN.JP; defaulting to no policy
+Enter password for principal "root/admin@JIZAI-DOMAIN.JP":            ★root/admin プリンシバルのパスワード
+Re-enter password for principal "root/admin@JIZAI-DOMAIN.JP": 
+Principal "root/admin@JIZAI-DOMAIN.JP" created.                       ★プリンシバルフルネーム：root/admin@JIZAI-DOMAIN.JP
+$
+</pre>
+
+<p>
+KDCサービスを有効化して起動する
+</p>
+<pre class="example">
+$ sudo systemctl enable krb5-kdc.service              ★KDCサービス
+Created symlink from /etc/systemd/system/multi-user.target.wants/krb5-kdc.service to /usr/lib/systemd/system/krb5-kdc.service.
+
+$ sudo systemctl enable krb5-kadmind.service          ★KDC管理用サービス
+Created symlink from /etc/systemd/system/multi-user.target.wants/krb5-kadmind.service to /usr/lib/systemd/system/krb5-kadmind.service.
+
+$ sudo systemctl start krb5-kdc.service
+$ sudo systemctl start krb5-kadmind.service
+
+★ 使用ポート一覧
+$ sudo netstat -nutpl | grep k
+tcp        0      0 0.0.0.0:749             0.0.0.0:*               LISTEN      29474/kadmind       
+tcp        0      0 0.0.0.0:464             0.0.0.0:*               LISTEN      29474/kadmind       
+tcp6       0      0 :::749                  :::*                    LISTEN      29474/kadmind       
+tcp6       0      0 :::464                  :::*                    LISTEN      29474/kadmind       
+udp        0      0 0.0.0.0:464             0.0.0.0:*                           29474/kadmind       
+udp        0      0 0.0.0.0:750             0.0.0.0:*                           29470/krb5kdc       
+udp        0      0 0.0.0.0:88              0.0.0.0:*                           29470/krb5kdc       
+udp6       0      0 fe80::ba27:ebff:fe0:464 :::*                                29474/kadmind       
+udp6       0      0 fe80::ba27:ebff:fe0:750 :::*                                29470/krb5kdc       
+udp6       0      0 fe80::ba27:ebff:fe0d:88 :::*                                29470/krb5kdc
+</pre>
+
+<p>
+サービス起動時のログ
+</p>
+<pre class="example">
+$ sudo tail -f /var/log/everything.log
+
+★kdc起動
+2014-08-15T15:55:29+09:00 pipi daemon info systemd[1]:  Starting Kerberos 5 KDC...
+2014-08-15T15:55:29+09:00 pipi daemon info systemd[1]:  Started Kerberos 5 KDC.
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  Loaded
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  Loaded
+2014-08-15T15:55:30+09:00 pipi local5 err krb5kdc[29867]:  preauth pkinit failed to initialize: No realms configured correctly for pkinit support
+2014-08-15T15:55:30+09:00 pipi local5 err krb5kdc[29867]:  preauth pkinit failed to initialize: No realms configured correctly for pkinit support
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  setting up network...
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  setting up network...
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  listening on fd 7: udp 0.0.0.0.88 (pktinfo)
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  listening on fd 7: udp 0.0.0.0.88 (pktinfo)
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  listening on fd 8: udp 0.0.0.0.750 (pktinfo)
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  listening on fd 8: udp 0.0.0.0.750 (pktinfo)
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  setsockopt(9,IPV6_V6ONLY,1) worked
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  setsockopt(9,IPV6_V6ONLY,1) worked
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  No realms configured correctly for pkinit support - Cannot request packet info for udp socket address :: port 88
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  No realms configured correctly for pkinit support - Cannot request packet info for udp socket address :: port 88
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  skipping unrecognized local address family 17
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  skipping unrecognized local address family 17
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  skipping unrecognized local address family 17
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  skipping unrecognized local address family 17
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  setsockopt(9,IPV6_V6ONLY,1) worked
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  setsockopt(9,IPV6_V6ONLY,1) worked
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  listening on fd 9: udp fe80::ba27:ebff:fe0d:8d3a%eth0.88
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  listening on fd 9: udp fe80::ba27:ebff:fe0d:8d3a%eth0.88
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  setsockopt(10,IPV6_V6ONLY,1) worked
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  setsockopt(10,IPV6_V6ONLY,1) worked
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  listening on fd 10: udp fe80::ba27:ebff:fe0d:8d3a%eth0.750
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  listening on fd 10: udp fe80::ba27:ebff:fe0d:8d3a%eth0.750
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  set up 4 sockets
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  set up 4 sockets
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  commencing operation
+2014-08-15T15:55:30+09:00 pipi local5 info krb5kdc[29867]:  commencing operation
+2014-08-15T15:55:30+09:00 pipi daemon info krb5kdc[29867]:  krb5kdc: starting...
+
+★kadmind起動
+
+2014-08-15T15:56:09+09:00 pipi daemon info systemd[1]:  Starting Kerberos 5 administration server...
+2014-08-15T15:56:09+09:00 pipi daemon info systemd[1]:  Started Kerberos 5 administration server.
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  No dictionary file specified, continuing without one.
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  No dictionary file specified, continuing without one.
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  setting up network...
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  setting up network...
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 7: udp 0.0.0.0.464 (pktinfo)
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 7: udp 0.0.0.0.464 (pktinfo)
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  setsockopt(8,IPV6_V6ONLY,1) worked
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  setsockopt(8,IPV6_V6ONLY,1) worked
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  Invalid argument - Cannot request packet info for udp socket address :: port 464
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  Invalid argument - Cannot request packet info for udp socket address :: port 464
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  skipping unrecognized local address family 17
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  skipping unrecognized local address family 17
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  skipping unrecognized local address family 17
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  skipping unrecognized local address family 17
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  setsockopt(8,IPV6_V6ONLY,1) worked
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  setsockopt(8,IPV6_V6ONLY,1) worked
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 8: udp fe80::ba27:ebff:fe0d:8d3a%eth0.464
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 8: udp fe80::ba27:ebff:fe0d:8d3a%eth0.464
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  setsockopt(9,IPV6_V6ONLY,1) worked
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  setsockopt(9,IPV6_V6ONLY,1) worked
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 10: tcp 0.0.0.0.464
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 10: tcp 0.0.0.0.464
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 9: tcp ::.464
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 9: tcp ::.464
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 11: rpc 0.0.0.0.749
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 11: rpc 0.0.0.0.749
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  setsockopt(12,IPV6_V6ONLY,1) worked
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  setsockopt(12,IPV6_V6ONLY,1) worked
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 12: rpc ::.749
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  listening on fd 12: rpc ::.749
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  set up 6 sockets
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  set up 6 sockets
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  Seeding random number generator
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  Seeding random number generator
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  starting
+2014-08-15T15:56:09+09:00 pipi local5 info kadmind[29923]:  starting
+2014-08-15T15:56:09+09:00 pipi daemon info kadmind[29923]:  kadmind: starting...
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> KDCにプリンシバルの登録</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+<code>kadmin.local</code> 登録した <code>root/admin@JIZAI-DOMAIN.JP</code> 管理プリンシバルを用いて、レルム
+に参加している任意のマシンからテスト用プリンシバル登録操作を行います。以下の操作は全
+てKDCサーバ側のデータベースに反映される、クライアント側には何も影響しない。
+</p>
+
+<pre class="example">
+★kadminサービスへ接続する
+$ kadmin -p root/admin
+Authenticating as principal root/admin with password.
+Password for root/admin@JIZAI-DOMAIN.JP:
+
+★１：プリンシバル認証用パスワードのポリシーを作成する
+kadmin:  add_policy -maxlife 180day -minlife 0day -minlength 8 -minclasses 2 -history 8 users_policy
+
+★２：作成したポリシーを用いてkbr_u01プリンシバルを登録する
+kadmin:  addprinc -policy users_policy kbr_u01
+Enter password for principal "kbr_u01@JIZAI-DOMAIN.JP": 
+Re-enter password for principal "kbr_u01@JIZAI-DOMAIN.JP": 
+Principal "kbr_u01@JIZAI-DOMAIN.JP" created.                     ★プリンシバルのフルネーム
+
+★３：kbr_u02プリンシバルを登録する
+kadmin:  addprinc -policy users_policy kbr_u02
+Enter password for principal "kbr_u02@JIZAI-DOMAIN.JP": 
+Re-enter password for principal "kbr_u02@JIZAI-DOMAIN.JP": 
+Principal "kbr_u02@JIZAI-DOMAIN.JP" created.
+
+★４：：プリンシバル一覧の表示
+kadmin:  list_principals 
+K/M@JIZAI-DOMAIN.JP
+kadmin/admin@JIZAI-DOMAIN.JP
+kadmin/changepw@JIZAI-DOMAIN.JP
+kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP                      ★kadminサービスプリンシバル
+kbr_u01@JIZAI-DOMAIN.JP                                          ★通常アカウント
+kbr_u02@JIZAI-DOMAIN.JP
+krbtgt/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP                           ★TGSサービスプリンシバル
+root/admin@JIZAI-DOMAIN.JP                                       ★管理用プリンシバル
+kadmin:
+</pre>
+
+<p>
+プリンシバル登録時、kadminサービス側のログ
+</p>
+<pre class="example">
+★接続時
+2014-08-15T15:57:35+09:00 pipi local5 info krb5kdc[29867]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.4: ISSUE: authtime 1408085855, etypes {rep=18 tkt=18 ses=18}, root/admin@JIZAI-DOMAIN.JP for kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP
+2014-08-15T15:57:35+09:00 pipi local5 info krb5kdc[29867]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.4: ISSUE: authtime 1408085855, etypes {rep=18 tkt=18 ses=18}, root/admin@JIZAI-DOMAIN.JP for kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP
+2014-08-15T15:57:39+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_init, root/admin@JIZAI-DOMAIN.JP, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4, vers=4, flavor=6
+2014-08-15T15:57:39+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_init, root/admin@JIZAI-DOMAIN.JP, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4, vers=4, flavor=6
+
+★１
+2014-08-15T16:01:55+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_create_policy, users_policy, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+2014-08-15T16:01:55+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_create_policy, users_policy, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+
+★２
+2014-08-15T16:03:18+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_get_policy, users_policy, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+2014-08-15T16:03:18+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_get_policy, users_policy, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+2014-08-15T16:03:27+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_create_principal, kbr_u01@JIZAI-DOMAIN.JP, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+2014-08-15T16:03:27+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_create_principal, kbr_u01@JIZAI-DOMAIN.JP, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+
+★３
+2014-08-15T16:04:11+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_get_policy, users_policy, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+2014-08-15T16:04:11+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_get_policy, users_policy, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+2014-08-15T16:04:18+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_create_principal, kbr_u02@JIZAI-DOMAIN.JP, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+2014-08-15T16:04:18+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_create_principal, kbr_u02@JIZAI-DOMAIN.JP, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+
+★４
+2014-08-15T16:05:27+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_get_principals, *, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+2014-08-15T16:05:27+09:00 pipi local5 notice kadmind[29923]:  Request: kadm5_get_principals, *, success, client=root/admin@JIZAI-DOMAIN.JP, service=kadmin/pipi.jizai-domain.jp@JIZAI-DOMAIN.JP, addr=192.168.100.4
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> KDCデータベースのバックアップ</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+<code>kdb5_util dump</code> 、 <code>kdb5_util load</code> コマンドを用いてKDCデータベースをバックアップと
+リストアすることができる。リストア時にKDCサービスを停止する必要があります。
+</p>
+
+<pre class="example">
+$ sudo kdb5_util dump /var/lib/krb5kdc/kdc_dump
+$ ls -al /var/lib/krb5kdc/
+total 52
+drwxr-xr-x  2 root root 4096 Aug 15 16:11 .
+drwxr-xr-x 31 root root 4096 Aug 15 00:00 ..
+-rw-------  1 root root   76 Aug 15 15:37 .k5.JIZAI-DOMAIN.JP
+-rw-r--r--  1 root root   26 Aug 15 14:44 kadm5.acl
+-rw-r--r--  1 root root  288 Aug 15 14:40 kdc.conf
+-rw-r--r--  1 root root  304 Aug 15 14:28 kdc.conf.ogin
+-rw-------  1 root root 5167 Aug 15 16:11 kdc_dump             ★バックアップ
+-rw-------  1 root root    1 Aug 15 16:11 kdc_dump.dump_ok
+-rw-------  1 root root 8192 Aug 15 16:04 principal
+-rw-------  1 root root 8192 Aug 15 16:01 principal.kadm5
+-rw-------  1 root root    0 Aug 15 15:37 principal.kadm5.lock
+-rw-------  1 root root    0 Aug 15 16:04 principal.ok
+$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> Kerberos認証の流れを確認する</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+シナリオ、レルムに参考しているホスト <code>mimi</code> にて <code>kinit kbr_u01</code> でkbr_u01ユーザプリン
+シバル認証を通してTGTチケットして、TGTチケットを用いてレルムに参考している別のホスト
+<code>jizai</code> にSSHでSSOを実現する。
+</p>
+
+<pre class="example">
+[レルム:JIZAI=DOMAIN.JP]
+
+                                           &lt;&lt;KDC&gt;&gt; pipi.jizai-domain.jp
++---------------------+  ①kinit kbr_u01   +----------------------------------------------------+
+|mimi.jizai-domain.jp |-------------------&gt;| A|ユーザ  ：kbr_u01@JIZAI-DOMAIN.JP                |
+|                     |&lt;---TGTチケット-----| B|ホスト  ：jizai/jizai-domain.jp@JIZAI-DOMAIN.JP  |
+|                     |                    | C|サービス：krbgtg/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP |
+|                     |------TGS-REQ------&gt;|                                                    |
+|                     |&lt;-----TGS-RES-------|                                                    |
+|                     |  ③Bホストチケット |                                                    |
++---------+-----------+                    +----------------------------------------------------+
+          |
+     ②ssh -o GSSAPIAuthentication=yes kbr_u01@jizai.jizai-domai.jp
+          |
++---------+-----------+
+|jizai.jizai-domain.jp|
+|                     |
+|                     |
++---------------------+
+</pre>
+
+<p>
+検証の前提条件
+</p>
+<ul class="org-ul">
+<li>KDCにkbr_u01ユーザプリンシバルが登録済み
+</li>
+<li>KDCに <code>jizai</code> ホストプリンシバルが登録済み
+</li>
+<li><code>jizai</code> ホストにsshdのGSSAPIAuthenticationオプションが有効である
+</li>
+<li><code>jizai</code> ホストの <code>/etc/passwd</code> ファイルに <code>kbr_u01</code> アカウントが登録済み
+</li>
+</ul>
+
+
+<p>
+<code>jizai</code> ホストプリンシバルの登録
+</p>
+<pre class="example">
+★以下の作業は jizai ホストで行う
+
+★KDCのkadminサービスへ接続する
+$ sudo kadmin -p root/admin
+Authenticating as principal root/admin with password.
+Password for root/admin@JIZAI-DOMAIN.JP: 
+
+★１：randkeyオプションでランダムなパスワードを用いて、ホストプリンシバルを登録する
+kadmin:  addprinc -randkey host/jizai.jizai-domain.jp
+WARNING: no policy specified for host/jizai.jizai-domain.jp@JIZAI-DOMAIN.JP; defaulting to no policy
+Principal "host/jizai.jizai-domain.jp@JIZAI-DOMAIN.JP" created.
+
+★２：ホストプリンシバル認証用鍵（パスワード）をローカルシステムに保存する
+kadmin:  ktadd host/jizai.jizai-domain.jp
+Entry for principal host/mimi.jizai-domain.jp with kvno 5, encryption type aes256-cts-hmac-sha1-96 added to keytab FILE:/etc/krb5.keytab.
+Entry for principal host/mimi.jizai-domain.jp with kvno 5, encryption type aes128-cts-hmac-sha1-96 added to keytab FILE:/etc/krb5.keytab.
+Entry for principal host/mimi.jizai-domain.jp with kvno 5, encryption type des3-cbc-sha1 added to keytab FILE:/etc/krb5.keytab.
+Entry for principal host/mimi.jizai-domain.jp with kvno 5, encryption type arcfour-hmac added to keytab FILE:/etc/krb5.keytab.
+
+kadmin: quit
+
+★４：ローカルシステムに保存されたホストプリンシバルの鍵を確認する
+$ sudo klist -k /etc/krb5.keytab
+Keytab name: FILE:/etc/krb5.keytab
+KVNO Principal
+---- --------------------------------------------------------------------------
+   7 host/jizai.jizai-domain.jp@JIZAI-DOMAIN.JP
+   7 host/jizai.jizai-domain.jp@JIZAI-DOMAIN.JP
+   7 host/jizai.jizai-domain.jp@JIZAI-DOMAIN.JP
+   7 host/jizai.jizai-domain.jp@JIZAI-DOMAIN.JP
+$
+</pre>
+
+<p>
+<code>jizai</code> ホストにテスト用プリンシバル <code>kbr_u01</code> をシステムローカルユーザとして登録する。
+</p>
+<pre class="example">
+[akira@jizai ~]$ sudo useradd kbr_u01           ★kbr_u01ユーザ登録
+[akira@jizai ~]$ getent passwd | grep kbr       ★kbr_u01ユーザ登録の確認
+kbr_u01:x:5013:5013::/home/kbr_u01:/bin/bash
+[akira@jizai ~]$
+</pre>
+
+<p>
+<code>mimi</code> ホストにて <code>kinit</code> コマンドで <code>kbr_u01</code> プリンシバル認証して TGTチケットを取得
+する。
+</p>
+<pre class="example">
+[root@mimi-air ~]# klist -5                                   ★チケット一覧確認
+klist: Credentials cache file '/tmp/krb5cc_0' not found
+
+[root@mimi-air ~]# kinit kbr_u01                              ★kbr_u01プリンシバル認証する
+Password for kbr_u01@JIZAI-DOMAIN.JP:                         ★kbr_u01プリンシバルに対応する鍵のパスワードを入力する
+
+[akira@mimi ~]$ klist -5                                      ★チケット一覧確認
+Ticket cache: FILE:/tmp/krb5cc_1000
+Default principal: kbr_u01@JIZAI-DOMAIN.JP                    ★← ユーザプリンシバルkbr_u01として認証
+
+Valid starting       Expires              Service principal
+2014-08-16T16:01:31  2014-08-17T02:01:31  krbtgt/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP  ★←TGTチケット
+	renew until 2014-08-23T16:01:31
+[root@mimi-air ~]#
+</pre>
+
+<p>
+<code>mimi</code> から <code>jizai</code> へSSO
+</p>
+<pre class="example">
+★GSSAPIAuthenticationオプション有効でSSHログインする
+[akira@mimi ~]$ ssh -vvv -o GSSAPIAuthentication=yes kbr_u01@jizai.jizai-domain.jp
+OpenSSH_6.6.1, OpenSSL 1.0.1i 6 Aug 2014
+debug1: Reading configuration data /home/akira/.ssh/config
+debug1: Reading configuration data /etc/ssh/ssh_config
+debug2: ssh_connect: needpriv 0
+debug1: Connecting to jizai.jizai-domain.jp [192.168.100.3] port 22.
+debug1: Connection established.
+debug1: identity file /home/akira/.ssh/id_rsa type -1
+debug1: identity file /home/akira/.ssh/id_rsa-cert type -1
+debug3: Incorrect RSA1 identifier
+debug3: Could not load "/home/akira/.ssh/id_dsa" as a RSA1 public key
+debug1: identity file /home/akira/.ssh/id_dsa type 2
+debug1: identity file /home/akira/.ssh/id_dsa-cert type -1
+debug1: identity file /home/akira/.ssh/id_ecdsa type -1
+debug1: identity file /home/akira/.ssh/id_ecdsa-cert type -1
+debug1: identity file /home/akira/.ssh/id_ed25519 type -1
+debug1: identity file /home/akira/.ssh/id_ed25519-cert type -1
+debug1: Enabling compatibility mode for protocol 2.0
+debug1: Local version string SSH-2.0-OpenSSH_6.6.1
+debug1: Remote protocol version 2.0, remote software version OpenSSH_6.6.1
+debug1: match: OpenSSH_6.6.1 pat OpenSSH_6.6.1* compat 0x04000000
+debug2: fd 3 setting O_NONBLOCK
+debug3: load_hostkeys: loading entries for host "jizai.jizai-domain.jp" from file "/home/akira/.ssh/known_hosts"
+debug3: load_hostkeys: found key type ECDSA in file /home/akira/.ssh/known_hosts:16
+debug3: load_hostkeys: loaded 1 keys
+debug3: order_hostkeyalgs: prefer hostkeyalgs: ecdsa-sha2-nistp256-cert-v01@openssh.com,ecdsa-sha2-nistp384-cert-v01@openssh.com,ecdsa-sha2-nistp521-cert-v01@openssh.com,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521
+debug1: SSH2_MSG_KEXINIT sent
+debug1: SSH2_MSG_KEXINIT received
+debug2: kex_parse_kexinit: curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group-exchange-sha1,diffie-hellman-group14-sha1,diffie-hellman-group1-sha1
+debug2: kex_parse_kexinit: ecdsa-sha2-nistp256-cert-v01@openssh.com,ecdsa-sha2-nistp384-cert-v01@openssh.com,ecdsa-sha2-nistp521-cert-v01@openssh.com,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,ssh-ed25519-cert-v01@openssh.com,ssh-rsa-cert-v01@openssh.com,ssh-dss-cert-v01@openssh.com,ssh-rsa-cert-v00@openssh.com,ssh-dss-cert-v00@openssh.com,ssh-ed25519,ssh-rsa,ssh-dss
+debug2: kex_parse_kexinit: aes128-ctr,aes192-ctr,aes256-ctr,arcfour256,arcfour128,aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com,aes128-cbc,3des-cbc,blowfish-cbc,cast128-cbc,aes192-cbc,aes256-cbc,arcfour,rijndael-cbc@lysator.liu.se
+debug2: kex_parse_kexinit: aes128-ctr,aes192-ctr,aes256-ctr,arcfour256,arcfour128,aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com,aes128-cbc,3des-cbc,blowfish-cbc,cast128-cbc,aes192-cbc,aes256-cbc,arcfour,rijndael-cbc@lysator.liu.se
+debug2: kex_parse_kexinit: hmac-md5-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-ripemd160-etm@openssh.com,hmac-sha1-96-etm@openssh.com,hmac-md5-96-etm@openssh.com,hmac-md5,hmac-sha1,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-ripemd160,hmac-ripemd160@openssh.com,hmac-sha1-96,hmac-md5-96
+debug2: kex_parse_kexinit: hmac-md5-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-ripemd160-etm@openssh.com,hmac-sha1-96-etm@openssh.com,hmac-md5-96-etm@openssh.com,hmac-md5,hmac-sha1,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-ripemd160,hmac-ripemd160@openssh.com,hmac-sha1-96,hmac-md5-96
+debug2: kex_parse_kexinit: none,zlib@openssh.com,zlib
+debug2: kex_parse_kexinit: none,zlib@openssh.com,zlib
+debug2: kex_parse_kexinit: 
+debug2: kex_parse_kexinit: 
+debug2: kex_parse_kexinit: first_kex_follows 0 
+debug2: kex_parse_kexinit: reserved 0 
+debug2: kex_parse_kexinit: curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group-exchange-sha1,diffie-hellman-group14-sha1,diffie-hellman-group1-sha1
+debug2: kex_parse_kexinit: ssh-rsa,ssh-dss,ecdsa-sha2-nistp256,ssh-ed25519
+debug2: kex_parse_kexinit: aes128-ctr,aes192-ctr,aes256-ctr,arcfour256,arcfour128,aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com,aes128-cbc,3des-cbc,blowfish-cbc,cast128-cbc,aes192-cbc,aes256-cbc,arcfour,rijndael-cbc@lysator.liu.se
+debug2: kex_parse_kexinit: aes128-ctr,aes192-ctr,aes256-ctr,arcfour256,arcfour128,aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com,aes128-cbc,3des-cbc,blowfish-cbc,cast128-cbc,aes192-cbc,aes256-cbc,arcfour,rijndael-cbc@lysator.liu.se
+debug2: kex_parse_kexinit: hmac-md5-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-ripemd160-etm@openssh.com,hmac-sha1-96-etm@openssh.com,hmac-md5-96-etm@openssh.com,hmac-md5,hmac-sha1,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-ripemd160,hmac-ripemd160@openssh.com,hmac-sha1-96,hmac-md5-96
+debug2: kex_parse_kexinit: hmac-md5-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-ripemd160-etm@openssh.com,hmac-sha1-96-etm@openssh.com,hmac-md5-96-etm@openssh.com,hmac-md5,hmac-sha1,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-ripemd160,hmac-ripemd160@openssh.com,hmac-sha1-96,hmac-md5-96
+debug2: kex_parse_kexinit: none,zlib@openssh.com
+debug2: kex_parse_kexinit: none,zlib@openssh.com
+debug2: kex_parse_kexinit: 
+debug2: kex_parse_kexinit: 
+debug2: kex_parse_kexinit: first_kex_follows 0 
+debug2: kex_parse_kexinit: reserved 0 
+debug2: mac_setup: setup hmac-md5-etm@openssh.com
+debug1: kex: server-&gt;client aes128-ctr hmac-md5-etm@openssh.com none
+debug2: mac_setup: setup hmac-md5-etm@openssh.com
+debug1: kex: client-&gt;server aes128-ctr hmac-md5-etm@openssh.com none
+debug1: sending SSH2_MSG_KEX_ECDH_INIT
+debug1: expecting SSH2_MSG_KEX_ECDH_REPLY
+debug1: Server host key: ECDSA 35:6c:0a:2e:7e:c2:5a:45:a0:05:f6:69:7b:7a:15:d0
+debug3: load_hostkeys: loading entries for host "jizai.jizai-domain.jp" from file "/home/akira/.ssh/known_hosts"
+debug3: load_hostkeys: found key type ECDSA in file /home/akira/.ssh/known_hosts:16
+debug3: load_hostkeys: loaded 1 keys
+debug3: load_hostkeys: loading entries for host "192.168.100.3" from file "/home/akira/.ssh/known_hosts"
+debug3: load_hostkeys: found key type ECDSA in file /home/akira/.ssh/known_hosts:3
+debug3: load_hostkeys: loaded 1 keys
+debug1: Host 'jizai.jizai-domain.jp' is known and matches the ECDSA host key.
+debug1: Found key in /home/akira/.ssh/known_hosts:16
+debug1: ssh_ecdsa_verify: signature correct
+debug2: kex_derive_keys
+debug2: set_newkeys: mode 1
+debug1: SSH2_MSG_NEWKEYS sent
+debug1: expecting SSH2_MSG_NEWKEYS
+debug2: set_newkeys: mode 0
+debug1: SSH2_MSG_NEWKEYS received
+debug1: Roaming not allowed by server
+debug1: SSH2_MSG_SERVICE_REQUEST sent
+debug2: service_accept: ssh-userauth
+debug1: SSH2_MSG_SERVICE_ACCEPT received
+debug2: key: /home/akira/.ssh/id_dsa (0x7f87e82679a0),
+debug2: key: /home/akira/.ssh/id_rsa ((nil)),
+debug2: key: /home/akira/.ssh/id_ecdsa ((nil)),
+debug2: key: /home/akira/.ssh/id_ed25519 ((nil)),
+debug1: Authentications that can continue: publickey,gssapi-with-mic
+debug3: start over, passed a different list publickey,gssapi-with-mic
+debug3: preferred gssapi-with-mic,publickey,keyboard-interactive,password
+debug3: authmethod_lookup gssapi-with-mic
+debug3: remaining preferred: publickey,keyboard-interactive,password
+debug3: authmethod_is_enabled gssapi-with-mic
+debug1: Next authentication method: gssapi-with-mic
+debug2: we sent a gssapi-with-mic packet, wait for reply
+debug1: Authentication succeeded (gssapi-with-mic).                     ★GSSAPIによるKerbrose認証が成功
+Authenticated to jizai.jizai-domain.jp ([192.168.100.3]:22).            ★
+debug1: channel 0: new [client-session]
+debug3: ssh_session2_open: channel_new: 0
+debug2: channel 0: send open
+debug1: Requesting no-more-sessions@openssh.com
+debug1: Entering interactive session.
+debug2: callback start
+debug2: fd 3 setting TCP_NODELAY
+debug3: packet_set_tos: set IP_TOS 0x10
+debug2: client_session2_setup: id 0
+debug2: channel 0: request pty-req confirm 1
+debug2: channel 0: request shell confirm 1
+debug2: callback done
+debug2: channel 0: open confirm rwindow 0 rmax 32768
+debug2: channel_input_status_confirm: type 99 id 0
+debug2: PTY allocation request accepted on channel 0
+debug2: channel 0: rcvd adjust 2097152
+debug2: channel_input_status_confirm: type 99 id 0
+debug2: shell request accepted on channel 0
+Last login: Sat Aug 16 12:36:44 2014 from mimi.jizai-domain.jp
+[kbr_u01@jizai ~]$ 
+
+[kbr_u01@jizai ~]$ exit
+ログアウト
+
+[akira@mimi ~]$ klist -5                                                 ★チケット一覧確認
+Ticket cache: FILE:/tmp/krb5cc_1000
+Default principal: kbr_u01@JIZAI-DOMAIN.JP
+
+Valid starting       Expires              Service principal
+2014-08-16T16:01:31  2014-08-17T02:01:31  krbtgt/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP
+	renew until 2014-08-23T16:01:31
+2014-08-16T16:01:39  2014-08-17T02:01:31  host/jizai.jizai-domain.jp@JIZAI-DOMAIN.JP    ★jizaiのホストアクセス用のチケットが取得された
+	renew until 2014-08-23T16:01:31
+[akira@mimi ~]$
+</pre>
+
+<p>
+以下はkinitからsshグインまでKDC側で取得したkerbroseパケット通信の状況です。
+</p>
+
+
+
+<div class="figure">
+<p><img src="img/2014-08-15-berbrose-01.png" alt="2014-08-15-berbrose-01.png" />
+</p>
+</div>
+
+
+<div class="figure">
+<p><img src="img/2014-08-15-berbrose-02.png" alt="2014-08-15-berbrose-02.png" />
+</p>
+</div>
+
+
+<div class="figure">
+<p><img src="img/2014-08-15-berbrose-03.png" alt="2014-08-15-berbrose-03.png" />
+</p>
+</div>
+
+
+<div class="figure">
+<p><img src="img/2014-08-15-berbrose-04.png" alt="2014-08-15-berbrose-04.png" />
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> LDAP+pam_krbでLinuxログイン認証</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+LDAPサーバにユーザエントリの登録を行う。
+</p>
+
+<p>
+ユーザエントリの定義
+</p>
+<pre class="example">
+# --- kbr_u01 ---
+dn: uid=kbr_u01,ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+uid: kbr_u01
+cn: Kerberose Test User01
+uidNumber: 5101
+gidNumber: 3101
+userPassword: {CRYPT}x                          ★LDAPの簡易パスワード認証を利用しない
+homeDirectory: /home/kbr_u01
+loginShell: /bin/bash
+gecos: Kerberose User01
+objectClass: account
+objectClass: posixAccount
+
+# --- kbr_u02 ---
+dn: uid=kbr_u02,ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+uid: kbr_u02
+cn: Kerberose Test User02
+uidNumber: 5102
+gidNumber: 3102
+userPassword: {CRYPT}x
+homeDirectory: /home/kbr_u02
+loginShell: /bin/bash
+gecos: Kerberose User02
+objectClass: account
+objectClass: posixAccount
+</pre>
+
+<p>
+<code>ldapadd</code> で登録を行う
+</p>
+<pre class="example">
+$ ldapadd -x -W -D "cn=Manager,dc=jizai-domain,dc=jp" -f 01.users.ldif
+Enter LDAP Password: 
+adding new entry "uid=kbr_u01,ou=User,o=Linux Users,dc=jizai-domain,dc=jp"
+
+adding new entry "uid=kbr_u02,ou=User,o=Linux Users,dc=jizai-domain,dc=jp"
+</pre>
+
+<p>
+LinuxホストからLDAPユーザエントリ情報を参照するするようにする
+</p>
+
+<p>
+<code>nss-pam-ldapd</code> をインストールして、 <code>/etc/nslcd.conf</code> にてLDAPサーバ接続設定を行う。
+<code>/etc/nsswitch.conf</code> に以下のように情報源にldapを追加する。
+</p>
+<pre class="example">
+$ cat /etc/nsswitch.conf
+passwd:    files ldap
+group:     files ldap
+shadow:    files ldap
+netgroup:  files ldap
+
+★以上以外の内容、ここでは省略します。
+</pre>
+
+<p>
+<code>nslcd.service</code> サービスを起動して、LDAPからユーザ情報参照できることを確認する。
+</p>
+<pre class="example">
+$ sudo systemctl start nslcd.service
+$ getent passwd
+root:x:0:0:root:/root:/bin/bash
+.....省略.....
+★LDAPのユーザエントリ情報が表示されている
+kbr_u01:*:5101:3101:Kerberose User01:/home/kbr_u01:/bin/bash
+kbr_u02:*:5102:3102:Kerberose User02:/home/kbr_u02:/bin/bash
+</pre>
+
+<p>
+AURリポジトリからLinuxホストに <code>pam_krb5</code> 認証モジュールをインストールする
+</p>
+<pre class="example">
+$ yaourt -S pam_krb5
+==&gt; AUR から pam_krb5 の PKGBUILD をダウンロード...
+...中略...
+==&gt; インストールを整理...
+  -&gt; 不要なファイルを削除...
+  -&gt; libtool ファイルを削除...
+  -&gt; static library ファイルを削除...
+  -&gt; man と info ページを圧縮...
+  -&gt; バイナリとライブラリから不要なシンボルを削除...
+==&gt; パッケージを作成 "pam_krb5"...
+  -&gt; .PKGINFO ファイルを生成...
+  -&gt; .MTREE ファイルを生成...
+  -&gt; パッケージの圧縮...
+==&gt; fakeroot 環境を終了。
+==&gt; 作成完了: pam_krb5 2.4.9-1 (2014年  8月 16日 土曜日 16:38:32 JST)
+
+==&gt; pam_krb5 のインストールを続行しますか ? [Y/n]
+==&gt; [v]パッケージの中身確認 [c]heck package with namcap
+==&gt; -----------------------------------------
+==&gt; y
+
+パッケージをロード...
+警告: pam_krb5-2.4.9-1 は最新です -- 再インストール
+依存関係を解決しています...
+相互衝突をチェックしています...
+
+パッケージ (1): pam_krb5-2.4.9-1
+
+Total Installed Size:   0.27 MiB
+Net Upgrade Size:       0.00 MiB
+
+:: インストールを行いますか？ [Y/n] 
+(1/1) キーリングのキーを確認                                                                   [########################################################] 100%
+(1/1) パッケージの整合性をチェック                                                             [########################################################] 100%
+(1/1) パッケージファイルのロード                                                               [########################################################] 100%
+(1/1) ファイルの衝突をチェック                                                                 [########################################################] 100%
+(1/1) 空き容量を確認                                                                           [########################################################] 100%
+(1/1) 再インストール pam_krb5                                                                  [########################################################] 100%
+[akira@jizai ~]$
+</pre>
+
+
+<p>
+<code>pam_krb5</code> モジュールの確認
+</p>
+<pre class="example">
+[akira@jizai ~]$ pacman -Ql pam_krb5
+pam_krb5 /usr/
+pam_krb5 /usr/bin/
+pam_krb5 /usr/bin/afs5log
+pam_krb5 /usr/lib/
+pam_krb5 /usr/lib/security/
+pam_krb5 /usr/lib/security/pam_krb5.so      ★モジュール自体
+pam_krb5 /usr/lib/security/pam_krb5/
+pam_krb5 /usr/lib/security/pam_krb5/pam_krb5_cchelper
+pam_krb5 /usr/share/
+pam_krb5 /usr/share/locale/
+...中略...
+[akira@jizai ~]$
+</pre>
+
+<p>
+PAM認証設定１： <code>/etc/pam.d/system-auth</code>
+</p>
+<pre class="example">
+#%PAM-1.0
+
+auth      sufficient pam_krb5.so                   ★Kerbrose認証連携
+auth      required  pam_env.so
+auth      required  pam_unix.so     try_first_pass nullok
+auth      optional  pam_permit.so
+
+account   sufficient pam_krb5.so                   ★Kerbrose認証連携
+account   required  pam_unix.so
+account   optional  pam_permit.so
+account   required  pam_time.so
+
+password  sufficient pam_krb5.so                   ★Kerbrose認証連携
+password  required  pam_unix.so     try_first_pass nullok sha512 shadow
+password  optional  pam_permit.so
+
+#ユーザ、グループ単位にリソース制限を行う
+session   required  pam_limits.so
+session   required  pam_env.so
+
+#ログイン時にホームディレクトリが存在していなければ自動で生成する指定
+session   required  pam_mkhomedir.so umask=077
+
+#ログイン、ログアウト情報をauthログに出力する
+session   required  pam_unix.so
+
+session   optional  pam_krb5.so                    ★Kerbrose認証連携
+session   optional  pam_permit.so
+</pre>
+
+<p>
+PAM認証設定２： <code>/etc/pam.d/other</code>
+</p>
+<pre class="example">
+#%PAM-1.0
+auth            sufficient      pam_krb5.so
+auth		required	pam_unix.so
+
+account         sufficient      pam_krb5.so
+account		required	pam_unix.so
+
+password        sufficient      pam_krb5.so
+password	required	pam_unix.so
+
+session		required	pam_unix.so
+</pre>
+
+
+<p>
+Linuxホストに <code>kbr_u01</code> アカウントでログインする
+</p>
+<pre class="example">
+$ ssh kbr_u01@jizai.jizai-domain.jp
+kbr_u01@jizai.jizai-domain.jp's password:       ★KDCに登録されたkbr_u01プリンシバルのパスワードを入力する
+Last login: Sat Aug 16 16:29:21 2014 from mimi.jizai-domain.jp
+
+[kbr_u01@jizai ~]$ klist -5                     ★チケット一覧を確認する
+Ticket cache: FILE:/tmp/krb5cc_5101_557rnl
+Default principal: kbr_u01@JIZAI-DOMAIN.JP
+
+Valid starting       Expires              Service principal
+2014-08-16T16:46:53  2014-08-17T02:46:53  krbtgt/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP    ★TGTチケット
+	renew until 2014-08-23T16:46:53
+2014-08-16T16:46:53  2014-08-17T02:46:53  krbtgt/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP    ★なぜ２枚なのかは不明
+	renew until 2014-08-23T16:46:53
+
+
+[kbr_u01@jizai ~]$ env  | grep KRB5CCNAME
+KRB5CCNAME=FILE:/tmp/krb5cc_5101_557rnl               ★Kerbrose認証チケットの保管場所は環境変数KRB5CCNAMEで参照できる
+[kbr_u01@jizai ~]$
+</pre>
+
+<p>
+ログイン時Linuxホストのログ
+</p>
+<pre class="example">
+Aug 16 16:46:53 jizai sshd[22872]: pam_krb5[22872]: TGT verified using key for 'host/jizai.jizai-domain.jp@JIZAI-DOMAIN.JP'
+Aug 16 16:46:53 jizai sshd[22872]: pam_krb5[22872]: authentication succeeds for 'kbr_u01' (kbr_u01@JIZAI-DOMAIN.JP)    ★Kerbrose認証成功
+Aug 16 16:46:53 jizai sshd[22872]: Accepted password for kbr_u01 from 192.168.100.10 port 58136 ssh2
+Aug 16 16:46:55 jizai sshd[22872]: pam_unix(sshd:session): session opened for user kbr_u01 by (uid=0)
+Aug 16 16:46:55 jizai systemd-logind[655]: New session c17 of user kbr_u01.
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> 参考情報</h2>
+<div class="outline-text-2" id="text-7">
+<ul class="org-ul">
+<li><a href="http://www.amazon.co.jp/%25E3%2583%2597%25E3%2583%25AD%25E3%2581%25AE%25E3%2581%259F%25E3%2582%2581%25E3%2581%25AE-Linux%25E3%2582%25B7%25E3%2582%25B9%25E3%2583%2586%25E3%2583%25A0%25E3%2583%25BB%25E3%2583%258D%25E3%2583%2583%25E3%2583%2588%25E3%2583%25AF%25E3%2583%25BC%25E3%2582%25AF%25E7%25AE%25A1%25E7%2590%2586%25E6%258A%2580%25E8%25A1%2593-Software-Design-plus/dp/4774146757">プロのためのLinuxシステムネットワーク管理技術</a>
+</li>
+<li><a href="https://nsrc.org/workshops/ws-files/2011/sanog17/exercises/ex2-kerberos-host.html">Exercise2 : enable Kerberos logins to a host</a>
+</li>
+<li><a href="http://www.l2tp.org/?p=2358">CentOSでSSHのログインがとても遅かった件</a>
+</li>
+<li><a href="http://plone.uconn.edu/workspaces/uits-linux/facts/troubleshooting-sshd-and-gssapi">SSHD and Kerberos GSSAPI Troubleshooting</a>
+</li>
+<li><a href="https://wiki.archlinux.org/index.php/Network_Time_Protocol_daemon_%2528%25E6%2597%25A5%25E6%259C%25AC%25E8%25AA%259E%2529#systemd_.E3.82.B5.E3.83.BC.E3.83.93.E3.82.B9">Network Time Protocol daemon (日本語)</a>
+</li>
+<li><a href="https://wiki.archlinux.org/index.php/LDAP_authentication#NSS_Configuration">LDAP authentication</a>
+</li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[レシピ]ローカルシステムのUIDの抽出]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5D%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%81%AEuid%E3%81%AE%E6%8A%BD%E5%87%BA.html"/>
+    <updated>2014-08-12T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[レシピ]ローカルシステムのuidの抽出</id>
+    <content type="html"><![CDATA[<p>
+LDAPにユーザID定義時にローカルシステムのUIDと被らないように、ローカルシステムのUIDと
+GIDを抽出してみた。
+</p>
+
+<p>
+ユーザID、1000番代以下はシステム予約番号のことがすぐわかる。
+</p>
+<pre class="example">
+$ cat /etc/passwd | awk -F: '{print $3 "\t" $1}' | sort -n
+0	root
+1	bin
+2	daemon
+8	mail
+14	ftp
+32	rpc
+33	http
+40	named
+68	uuidd
+74	dovenull
+76	dovecot
+81	dbus
+84	avahi
+87	ntp
+89	mysql
+99	nobody
+102	polkitd
+124	colord
+169	transmission
+191	systemd-journal-gateway
+192	systemd-timesync
+193	systemd-network
+194	systemd-bus-proxy
+195	systemd-resolve
+241	mediatomb
+439	ldap
+998	dnsmasq
+999	git
+1000	akira
+1002	amule
+</pre>
+
+<p>
+グループID一覧
+</p>
+<pre class="example">
+$ cat /etc/group | awk -F: '{print $3 "\t" $1}' | sort -n
+0	root
+1	bin
+2	daemon
+3	sys
+4	adm
+5	tty
+6	disk
+7	lp
+8	mem
+9	kmem
+10	wheel
+11	ftp
+12	mail
+14	uucp
+19	log
+20	utmp
+21	locate
+24	rfkill
+25	smmsp
+32	rpc
+33	http
+40	named
+50	games
+54	lock
+68	uuidd
+74	dovenull
+76	dovecot
+81	dbus
+84	avahi
+87	ntp
+89	mysql
+90	network
+91	video
+92	audio
+93	optical
+94	floppy
+95	storage
+96	scanner
+97	input
+98	power
+99	nobody
+100	users
+102	polkitd
+124	colord
+169	transmission
+190	systemd-journal
+191	systemd-journal-gateway
+192	systemd-timesync
+193	systemd-network
+194	systemd-bus-proxy
+195	systemd-resolve
+241	mediatomb
+439	ldap
+998	dnsmasq
+999	git
+1002	g001
+1003	g002
+1004	g003
+1005	amule
+</pre>
+
+<p>
+<code>sort</code> コマンドで数字順でソートするためのオプションが <code>-n</code> であることを復習致しました。
+</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[レシピ]LDAPサーバの構築]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dldap%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E6%A7%8B%E7%AF%89.html"/>
+    <updated>2014-08-12T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[レシピ]ldapサーバの構築</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 知識のおさらい</a>
+<ul>
+<li><a href="#sec-1-1">1.1. 用語</a></li>
+<li><a href="#sec-1-2">1.2. LDAPの役割</a></li>
+<li><a href="#sec-1-3">1.3. LDAPへ接続時（バインド）の認証方式</a></li>
+<li><a href="#sec-1-4">1.4. LDAPによるLinuxのログイン認証</a></li>
+<li><a href="#sec-1-5">1.5. LDAPによるSambaサーバのユーザ認証</a></li>
+<li><a href="#sec-1-6">1.6. LDAPデータ構造サンプル</a></li>
+<li><a href="#sec-1-7">1.7. よく使用するObjectClass</a></li>
+<li><a href="#sec-1-8">1.8. ldapsearchの使い方</a></li>
+<li><a href="#sec-1-9">1.9. ldapaddの使い方</a></li>
+<li><a href="#sec-1-10">1.10. ldapdeleteの使い方</a></li>
+<li><a href="#sec-1-11">1.11. ldapmodifyの使い方</a></li>
+<li><a href="#sec-1-12">1.12. slapindexの使い方</a></li>
+</ul>
+</li>
+<li><a href="#sec-2">2. 環境構成</a></li>
+<li><a href="#sec-3">3. OpenLDAPのインストール</a></li>
+<li><a href="#sec-4">4. OpenLDAPサーバ設定と起動</a></li>
+<li><a href="#sec-5">5. OpenLDAPログ出力設定</a></li>
+<li><a href="#sec-6">6. LDAPクライアントの設定</a></li>
+<li><a href="#sec-7">7. LDAPクライアントとサーバ間の通信内容</a></li>
+<li><a href="#sec-8">8. LDAPによるLinuxのログイン認証設定</a>
+<ul>
+<li><a href="#sec-8-1">8.1. LDAP連携用ライブラリの導入</a></li>
+<li><a href="#sec-8-2">8.2. LDAP認証PAMモジュールの設定</a></li>
+<li><a href="#sec-8-3">8.3. パスワード変更時の挙動</a></li>
+<li><a href="#sec-8-4">8.4. ログイン時の挙動</a></li>
+</ul>
+</li>
+<li><a href="#sec-9">9. 宿題</a></li>
+<li><a href="#sec-10">10. 参考情報</a></li>
+</ul>
+</div>
+</div>
+<p>
+夏休み中にOpenLDAPの構築復習を行いました。ここでメモしておきます。
+</p>
+
+<p>
+<!-- more -->
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 知識のおさらい</h2>
+<div class="outline-text-2" id="text-1">
+</div><div id="outline-container-sec-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> 用語</h3>
+<div class="outline-text-3" id="text-1-1">
+<ul class="org-ul">
+<li>LDAP: Lightweight Directory Access Protocol、ディレクトリ・サービス
+ツリー構造、検索中心としたサービス
+</li>
+<li>DIT: Directory information Tree、ディレクトリ情報ツリー
+</li>
+<li>DN: Distinguished Name、ツリーの頂点に向かって全てのエントリを表す主キーのようなもの
+</li>
+<li>エントリ: LDAPに保存されるデータのこと
+</li>
+<li>ObjectClass: エントリの種類、エントリにどんな情報を持たせるかの定義、一つエントリに
+複数ObjectClasの指定は可能です。また、ObjectClass自身は構造型(Structural)と補助型
+(Auxiliary)の２種類があります、各エントリは少なくても１つの構造型ObjectClassに属する
+必要があります
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> LDAPの役割</h3>
+<div class="outline-text-3" id="text-1-2">
+<ul class="org-ul">
+<li>ユーザ情報参照機能
+</li>
+<li>ユーザ認証機能
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> LDAPへ接続時（バインド）の認証方式</h3>
+<div class="outline-text-3" id="text-1-3">
+<ul class="org-ul">
+<li>簡易認証: 接続時のユーザDNに加えてパスワードが平文でLDAPサーバに送られる、そのため
+SSL/TLSで通信経路の暗号化しておく必要があります。
+</li>
+<li>SASL認証: Simple Authentication and Security Layer、外部の認証システム（モジュール）
+に認証処理を委譲する。ただし、LDAP内のエントリのDNと外部認証システムのユーザ識別子
+のマッピング定義が必要となります。
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1-4" class="outline-3">
+<h3 id="sec-1-4"><span class="section-number-3">1.4</span> LDAPによるLinuxのログイン認証</h3>
+<div class="outline-text-3" id="text-1-4">
+<ul class="org-ul">
+<li>ログイン認証をLDAPサーバに委譲するためにPAMモジュールにpam_ldapを利用します。また、
+  pam_ldapの仕様上LDAP認証バインド時に簡易認証しかできない。
+</li>
+<li>LDAPで認証させるために、ログインユーザIDでLDAP認証バインドを行う
+</li>
+</ul>
+
+<p>
+認証メカニズム、Linuxサーバでpam_ldapmoモジュールでSSHクライアントから入力されたユーザ
+IDとパスワードをLDAPサーバに認証バインドを実施する。
+</p>
+<pre class="example">
+                   userid:akira               dn    : uid=akira,ou=User,dc=jizai-domain,dc=jp
+                   passwd:xxxxxx              passwd: xxxxxx
++---------------+                +-------------+                    +------------+
+|SSHクライアント+---------------&gt;| Linuxサーバ +-------------------&gt;| LDAPサーバ |
++---------------+   ログイン     +-------------+  LDAP認証バインド  +------------+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-5" class="outline-3">
+<h3 id="sec-1-5"><span class="section-number-3">1.5</span> LDAPによるSambaサーバのユーザ認証</h3>
+<div class="outline-text-3" id="text-1-5">
+<p>
+認証メカニズム、Sambaサーバは管理者権限でWindows PCから入力されたユーザIDを検索条件で
+LDAPサーバから該当ユーザのパスワード情報を取得して、比較を行う。
+</p>
+<pre class="example">
+                   userid:akira               rootdn: uid=Manager,dc=jizai-domain,dc=jp
+                   passwd:xxxxxx              passwd: xxxxxx
++---------------+                +-------------+                    +------------+
+|Windows PC     +---------------&gt;| Sambaサーバ +&lt;-------------------| LDAPサーバ |
++---------------+   ユーザID     +-------------+   管理者権限で     +------------+
+                    パスワード     パスワード      LDAP認証バインドして、
+                                   確認を行う      ユーザパスワード情報を取得する
+</pre>
+
+<p>
+簡易認証時のtcpdumpの結果
+</p>
+<pre class="example">
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-6" class="outline-3">
+<h3 id="sec-1-6"><span class="section-number-3">1.6</span> LDAPデータ構造サンプル</h3>
+<div class="outline-text-3" id="text-1-6">
+<p>
+ルートエントリ直下の <code>cn=Manager</code> エントリはrootdnと呼ばれる、LDAPの特権ユーザです。
+このユーザでLDAPとバインドすると任意のデータ操作が可能になります。rootdnエントリは
+<code>/etc/openaldap/slapd.conf</code> にて定義される、実際にDITになくてもよいです。
+</p>
+<pre class="example">
+                            ┏━━━━━━━━━━━┓
+                            ┃dc=jizai-domain,dc=jp ┃
+                            ┗━━━━━┳━━━━━┛
+                                        ┃
+                    ┏━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━┓
+                    ┃                  ┃                                            ┃
+            ┏━━━┻━━┓    ┏━━━┻━━━┓                          ┏━━━━┻━━━┓
+    rootdn→┃ cn=Manager ┃    ┃o=Linux Users ┃                          ┃ o=Samba Users  ┃ ← アプリケーション毎に分ける管理する
+特権ユーザ  ┗━━━━━━┛    ┗━━━┳━━━┛                          ┗━━━━┯━━━┛
+                                        ┃                                            │
+                          ┏━━━━━━┻━━━━━━━┓                            │
+                    ┏━━┻━━┓              ┏━━━┻━━┓            Sambaサーバユーザ情報
+                    ┃ou=User   ┃              ┃ ou=Group   ┃
+                    ┗━━┳━━┛              ┗━━━┳━━┛
+                  ┏━━━┻━━┓              ┏━━━┻━━━┓
+            ┏━━┻━━┓┏━━┻━━┓  ┏━━┻━━┓  ┏━━┻━━┓
+            ┃uid=user01┃┃uid=user02┃  ┃cn=group01┃  ┃cn=group02┃
+            ┗━━━━━┛┗━━━━━┛  ┗━━━━━┛  ┗━━━━━┛
+
+※ユーザとグループの紐付けはユーザエントリやグループエントリの属性値に表現される。
+</pre>
+
+<p>
+ルートエントリの定義
+</p>
+<pre class="example">
+dn: dc=jizai-domain,dc=jp
+dc: jizai-domain             ★ dcObjectの属性
+o: jizai-domain Corporation  ★ organizationの属性
+objectClass: dcObject
+objectClass: organization
+</pre>
+
+<p>
+rootdnの定義
+</p>
+<pre class="example">
+dn: cn=Manager,dc=jizai-domain,dc=jp
+cn: Manager
+objectClass: organizationalRole
+</pre>
+
+<p>
+Linux系ユーザとSamba系ユーザの親エントリの定義
+</p>
+<pre class="example">
+dn: o=Linux Users,dc=jizai-domain,dc=jp
+o: Linux Users
+objectClass: organization
+
+dn: o=Smaba Users,dc=jizai-domain,dc=jp
+o: Smaba Users
+objectClass: organization
+</pre>
+
+
+<p>
+Linuxユーザとグループの親エントリの定義
+</p>
+<pre class="example">
+dn: ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+ou: User
+objectClass: organizationalUnit
+
+dn: ou=Group,o=Linux Users,dc=jizai-domain,dc=jp
+ou: Group
+objectClass: organizationalUnit
+</pre>
+
+<p>
+Linuxユーザのエントリ定義
+</p>
+<pre class="example">
+# --- user01 ---
+dn: uid=user01,ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+uid: user01                 ★accountオブジェクトの属性
+cn: Test User01
+uidNumber: 5001
+gidNumber: 3001
+homeDirectory: /home/user01
+loginShell: /bin/bash
+userPassword: P@ssw0rd      ★パスワードが平文で登録される
+gecos: Test User No01       ★ユーザのフルネーム
+shadowLastChange: 0         ★パスワードの最終更新日
+shadowMin: 0                ★パスワード変更可能になるまでの日数
+shadowMax: 99999            ★パスワードの有効期限日数
+shadowWarning: 7            ★パスワード期限切れ警告表示開始日数
+objectClass: account        ★構造型ObjectClass
+objectClass: posixAccount   ★補助型ObjectClass
+objectClass: shadowAccount  ★補助型ObjectClass
+
+# --- user02 ---
+dn: uid=user02,ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+uid: user02
+cn: Test User02
+uidNumber: 5002
+gidNumber: 3002
+homeDirectory: /home/user02
+loginShell: /bin/bash
+userPassword: {SSHA}KpJwwA2Sbt29GGNZxdasq5XRml6J5q2Z   ★Salted SHA-1方式で暗号化された
+gecos: Test User No02  ★ユーザのフルネーム
+shadowLastChange: 0    ★パスワードの最終更新日、0で指定すると初回ログイン時にパスワードの変更を求めます
+shadowMin: 0           ★パスワード変更可能になるまでの日数
+shadowMax: 99999       ★パスワードの有効期限日数
+shadowWarning: 7       ★パスワード期限切れ警告表示開始日数
+objectClass: account
+objectClass: posixAccount
+objectClass: shadowAccount
+</pre>
+
+<p>
+userPasswordの暗号化文字列は次のコマンドで得ることができる。
+</p>
+<pre class="example">
+$ slappasswd -h {SSHA} -s P@ssw0rd
+{SSHA}KpJwwA2Sbt29GGNZxdasq5XRml6J5q2Z
+
+$ slappasswd -h {SMD5} -s P@ssw0rd
+{SMD5}AIZvIadIpJbgKPQ7DtjZ4U6xBVY=
+</pre>
+<p>
+<code>-h</code> の後ろに暗号化方式を指定する。j
+</p>
+
+<p>
+Linuxグループのエントリ定義
+</p>
+<pre class="example">
+#--- group01 ---
+dn: cn=group01,ou=Group,o=Linux Users,dc=jizai-domain,dc=jp
+cn: group01
+gidNumber: 3001
+objectClass: posixGroup
+
+#--- group02 ---
+dn: cn=group02,ou=Group,o=Linux Users,dc=jizai-domain,dc=jp
+cn: group02
+gidNumber: 3002
+memberUid: 5001  ★group02をuser01のセカンドグループとして使う
+objectClass: posixGroup
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-7" class="outline-3">
+<h3 id="sec-1-7"><span class="section-number-3">1.7</span> よく使用するObjectClass</h3>
+<div class="outline-text-3" id="text-1-7">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">スキーマ</th>
+<th scope="col" class="left">ObjectClass</th>
+<th scope="col" class="left">用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">core</td>
+<td class="left">dcObject</td>
+<td class="left">ルートの定義</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">organization</td>
+<td class="left">アプリケーションの区分に使用</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">organizationalRole</td>
+<td class="left">rootdn定義に使用</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">organizationalUnit</td>
+<td class="left">ユーザ情報とグループ情報の区別に使用</td>
+</tr>
+
+<tr>
+<td class="left">consine</td>
+<td class="left">account</td>
+<td class="left">ユーザID定義に使用する</td>
+</tr>
+
+<tr>
+<td class="left">nis</td>
+<td class="left">posixAccount</td>
+<td class="left">POSIXユーザ定義に使用する</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">shadowAccount</td>
+<td class="left">パスワード定義に使用する</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">posixGroup</td>
+<td class="left">グループ定義に使用する</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+ユーザのプライマリグループはposixAccountのgidNumber属性にて指定する、セカンドグ
+ループはposixGroupのmemberUidにて指定する。posixGroupのmemberUidは複数指定可能。
+</p>
+
+<p>
+そのなか汎用的な属性
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">属性名</th>
+<th scope="col" class="left">説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">dc</td>
+<td class="left">Domain Component/ ドメイン名の要素</td>
+</tr>
+
+<tr>
+<td class="left">o</td>
+<td class="left">Organization/ 組織名</td>
+</tr>
+
+<tr>
+<td class="left">ou</td>
+<td class="left">OrganizationUnit/ 部署名</td>
+</tr>
+
+<tr>
+<td class="left">cn</td>
+<td class="left">Common Name/ 氏名</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-1-8" class="outline-3">
+<h3 id="sec-1-8"><span class="section-number-3">1.8</span> ldapsearchの使い方</h3>
+<div class="outline-text-3" id="text-1-8">
+<p>
+アクセスコントロール設定でユーザ毎に検索結果の絞り込みが可能です。
+以下は簡易認証を用いた検索のコマンド書式です。
+</p>
+<pre class="example">
+$ ldapsearch -x -D &lt;バインドDN&gt; -b &lt;サーチベース&gt; -s &lt;スコープ&gt; -w &lt;パスワード&gt; &lt;検索フィルタ&gt; &lt;取得する属性&gt;
+</pre>
+<ul class="org-ul">
+<li><code>-x</code> 簡易認証でバインドする
+</li>
+<li><code>-D</code> 認証バインドで使用するDNの指定
+</li>
+<li><code>-b</code> サーチベース、検索の起点とするエントリの指定
+</li>
+<li><code>-s</code> 検索スコープの指定
+</li>
+<li><code>-w</code> 簡易認証のパスワード指定、 <code>-W</code> （大文字）で指定した場合、対話式でパスワードの
+が求められる
+</li>
+</ul>
+
+<p>
+指定可能な検索スコープ
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">スコープ</th>
+<th scope="col" class="left">説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">base</td>
+<td class="left">サーチベース自身に対して検索する</td>
+</tr>
+
+<tr>
+<td class="left">one</td>
+<td class="left">サーチベース直下のエントリを検索する</td>
+</tr>
+
+<tr>
+<td class="left">sub</td>
+<td class="left">サーチベースを含むその下の全てのエントリを検索する</td>
+</tr>
+
+<tr>
+<td class="left">children</td>
+<td class="left">subの範囲からサーチベースを除く</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+検索フィルタの組み合わせ方法
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">記法</th>
+<th scope="col" class="left">意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">(&amp;(A)(B))</td>
+<td class="left">A and B</td>
+</tr>
+
+<tr>
+<td class="left">(&vert;(A)(B))</td>
+<td class="left">A or B</td>
+</tr>
+
+<tr>
+<td class="left">(!(A))</td>
+<td class="left">not A</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+<code>user01</code> の定義を検索する例
+</p>
+<pre class="example">
+$ ldapsearch -x -D "cn=Manager,dc=jizai-domain,dc=jp" -b "dc=jizai-domain,dc=jp" "uid=user01" -W -LLL
+Enter LDAP Password: 
+dn: uid=user01,ou=User,dc=jizai-domain,dc=jp
+uid: user01
+cn: Test User 01
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+userPassword:: dXNlcjAx  ★Base64形式で表示される
+loginShell: /bin/bash
+uidNumber: 5001
+gidNumber: 3001
+homeDirectory: /home/user01
+</pre>
+<p>
+<code>-LLL</code> オプションは検索結果以外の余計な除法を落とすオプションです。
+</p>
+
+<p>
+匿名で検索する例
+</p>
+<pre class="example">
+$ ldapsearch -x -b "dc=jizai-domain,dc=jp" "(cn=group01)" -LLL
+dn: cn=group01,ou=Group,dc=jizai-domain,dc=jp
+objectClass: posixGroup
+cn: group01
+gidNumber: 3001
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-9" class="outline-3">
+<h3 id="sec-1-9"><span class="section-number-3">1.9</span> ldapaddの使い方</h3>
+<div class="outline-text-3" id="text-1-9">
+<p>
+<code>ldapadd</code> エントリ登録するためのコマンドです。以下はLDAPに新規登録するエントリの定義ファ
+イル <code>01.base.ldif</code> を <code>-f</code> オプションで指定して登録する例です。
+</p>
+
+<pre class="example">
+$  ldapadd -x -D "cn=Manager,dc=jizai-domain,dc=jp" -W -f 01.base.ldif
+Enter LDAP Password: 
+adding new entry "o=Linux Users,dc=jizai-domain,dc=jp"
+
+adding new entry "o=Smaba Users,dc=jizai-domain,dc=jp"
+
+adding new entry "ou=User,o=Linux Users,dc=jizai-domain,dc=jp"
+
+adding new entry "ou=Group,o=Linux Users,dc=jizai-domain,dc=jp"
+</pre>
+
+<p>
+<code>ldapadd</code> コマンド実行時のログ
+</p>
+<pre class="example">
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 fd=10 ACCEPT from IP=[::1]:58644 (IP=[::]:389)
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=0 BIND dn="cn=Manager,dc=jizai-domain,dc=jp" method=128
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=0 BIND dn="cn=Manager,dc=jizai-domain,dc=jp" mech=SIMPLE ssf=0
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=0 RESULT tag=97 err=0 text=
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=1 ADD dn="o=Linux Users,dc=jizai-domain,dc=jp"
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=2 ADD dn="o=Smaba Users,dc=jizai-domain,dc=jp"
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=1 RESULT tag=105 err=0 text=
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=3 ADD dn="ou=User,o=Linux Users,dc=jizai-domain,dc=jp"
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=2 RESULT tag=105 err=0 text=
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=4 ADD dn="ou=Group,o=Linux Users,dc=jizai-domain,dc=jp"
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=3 RESULT tag=105 err=0 text=
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=5 UNBIND
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 op=4 RESULT tag=105 err=0 text=
+2014-08-13T14:43:35+09:00 pipi local4 debug slapd[172]:  conn=1044 fd=10 closed
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-10" class="outline-3">
+<h3 id="sec-1-10"><span class="section-number-3">1.10</span> ldapdeleteの使い方</h3>
+<div class="outline-text-3" id="text-1-10">
+<p>
+<code>ldapdelete</code> コマンドでLDAPに登録されたエントリの削除することができる。 <code>-r</code> オプショ
+ンでサブツリーを含めて削除することも可能です。
+</p>
+<pre class="example">
+$ ldapdelete -x -W -D "cn=Manager,dc=jizai-domain,dc=jp" "ou=User,dc=jizai-domain,dc=jp" -r
+</pre>
+
+<p>
+以下は実行時のログです。
+</p>
+<pre class="example">
+2014-08-13T00:05:27+09:00 pipi local4 debug slapd[172]:  conn=1027 fd=10 ACCEPT from IP=[::1]:58548 (IP=[::]:389)
+2014-08-13T00:05:27+09:00 pipi local4 debug slapd[172]:  conn=1027 op=0 BIND dn="cn=Manager,dc=jizai-domain,dc=jp" method=128
+2014-08-13T00:05:27+09:00 pipi local4 debug slapd[172]:  conn=1027 op=0 BIND dn="cn=Manager,dc=jizai-domain,dc=jp" mech=SIMPLE ssf=0
+2014-08-13T00:05:27+09:00 pipi local4 debug slapd[172]:  conn=1027 op=0 RESULT tag=97 err=0 text=
+2014-08-13T00:05:27+09:00 pipi local4 debug slapd[172]:  conn=1027 op=1 SRCH base="ou=User,dc=jizai-domain,dc=jp" scope=1 deref=0 filter="(objectClass=*)"
+2014-08-13T00:05:27+09:00 pipi local4 debug slapd[172]:  conn=1027 op=1 SRCH attr=1.1
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=2 SRCH base="uid=user01,ou=User,dc=jizai-domain,dc=jp" scope=1 deref=0 filter="(objectClass=*)"
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=2 SRCH attr=1.1
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=2 SEARCH RESULT tag=101 err=0 nentries=0 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=1 SEARCH RESULT tag=101 err=0 nentries=5 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=3 DEL dn="uid=user01,ou=User,dc=jizai-domain,dc=jp"    ★削除さエントリ
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=3 RESULT tag=107 err=0 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=4 SRCH base="uid=user02,ou=User,dc=jizai-domain,dc=jp" scope=1 deref=0 filter="(objectClass=*)"
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=4 SRCH attr=1.1
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=4 SEARCH RESULT tag=101 err=0 nentries=0 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=5 DEL dn="uid=user02,ou=User,dc=jizai-domain,dc=jp"
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=5 RESULT tag=107 err=0 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=6 SRCH base="uid=user03,ou=User,dc=jizai-domain,dc=jp" scope=1 deref=0 filter="(objectClass=*)"
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=6 SRCH attr=1.1
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=7 DEL dn="uid=user03,ou=User,dc=jizai-domain,dc=jp"
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=6 SEARCH RESULT tag=101 err=0 nentries=0 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=8 SRCH base="uid=hoge01,ou=User,dc=jizai-domain,dc=jp" scope=1 deref=0 filter="(objectClass=*)"
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=8 SRCH attr=1.1
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=7 RESULT tag=107 err=0 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=9 DEL dn="uid=hoge01,ou=User,dc=jizai-domain,dc=jp"
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=8 SEARCH RESULT tag=101 err=0 nentries=0 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=10 SRCH base="uid=hoge02,ou=User,dc=jizai-domain,dc=jp" scope=1 deref=0 filter="(objectClass=*)"
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=10 SRCH attr=1.1
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=10 SEARCH RESULT tag=101 err=0 nentries=0 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=9 RESULT tag=107 err=0 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=11 DEL dn="uid=hoge02,ou=User,dc=jizai-domain,dc=jp"
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=11 RESULT tag=107 err=0 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=12 DEL dn="ou=User,dc=jizai-domain,dc=jp"
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=13 UNBIND
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 op=12 RESULT tag=107 err=0 text=
+2014-08-13T00:05:28+09:00 pipi local4 debug slapd[172]:  conn=1027 fd=10 closed
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-11" class="outline-3">
+<h3 id="sec-1-11"><span class="section-number-3">1.11</span> ldapmodifyの使い方</h3>
+<div class="outline-text-3" id="text-1-11">
+<p>
+<code>modify_top.ldif</code> に変更内容を記述する
+</p>
+<pre class="example">
+$ cat modify_top.ldif
+dn: dc=jizai-domain,dc=jp
+changetype: modify
+replace: o                    ★変更対象属性
+o: jizai-domain Corporation   ★変更内容
+-                             ★複数変更対象間のセパレーター
+add: description
+description: this is my first test suffix
+</pre>
+
+<p>
+<code>ldapmodify</code> コマンドで変更を実施する
+</p>
+<pre class="example">
+$ ldapmodify -x -W -D "cn=Manager,dc=jizai-domain,dc=jp" -f modify_top.ldif
+Enter LDAP Password: 
+modifying entry "dc=jizai-domain,dc=jp"
+</pre>
+
+<p>
+以下は変更時の動作ログです。
+</p>
+<pre class="example">
+2014-08-13T00:20:58+09:00 pipi local4 debug slapd[172]:  conn=1036 fd=10 ACCEPT from IP=[::1]:58557 (IP=[::]:389)
+2014-08-13T00:20:58+09:00 pipi local4 debug slapd[172]:  conn=1036 op=0 BIND dn="cn=Manager,dc=jizai-domain,dc=jp" method=128
+2014-08-13T00:20:58+09:00 pipi local4 debug slapd[172]:  conn=1036 op=0 BIND dn="cn=Manager,dc=jizai-domain,dc=jp" mech=SIMPLE ssf=0
+2014-08-13T00:20:58+09:00 pipi local4 debug slapd[172]:  conn=1036 op=0 RESULT tag=97 err=0 text=
+2014-08-13T00:20:58+09:00 pipi local4 debug slapd[172]:  conn=1036 op=1 MOD dn="dc=jizai-domain,dc=jp"
+2014-08-13T00:20:58+09:00 pipi local4 debug slapd[172]:  conn=1036 op=1 MOD attr=o description   ★変更や追加された属性
+2014-08-13T00:20:58+09:00 pipi local4 debug slapd[172]:  conn=1036 op=1 RESULT tag=103 err=0 text=
+2014-08-13T00:20:58+09:00 pipi local4 debug slapd[172]:  conn=1036 op=2 UNBIND
+2014-08-13T00:20:58+09:00 pipi local4 debug slapd[172]:  conn=1036 fd=10 closed
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-12" class="outline-3">
+<h3 id="sec-1-12"><span class="section-number-3">1.12</span> slapindexの使い方</h3>
+<div class="outline-text-3" id="text-1-12">
+<p>
+<code>slapindex</code> は <code>slapd.conf</code> 設定ファイルに定義されたインデックスメタ情報を元にインデッ
+クスの作成/再作成をするコマンドです。このコマンドを実行時に <code>slapd</code>  デーモンプロセス
+を停止しておく必要があります。
+</p>
+
+<pre class="example">
+akira@pipi ~]$ sudo systemctl stop slapd
+[sudo] password for akira: 
+[akira@pipi ~]$ sudo -u ldap slapindex -b dc=jizai-domain,dc=jp -v
+53ef16ba bdb_monitor_db_open: monitoring disabled; configure monitor database to enable
+indexing id=00000001
+indexing id=00000002
+indexing id=00000003
+indexing id=00000004
+indexing id=00000005
+indexing id=00000006
+indexing id=00000007
+indexing id=00000008
+indexing id=00000009
+indexing id=0000000a
+indexing id=0000000b
+indexing id=0000000c
+[akira@pipi ~]$ sudo systemctl start slapd
+[akira@pipi ~]$
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 環境構成</h2>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> OpenLDAPのインストール</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+<code>sudo pacman -S openldap</code> でインストールを行うと、openldapパッケージが以下の形でシス
+テムに展開される。
+</p>
+<pre class="example">
+$ pacman -Ql openldap
+openldap /etc/
+openldap /etc/openldap/
+openldap /etc/openldap/DB_CONFIG.example
+openldap /etc/openldap/schema/              ★ 予め用意されたスキーマ
+openldap /etc/openldap/schema/README
+openldap /etc/openldap/schema/collective.ldif
+openldap /etc/openldap/schema/collective.schema
+openldap /etc/openldap/schema/corba.ldif
+openldap /etc/openldap/schema/corba.schema
+openldap /etc/openldap/schema/core.ldif
+openldap /etc/openldap/schema/core.schema
+openldap /etc/openldap/schema/cosine.ldif
+openldap /etc/openldap/schema/cosine.schema
+openldap /etc/openldap/schema/duaconf.ldif
+openldap /etc/openldap/schema/duaconf.schema
+openldap /etc/openldap/schema/dyngroup.ldif
+openldap /etc/openldap/schema/dyngroup.schema
+openldap /etc/openldap/schema/inetorgperson.ldif
+openldap /etc/openldap/schema/inetorgperson.schema
+openldap /etc/openldap/schema/java.ldif
+openldap /etc/openldap/schema/java.schema
+openldap /etc/openldap/schema/ldapns.schema
+openldap /etc/openldap/schema/misc.ldif
+openldap /etc/openldap/schema/misc.schema
+openldap /etc/openldap/schema/nis.ldif
+openldap /etc/openldap/schema/nis.schema
+openldap /etc/openldap/schema/openldap.ldif
+openldap /etc/openldap/schema/openldap.schema
+openldap /etc/openldap/schema/pmi.ldif
+openldap /etc/openldap/schema/pmi.schema
+openldap /etc/openldap/schema/ppolicy.ldif
+openldap /etc/openldap/schema/ppolicy.schema
+openldap /etc/openldap/slapd.conf   ★LDAP設定ファイル
+openldap /etc/openldap/slapd.d/
+openldap /etc/openldap/slapd.ldif
+openldap /usr/
+openldap /usr/bin/
+openldap /usr/bin/ldapadd         ★エントリの登録に使う
+openldap /usr/bin/ldapcompare
+openldap /usr/bin/ldapdelete      ★エントリの削除に使う
+openldap /usr/bin/ldapexop
+openldap /usr/bin/ldapmodify      ★エントリ属性の変更使う
+openldap /usr/bin/ldapmodrdn
+openldap /usr/bin/ldappasswd
+openldap /usr/bin/ldapsearch      ★エントリの検索に使う
+openldap /usr/bin/ldapurl
+openldap /usr/bin/ldapwhoami
+openldap /usr/bin/slapacl
+openldap /usr/bin/slapadd
+openldap /usr/bin/slapauth
+openldap /usr/bin/slapcat
+openldap /usr/bin/slapd            ★デーモンプロセスのバイナリ →  stand-alone LDAP daemon (server)
+openldap /usr/bin/slapdn
+openldap /usr/bin/slapindex        ★インデックス作成/再作成
+openldap /usr/bin/slappasswd
+openldap /usr/bin/slapschema
+openldap /usr/bin/slaptest         ★設定ファイルの検証に使う
+openldap /usr/lib/
+openldap /usr/lib/openldap/
+openldap /usr/lib/openldap/accesslog-2.4.so.2
+openldap /usr/lib/openldap/accesslog-2.4.so.2.10.2
+openldap /usr/lib/openldap/accesslog.so
+openldap /usr/lib/openldap/auditlog-2.4.so.2
+openldap /usr/lib/openldap/auditlog-2.4.so.2.10.2
+openldap /usr/lib/openldap/auditlog.so
+openldap /usr/lib/openldap/collect-2.4.so.2
+openldap /usr/lib/openldap/collect-2.4.so.2.10.2
+openldap /usr/lib/openldap/collect.so
+openldap /usr/lib/openldap/constraint-2.4.so.2
+openldap /usr/lib/openldap/constraint-2.4.so.2.10.2
+openldap /usr/lib/openldap/constraint.so
+openldap /usr/lib/openldap/dds-2.4.so.2
+openldap /usr/lib/openldap/dds-2.4.so.2.10.2
+openldap /usr/lib/openldap/dds.so
+openldap /usr/lib/openldap/deref-2.4.so.2
+openldap /usr/lib/openldap/deref-2.4.so.2.10.2
+openldap /usr/lib/openldap/deref.so
+openldap /usr/lib/openldap/dyngroup-2.4.so.2
+openldap /usr/lib/openldap/dyngroup-2.4.so.2.10.2
+openldap /usr/lib/openldap/dyngroup.so
+openldap /usr/lib/openldap/dynlist-2.4.so.2
+openldap /usr/lib/openldap/dynlist-2.4.so.2.10.2
+openldap /usr/lib/openldap/dynlist.so
+openldap /usr/lib/openldap/memberof-2.4.so.2
+openldap /usr/lib/openldap/memberof-2.4.so.2.10.2
+openldap /usr/lib/openldap/memberof.so
+openldap /usr/lib/openldap/nssov.so
+openldap /usr/lib/openldap/nssov.so.0
+openldap /usr/lib/openldap/nssov.so.0.0.0
+openldap /usr/lib/openldap/pcache-2.4.so.2
+openldap /usr/lib/openldap/pcache-2.4.so.2.10.2
+openldap /usr/lib/openldap/pcache.so
+openldap /usr/lib/openldap/ppolicy-2.4.so.2
+openldap /usr/lib/openldap/ppolicy-2.4.so.2.10.2
+openldap /usr/lib/openldap/ppolicy.so
+openldap /usr/lib/openldap/refint-2.4.so.2
+openldap /usr/lib/openldap/refint-2.4.so.2.10.2
+openldap /usr/lib/openldap/refint.so
+openldap /usr/lib/openldap/retcode-2.4.so.2
+openldap /usr/lib/openldap/retcode-2.4.so.2.10.2
+openldap /usr/lib/openldap/retcode.so
+openldap /usr/lib/openldap/rwm-2.4.so.2
+openldap /usr/lib/openldap/rwm-2.4.so.2.10.2
+openldap /usr/lib/openldap/rwm.so
+openldap /usr/lib/openldap/seqmod-2.4.so.2
+openldap /usr/lib/openldap/seqmod-2.4.so.2.10.2
+openldap /usr/lib/openldap/seqmod.so
+openldap /usr/lib/openldap/sssvlv-2.4.so.2
+openldap /usr/lib/openldap/sssvlv-2.4.so.2.10.2
+openldap /usr/lib/openldap/sssvlv.so
+openldap /usr/lib/openldap/syncprov-2.4.so.2
+openldap /usr/lib/openldap/syncprov-2.4.so.2.10.2
+openldap /usr/lib/openldap/syncprov.so
+openldap /usr/lib/openldap/translucent-2.4.so.2
+openldap /usr/lib/openldap/translucent-2.4.so.2.10.2
+openldap /usr/lib/openldap/translucent.so
+openldap /usr/lib/openldap/unique-2.4.so.2
+openldap /usr/lib/openldap/unique-2.4.so.2.10.2
+openldap /usr/lib/openldap/unique.so
+openldap /usr/lib/openldap/valsort-2.4.so.2
+openldap /usr/lib/openldap/valsort-2.4.so.2.10.2
+openldap /usr/lib/openldap/valsort.so
+openldap /usr/lib/slapd
+openldap /usr/lib/systemd/
+openldap /usr/lib/systemd/system/
+openldap /usr/lib/systemd/system/slapd.service ★サービス定義ファイル
+openldap /usr/lib/tmpfiles.d/
+openldap /usr/lib/tmpfiles.d/slapd.conf
+openldap /usr/share/
+openldap /usr/share/licenses/
+openldap /usr/share/licenses/openldap/
+openldap /usr/share/licenses/openldap/LICENSE  ★ライセンスファイル
+openldap /usr/share/man/
+openldap /usr/share/man/man1/
+openldap /usr/share/man/man1/ldapadd.1.gz
+openldap /usr/share/man/man1/ldapcompare.1.gz
+openldap /usr/share/man/man1/ldapdelete.1.gz
+openldap /usr/share/man/man1/ldapexop.1.gz
+openldap /usr/share/man/man1/ldapmodify.1.gz
+openldap /usr/share/man/man1/ldapmodrdn.1.gz
+openldap /usr/share/man/man1/ldappasswd.1.gz
+openldap /usr/share/man/man1/ldapsearch.1.gz
+openldap /usr/share/man/man1/ldapurl.1.gz
+openldap /usr/share/man/man1/ldapwhoami.1.gz
+openldap /usr/share/man/man5/
+openldap /usr/share/man/man5/ldif.5.gz
+openldap /usr/share/man/man5/slapd-bdb.5.gz
+openldap /usr/share/man/man5/slapd-config.5.gz
+openldap /usr/share/man/man5/slapd-dnssrv.5.gz
+openldap /usr/share/man/man5/slapd-hdb.5.gz
+openldap /usr/share/man/man5/slapd-ldap.5.gz
+openldap /usr/share/man/man5/slapd-ldbm.5.gz
+openldap /usr/share/man/man5/slapd-ldif.5.gz
+openldap /usr/share/man/man5/slapd-mdb.5.gz
+openldap /usr/share/man/man5/slapd-meta.5.gz
+openldap /usr/share/man/man5/slapd-monitor.5.gz
+openldap /usr/share/man/man5/slapd-ndb.5.gz
+openldap /usr/share/man/man5/slapd-null.5.gz
+openldap /usr/share/man/man5/slapd-passwd.5.gz
+openldap /usr/share/man/man5/slapd-perl.5.gz
+openldap /usr/share/man/man5/slapd-relay.5.gz
+openldap /usr/share/man/man5/slapd-shell.5.gz
+openldap /usr/share/man/man5/slapd-sock.5.gz
+openldap /usr/share/man/man5/slapd-sql.5.gz
+openldap /usr/share/man/man5/slapd.access.5.gz
+openldap /usr/share/man/man5/slapd.backends.5.gz
+openldap /usr/share/man/man5/slapd.conf.5.gz
+openldap /usr/share/man/man5/slapd.overlays.5.gz
+openldap /usr/share/man/man5/slapd.plugin.5.gz
+openldap /usr/share/man/man5/slapo-accesslog.5.gz
+openldap /usr/share/man/man5/slapo-auditlog.5.gz
+openldap /usr/share/man/man5/slapo-chain.5.gz
+openldap /usr/share/man/man5/slapo-collect.5.gz
+openldap /usr/share/man/man5/slapo-constraint.5.gz
+openldap /usr/share/man/man5/slapo-dds.5.gz
+openldap /usr/share/man/man5/slapo-dyngroup.5.gz
+openldap /usr/share/man/man5/slapo-dynlist.5.gz
+openldap /usr/share/man/man5/slapo-memberof.5.gz
+openldap /usr/share/man/man5/slapo-pbind.5.gz
+openldap /usr/share/man/man5/slapo-pcache.5.gz
+openldap /usr/share/man/man5/slapo-ppolicy.5.gz
+openldap /usr/share/man/man5/slapo-refint.5.gz
+openldap /usr/share/man/man5/slapo-retcode.5.gz
+openldap /usr/share/man/man5/slapo-rwm.5.gz
+openldap /usr/share/man/man5/slapo-sock.5.gz
+openldap /usr/share/man/man5/slapo-sssvlv.5.gz
+openldap /usr/share/man/man5/slapo-syncprov.5.gz
+openldap /usr/share/man/man5/slapo-translucent.5.gz
+openldap /usr/share/man/man5/slapo-unique.5.gz
+openldap /usr/share/man/man5/slapo-valsort.5.gz
+openldap /usr/share/man/man8/
+openldap /usr/share/man/man8/slapacl.8.gz
+openldap /usr/share/man/man8/slapadd.8.gz
+openldap /usr/share/man/man8/slapauth.8.gz
+openldap /usr/share/man/man8/slapcat.8.gz
+openldap /usr/share/man/man8/slapd.8.gz
+openldap /usr/share/man/man8/slapdn.8.gz
+openldap /usr/share/man/man8/slapindex.8.gz
+openldap /usr/share/man/man8/slappasswd.8.gz
+openldap /usr/share/man/man8/slapschema.8.gz
+openldap /usr/share/man/man8/slaptest.8.gz
+openldap /var/
+openldap /var/lib/
+openldap /var/lib/openldap/
+openldap /var/lib/openldap/openldap-data/                  ★LDAPに保存するデータがBerkeley DB形式でここで管理される
+openldap /var/lib/openldap/openldap-data/DB_CONFIG.example ★データ保管バックエンドBerkeley DBの設定ファイルテンプレート
+</pre>
+
+<p>
+また、 <code>slapd</code> デーモンプロセスを動かすユーザとグループ <code>ldap</code> が自動的に
+<code>/etc/passwd</code> と <code>/etc/group</code> に登録される。
+</p>
+<pre class="example">
+★ldapユーザ
+$ cat /etc/passwd | grep ldap
+ldap:x:439:439::/var/lib/openldap:/bin/false
+
+★ldapグループ
+$ cat /etc/group | grep ldap
+ldap:x:439:
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> OpenLDAPサーバ設定と起動</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+OpenLDAPのサーバ設定情報は基本的 <code>/etc/openldap/slapd.conf</code> に記載される。
+この設定ファイルは主に以下の情報を定義します。
+</p>
+<ul class="org-ul">
+<li>OpenLDAPに使用するスキーマファイルの指定
+</li>
+<li>ルートエントリとrootdnの定義
+</li>
+<li>インデックスの定義(検索を向上するための設定)
+</li>
+<li>アクセスコントロール
+</li>
+<li>SSL/TLS通信暗号化時の設定情報
+</li>
+<li>パスワード暗号化方式の指定
+</li>
+</ul>
+
+<p>
+以下は <code>/etc/openldap/slapd.conf</code> 設定例です.
+</p>
+<pre class="example">
+#
+# See slapd.conf(5) for details on configuration options.
+# This file should NOT be world readable.
+#
+#######################################################################
+# 使用するスキーマファイルのインクルード
+#######################################################################
+include	    /etc/openldap/schema/core.schema
+include     /etc/openldap/schema/cosine.schema
+include     /etc/openldap/schema/nis.schema
+include     /etc/openldap/schema/inetorgperson.schema
+include     /etc/openldap/schema/postfix.schema
+
+# Define global ACLs to disable default read access.
+
+# Do not enable referrals until AFTER you have a working directory
+# service AND an understanding of referrals.
+#referral	ldap://root.openldap.org
+
+pidfile		/run/openldap/slapd.pid
+argsfile	/run/openldap/slapd.args
+
+# Load dynamic backend modules:
+# modulepath	/usr/lib/openldap
+# moduleload	back_bdb.la
+# moduleload	back_hdb.la
+# moduleload	back_ldap.la
+
+# Sample security restrictions
+#	Require integrity protection (prevent hijacking)
+#	Require 112-bit (3DES or better) encryption for updates
+#	Require 63-bit encryption for simple bind
+# security ssf=1 update_ssf=112 simple_bind=64
+
+#######################################################################
+# アクセスコントロール
+#######################################################################
+# Sample access control policy:
+#	Root DSE: allow anyone to read it
+#	Subschema (sub)entry DSE: allow anyone to read it
+#	Other DSEs:
+#		Allow self write access
+#		Allow authenticated users read access
+#		Allow anonymous users to authenticate
+#	Directives needed to implement policy:
+# access to dn.base="" by * read
+# access to dn.base="cn=Subschema" by * read
+# access to *
+#	by self write
+#	by users read
+#	by anonymous auth
+#
+# if no access controls are present, the default policy
+# allows anyone and everyone to read anything but restricts
+# updates to rootdn.  (e.g., "access to * by * read")
+#
+# rootdn can always read and write EVERYTHING!
+
+#ユーザが自分のパスワード変更できるようにアクセス権を設定
+access to attrs=userPassword
+  by dn="cn=Manager,dc=jizai-domain,dc=jp" write
+  by self write
+  by anonymous auth              ★簡易認証では一度匿名でバンドしてuserPassword属性による認証を行うため
+  by * none
+
+#管理者は書き込み可能、その他のユーザは読み取り専用
+access to *
+  by dn="cn=Manager,dc=jizai-domain,dc=jp" write
+  by self write
+  by * read
+
+#######################################################################
+# BDB database definitions (ルートエントリとrootdnの定義)
+#######################################################################
+database	bdb
+suffix		"dc=jizai-domain,dc=jp"                    ★ルートエントリの定義
+rootdn		"cn=Manager,dc=jizai-domain,dc=jp"         ★rootdnの定義
+# Cleartext passwords, especially for the rootdn, should
+# be avoid.  See slappasswd(8) and slapd.conf(5) for details.
+# Use of strong authentication encouraged.
+rootpw		{SSHA}mMRwA4mPL7hIet11pVaXdK1AaV49J7Iy
+# The database directory MUST exist prior to running slapd AND
+# should only be accessible by the slapd and slap tools.
+# Mode 700 recommended.
+directory	/var/lib/openldap/jizai-domain             ★BDBファイル格納先の指定、ディレクトリを予め作成してお必要があります
+
+#######################################################################
+# インデックスの定義
+#######################################################################
+# Indices to maintain
+index	objectClass	                     eq,pres        ★eq:   属性値が一致する
+index   uidNumber,gidNumber,loginShell   eq,pres        ★pres: 属性が存在する
+index	uid,memberUid            	     eq,pres,sub    ★sub:  属性値の一部が一致する
+index	ou,cn,mail,surname,givenname     eq,pres,sub
+index	nisMapName,nisMapEntry    	     eq,pres,sub
+
+#######################################################################
+# SSL/TLS通信暗号化
+#######################################################################
+
+#######################################################################
+# パスワード暗号化方式
+#######################################################################
+password-hash {SSHA}          ★パスワード属性値の暗号化方式
+</pre>
+
+<p>
+設定ファイル編集完了後、director項目で指定したディレクトリを <code>ldap</code> ユーザ権限で作成しましょう。
+</p>
+<pre class="example">
+$ sudo -u ldap mkdir /var/lib/openldap/jizai-domain
+</pre>
+
+<p>
+またこのディレクトリの直下にDBDのパラメータファイル <code>DB_CONFIG</code> を予め定義しましょう。
+</p>
+
+<pre class="example">
+$ sudo -u ldap touch /var/lib/openldap/jizai-domain/DB_CONFIG
+$ sudo -u ldap cat /var/lib/openldap/jizai-domain/DB_CONFIG
+# $OpenLDAP$
+# Example DB_CONFIG file for use with slapd(8) BDB/HDB databases.
+#
+# See the Oracle Berkeley DB documentation
+#   &lt;http://www.oracle.com/technology/documentation/berkeley-db/db/ref/env/db_config.html&gt;
+# for detail description of DB_CONFIG syntax and semantics.
+#
+# Hints can also be found in the OpenLDAP Software FAQ
+#	&lt;http://www.openldap.org/faq/index.cgi?file=2&gt;
+# in particular:
+#   &lt;http://www.openldap.org/faq/index.cgi?file=1075&gt;
+
+# Note: most DB_CONFIG settings will take effect only upon rebuilding
+# the DB environment.
+
+# one 0.25 GB cache
+set_cachesize 0 268435456 1
+
+# Data Directory
+#set_data_dir db
+
+# Transaction Log settings
+set_lg_regionmax 262144
+set_lg_bsize 2097152
+#set_lg_dir logs
+
+set_flags DB_LOG_AUTOREMOVE
+
+# Note: special DB_CONFIG flags are no longer needed for "quick"
+# slapadd(8) or slapindex(8) access (see their -q option).
+</pre>
+
+<p>
+サービスを起動する前に、=slaptest= コマンドで設定ファイルの文法検証を行いましょう。
+</p>
+<pre class="example">
+$ sudo -u ldap slaptest
+/etc/openldap/slapd.conf: line 94: index attribute "givename" undefined
+slaptest: bad configuration file!  ★文法検証NGの場合、このメッセージが表示される。
+</pre>
+
+<p>
+初回起動前に <code>id2entry.bdb</code> ファイルがないため、検証時に以下のようなメッセージが表示される。
+これは設定ファイルの問題ではありません。気にせずに前に進みましょう。
+</p>
+<pre class="example">
+$ sudo -u ldap slaptest
+53eb0121 bdb_db_open: database "dc=jizai-domain,dc=jp": db_open(/var/lib/openldap/jizai-domain/id2entry.bdb) failed: No such file or directory (2).
+53eb0121 backend_startup_one (type=bdb, suffix="dc=jizai-domain,dc=jp"): bi_db_open failed! (2)
+slap_startup failed (test would succeed using the -u switch)
+
+★-uオプションでdry-runモードで実行すると警告がなくなる
+$ sudo -u ldap slaptest -u
+config file testing succeeded
+$
+</pre>
+
+<p>
+いよいよ、サービスを起動します。
+</p>
+<pre class="example">
+★systemctlでサービスを起動します
+$ sudo systemctl start slapd.service
+
+★ログを確認する
+$ sudo tail -f /var/log/everything.log
+2014-08-13T15:10:24+09:00 pipi daemon info systemd[1]:  Starting OpenLDAP server daemon...
+2014-08-13T15:10:25+09:00 pipi local4 debug slapd[9780]:  @(#) $OpenLDAP: slapd 2.4.39 (Feb  2 2014 15:15:20) $
+	nobody@root-armv6-copy:/build/openldap/src/openldap-2.4.39/servers/slapd
+2014-08-13T15:10:25+09:00 pipi local4 debug slapd[9781]:  bdb_monitor_db_open: monitoring disabled; configure monitor database to enable
+2014-08-13T15:10:25+09:00 pipi local4 debug slapd[9781]:  slapd starting
+2014-08-13T15:10:25+09:00 pipi daemon info systemd[1]:  Started OpenLDAP server daemon.
+</pre>
+
+<p>
+正常に起動された感じですね。 <code>monitoring disabled</code> 部分が気にされるかも知れないが、こ
+れはOpenLDAPのモニタ機能が無効化の状態で起動されたのことです。今度機会があれば、モニ
+タ機能に関して取り上げたいと思います。
+</p>
+
+<p>
+試しにrootdnでバインドしてldapsearchを実行してみましょう。
+</p>
+<pre class="example">
+$ ldapsearch -x -W -D "cn=Manager,dc=jizai-domain,dc=jp" -b "dc=jizai-domain,dc=jp"
+Enter LDAP Password: 
+# extended LDIF
+#
+# LDAPv3
+# base &lt;dc=jizai-domain,dc=jp&gt; with scope subtree
+# filter: (objectclass=*)
+# requesting: ALL
+#
+
+# search result
+search: 2
+result: 32 No such object
+
+# numResponses: 1
+$
+</pre>
+
+<p>
+エントリが登録されていないため空の検索結果が表示されましたね。
+また、director項目で指定したディレクトリに自動的にDBDファイルが作成される。
+</p>
+
+<pre class="example">
+$ sudo -u ldap ls -al /var/lib/openldap/jizai-domain
+total 14264
+drwx------ 2 ldap ldap     4096 Aug 13 15:10 .
+drwx------ 4 ldap ldap     4096 Aug 13 14:51 ..
+-rwx------ 1 ldap ldap      874 Aug 13 14:59 DB_CONFIG
+-rw------- 1 ldap ldap  2310144 Aug 13 15:29 __db.001
+-rw------- 1 ldap ldap 12861440 Aug 13 15:29 __db.002
+-rw------- 1 ldap ldap  1490944 Aug 13 15:29 __db.003
+-rw-r--r-- 1 ldap ldap     4096 Aug 13 15:10 alock
+-rw------- 1 ldap ldap     8192 Aug 13 15:10 dn2id.bdb
+-rw------- 1 ldap ldap    32768 Aug 13 15:10 id2entry.bdb
+-rw------- 1 ldap ldap 10485760 Aug 13 15:10 log.0000000001
+</pre>
+
+<p>
+続いて、 <a href="#sec-1-6">1.6</a> で説明したデータを登録してましょう。
+</p>
+<pre class="example">
+$ ldapadd -x -D "cn=Manager,dc=jizai-domain,dc=jp" -W -f 01.base.ldif 
+Enter LDAP Password: 
+adding new entry "dc=jizai-domain,dc=jp"
+
+adding new entry "cn=Manager,dc=jizai-domain,dc=jp"
+
+adding new entry "o=Linux Users,dc=jizai-domain,dc=jp"
+
+adding new entry "o=Smaba Users,dc=jizai-domain,dc=jp"
+
+adding new entry "ou=User,o=Linux Users,dc=jizai-domain,dc=jp"
+
+adding new entry "ou=Group,o=Linux Users,dc=jizai-domain,dc=jp"
+
+★ユーザエントリの登録
+$ ldapadd -x -D "cn=Manager,dc=jizai-domain,dc=jp" -W -f 02.users.ldif 
+Enter LDAP Password: 
+adding new entry "uid=user01,ou=User,o=Linux Users,dc=jizai-domain,dc=jp"
+
+adding new entry "uid=user02,ou=User,o=Linux Users,dc=jizai-domain,dc=jp"
+
+★グループエントリの登録
+$ ldapadd -x -D "cn=Manager,dc=jizai-domain,dc=jp" -W -f 03.groups.ldif 
+Enter LDAP Password: 
+adding new entry "cn=group01,ou=Group,o=Linux Users,dc=jizai-domain,dc=jp"
+
+adding new entry "cn=group02,ou=Group,o=Linux Users,dc=jizai-domain,dc=jp"
+
+$
+</pre>
+<p>
+無地に登録出来ました！匿名ユーザで検索してましょう。
+</p>
+
+<pre class="example">
+$ ldapsearch -x -b "dc=jizai-domain,dc=jp" -LLL
+dn: dc=jizai-domain,dc=jp
+dc: jizai-domain
+o: jizai-domain Corporation
+objectClass: dcObject
+objectClass: organization
+
+dn: cn=Manager,dc=jizai-domain,dc=jp
+cn: Manager
+objectClass: organizationalRole
+
+dn: o=Linux Users,dc=jizai-domain,dc=jp
+o: Linux Users
+objectClass: organization
+
+dn: o=Smaba Users,dc=jizai-domain,dc=jp
+o: Smaba Users
+objectClass: organization
+
+dn: ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+ou: User
+objectClass: organizationalUnit
+
+dn: ou=Group,o=Linux Users,dc=jizai-domain,dc=jp
+ou: Group
+objectClass: organizationalUnit
+
+dn: uid=user01,ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+uid: user01
+cn: Test User01
+uidNumber: 5001
+gidNumber: 3001
+homeDirectory: /home/user01
+loginShell: /bin/bash
+gecos: Test User No01
+shadowLastChange: 0
+shadowMin: 0
+shadowMax: 99999
+shadowWarning: 7
+objectClass: account
+objectClass: posixAccount
+objectClass: shadowAccount
+
+dn: uid=user02,ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+uid: user02
+cn: Test User02
+uidNumber: 5002
+gidNumber: 3002
+homeDirectory: /home/user02
+loginShell: /bin/bash
+gecos: Test User No02
+shadowLastChange: 0
+shadowMin: 0
+shadowMax: 99999
+shadowWarning: 7
+objectClass: account
+objectClass: posixAccount
+objectClass: shadowAccount
+
+dn: cn=group01,ou=Group,o=Linux Users,dc=jizai-domain,dc=jp
+cn: group01
+gidNumber: 3001
+objectClass: posixGroup
+
+dn: cn=group02,ou=Group,o=Linux Users,dc=jizai-domain,dc=jp
+cn: group02
+gidNumber: 3002
+memberUid: 5001
+objectClass: posixGroup
+</pre>
+<p>
+匿名でアクセスする場合 <code>userPassword</code> 属性が表示されないことを確認しました。
+次は曖昧検索ウィ練習してみたいと思います。
+</p>
+
+<pre class="example">
+★uidで前方一致検索する、検索結果にgecosのみを表示する
+$ ldapsearch -x -b "dc=jizai-domain,dc=jp" "uid=user*" "uid" -LLL
+dn: uid=user01,ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+gecos: Test User No01
+
+dn: uid=user02,ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+gecos: Test User No02
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> OpenLDAPログ出力設定</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+デフォルトではサービスのログが <code>journal</code> ログシステムでバイナリ形式でログ収集される。
+次はコマンドで <code>/usr/bin/slapd</code> プロセスのログ出力を確認することができます。
+</p>
+<pre class="example">
+$ journalctl /usr/bin/slapd
+-- Logs begin at Tue 2014-01-28 15:40:27 JST, end at Tue 2014-08-12 22:05:05 JST. --
+Jan 28 22:08:32 pipi slapd[175]: conn=1000 fd=9 ACCEPT from IP=192.168.100.7:35520 (IP=0.0.0.0:389)
+Jan 28 22:08:32 pipi slapd[175]: conn=1000 op=0 BIND dn="" method=128
+Jan 28 22:08:32 pipi slapd[175]: conn=1000 op=0 RESULT tag=97 err=0 text=
+Jan 28 22:08:32 pipi slapd[175]: conn=1000 op=1 SRCH base="dc=jizai-domain,dc=jp" scope=2 deref=0 filter="(&amp;(objectClass=posixAccount)(u
+........
+</pre>
+
+<p>
+journald と syslog のを結合して運用している場合以下手順でsyslogの設定を行うでopenldap
+のログを別ファイルに出力させることができる。
+</p>
+
+<p>
+<code>/etc/syslog-ng/syslog-ng.conf</code> に以下の定義の追加して、 <code>syslog-ng</code> サービスを再起動
+する。
+</p>
+
+<pre class="example">
+template t_1 {
+        template("$ISODATE $FULLHOST $FACILITY $PRIORITY $MSGHDR $MSG\n"); templat$
+};
+
+destination d_ldap { file("/var/log/ldap.log" template(t_1)); };
+
+filter f_ldap { facility(local4); };   ★ここが肝です、openldapのログはlocal4ファシリティを用いて出力する仕様となっている
+
+log { source(src); filter(f_ldap); destination(d_ldap); };
+</pre>
+
+<p>
+<code>/etc/logrotate.d/syslog-ng</code> にローテーション対象に追加する。
+</p>
+<pre class="example">
+                            ★最後に追加する
+/var/log/messages.log ..... /var/log/ldap.log  {
+	missingok
+	sharedscripts
+	postrotate
+		/bin/kill -HUP $(cat /run/syslog-ng.pid 2&gt;/dev/null) 2&gt;/dev/null || true
+	endscript
+}
+</pre>
+
+<p>
+### TODO
+loglevel
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> LDAPクライアントの設定</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+LDAPクライアントはいろいろありますが、ここでは <code>ldapsearch</code> などOpenLDAPに付属したツー
+ルから参照されるクライアント設定ファイルについて紹介します。
+</p>
+
+<p>
+OpenLDAPサーバを参照するためにLDAPクライアントに <code>libldap</code> をインストールしましょう。
+<code>OpenLDAP</code> インストール時もすでにインストールされていると思いますが、ここでは再イン
+ストールことになります。
+</p>
+
+<pre class="example">
+$ sudo pacman -S libldap
+[sudo] password for akira: 
+警告: libldap-2.4.39-1 は最新です -- 再インストール
+依存関係を解決しています...
+相互衝突をチェックしています...
+
+パッケージ (1): libldap-2.4.39-1
+
+Total Installed Size:   0.94 MiB
+Net Upgrade Size:       0.00 MiB
+
+:: インストールを行いますか？ [Y/n]
+(1/1) キーリングのキーを確認                                                                   [########################################################] 100%
+(1/1) パッケージの整合性をチェック                                                             [########################################################] 100%
+(1/1) パッケージファイルのロード                                                               [########################################################] 100%
+(1/1) ファイルの衝突をチェック                                                                 [########################################################] 100%
+(1/1) 空き容量を確認                                                                           [########################################################] 100%
+(1/1) 再インストール libldap                                                                   [########################################################] 100%
+$ pacman -Ql libldap
+libldap /etc/
+libldap /etc/openldap/
+libldap /etc/openldap/ldap.conf  ★LDAPクライアント設定ファイル
+......省略......
+</pre>
+
+<p>
+<code>/etc/openldap/ldap.conf</code> はLDAPクライアントの設定ファイルとなります。このファイルう
+に最低限に以下のLDAPサーバ接続する情報を記述しましょう。
+</p>
+<pre class="example">
+BASE   dc=jizai-domain,dc=jp
+URI    ldap://pipi.home/
+</pre>
+
+<p>
+これで <code>ldapsearch</code> コマンド実行時にデフォルトの接続先として付与されることになります。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> LDAPクライアントとサーバ間の通信内容</h2>
+<div class="outline-text-2" id="text-7">
+<p>
+LDAPクライアントとサーバ間通経路が暗号化されていない時のパケット内容を確認しましょう。
+以下は <code>ldapsearch</code> コマンドでユーザエントリの <code>userPassword</code> 属性の検索結果となりま
+す。 <code>userPassword</code> の値がBase64エンコード形式で出力されていることが分かりました。
+</p>
+<pre class="example">
+$ ldapsearch -x -W  -D "cn=Manager,dc=jizai-domain,dc=jp" -b "ou=User,o=Linux Users,dc=jizai-domain,dc=jp" "userPassword" -LLL
+Enter LDAP Password: 
+dn: ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+
+dn: uid=user01,ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+userPassword:: UEBzc3cwcmQ=
+
+dn: uid=user02,ou=User,o=Linux Users,dc=jizai-domain,dc=jp
+userPassword:: e1NTSEF9S3BKd3dBMlNidDI5R0dOWnhkYXNxNVhSbWw2SjVxMlo=
+</pre>
+
+<p>
+<code>wireshark</code> の監視結果
+</p>
+
+
+<div class="figure">
+<p><img src="img/2014-08-12-openldap-01.png" alt="2014-08-12-openldap-01.png" />
+</p>
+</div>
+
+<p>
+<code>tcpdump</code> の監視結果（一部情報を落としている）
+</p>
+<pre class="example">
+$ sudo tcpdump -n -i wlp2s0 port 389 -X
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on wlp2s0, link-type EN10MB (Ethernet), capture size 65535 bytes
+16:38:54.494320 IP 192.168.100.10.37832 &gt; 192.168.100.4.389: Flags [S], seq 1466415103, win 29200, options [mss 1460,sackOK,TS val 23258407 ecr 0,nop,wscale 7], length 0
+...省略...
+16:38:54.495465 IP 192.168.100.4.389 &gt; 192.168.100.10.37832: Flags [S.], seq 206831997, ack 1466415104, win 28960, options [mss 1460,sackOK,TS val 10688865 ecr 23258407,nop,wscale 5], length 0
+...省略...
+16:38:54.495515 IP 192.168.100.10.37832 &gt; 192.168.100.4.389: Flags [.], ack 1, win 229, options [nop,nop,TS val 23258407 ecr 10688865], length 0
+...省略...
+16:38:54.495602 IP 192.168.100.10.37832 &gt; 192.168.100.4.389: Flags [P.], seq 1:55, ack 1, win 229, options [nop,nop,TS val 23258407 ecr 10688865], length 54
+	0x0000:  4500 006a 52da 4000 4006 9e54 c0a8 640a  E..jR.@.@..T..d.
+	0x0010:  c0a8 6404 93c8 0185 5767 b800 0c54 017e  ..d.....Wg...T.~
+	0x0020:  8018 00e5 082b 0000 0101 080a 0162 e527  .....+.......b.'
+	0x0030:  00a3 1961 3034 0201 0160 2f02 0103 0420  ...a04...`/.....
+	0x0040:  636e 3d4d 616e 6167 6572 2c64 633d 6a69  cn=Manager,dc=ji
+	0x0050:  7a61 692d 646f 6d61 696e 2c64 633d 6a70  zai-domain,dc=jp
+	0x0060:  8008 5040 7373 7730 7264                 ..P@ssw0rd                 ★rootdnバインド時のパスワード
+
+16:38:54.497192 IP 192.168.100.4.389 &gt; 192.168.100.10.37832: Flags [.], ack 55, win 905, options [nop,nop,TS val 10688865 ecr 23258407], length 0
+...省略...
+16:38:54.505926 IP 192.168.100.4.389 &gt; 192.168.100.10.37832: Flags [P.], seq 1:15, ack 55, win 905, options [nop,nop,TS val 10688866 ecr 23258407], length 14
+...省略...
+16:38:54.505948 IP 192.168.100.10.37832 &gt; 192.168.100.4.389: Flags [.], ack 15, win 229, options [nop,nop,TS val 23258410 ecr 10688866], length 0
+...省略...
+16:38:54.506029 IP 192.168.100.10.37832 &gt; 192.168.100.4.389: Flags [P.], seq 55:151, ack 15, win 229, options [nop,nop,TS val 23258410 ecr 10688866], length 96
+16:38:54.511339 IP 192.168.100.4.389 &gt; 192.168.100.10.37832: Flags [P.], seq 15:69, ack 151, win 905, options [nop,nop,TS val 10688866 ecr 23258410], length 54
+16:38:54.517492 IP 192.168.100.4.389 &gt; 192.168.100.10.37832: Flags [P.], seq 69:162, ack 151, win 905, options [nop,nop,TS val 10688867 ecr 23258410], length 93
+	0x0000:  4500 0091 1822 4000 4006 d8e5 c0a8 6404  E...."@.@.....d.
+	0x0010:  c0a8 640a 0185 93c8 0c54 01c2 5767 b896  ..d......T..Wg..
+	0x0020:  8018 0389 7d44 0000 0101 080a 00a3 1963  ....}D.........c
+	0x0030:  0162 e52a 305b 0201 0264 5604 3675 6964  .b.*0[...dV.6uid
+	0x0040:  3d75 7365 7230 312c 6f75 3d55 7365 722c  =user01,ou=User,
+	0x0050:  6f3d 4c69 6e75 7820 5573 6572 732c 6463  o=Linux.Users,dc
+	0x0060:  3d6a 697a 6169 2d64 6f6d 6169 6e2c 6463  =jizai-domain,dc
+	0x0070:  3d6a 7030 1c30 1a04 0c75 7365 7250 6173  =jp0.0...userPas
+	0x0080:  7377 6f72 6431 0a04 0850 4073 7377 3072  sword1...P@ssw0r          ★検索結果にuser01のパスワード
+	0x0090:  64                                       d
+16:38:54.517536 IP 192.168.100.10.37832 &gt; 192.168.100.4.389: Flags [.], ack 162, win 229, options [nop,nop,TS val 23258414 ecr 10688866], length 0
+16:38:54.518197 IP 192.168.100.4.389 &gt; 192.168.100.10.37832: Flags [P.], seq 162:285, ack 151, win 905, options [nop,nop,TS val 10688867 ecr 23258410], length 123
+	0x0000:  4500 00af 1823 4000 4006 d8c6 c0a8 6404  E....#@.@.....d.
+	0x0010:  c0a8 640a 0185 93c8 0c54 021f 5767 b896  ..d......T..Wg..
+	0x0020:  8018 0389 682f 0000 0101 080a 00a3 1963  ....h/.........c
+	0x0030:  0162 e52a 3079 0201 0264 7404 3675 6964  .b.*0y...dt.6uid
+	0x0040:  3d75 7365 7230 322c 6f75 3d55 7365 722c  =user02,ou=User,
+	0x0050:  6f3d 4c69 6e75 7820 5573 6572 732c 6463  o=Linux.Users,dc
+	0x0060:  3d6a 697a 6169 2d64 6f6d 6169 6e2c 6463  =jizai-domain,dc
+	0x0070:  3d6a 7030 3a30 3804 0c75 7365 7250 6173  =jp0:08..userPas
+	0x0080:  7377 6f72 6431 2804 267b 5353 4841 7d4b  sword1(.&amp;{SSHA}K          ★検索結果にuser02のパスワード
+	0x0090:  704a 7777 4132 5362 7432 3947 474e 5a78  pJwwA2Sbt29GGNZx
+	0x00a0:  6461 7371 3558 526d 6c36 4a35 7132 5a    dasq5XRml6J5q2Z
+16:38:54.518549 IP 192.168.100.4.389 &gt; 192.168.100.10.37832: Flags [P.], seq 285:299, ack 151, win 905, options [nop,nop,TS val 10688867 ecr 23258414], length 14
+</pre>
+
+<p>
+検証結果の通り、バインド時のパスワードや検索結果中のパスワード情報がバレバレですね。
+本番運用ではこの状態だと好ましくないでしょうか。ちゃんとSSL/TLSで暗号化しましょう。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-8" class="outline-2">
+<h2 id="sec-8"><span class="section-number-2">8</span> LDAPによるLinuxのログイン認証設定</h2>
+<div class="outline-text-2" id="text-8">
+</div><div id="outline-container-sec-8-1" class="outline-3">
+<h3 id="sec-8-1"><span class="section-number-3">8.1</span> LDAP連携用ライブラリの導入</h3>
+<div class="outline-text-3" id="text-8-1">
+<p>
+LDAPサーバと連携してログイン認証するために <code>libnss_ldap</code> と <code>pam_ldap</code> ライブラリが必
+要とします。２つライブラリの役割は
+</p>
+<ul class="org-ul">
+<li>libnss_ldap: Name Service Switch によるLDAPユーザ情報を引けるようにする
+</li>
+<li>pam_ldap: 簡易パスワード認証や <code>passwd</code> によるパスワード変更のLDAP対応
+</li>
+</ul>
+
+<p>
+この２つライブラリは別々プロジェクトで開発されているため、設定ファイルも別々
+となっている。
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">pam_ldap</td>
+<td class="left"><a href="http://www.padl.com/OSS/pam_ldap.html">http://www.padl.com/OSS/pam_ldap.html</a></td>
+<td class="left">nss_ldap.conf</td>
+</tr>
+
+<tr>
+<td class="left">nss_ldap</td>
+<td class="left"><a href="http://www.padl.com/OSS/nss_ldap.html">http://www.padl.com/OSS/nss_ldap.html</a></td>
+<td class="left">pam_ldap.conf</td>
+</tr>
+</tbody>
+</table>
+<p>
+実際にこの２つ設定ファイルに記述する内容はほどんどん変わらない、設定情報が二重管理と
+なってしまいます。 この問題を解決してくれるのは <code>nss-pam-ldapd</code> です。以下は
+<code>nss-pam-ldapd</code> プロジェクトサイトからの説明引用です。
+</p>
+
+<pre class="example">
+This is implemented using thin NSS and PAM modules which delegate to a dedicated
+service (nslcd) that queries the LDAP server with persistent connections,
+authentication, attribute translation, etc.
+</pre>
+
+<p>
+つまり、２モジュールを仲良くする代理人的なものですね。
+</p>
+
+<pre class="example">
+$ sudo pacman -S nss-pam-ldapd
+依存関係を解決しています...
+相互衝突をチェックしています...
+:: nss-pam-ldapd と pam_ldap が衝突しています。pam_ldap を削除しますか？ [y/N] y
+
+パッケージ (2): pam_ldap-186-5 [削除]  nss-pam-ldapd-0.8.14-1
+
+Total Installed Size:   0.23 MiB
+Net Upgrade Size:       0.14 MiB
+
+:: インストールを行いますか？ [Y/n]
+(1/1) キーリングのキーを確認                                                                   [########################################################] 100%
+(1/1) パッケージの整合性をチェック                                                             [########################################################] 100%
+(1/1) パッケージファイルのロード                                                               [########################################################] 100%
+(1/1) ファイルの衝突をチェック                                                                 [########################################################] 100%
+(2/2) 空き容量を確認                                                                           [########################################################] 100%
+(1/1) 削除 pam_ldap                                                                            [########################################################] 100%
+警告: /etc/pam_ldap.conf は /etc/pam_ldap.conf.pacsave として保存されました
+(1/1) インストール nss-pam-ldapd                                                               [########################################################] 100%
+
+★インストールされたファイル一覧
+$ sudo pacman -Ql nss-pam-ldapd 
+nss-pam-ldapd /etc/
+nss-pam-ldapd /etc/nslcd.conf                        ★LDAPサーバ接続情報はここに載せる
+nss-pam-ldapd /usr/
+nss-pam-ldapd /usr/bin/
+nss-pam-ldapd /usr/bin/nslcd                         ★[local LDAP name service daemon]、LDAP連携時の代理デーモンプロセス
+nss-pam-ldapd /usr/lib/
+nss-pam-ldapd /usr/lib/libnss_ldap.so.2              ★NSSのLDAP対応
+nss-pam-ldapd /usr/lib/security/
+nss-pam-ldapd /usr/lib/security/pam_ldap.so          ★LDAP認証PAMモジュール
+nss-pam-ldapd /usr/lib/systemd/
+nss-pam-ldapd /usr/lib/systemd/system/
+nss-pam-ldapd /usr/lib/systemd/system/nslcd.service  ★nslcdサービスファイル
+nss-pam-ldapd /usr/lib/tmpfiles.d/
+nss-pam-ldapd /usr/lib/tmpfiles.d/nslcd.conf
+nss-pam-ldapd /usr/share/
+nss-pam-ldapd /usr/share/man/
+nss-pam-ldapd /usr/share/man/man5/
+nss-pam-ldapd /usr/share/man/man5/nslcd.conf.5.gz
+nss-pam-ldapd /usr/share/man/man8/
+nss-pam-ldapd /usr/share/man/man8/nslcd.8.gz
+nss-pam-ldapd /usr/share/man/man8/pam_ldap.8.gz
+$
+</pre>
+
+<p>
+<code>nslcd</code> は <code>libnss_ldap</code> や <code>pam_ldap</code> からLDAPと連携時の中継代理デーモンプロセス
+となります。LDAPサーバへの接続情報は <code>/etc/nslcd.conf</code> にて記述します。
+</p>
+
+<pre class="example">
+$ cat /etc/nslcd.conf
+uri ldap://pipi.home/
+base dc=jizai-domain,dc=jp                    ★ユーザエントリ検索の起点
+rootpwmoddn cn=Manager,dc=jizai-domain,dc=jp  ★rootユーザでLDAPユーザのパスワード変更時の認証バインドに使われる
+</pre>
+
+<p>
+<code>/etc/nslcd.conf</code> とは別に <code>/etc/nscd.conf</code> が存在します、このファイルは <code>glibc</code> が提供してい
+るものです、混乱しないように注意しましょう。
+</p>
+
+<p>
+<code>/etc/nsswitch.conf</code> に以下のように情報源にldapを追加する。
+</p>
+<pre class="example">
+$ cat /etc/nsswitch.conf
+passwd:    files ldap
+group:     files ldap
+shadow:    files ldap
+netgroup:  files ldap
+
+★以上以外の内容、ここでは省略します。
+</pre>
+
+<p>
+<code>nslcd.service</code> サービスを起動して、 <code>getent passwd</code> でLDAPのユーザ情報ちゃんと参照で
+きることを確認しましょう。ちなみに、getentはNSSライブラリからエントリーを取得するコマ
+ンドです。
+</p>
+
+<pre class="example">
+$ sudo systemctl start nslcd.service
+$ getent passwd
+root:x:0:0:root:/root:/bin/bash
+.....省略.....
+nslcd:x:997:996::/var/run/nslcd:/bin/false
+
+★LDAPのユーザエントリ情報が表示されている
+user01:x:5001:3001:Test User No01:/home/user01:/bin/bash
+user02:x:5002:3002:Test User No02:/home/user02:/bin/bash
+</pre>
+
+<pre class="example">
+★サービス起動時のログ
+Aug 14 00:14:31 mimi-air systemd[1]: Starting Naming services LDAP client daemon....
+Aug 14 00:14:31 mimi-air nslcd[8554]: version 0.8.14 starting
+Aug 14 00:14:31 mimi-air nslcd[8554]: accepting connections
+Aug 14 00:14:31 mimi-air systemd[1]: Started Naming services LDAP client daemon..
+
+★getent passwd実行時のログ
+Aug 14 00:14:35 mimi-air nslcd[8554]: [8b4567] &lt;passwd(all)&gt; (re)loading /etc/nsswitch.conf
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-8-2" class="outline-3">
+<h3 id="sec-8-2"><span class="section-number-3">8.2</span> LDAP認証PAMモジュールの設定</h3>
+<div class="outline-text-3" id="text-8-2">
+<p>
+次はLDAP認証するためのPAMモジュール設定を行います。対象となる設定ファイルは次の表にま
+とめます。
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">ファイル</th>
+<th scope="col" class="left">用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">/etc/pam.d/system-auth</td>
+<td class="left">通常のログインで利用する</td>
+</tr>
+
+<tr>
+<td class="left">/etc/pam.d/su</td>
+<td class="left">su user01 でユーザ切り替え時に使われる</td>
+</tr>
+
+<tr>
+<td class="left">/etc/pam.d/su-l</td>
+<td class="left">su - user01 でユーザ切り替え時に使われる</td>
+</tr>
+
+<tr>
+<td class="left">/etc/pam.d/passwd</td>
+<td class="left">passwdコマンドでパスワード変更時に使う</td>
+</tr>
+
+<tr>
+<td class="left">/etc/pam.d/other</td>
+<td class="left">PAMデフォルト設定ファイル</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+<code>/etc/pam.d/system-auth</code> 設定例
+</p>
+<pre class="example">
+#%PAM-1.0
+
+auth      sufficient pam_ldap.so     ★LDAP連携用
+auth      required  pam_env.so
+auth      required  pam_unix.so     try_first_pass nullok
+auth      optional  pam_permit.so
+
+
+account   sufficient pam_ldap.so    ★LDAP連携用
+account   required  pam_unix.so
+account   optional  pam_permit.so
+account   required  pam_time.so
+
+password  sufficient pam_ldap.so    ★LDAP連携用
+password  required  pam_unix.so     try_first_pass nullok sha512 shadow
+password  optional  pam_permit.so
+
+#ユーザ、グループ単位にリソース制限を行う
+session   required  pam_limits.so
+session   required  pam_env.so
+
+#ログイン時にホームディレクトリが存在していなければ自動で生成する指定
+session   required  pam_mkhomedir.so skel=/etc/skel umask=0077
+
+#ログイン、ログアウト情報をauthログに出力する
+session   required  pam_unix.so
+
+session   optional  pam_ldap.so   ★LDAP連携用
+session   optional  pam_permit.so
+</pre>
+
+<p>
+<code>/etc/pam.d/su</code> と <code>/etc/pam.d/su-l</code> 設定例
+</p>
+<pre class="example">
+#%PAM-1.0
+auth        sufficient  pam_ldap.so   ★LDAP連携
+auth		sufficient	pam_rootok.so
+# Uncomment the following line to implicitly trust users in the "wheel" group.
+#auth		sufficient	pam_wheel.so trust use_uid
+# Uncomment the following line to require a user to be in the "wheel" group.
+#auth		required	pam_wheel.so use_uid
+auth		required	pam_unix.so use_first_pass   ★use_first_pass→ユーザーから取得済みのパスワードを再利用する
+
+account     sufficient  pam_ldap.so  ★LDAP連携
+account		required	pam_unix.so
+
+session     required    pam_mkhomedir.so skel=/etc/skel umask=0022  ★ホームディレクトリを自動作成する
+session     sufficient  pam_ldap.so                                 ★LDAP連携
+session		required	pam_unix.so
+</pre>
+
+<p>
+<code>/etc/pam.d/passwd</code> 設定例
+</p>
+<pre class="example">
+#%PAM-1.0
+password        sufficient      pam_ldap.so          ★LDAPパスワード変更連携
+password        required        pam_cracklib.so retry=3 difok=1 minlen=8 dcredit=-1
+password        required        pam_unix.so sha512 shadow nullok use_authtok
+</pre>
+
+<p>
+<code>/etc/pam.d/other</code> 設定例
+</p>
+<pre class="example">
+#%PAM-1.0
+auth            sufficient      pam_ldap.so    ★LDAP連携
+auth            required        pam_unix.so
+
+account         sufficient      pam_ldap.so    ★LDAP連携
+account         required        pam_unix.so
+
+password        sufficient      pam_ldap.so    ★LDAP連携
+password        required        pam_unix.so
+
+session         required        pam_unix.so
+</pre>
+
+<p>
+初回ログイン時にパスワード変更を求める場合、 <code>other</code> の設定は必須です。
+つまり、LDAPユーザエントリの <code>shadowLastChange: 0</code> を運用する時に要注意です。
+</p>
+
+<p>
+設定しない時の挙動
+</p>
+<pre class="example">
+$ su - user02
+パスワード:
+need a new password
+su: 基礎となる認証モジュールを知らないユーザー         ★新パスワードを求める事ができない、ログインできない
+$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-8-3" class="outline-3">
+<h3 id="sec-8-3"><span class="section-number-3">8.3</span> パスワード変更時の挙動</h3>
+<div class="outline-text-3" id="text-8-3">
+<p>
+LDAPユーザのパスワード変更は次のような方法があります。
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">LDAPユーザ権限でpasswd</td>
+<td class="left">LDAPユーザ自身のパスワードを変更する</td>
+</tr>
+
+<tr>
+<td class="left">root権限でpasswd</td>
+<td class="left">任意のユーザのパスワードを変更する</td>
+</tr>
+
+<tr>
+<td class="left">ldappasswd</td>
+<td class="left">バインドユーザによる変更できる範囲が変わる</td>
+</tr>
+
+<tr>
+<td class="left">ldapmodify</td>
+<td class="left">バインドユーザによる変更できる範囲が変わる</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-8-4" class="outline-3">
+<h3 id="sec-8-4"><span class="section-number-3">8.4</span> ログイン時の挙動</h3>
+<div class="outline-text-3" id="text-8-4">
+<ol class="org-ol">
+<li>匿名でユーザエントリ情報を取得する
+</li>
+<li>ユーザエントリを用いてLDAP認証バインドを行う
+</li>
+<li>何度もユーザエントリの情報を取得する
+</li>
+</ol>
+
+<p>
+ログイン時LDAPサーバ側のログ
+</p>
+<pre class="example">
+★ユーザID入力後、パスワード入力前
+2014-08-16T17:34:16+09:00 pipi local4 debug slapd[21557]:  conn=1001 fd=18 ACCEPT from IP=192.168.100.10:53485 (IP=0.0.0.0:389)
+2014-08-16T17:34:16+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=0 BIND dn="" method=128
+2014-08-16T17:34:16+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=0 RESULT tag=97 err=0 text=
+★★１： LDAP検索条件 objectClassとuidが付与された
+2014-08-16T17:34:16+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=1 SRCH base="dc=jizai-domain,dc=jp" scope=2 deref=0 filter="(&amp;(objectClass=posixAccount)(uid=user01))"
+2014-08-16T17:34:16+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=1 SRCH attr=loginShell cn gidNumber uidNumber objectClass homeDirectory gecos uid
+2014-08-16T17:34:16+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=1 SEARCH RESULT tag=101 err=0 nentries=1 text=
+
+★パスワード入力後
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=2 SRCH base="dc=jizai-domain,dc=jp" scope=2 deref=0 filter="(&amp;(objectClass=posixAccount)(uid=user01))"
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=2 SRCH attr=uid uidNumber
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=2 SEARCH RESULT tag=101 err=0 nentries=1 text=
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1002 fd=19 ACCEPT from IP=192.168.100.10:53487 (IP=0.0.0.0:389)
+★★２： ユーザエントリでバインドが行われた
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1002 op=0 BIND dn="uid=user01,ou=User,o=Linux Users,dc=jizai-domain,dc=jp" method=128
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1002 op=0 BIND dn="uid=user01,ou=User,o=Linux Users,dc=jizai-domain,dc=jp" mech=SIMPLE ssf=0
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1002 op=0 RESULT tag=97 err=0 text=
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1002 op=1 SRCH base="uid=user01,ou=User,o=Linux Users,dc=jizai-domain,dc=jp" scope=0 deref=0 filter="(objectClass=*)"
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1002 op=1 SRCH attr=dn
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1002 op=1 SEARCH RESULT tag=101 err=0 nentries=1 text=
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1002 op=2 ABANDON msg=2
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1002 op=3 UNBIND
+
+★★３：パスワード期限などの問い合わせる
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=3 SRCH base="dc=jizai-domain,dc=jp" scope=2 deref=0 filter="(&amp;(objectClass=shadowAccount)(uid=user01))"
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=3 SRCH attr=shadowExpire shadowInactive shadowFlag shadowWarning shadowLastChange uid shadowMin shadowMax
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=3 SEARCH RESULT tag=101 err=0 nentries=1 text=
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1002 fd=19 closed
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1001 op=4 ABANDON msg=4
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=2 SRCH base="dc=jizai-domain,dc=jp" scope=2 deref=0 filter="(&amp;(objectClass=posixAccount)(uid=user01))"
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=2 SRCH attr=uid uidNumber
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=2 SEARCH RESULT tag=101 err=0 nentries=1 text=
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=3 SRCH base="dc=jizai-domain,dc=jp" scope=2 deref=0 filter="(&amp;(objectClass=shadowAccount)(uid=user01))"
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=3 SRCH attr=shadowExpire shadowInactive shadowFlag shadowWarning shadowLastChange uid shadowMin shadowMax
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=3 SEARCH RESULT tag=101 err=0 nentries=1 text=
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=4 ABANDON msg=4
+2014-08-16T17:34:28+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=5 SRCH base="dc=jizai-domain,dc=jp" scope=2 deref=0 filter="(&amp;(objectClass=posixAccount)(uid=user01))"
+2014-08-16T17:34:29+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=5 SRCH attr=uid uidNumber
+2014-08-16T17:34:29+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=5 SEARCH RESULT tag=101 err=0 nentries=1 text=
+2014-08-16T17:34:29+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=6 SRCH base="dc=jizai-domain,dc=jp" scope=2 deref=0 filter="(&amp;(objectClass=posixGroup)(|(memberUid=user01)(member=uid=user01,ou=user,o=linux users,dc=jizai-domain,dc=jp)))"
+2014-08-16T17:34:29+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=6 SRCH attr=memberUid cn gidNumber member
+2014-08-16T17:34:29+09:00 pipi local4 debug slapd[21557]:  &lt;= bdb_equality_candidates: (member) not indexed
+2014-08-16T17:34:29+09:00 pipi local4 debug slapd[21557]:  conn=1000 op=6 SEARCH RESULT tag=101 err=0 nentries=0 text=
+</pre>
+
+<p>
+LDAPからユーザエントリの検索範囲を限定する方法
+</p>
+<ul class="org-ul">
+<li>DITベースで検索範囲を限定する
+</li>
+<li>pam_filterで検索結果を絞り込む
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-9" class="outline-2">
+<h2 id="sec-9"><span class="section-number-2">9</span> 宿題</h2>
+<div class="outline-text-2" id="text-9">
+<ul class="org-ul">
+<li>shadowLastChange変更ポリシー
+</li>
+<li>通信暗号化
+</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-sec-10" class="outline-2">
+<h2 id="sec-10"><span class="section-number-2">10</span> 参考情報</h2>
+<div class="outline-text-2" id="text-10">
+<ul class="org-ul">
+<li>プロのためのLinuxシステムネットワーク管理技術
+</li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]syslog-ngのログ出力形式の変更]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-08-12-%5B%E3%83%A1%E3%83%A2%5Dsyslog-ng%E3%81%AE%E3%83%AD%E3%82%B0%E5%87%BA%E5%8A%9B%E5%BD%A2%E5%BC%8F%E3%81%AE%E5%A4%89%E6%9B%B4.html"/>
+    <updated>2014-08-12T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]syslog-ngのログ出力形式の変更</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. デフォルトの出力形式</a></li>
+<li><a href="#sec-2">2. 出力形式変更手順</a></li>
+<li><a href="#sec-3">3. 参考情報</a></li>
+</ul>
+</div>
+</div>
+<p>
+Archlinuxでsyslog-ngのデフォルト出力形式は以下のようなイメージになります。ちょっと物
+足りない気がして、形式の変更方法を調べてみました。
+</p>
+
+<p>
+<!-- more -->
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> デフォルトの出力形式</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+デフォルトの出力形式、 <code>時刻 ホスト名 プロセス名[PID] メッセージ</code>
+</p>
+<pre class="example">
+Aug 12 18:01:01 pipi CROND[19011]: (root) CMD (run-parts /etc/cron.hourly)
+Aug 12 19:01:02 pipi CROND[21549]: (root) CMD (run-parts /etc/cron.hourly)
+Aug 12 20:01:01 pipi CROND[24082]: (root) CMD (run-parts /etc/cron.hourly)
+Aug 12 21:01:01 pipi CROND[26609]: (root) CMD (run-parts /etc/cron.hourly)
+Aug 12 22:01:01 pipi CROND[29189]: (root) CMD (run-parts /etc/cron.hourly)
+Aug 12 22:14:00 pipi slapd[172]: conn=1015 fd=10 ACCEPT from IP=[::1]:58536 (IP=[::]:389)
+Aug 12 22:14:00 pipi slapd[172]: conn=1015 op=0 BIND dn="cn=Manager,dc=jizai-domain,dc=jp" method=128
+Aug 12 22:14:00 pipi slapd[172]: conn=1015 op=0 BIND dn="cn=Manager,dc=jizai-domain,dc=jp" mech=SIMPLE ssf=0
+Aug 12 22:14:00 pipi slapd[172]: conn=1015 op=0 RESULT tag=97 err=0 text=
+Aug 12 22:14:00 pipi slapd[172]: conn=1015 op=1 SRCH base="dc=jizai-domain,dc=jp" scope=2 deref=0 filter="(uid=user01)"
+Aug 12 22:14:01 pipi slapd[172]: &lt;= bdb_equality_candidates: (uid) not indexed
+Aug 12 22:14:01 pipi slapd[172]: conn=1015 op=2 UNBIND
+Aug 12 22:14:01 pipi slapd[172]: conn=1015 op=1 SEARCH RESULT tag=101 err=0 nentries=1 text=
+Aug 12 22:14:01 pipi slapd[172]: conn=1015 fd=10 closed
+Aug 12 11:10:21 pipi systemd[1131]: Reached target Default.
+Aug 12 11:10:21 pipi systemd[1131]: Startup finished in 227ms.
+Aug 12 11:10:21 pipi systemd[1]: Started User Manager for UID 1000.
+Aug 12 11:10:23 pipi systemd[1]: Starting Session c2 of user akira.
+Aug 12 11:10:23 pipi systemd[1]: Started Session c2 of user akira.
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 出力形式変更手順</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+syslog-ngに <code>template</code> の定義にマクロを用いることができる。このマクロ機能を利用してロ
+グ出力形式をカスタマイズすることを実現する。以下は <code>everything.log</code> を例として設定変更
+の手順を紹介します。
+</p>
+
+<p>
+<code>/etc/syslog-ng/syslog-ng.conf</code> 変更前
+</p>
+<pre class="example">
+source src {
+  system();
+  internal();
+};
+
+destination d_everything { file("/var/log/everything.log"); };
+
+filter f_everything { level(debug..emerg) and not facility(auth, authpriv); };
+
+log { source(src); filter(f_everything); destination(d_everything); };
+</pre>
+
+<p>
+<code>template</code> 定義を追加して、 <code>destination</code> にテンプレートと紐付ける。
+</p>
+<pre class="example">
+source src {
+  system();
+  internal();
+};
+
+template t_1 {
+        template("$ISODATE $FULLHOST $FACILITY $PRIORITY $MSGHDR $MSG\n"); templat$
+};
+
+destination d_everything { file("/var/log/everything.log" template(t_1)); };
+
+filter f_everything { level(debug..emerg) and not facility(auth, authpriv); };
+
+log { source(src); filter(f_everything); destination(d_everything); };
+</pre>
+
+<p>
+<code>sudo systemctl restart syslog-ng.service</code> でサービスを再起動して、ログの出力を確認知
+すると出力形式が以下のようになります。
+</p>
+
+<pre class="example">
+2014-08-12T22:34:19+09:00 pipi syslog syslog-ng[31533] notice syslog-ng starting up; version='3.5.5'
+2014-08-12T22:34:18+09:00 pipi daemon systemd[1] info Starting System Logger Daemon...
+2014-08-12T22:34:19+09:00 pipi daemon systemd[1] info Started System Logger Daemon.
+2014-08-12T22:34:32+09:00 pipi local4 slapd[172] debug conn=1019 fd=10 ACCEPT from IP=[::1]:58540 (IP=[::]:389)
+2014-08-12T22:34:32+09:00 pipi local4 slapd[172] debug conn=1019 op=0 BIND dn="cn=Manager,dc=jizai-domain,dc=jp" method=128
+2014-08-12T22:34:32+09:00 pipi local4 slapd[172] debug conn=1019 op=0 BIND dn="cn=Manager,dc=jizai-domain,dc=jp" mech=SIMPLE ssf=0
+2014-08-12T22:34:32+09:00 pipi local4 slapd[172] debug conn=1019 op=0 RESULT tag=97 err=0 text=
+2014-08-12T22:34:32+09:00 pipi local4 slapd[172] debug conn=1019 op=1 SRCH base="dc=jizai-domain,dc=jp" scope=2 deref=0 filter="(uid=user01)"
+2014-08-12T22:34:32+09:00 pipi local4 slapd[172] debug &lt;= bdb_equality_candidates: (uid) not indexed
+2014-08-12T22:34:32+09:00 pipi local4 slapd[172] debug conn=1019 op=2 UNBIND
+2014-08-12T22:34:32+09:00 pipi local4 slapd[172] debug conn=1019 op=1 SEARCH RESULT tag=101 err=0 nentries=1 text=
+2014-08-12T22:34:32+09:00 pipi local4 slapd[172] debug conn=1019 fd=10 closed
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 参考情報</h2>
+<div class="outline-text-2" id="text-3">
+<ul class="org-ul">
+<li><a href="http://www.atmarkit.co.jp/ait/articles/0809/22/news116_2.html">マクロやテンプレでsyslog-ngを使い倒す (2/3)</a>
+</li>
+<li><a href="http://www.balabit.com/sites/default/files/documents/syslog-ng-ose-3.3-guides/en/syslog-ng-ose-v3.3-guide-admin-en/html/reference_macros.html#macro_priority">The syslog-ng Open Source Edition 3.3 Administrator Guide</a>
+</li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[メモ]findでファイル更新日付順で表示する]]></title>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Awk | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/awk/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2014-08-16T17:46:02+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[レシピ]ローカルシステムのUIDの抽出]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5D%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%81%AEuid%E3%81%AE%E6%8A%BD%E5%87%BA.html"/>
+    <updated>2014-08-12T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[レシピ]ローカルシステムのuidの抽出</id>
+    <content type="html"><![CDATA[<p>
+LDAPにユーザID定義時にローカルシステムのUIDと被らないように、ローカルシステムのUIDと
+GIDを抽出してみた。
+</p>
+
+
+
+
+<p>
+ユーザID、1000番代以下はシステム予約番号のことがすぐわかる。
+</p>
+
+
+<pre class="example">
+$ cat /etc/passwd | awk -F: '{print $3 "\t" $1}' | sort -n
+0   root
+1   bin
+2   daemon
+8   mail
+14  ftp
+32  rpc
+33  http
+40  named
+68  uuidd
+74  dovenull
+76  dovecot
+81  dbus
+84  avahi
+87  ntp
+89  mysql
+99  nobody
+102 polkitd
+124 colord
+169 transmission
+191 systemd-journal-gateway
+192 systemd-timesync
+193 systemd-network
+194 systemd-bus-proxy
+195 systemd-resolve
+241 mediatomb
+439 ldap
+998 dnsmasq
+999 git
+1000    akira
+1002    amule
+</pre>
+
+
+
+
+<p>
+グループID一覧
+</p>
+
+
+<pre class="example">
+$ cat /etc/group | awk -F: '{print $3 "\t" $1}' | sort -n
+0   root
+1   bin
+2   daemon
+3   sys
+4   adm
+5   tty
+6   disk
+7   lp
+8   mem
+9   kmem
+10  wheel
+11  ftp
+12  mail
+14  uucp
+19  log
+20  utmp
+21  locate
+24  rfkill
+25  smmsp
+32  rpc
+33  http
+40  named
+50  games
+54  lock
+68  uuidd
+74  dovenull
+76  dovecot
+81  dbus
+84  avahi
+87  ntp
+89  mysql
+90  network
+91  video
+92  audio
+93  optical
+94  floppy
+95  storage
+96  scanner
+97  input
+98  power
+99  nobody
+100 users
+102 polkitd
+124 colord
+169 transmission
+190 systemd-journal
+191 systemd-journal-gateway
+192 systemd-timesync
+193 systemd-network
+194 systemd-bus-proxy
+195 systemd-resolve
+241 mediatomb
+439 ldap
+998 dnsmasq
+999 git
+1002    g001
+1003    g002
+1004    g003
+1005    amule
+</pre>
+
+
+
+
+<p>
+<code>sort</code> コマンドで数字順でソートするためのオプションが <code>-n</code> であることを復習致しました。
+</p>
+
+]]></content>
+  </entry>
+  
+</feed>
