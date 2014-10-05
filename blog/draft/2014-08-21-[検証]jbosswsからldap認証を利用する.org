@@ -1,0 +1,14 @@
+#+TITLE: [検証]JBossWSからLDAP認証を利用する
+#+DATE: 2014-08-21
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: java
+#+JEKYLL_TAGS: jboss ldap
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+* 参考
+- [[https://access.redhat.com/documentation/ja-JP/JBoss_Enterprise_Application_Platform/5/html-single/JBoss_WS_CXF_User_Guide/index.html#WS_Addressing][JBoss Enterprise Application Platform 5 JBoss WS CXF ユーザーガイド]]
+- [[https://access.redhat.com/documentation/ja-JP/JBoss_Enterprise_Application_Platform/6.1/html-single/Development_Guide/index.html#chap-JAX-WS_Web_Services][JBoss Enterprise Application Platform 6.1 開発ガイド]]
+- https://docs.jboss.org/author/display/JBWS/Apache+CXF+integration
+{{{more}}}

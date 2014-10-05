@@ -1,0 +1,95 @@
+#+TITLE: [メモ]tt-rssサービスを自宅サーバに移行
+#+DATE: 2014-09-26
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: tt-rss
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+* バックアップ
+
+* 移行先環境の準備
+
+postgresqlサーバのインストール
+#+begin_example
+$ sudo yum install search postgresql-server
+#+end_example
+
+サービスの有効化
+#+begin_example
+$ rpm -ql postgresql-server | grep service
+/usr/lib/systemd/system/postgresql.service
+/usr/share/pgsql/pg_service.conf.sample
+
+$ sudo systemctl enable postgresql.service
+ln -s '/usr/lib/systemd/system/postgresql.service' '/etc/systemd/system/multi-user.target.wants/postgresql.service'
+#+end_example
+
+postgresql起動用サービスファイルを読んで見る。
+#+begin_example
+[Unit]
+Description=PostgreSQL database server
+After=network.target
+
+[Service]
+Type=forking
+
+User=postgres
+Group=postgres
+
+# Port number for server to listen on
+Environment=PGPORT=5432                     ★リスリングポートの指定
+
+# Location of database directory
+Environment=PGDATA=/var/lib/pgsql/data      ★データの格納先
+
+# Where to send early-startup messages from the server (before the logging
+# options of postgresql.conf take effect)
+# This is normally controlled by the global default set by systemd
+# StandardOutput=syslog
+
+# Disable OOM kill on the postmaster
+OOMScoreAdjust=-1000
+
+ExecStartPre=/usr/bin/postgresql-check-db-dir ${PGDATA}
+ExecStart=/usr/bin/pg_ctl start -D ${PGDATA} -s -o "-p ${PGPORT}" -w -t 300
+ExecStop=/usr/bin/pg_ctl stop -D ${PGDATA} -s -m fast
+ExecReload=/usr/bin/pg_ctl reload -D ${PGDATA} -s
+
+# Give a reasonable amount of time for the server to start up/shut down
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target
+#+end_example
+
+データベースを初期化するして、起動する。
+#+begin_example
+$ sudo -u postgres initdb -D '/var/lib/pgsql/data'
+$ sudo systemctl start postgresql.service
+#+end_example
+
+=postgres= ユーザに切り替えて、動作確認する。
+#+begin_example
+$ su - root
+# su - postgres
+$ psql
+psql (9.2.7)
+"help" でヘルプを表示します.
+
+postgres=# \l    ★データベース一覧を表示する
+#+end_example
+
+* リストア
+
+#+begin_example
+-bash-4.2$ createuser --pwprompt ttrss      ★接続ユーザの作成
+新しいロールのためのパスワード:
+もう一度入力してください：
+-bash-4.2$ createdb --owner=ttrss ttrss     ★データベース作成
+-bash-4.2$ psql -d ttrss -f /tmp/ttrss.dump ★ダンプファイルからリストア
+#+end_example
+
+
+{{{more}}}

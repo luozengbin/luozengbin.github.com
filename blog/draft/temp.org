@@ -1,0 +1,24 @@
+* オートネゴシエーション
+* NTPサービスのslewモード
+* IPv6無効化→ /etc/netconfig漏れの問題
+* kernel panic
+** nmi_watchdog
+** kernel.unknown_nmi_panic
+** kernel.sysrq, マジックSysRqキー
+* RPM
+** actlog
+** kdump-reporter
+* セキュリティ
+** /etc/basjrc
+
+* backlog
+net.core.netdev_max_backlog = 1024
+net.core.somaxconn = 512
+
+* メモリリーク
+[OS] メモリリークの調査方法
+http://th0x4c.github.io/blog/2013/04/06/os-memory-leak/
+Dropwatchのご紹介
+http://research.sakura.ad.jp/2013/12/16/dropwatch/comment-page-1/
+
+* EXT4について

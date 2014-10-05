@@ -9,11 +9,10 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="Table of Contents 1. IOPSとは
-2. 実機検証 2.1. 環境確認
-2.2. テスト用プログラム
-2.3. sarコマンドでIOPSを確認する
-2.4. 測定結果 3. 参考リンク 商用（本番運用）にて、なんらかの障害発生時にログがロストしないようにトランザクション &hellip;">
+  <meta name="description" content="
+Table of Contents 1. 特定のウィンドウを録画する
+2. 全画面を録画する
+3. 録画サンプル ffmpeg と xwininfo コマンドでスクリンキャストを取るシェールスクリプトを作成してみた。 ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -69,6 +68,60 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html">[メモ]ffmpegでスクリンキャストを取る</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-21T00:00:00+09:00" pubdate data-updated="true">2014-07-21 (Mon)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 特定のウィンドウを録画する</a></li>
+<li><a href="#sec-2">2. 全画面を録画する</a></li>
+<li><a href="#sec-3">3. 録画サンプル</a></li>
+</ul>
+</div>
+</div>
+<p>
+<code>ffmpeg</code> と <code>xwininfo</code> コマンドでスクリンキャストを取るシェールスクリプトを作成してみた。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -1261,83 +1314,6 @@ VM環境を立てるのが面倒のため、loopbackインタフェースを通�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html">LPIC Lv2-201試験準備メモ１</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-06-12T00:00:00+09:00" pubdate data-updated="true">2014-06-12 (Thu)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. MBRパーティショニング</a></li>
-<li><a href="#sec-2">2. LVMスナップショート</a></li>
-<li><a href="#sec-3">3. ARP (Address Resolution Protocol) コマンド</a></li>
-<li><a href="#sec-4">4. ネットワーク設定ファイルのパス</a></li>
-<li><a href="#sec-5">5. 忘れがち知識</a></li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> MBRパーティショニング</h2>
-<div class="outline-text-2" id="text-1">
-<ul class="org-ul">
-<li>基本パテーション：MBR仕様の制限で基本パテーションは最大４つ
-</li>
-<li>拡張パテーション：一つ基本パテーションとして計算する
-</li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> LVMスナップショート</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-スナップショートとはあるLVのカレント状態をバックアップする機能。
-バックアップ方式としてファイルの増分内容を記録LV領域を作成しそのLV
-領域にスナップショート作成時点からの変化履歴を記録する。
-増分バックアップ方式であるため、初期作成時は容量消費しない。
-対象LVに上ファイル変化があったたびにスナップショートLVに
-変化内容が書き込まれるため、領域が消費される。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -1371,6 +1347,10 @@ VM環境を立てるのが面倒のため、loopbackインタフェースを通�
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014-10-05-%5B%E8%AA%BF%E6%9F%BB%5Dsas%E7%B5%B1%E8%A8%88%E3%82%BD%E3%83%95%E3%83%88%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]SAS統計ソフトについて</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014-08-16-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dkerbrose%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E5%A4%89%E6%9B%B4%E3%81%9F%E3%82%81%E3%81%AEpam%E8%A8%AD%E5%AE%9A.html">[レシピ]Kerbroseパスワード変更ためのPAM設定</a>
@@ -1408,10 +1388,6 @@ VM環境を立てるのが面倒のため、loopbackインタフェースを通�
         <a href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">[メモ]JDeveloper 11g/12c 開発環境の整備</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2014-07-21-%5B%E3%83%A1%E3%83%A2%5Dffmpeg%E3%81%A7%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%B3%E3%82%AD%E3%83%A3%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E3%82%8B.html">[メモ]ffmpegでスクリンキャストを取る</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -1419,11 +1395,11 @@ VM環境を立てるのが面倒のため、loopbackインタフェースを通�
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (5)</a></li><li><a href='/blog/categories/linux/'>linux (13)</a></li><li><a href='/blog/categories/misc/'>misc (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (5)</a></li><li><a href='/blog/categories/linux/'>linux (13)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 130.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 160.0%'>passwd(2)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 130.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 130.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 160.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 130.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 130.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
 </section>
 
 <section>

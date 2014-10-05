@@ -1,0 +1,15 @@
+#+TITLE: [検証]JBossWSでWS-Discoveryを確認してみた
+#+DATE: 2014-08-21
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: java
+#+JEKYLL_TAGS: jboss
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+* 参照
+- [[https://docs.jboss.org/author/display/JBWS/WS-Discovery][WS-Discovery]]
+- https://community.jboss.org/wiki/JBossWS-UserGuide
+- https://community.jboss.org/wiki/JBossWS-StackCXFUserGuide
+
+{{{more}}}

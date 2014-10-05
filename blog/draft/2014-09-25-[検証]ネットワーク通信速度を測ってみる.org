@@ -1,0 +1,34 @@
+#+TITLE: [検証]ネットワーク通信速度を測ってみる
+#+DATE: 2014-09-25
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: misc
+#+JEKYLL_TAGS: tcp
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+* 知識ポイント
+単一TCPコネクションの通信速度に影響する要素はRTTとウィンドウサイズです。
+遠距離通信の場合、この２つ要素の値が転送ルートの通信の混みあい状況と距離
+で決まっている。
+
+** レイテンシー（遅延時間）
+単一パケットが送信元から送信先に届くの時間、遅延時間とも言われる。
+レイテンシーはほぼ通信距離と比例する。通信距離が長いほど、レイテンシーが
+大きくなる。
+
+** RTT(往復遅延時間)
+SYNパケット送出してからACKパケットを受け取るまでの時間。
+日本国内の場合 10〜40msぐらい
+
+** TCPウィンドウサイズ
+wiresharkやtcpdumpなどで見れたwindow size valueの単位はbyteです。
+
+** wiresharkでRTTの確認
+
+** wiresharkウィンドウサイズの確認
+
+** tcpdumpで確認を自動化する
+
+
+{{{more}}}

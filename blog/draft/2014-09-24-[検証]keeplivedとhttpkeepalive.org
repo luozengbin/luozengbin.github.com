@@ -1,0 +1,72 @@
+#+TITLE: [検証]keeplivedとHTTPKeepAlive
+#+DATE: 2014-09-24
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: java keepalive keepalived
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+* KeepAlive検証
+
+  client(LAN1) ----- [LAN1] LB [LAN2] ---------------Apache(1)
+                                  |
+                                  |
+                                  -------------------Apache(2)
+
+検証ポイント１：KeepAlive=ON時、同じホストに振り分ける
+ →成立
+
+検証ポイント２：KeepAlive=OFF時、RRで振り分ける
+ →成立
+
+検証ポイント３：KeepAlive=ON時、サーバダウン時の挙動
+　サーバダダウン時にクライアントに対してFIN,ACKを飛ぶので、コネクションが正常に切断された
+  その後クライアントからのリクエストが新規リクエストとなり、LBで稼働しているサーバへ振り分けしてくれた。
+
+検証ポイント４：静的ファイルの移動による切り替え後、KeepAlive=ONのコネクションの挙動を確認する
+  静的ファイルの移動によるKeepAliveで接続されたサーバがLBの振り分け対象から切り離されたため、処理が切れた
+
+　クライアント側10秒ぐらい応答待ちでエラーが起こる
+Thu Sep 11 18:14:02 JST 2014:ERROR:java.net.SocketException: Connection reset
+   java.net.SocketException: Connection reset
+   	at java.net.SocketInputStream.read(SocketInputStream.java:196)
+   	at java.net.SocketInputStream.read(SocketInputStream.java:122)
+   	at org.apache.http.impl.io.AbstractSessionInputBuffer.fillBuffer(AbstractSessionInputBuffer.java:149)
+   	at org.apache.http.impl.io.SocketInputBuffer.fillBuffer(SocketInputBuffer.java:110)
+   	at org.apache.http.impl.io.AbstractSessionInputBuffer.readLine(AbstractSessionInputBuffer.java:264)
+   	at org.apache.http.impl.conn.LoggingSessionInputBuffer.readLine(LoggingSessionInputBuffer.java:115)
+   	at org.apache.http.impl.conn.DefaultResponseParser.parseHead(DefaultResponseParser.java:98)
+   	at org.apache.http.impl.io.AbstractMessageParser.parse(AbstractMessageParser.java:252)
+   	at org.apache.http.impl.AbstractHttpClientConnection.receiveResponseHeader(AbstractHttpClientConnection.java:281)
+   	at org.apache.http.impl.conn.DefaultClientConnection.receiveResponseHeader(DefaultClientConnection.java:247)
+   	at org.apache.http.impl.conn.AbstractClientConnAdapter.receiveResponseHeader(AbstractClientConnAdapter.java:219)
+   	at com.eviware.soapui.impl.wsdl.support.http.HttpClientSupport$SoapUIHttpRequestExecutor.doReceiveResponse(HttpClientSupport.java:151)
+   	at org.apache.http.protocol.HttpRequestExecutor.execute(HttpRequestExecutor.java:125)
+   	at org.apache.http.impl.client.DefaultRequestDirector.tryExecute(DefaultRequestDirector.java:633)
+   	at org.apache.http.impl.client.DefaultRequestDirector.execute(DefaultRequestDirector.java:454)
+   	at org.apache.http.impl.client.AbstractHttpClient.execute(AbstractHttpClient.java:820)
+   	at org.apache.http.impl.client.AbstractHttpClient.execute(AbstractHttpClient.java:754)
+   	at com.eviware.soapui.impl.wsdl.support.http.HttpClientSupport$Helper.execute(HttpClientSupport.java:246)
+   	at com.eviware.soapui.impl.wsdl.support.http.HttpClientSupport.execute(HttpClientSupport.java:356)
+   	at com.eviware.soapui.impl.wsdl.submit.transports.http.HttpClientRequestTransport.sendRequest(HttpClientRequestTransport.java:234)
+   	at com.eviware.soapui.impl.wsdl.WsdlSubmit.run(WsdlSubmit.java:123)
+   	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+   	at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+   	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+   	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+   	at java.lang.Thread.run(Thread.java:724)
+
+検証ポイント５：静的ファイルの移動による切り替え後、KeepAlive=OFFのコネクションの挙動を確認する
+    正常に振り分けしてくれた
+
+
+http://infra.makeall.net/archives/1506
+
+http://d.hatena.ne.jp/hogem/20080624/1214321727
+
+http://daretoku-unix.blogspot.jp/2011/04/ipvsadm8.html
+http://dsas.blog.klab.org/archives/50665382.html
+http://knowledge.sakura.ad.jp/tech/274/2/
+
+{{{more}}}

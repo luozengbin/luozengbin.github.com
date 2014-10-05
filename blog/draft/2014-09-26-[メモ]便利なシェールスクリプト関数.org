@@ -1,0 +1,56 @@
+#+TITLE: [メモ]便利なシェールスクリプト関数
+#+DATE: 2014-09-26
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: shell
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+* rootユーザ実行禁止関数
+=archlinux-java= でシェールスクリプトでrootユーザの実行を禁止する関数を
+見かけたので、よく使うものなのでここでメモしておきます。
+
+#+begin_src sh
+check_root() {
+  if [ $(id -u) -eq 0 ]; then
+    echo 'This script must not be run as root'
+    exit 1
+  fi
+}
+#+end_src
+
+=id -u= コマンドでユーザIDを取って比較しているですね。賢い！
+環境変数 =$USER= や =$USERNAME= でもユーザ名が取れるだが、 =su <username>= で
+実行された時違ったユーザ名を参照してしまう可能性もあるので。=id= コマンド
+を使う冪。
+
+* シンボリックの参照パスをする
+=readlink= コマンドを直接利用しても効果が同じ、ラッパー関数で中身の実装を
+隠蔽する効果もあるので、変更時に便利。
+#+begin_src sh
+get_real_path() {
+  path=$(readlink -e $1)
+  echo ${path}
+}
+#+end_src
+
+* コマンドオプションの簡易実装雛形
+#+begin_src sh
+usage() {
+  echo "$(basename $0) <COMMAND>"
+  echo -e "\nCOMMAND:"
+  echo -e '\tstatus\t\tList status of running service'
+  echo -e '\tstart\t\tStart service'
+  echo -e '\tstop\t\tStop service'
+}
+
+## Main
+case $1 in
+  'status') do_status;;
+  'start')  do_start;;
+  'stop')   do_stop;;
+  'help' | '--help' | '-h' | '') usage;;
+  *)           echo "$(basename $0): unknown option '$@'"; exit 1;;
+esac
+#+end_src

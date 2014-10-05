@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-08-16T19:37:45+09:00</updated>
+  <updated>2014-10-05T17:07:10+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,353 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[調査]SAS統計ソフトについて]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-10-05-%5B%E8%AA%BF%E6%9F%BB%5Dsas%E7%B5%B1%E8%A8%88%E3%82%BD%E3%83%95%E3%83%88%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html"/>
+    <updated>2014-10-05T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[調査]sas統計ソフトについて</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. SASとは</a></li>
+<li><a href="#sec-2">2. SAS言語</a></li>
+<li><a href="#sec-3">3. 統計分析のイメージ</a></li>
+<li><a href="#sec-4">4. SASプログラムのイメージ</a></li>
+<li><a href="#sec-5">5. 無償で使えるの？</a></li>
+<li><a href="#sec-6">6. 日本での事例</a></li>
+<li><a href="#sec-7">7. おまけに</a></li>
+<li><a href="#sec-8">8. 参考リンク</a></li>
+</ul>
+</div>
+</div>
+<p>
+ある飲み会で <code>JT</code> のプログラムマーさんと出会って、最初彼からの自己紹介で「プログラムマー
+です」と聞いた時に、Java屋、Ruby屋普通のWebエンジニアだと思った。話を詳しく聞くとなん
+と、「SAS」という言語しか扱っていないようです。 <code>SAS</code> という言語は初耳なので、軽く調べること
+にした。
+</p>
+
+<p>
+<!-- more -->
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> SASとは</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+SASの全称はStatistical Analysis System、日本語発音は「サス」というようです。
+以下はIT用語辞書からの引用です。
+</p>
+<pre class="example">
+SAS Institute社が開発・販売している、統計解析ソフトを中心とするソフトウェア製品群のブ
+ランド名。また、SAS Institute社自体。
+
+世界的に人気の高い統計解析ソフトウェアで、1960年代から主に大学や研究所で科学・工学分野
+の研究に用いられてきた。近年ではビジネス向けの機能や関連製品が充実し、主要なBI(ビジネ
+スインテリジェンス)ツールの一つとして企業の業務分析や意思決定支援の分野でも導入が進ん
+でいる。
+</pre>
+<p>
+なんと1960年代、父親が生まれた時代ですね、かなり古い！
+</p>
+<font color="red"><strong>
+<p>
+という訳で、「SAS」は言語名、会社名、ソフトウェア製品群のブランド名として使える。次に
+SAS言語についてです。
+</p>
+</strong></font>
+</div>
+</div>
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> SAS言語</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+以下は <a href="http://wikiwiki.jp/cattail/?SAS%25C6%25FE%25CC%25E71">SAS入門1</a> からのSAS言語についての説明内容です。
+</p>
+
+<pre class="example">
+ＳＡＳ言語は，非常に古いコンピュータ言語のひとつですが，
+ＦＯＲＴＲＡＮ，ＣＯＢＯＬ，Ｃといった第３世代言語（高級言語）と違い，
+第４世代言語（４ＧＬ）または簡易言語と呼ばれる言語の１つです．
+１つの命令文の受け持つ処理が，高級言語よりたくさんの作業をこなしてくれるので，，
+プログラミングする人にとって複雑な内容を簡単に書くことができるというメリットがあります．
+ＳＡＳが得意とするデータ処理は，統計解析やデータマイニングといった，データ分析処理です．
+データを管理したり，データシステム構築することもできますが，大量データに対する
+データ分析機能は，ＳＡＳがナンバーワンといってもよいでしょう．
+製薬，金融，マーケティング，通信，製造といった分野で広く使われています．
+</pre>
+<p>
+第４世代言語とい言われる代表的な言語は
+</p>
+<ul class="org-ul">
+<li>データベース分野のSQL
+</li>
+<li>統計分野のR言語
+</li>
+<li>Web開発分野のRuby on Rails
+</li>
+</ul>
+<p>
+があるでしょう。SASはこれらの言語の中にR言語と同じ分野ですね。 R言語は過去SI仕事でソフト
+の性能測定結果の統計分析で検証したことがあるので、なんとなくイメージが付きます。ここ
+でようやくSASとの接点が見つかりました。
+</p>
+
+<p>
+ちなみにEmacsからRを扱う設定は <sup><a id="fnr.1" name="fnr.1" class="footref" href="#fn.1">1</a></sup> が参考になります。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 統計分析のイメージ</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+<code>JT</code> のプログラムマーさんの話から考えると、SASを使ってデータを統計分析する作業流れは
+以下のようなイメージのようです。(自信がない、間違っているかも知れない)
+</p>
+
+
+<div class="figure">
+<p><img src="img/2014-10-05-sas-chat1.png" alt="2014-10-05-sas-chat1.png" />
+</p>
+</div>
+<ol class="org-ol">
+<li>市場調査手段
+<ul class="org-ul">
+<li>紙媒体アンケート
+</li>
+<li>アンケートサイト
+</li>
+<li>SNS(Twitter,Facebookなど)より情報収集
+</li>
+</ul>
+</li>
+<li>SASより統計分析
+<ul class="org-ul">
+<li>業務視点からデータモデルを設計する（SAS提供している専用モデルの流用など）
+</li>
+<li>SASスクリプトを実装する
+</li>
+<li>1で収集したテキストデータを分析する
+</li>
+<li>レポートを出力する
+</li>
+</ul>
+</li>
+</ol>
+
+<p>
+モデリングの部分は業務知識が要求されるところでしょうね。
+</p>
+
+<p>
+「医療統計学」でamazonを検索したら、本が結構出している感じがする。
+<a href="http://www.amazon.co.jp/gp/bestsellers/books/720750">http://www.amazon.co.jp/gp/bestsellers/books/720750</a>
+</p>
+
+<p>
+医療統計に関して、またっく知識がないのですが、ここではSASプログラムサンプルコードを見
+てスクリプトのイメージを掴みたいと思います。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> SASプログラムのイメージ</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+以下はSASプログラムの雛形です。
+</p>
+<pre class="example">
+options ...
+
+data &lt;DATAセット名&gt;;
+     infile '&lt;CSVファイルのパス&gt;';
+     INPUT 変数名1 変数名2 変数名3 ......;
+
+proc プロシジャー名 その他オプション;
+
+run;
+</pre>
+
+<p>
+以下は、 <code>plot</code> プロシージャーを利用してテキストデータからアスキーグラフを表現するSAS
+プログラムサンプルです。
+</p>
+<pre class="example">
+options nodate number pageno=1 linesize=80 pagesize=35;
+
+data djia;
+      input Year @7 HighDate date7. High @24 LowDate date7. Low;
+      format highdate lowdate date7.;
+      datalines;
+1954  31DEC54  404.39  11JAN54  279.87
+1955  30DEC55  488.40  17JAN55  388.20
+...more data lines... 
+1993  29DEC93 3794.33  20JAN93 3241.95
+1994  31JAN94 3978.36  04APR94 3593.35
+;
+
+proc plot data=djia;
+   plot high*year='*';
+
+   title 'High Values of the Dow Jones Industrial Average';
+   title2 'from 1954 to 1994';
+run;
+</pre>
+<p>
+コードは <a href="http://support.sas.com/documentation/cdl/en/proc/61895/HTML/default/viewer.htm#a002473567.htm">Base SAS(R) 9.2 Procedures Guide</a> から引用しています。
+</p>
+
+<p>
+出力結果は以下のようなイメージになります。
+</p>
+<pre class="example">
+       High Values of the Dow Jones Industrial Average                1
+                      from 1954 to 1994
+
+           Plot of High*Year.  Symbol used is '*'.
+
+High |
+     |
+4000 +                                              *
+     |                                             *
+     |
+     |                                            *
+     |                                           *
+3000 +                                          *
+     |                                       * *
+     |
+     |
+     |                                        *
+2000 +                                      *
+     |
+     |                                     *
+     |
+     |                                   **
+1000 +                 ***** ***  *** ***
+     |             ****     *   **   *
+     |        *****
+     |      **
+     |
+   0 +
+     |
+     ---+---------+---------+---------+---------+---------+--
+      1950      1960      1970      1980      1990      2000
+
+                               Year
+</pre>
+
+<p>
+SASプログラムの文法構造がかなり <code>gnuplot</code> と似ってことが気付きました。でも <a href="http://www.gnuplot.info/">gnuplot</a> が生
+まれるのが1986年なので、後者が前者の形を引き続いた気がします。仕事でソフトの性能検証デー
+タをフラフに加工する処理でよくgnuplotを使っています。 <code>OSS</code> なので無償で使える。SASで
+も同じことができると思いますが、かなり高額のようです。コストパフォーマンスが悪いでしょ
+うね。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> 無償で使えるの？</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+商用がメインなのでかなり高額です。SAS無償で使えるやつがあるけど、大学研究用途のみです。
+おそらく個人勉強用でも問題内でしょう。詳細は <a href="http://www.slideshare.net/yuhsukek/sas-university-edition-38601663">Sas University Editionを使おう（インストール編）</a>
+</p>
+
+<p>
+SAS University Editionのダウンロードリンク
+<a href="http://www.sas.com/en_us/software/university-edition/download-software.html">http://www.sas.com/en_us/software/university-edition/download-software.html</a>
+</p>
+
+<p>
+機会があれば、導入して遊んで見たいと思います。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> 日本での事例</h2>
+<div class="outline-text-2" id="text-6">
+<ul class="org-ul">
+<li><a href="http://www.nec.co.jp/press/ja/1205/2202.html">ビッグデータ領域で、NECとSAS Institute Japanが協業</a>
+</li>
+<li><a href="http://www.sas.com/ja_jp/customers/jt.html">日本たばこ産業株式会社</a>
+</li>
+<li>他にも結構あります。<sup><a id="fnr.2" name="fnr.2" class="footref" href="#fn.2">2</a></sup>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> おまけに</h2>
+<div class="outline-text-2" id="text-7">
+<ul class="org-ul">
+<li>Javaの接点
+<ul class="org-ul">
+<li>SAS クライアントアプリケーションがJavaに依存しているようです。<sup><a id="fnr.3" name="fnr.3" class="footref" href="#fn.3">3</a></sup>
+</li>
+<li>Hadoopと連携するプロジェクトが今年から発足しているようです。<sup><a id="fnr.4" name="fnr.4" class="footref" href="#fn.4">4</a></sup>
+</li>
+</ul>
+</li>
+
+<li>他の統計ソフトとの比較
+詳細は <sup><a id="fnr.5" name="fnr.5" class="footref" href="#fn.5">5</a></sup>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-8" class="outline-2">
+<h2 id="sec-8"><span class="section-number-2">8</span> 参考リンク</h2>
+<div class="outline-text-2" id="text-8">
+<ul class="org-ul">
+<li><a href="http://www.rcommanderdeigakutoukeikaiseki.com/index.html">臨床医のためのRコマンダーによる医学統計解析マニュアル</a>
+</li>
+<li><a href="http://www2.ngu.ac.jp/~taniguch/stat/intro-sas.htm">ＳＡＳ統計パッケージ の使い方</a>
+</li>
+<li><a href="http://sas.mathlab.info/index.html">SAS統計データ解析入門</a>
+</li>
+<li><a href="http://wikiwiki.jp/cattail/?FrontPage">Welcome to データ分析・マイニングの世界 by SAS</a>
+</li>
+</ul>
+</div>
+</div>
+<div id="footnotes">
+<h2 class="footnotes">Footnotes: </h2>
+<div id="text-footnotes">
+
+<div class="footdef"><sup><a id="fn.1" name="fn.1" class="footnum" href="#fnr.1">1</a></sup> <p class="footpara">
+<a href="http://sheephead.homelinux.org/2009/10/26/1673/">これからEmacsでR使う人のための設定まとめ</a>
+</p></div>
+
+<div class="footdef"><sup><a id="fn.2" name="fn.2" class="footnum" href="#fnr.2">2</a></sup> <p class="footpara">
+<a href="http://www.sas.com/ja_jp/customers.html">SASユーザー事例</a>
+</p></div>
+
+<div class="footdef"><sup><a id="fn.3" name="fn.3" class="footnum" href="#fnr.3">3</a></sup> <p class="footpara">
+<a href="http://www.sas.com/offices/asiapacific/japan/service/resources/thirdpartysupport/v93/jres.html">SAS® 9.3（TS1M0以降） でサポートするJava Runtime Environment</a>
+</p></div>
+
+<div class="footdef"><sup><a id="fn.4" name="fn.4" class="footnum" href="#fnr.4">4</a></sup> <p class="footpara">
+<a href="http://www.sas.com/ja_jp/news/press-releases/2014/september/2014-09-03-shionogi-imstat-for-hadoop-jp.html">SAS Institute Japan、塩野義製薬とHadoop上でビッグデータを活用した研究プロジェクトを発足</a>
+</p></div>
+
+<div class="footdef"><sup><a id="fn.5" name="fn.5" class="footnum" href="#fnr.5">5</a></sup> <p class="footpara">
+<a href="https://sites.google.com/site/statinfra/comparison">統計ソフトの比較</a>
+</p></div>
+
+
+</div>
+</div>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[レシピ]Kerbroseパスワード変更ためのPAM設定]]></title>
@@ -10556,163 +10903,6 @@ Hello root!
 <div class="outline-text-2" id="text-11">
 <ul class="org-ul">
 <li><a href="http://www.atmarkit.co.jp/ait/articles/0304/22/news001.html">http://www.atmarkit.co.jp/ait/articles/0304/22/news001.html</a>
-</li>
-</ul>
-</div>
-</div>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[LPIC Lv2-201試験準備メモ１]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-06-12-lpic-lv2-201%E8%A9%A6%E9%A8%93%E6%BA%96%E5%82%99%E3%83%A1%E3%83%A2%EF%BC%91.html"/>
-    <updated>2014-06-12T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/lpic-lv2-201試験準備メモ１</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. MBRパーティショニング</a></li>
-<li><a href="#sec-2">2. LVMスナップショート</a></li>
-<li><a href="#sec-3">3. ARP (Address Resolution Protocol) コマンド</a></li>
-<li><a href="#sec-4">4. ネットワーク設定ファイルのパス</a></li>
-<li><a href="#sec-5">5. 忘れがち知識</a></li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> MBRパーティショニング</h2>
-<div class="outline-text-2" id="text-1">
-<ul class="org-ul">
-<li>基本パテーション：MBR仕様の制限で基本パテーションは最大４つ
-</li>
-<li>拡張パテーション：一つ基本パテーションとして計算する
-</li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> LVMスナップショート</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-スナップショートとはあるLVのカレント状態をバックアップする機能。
-バックアップ方式としてファイルの増分内容を記録LV領域を作成しそのLV
-領域にスナップショート作成時点からの変化履歴を記録する。
-増分バックアップ方式であるため、初期作成時は容量消費しない。
-対象LVに上ファイル変化があったたびにスナップショートLVに
-変化内容が書き込まれるため、領域が消費される。
-</p>
-
-<p>
-<!-- more -->
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> ARP (Address Resolution Protocol) コマンド</h2>
-<div class="outline-text-2" id="text-3">
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">arp -i eth0</td>
-<td class="left">eth0インタフェースのarpキャッシュを表示する</td>
-</tr>
-
-<tr>
-<td class="left">arp -a jizai.home</td>
-<td class="left">対象ホストのmacアドレスを表示する</td>
-</tr>
-
-<tr>
-<td class="left">arp -d jizai.home</td>
-<td class="left">対象ホストのarpキャッシュを削除する</td>
-</tr>
-
-<tr>
-<td class="left">arp -n</td>
-<td class="left">逆引きを行わず、arpキャッシュを表示する</td>
-</tr>
-
-<tr>
-<td class="left">arp -s 192.168.100.4 0a:c3:1c:e4:75:eb</td>
-<td class="left">arpエントリレコードを追加する</td>
-</tr>
-
-<tr>
-<td class="left">arp -f [/etc/ethers]</td>
-<td class="left">ファイルからarpエントリレコードを追加する</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> ネットワーク設定ファイルのパス</h2>
-<div class="outline-text-2" id="text-4">
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">/etc/hostname</td>
-<td class="left">ホスト名の設定</td>
-</tr>
-
-<tr>
-<td class="left">/etc/hosts</td>
-<td class="left">ホスト別名とIPのマッピング定義</td>
-</tr>
-
-<tr>
-<td class="left">/etc/resolv.conf</td>
-<td class="left">DNSサーバの指定</td>
-</tr>
-
-<tr>
-<td class="left">/etc/nsswitch.conf</td>
-<td class="left">名前解決方式のの優先順位指定</td>
-</tr>
-
-<tr>
-<td class="left">/etc/networks</td>
-<td class="left">ネットワーク名とネットワークアドレス</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> 忘れがち知識</h2>
-<div class="outline-text-2" id="text-5">
-<ul class="org-ul">
-<li>/etc/sysconfig/network ファイルにおいて IPv6 アドレス有効化こと項目：NETWORKING_IPV6
-</li>
-<li>無線 LAN のリンク品質や信号強度を確認できるコマンド
-<ul class="org-ul">
-<li>iwconfig
-</li>
-<li>iwlist
-</li>
-<li>iwspy
-</li>
-</ul>
 </li>
 </ul>
 </div>

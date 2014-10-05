@@ -1,0 +1,14 @@
+#+TITLE: [検証]JBossWS上でWS-ReliableMessagingを確認してみた
+#+DATE: 2014-08-21
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: java
+#+JEKYLL_TAGS: jboss
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+* 参照
+- [[http://www.ibm.com/developerworks/jp/webservices/library/ws-soa-wsrmwsp.html][WS-ReliableMessaging と WS-Polling の関係]]
+- [[http://www.infoq.com/jp/articles/no-reliable-messaging][信頼できるメッセージングは、不要。 ]]
+
+{{{more}}}
