@@ -10,7 +10,6 @@
 * バックアップ
 
 * 移行先環境の準備
-
 postgresqlサーバのインストール
 #+begin_example
 $ sudo yum install search postgresql-server
@@ -81,9 +80,33 @@ psql (9.2.7)
 postgres=# \l    ★データベース一覧を表示する
 #+end_example
 
-* リストア
-
+=/var/lib/pgsql/data/pg_hba.conf= にてlocalhostからしかアクセスできないようにする。
 #+begin_example
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+# "local" is for Unix domain socket connections only
+local   all             all                                     trust
+
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            trust
+
+# IPv6 local connections:
+# -- IPv6無効化
+##host    all             all             ::1/128                 trust
+#+end_example
+
+=php= 実行環境の準備
+#+begin_example
+$ sudo yum -y install php
+$ sudo yum -y install php-pgsql
+$ sudo yum -y install php-mbstring
+$ sudo yum -y install php-xml
+$ sudo yum --enablerepo=epel -y install php-gd
+#+end_example
+
+* リストア
+** =ttrss= 用データベースのリストア
+#+begin_example
+# su - postgresql
 -bash-4.2$ createuser --pwprompt ttrss      ★接続ユーザの作成
 新しいロールのためのパスワード:
 もう一度入力してください：
@@ -91,5 +114,70 @@ postgres=# \l    ★データベース一覧を表示する
 -bash-4.2$ psql -d ttrss -f /tmp/ttrss.dump ★ダンプファイルからリストア
 #+end_example
 
+PostgreSQLデータベース確認用のwebコンソール =phpPgAdmin= をインストールする
+#+begin_example
+$ sudo yum --enablerepo=epel install phpPgAdmin
+#+end_example
+
+以下はApache上で =phpPgAdmin= を動かすための設定ファイル
+#+begin_example
+/etc/php.ini                             ★php実行環境設定ファイル
+/etc/httpd/conf.modules.d/10-php.conf    ★Apache上でphpを動くためのモジュールロード定義
+/etc/httpd/conf.d/php.conf               ★Apache上phpスクリプトのハンドリング定義
+/etc/httpd/conf.d/phpPgAdmin.conf        ★Apache上phpPgAdmin公開用の設定ファイル
+/etc/phpPgAdmin/config.inc.php           ★phpPgAdminのアプリケーション設定ファイル
+#+end_example
+
+=/etc/httpd/httpd.conf= にmod_php、phpPgAdmin公開用設定ファイルを読み込むように以下の
+内容を追加する。
+
+#+begin_example
+# -- PHPモジュールロードする
+Include conf.modules.d/10-php.conf
+
+# --PHPサポート
+IncludeOptional conf.d/php.conf
+
+# -- PostgreSQLインタフェース
+IncludeOptional conf.d/phpPgAdmin.conf
+#+end_example
+
+=/etc/phpPgAdmin/config.inc.php= にアクセス周りの設定を適当に変更する。
+#+begin_example
+$conf['servers'][0]['host'] = 'localhost';
+$conf['extra_login_security'] = false;
+$conf['owned_only'] = true;
+#+end_example
+
+** =ttrss= アプリのリストア
+
+** systemdサービス化
+=/usr/lib/systemd/system/tt-rss.service=
+#+begin_example
+[Unit]
+Description=Tiny Tiny RSS feeds update daemon
+After=network.target postgresql.service
+
+[Service]
+ExecStart=/usr/bin/php /var/www/rss-reader/tt-rss/update.php --daemon
+User=apache
+StandardOutput=null
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target
+#+end_example
+
+#+begin_example
+$ sudo systemctl enable tt-rss.service
+$ sudo systemctl start tt-rss.service
+$ ps -ef | grep update
+apache    6056     1  0 14:34 ?        00:00:00 /usr/bin/php /var/www/rss-reader/tt-rss/update.php --daemon
+apache    6060  6056  1 14:34 ?        00:00:00 /usr/bin/php /var/www/rss-reader/tt-rss/update.php --daemon-loop
+#+end_example
 
 {{{more}}}
+
+* 参考
+- [[http://www.itzgeek.com/how-tos/linux/centos-how-tos/manage-postgresql-using-phppgadmin-on-centos-7.html#axzz3FSwZvQBy][Manage PostgreSQL using phpPgAdmin on CentOS 7]]
+

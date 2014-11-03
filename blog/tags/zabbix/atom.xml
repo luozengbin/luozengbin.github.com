@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Zabbix | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/zabbix/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2014-11-03T22:24:15+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]Zabbix導入記録]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html"/>
+    <updated>2014-10-16T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]zabbix導入記録</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 構成</a></li>
+<li><a href="#sec-2">2. インストール</a></li>
+<li><a href="#sec-3">3. zabbixの起動</a></li>
+<li><a href="#sec-4">4. Zabbix フロントエンドのインストール</a></li>
+<li><a href="#sec-5">5. Zabbix エージェントのインストール</a></li>
+<li><a href="#sec-6">6. Zabbixのアンインストール</a></li>
+<li><a href="#sec-7">7. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+Zabbix2.4、CentOS7用のrpmが見つからなかったので手動ビルドすることにした。
+</p>
+
+
+
+
+<p>
+<!-- more -->
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 構成</h2>
+<div class="outline-text-2" id="text-1">
+<pre class="example">
+                            +---------------+
+                            | Apache 2.4    +---+
+                            +---------------+   |         +---------------+
+                                                +---------+   Zabbix DB   |
+                                                |         +---------------+
+              10050       10051                 |         |   PostgreSQL  |
++--------------+            +---------------+   |         +---------------+
+| Zabbix Agent +------------+ Zabbix Server +---+
++--------------+            +---------------+
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> インストール</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+必要なパッケージのインストール。
+</p>
+<pre class="example">
+$ sudo yum install postgresql-devel
+$ sudo yum install libxml2 libxml2-devel
+$ sudo yum install net-snmp net-snmp-agent  net-snmp-libs net-snmp-devel
+$ sudo yum install libcurl libcurl-devel
+$ sudo yum install php-bcmath
+</pre>
+
+<p>
+ソースコードをダウンロードし、ビルドする。
+</p>
+<pre class="example">
+$ wget http://downloads.sourceforge.net/sourceforge/zabbix/zabbix-2.4.1.tar.gz
+$ tar xzvf zabbix-2.4.1.tar.gz
+$ cd zabbix-2.4.1/
+$ ./configure --enable-server --enable-agent  --with-postgresql --with-net-snmp --with-libcurl --with-libxml2 --enable-java --sysconfdir=/etc/zabbix
+$ sudo make install
+</pre>
+
+<p>
+Zabbix設定ファイル、DB初期化用SQLを格納用のディレクトリの作成とファイルのコピー。
+</p>
+<pre class="example">
+$ sudo mkdir -p /etc/zabbix/database/postgresql
+$ sudo mkdir -p /etc/zabbix/database/postgresql/upgrade/2.0
+
+$ sudo cp -v ./database/postgresql/*.sql /etc/zabbix/database/postgresql
+$ sudo cp -v ./upgrades/dbpatches/2.0/postgresql/patch.sql /etc/zabbix/database/postgresql/upgrade/2.0
+
+$ sudo chmod 0444 /etc/zabbix/database/postgresql/*.sql
+$ sudo chmod 0444 /etc/zabbix/database/postgresql/upgrade/2.0/*.sql
+</pre>
+
+<p>
+Zabbixログ格納用ディレクトリの作成。
+</p>
+<pre class="example">
+$ sudo mkdir -m 0750 /var/log/zabbix
+</pre>
+
+<p>
+Zabbixプロセス実行ユーザの登録、ディレクトリ権限の付与。
+</p>
+<pre class="example">
+$ sudo groupadd -r zabbix
+$ sudo useradd -r -g zabbix -d /dev/null zabbix -s /sbin/nologin
+$ sudo chown -R zabbix:zabbix /var/log/zabbix
+$ sudo chown -R zabbix:zabbix /etc/zabbix
+$ sudo chown -R zabbix:zabbix /usr/local/share/zabbix
+</pre>
+
+<p>
+Zabbixサーバ設定ファイルにPIDの格納場所を指定する。
+</p>
+<pre class="example">
+$ sudo chmod 0640 /etc/zabbix/zabbix_server.conf
+$ sudo sed -i 's:# PidFile=.*:PidFile=/run/zabbix/zabbix_server.pid:' /etc/zabbix/zabbix_server.conf
+</pre>
+
+<p>
+Zabbixサーバ設定ファイルにログの格納場所を指定する
+</p>
+<pre class="example">
+$ sudo sed -i 's:^LogFile=.*:LogFile=/var/log/zabbix/zabbix_server.log:' /etc/zabbix/zabbix_server.conf
+</pre>
+
+<p>
+監視結果データ及び監視項目設定データを格納するためのDBを作成する。
+</p>
+<pre class="example">
+# su - postgresql
+-bash-4.2$ createuser --pwprompt zabbix      ★接続ユーザの作成
+-bash-4.2$ createdb --owner=zabbix zabbix    ★データベース作成
+</pre>
+
+<p>
+作成したデータベースにスキーマを初期化する。
+</p>
+<pre class="example">
+$ cd /etc/zabbix/database/postgresql
+$ psql -U zabbix zabbix &lt; schema.sql
+$ psql -U zabbix zabbix &lt; images.sql
+$ psql -U zabbix zabbix &lt; data.sql
+</pre>
+
+<p>
+Zabbixサーバ設定ファイルにDB接続情報を変更する。
+</p>
+<pre class="example">
+DBHost=localhost
+DBName=zabbix
+DBUser=zabbix
+DBPassword=******
+DBPort=5432
+</pre>
+
+<p>
+PIDファイルの親ディレクトリをtmp領域に作成するため、 <code>systemd-tmpfiles</code> 機能でOS起
+動時に予め作成するようにする。
+</p>
+
+<p>
+<code>/usr/lib/tmpfiles.d/zabbix-server.conf</code>
+</p>
+<pre class="example">
+d /run/zabbix 0755 zabbix zabbix -
+</pre>
+
+<p>
+<code>systemd-tmpfiles</code> 手動実行で、ディレクトリを作成する。OS再起動する場合、この手順は不
+要です。
+</p>
+<pre class="example">
+$ sudo systemd-tmpfiles --create /usr/lib/tmpfiles.d/zabbix-server.conf
+</pre>
+
+<p>
+<code>systemd</code> から起動停止できるように <code>zabbix-server.service</code> を作成する。
+</p>
+
+<p>
+<code>/usr/lib/systemd/system/zabbix-server.service</code>
+</p>
+<pre class="example">
+[Unit]
+Description=Zabbix server
+After=syslog.target network.target postgresql.service
+
+[Service]
+Type=forking
+User=root
+ExecStart=/usr/local/sbin/zabbix_server
+PIDFile=/run/zabbix/zabbix_server.pid
+
+[Install]
+WantedBy=multi-user.target
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> zabbixの起動</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+<code>systemctl</code> コマンドで起動する。
+</p>
+<pre class="example">
+$ sudo systemctl enable zabbix-server.service
+$ sudo systemctl start zabbix-server.service
+</pre>
+
+<p>
+ポート確認
+</p>
+<pre class="example">
+$ sudo netstat -nutpl | grep zabbix
+tcp        0      0 0.0.0.0:10051           0.0.0.0:*               LISTEN      23765/zabbix_server
+</pre>
+
+<p>
+ログ確認
+</p>
+<pre class="example">
+# cat zabbix_server.log
+ 23765:20141016:231838.117 Starting Zabbix Server. Zabbix 2.4.1 (revision 49643).
+ 23765:20141016:231838.118 ****** Enabled features ******
+ 23765:20141016:231838.118 SNMP monitoring:           YES
+ 23765:20141016:231838.118 IPMI monitoring:            NO
+ 23765:20141016:231838.118 WEB monitoring:            YES
+ 23765:20141016:231838.118 VMware monitoring:         YES
+ 23765:20141016:231838.118 Jabber notifications:       NO
+ 23765:20141016:231838.118 Ez Texting notifications:  YES
+ 23765:20141016:231838.118 ODBC:                       NO
+ 23765:20141016:231838.118 SSH2 support:               NO
+ 23765:20141016:231838.118 IPv6 support:               NO
+ 23765:20141016:231838.118 ******************************
+ 23765:20141016:231838.118 using configuration file: /etc/zabbix/zabbix_server.conf
+ 23765:20141016:231838.157 current database version (mandatory/optional): 02040000/02040000
+ 23765:20141016:231838.157 required mandatory version: 02040000
+ 23765:20141016:231838.190 server #0 started [main process]
+ 23775:20141016:231838.191 server #1 started [configuration syncer #1]
+ 23776:20141016:231838.191 server #2 started [db watchdog #1]
+ 23777:20141016:231838.191 server #3 started [poller #1]
+ 23781:20141016:231838.193 server #5 started [poller #3]
+ 23783:20141016:231838.195 server #7 started [poller #5]
+ 23782:20141016:231838.201 server #6 started [poller #4]
+ 23789:20141016:231838.201 server #12 started [trapper #4]
+ 23786:20141016:231838.202 server #9 started [trapper #1]
+ 23788:20141016:231838.203 server #11 started [trapper #3]
+ 23790:20141016:231838.203 server #13 started [trapper #5]
+ 23794:20141016:231838.204 server #17 started [timer #1]
+ 23791:20141016:231838.204 server #14 started [icmp pinger #1]
+ 23787:20141016:231838.204 server #10 started [trapper #2]
+ 23792:20141016:231838.204 server #15 started [alerter #1]
+ 23784:20141016:231838.207 server #8 started [unreachable poller #1]
+ 23795:20141016:231838.208 server #18 started [http poller #1]
+ 23799:20141016:231838.208 server #21 started [history syncer #2]
+ 23806:20141016:231838.209 server #23 started [history syncer #4]
+ 23809:20141016:231838.209 server #26 started [self-monitoring #1]
+ 23780:20141016:231838.210 server #4 started [poller #2]
+ 23801:20141016:231838.211 server #22 started [history syncer #3]
+ 23793:20141016:231838.211 server #16 started [housekeeper #1]
+ 23797:20141016:231838.211 server #20 started [history syncer #1]
+ 23807:20141016:231838.214 server #24 started [escalator #1]
+ 23808:20141016:231838.215 server #25 started [proxy poller #1]
+ 23796:20141016:231838.309 server #19 started [discoverer #1]
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Zabbix フロントエンドのインストール</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+phpコンテンツ格納するディレクトリの作成とコンテンツ実体の格納。
+</p>
+<pre class="example">
+$ sudo mkdir -p /var/www/zabbix
+$ sudo cp -r frontends/php/* /var/www/zabbix
+$ sudo chown -R apache:apache /var/www/zabbix
+$ sudo chmod -R u=rwX,g=rX,o= /var/www/zabbix
+</pre>
+
+<p>
+<code>/etc/php.ini</code> にてphp実行時パラメータを変更する。
+</p>
+<pre class="example">
+max_execution_time = 300     ★変更
+max_input_time = 300         ★変更
+post_max_size = 16M          ★変更
+memory_limit = 128M
+upload_max_filesize = 2M
+session.auto_start = 0
+date.timezone = "Asia/Tokyo" ★変更
+</pre>
+
+<p>
+フラフの日本語表示対応
+</p>
+<pre class="example">
+$ sudo yum install ipa-gothic-fonts ipa-pgothic-fonts vlgothic-fonts vlgothic-p-fonts
+$ sudo -u apache cp /usr/share/fonts/ipa-gothic/ipag.ttf /var/www/zabbix/fonts/
+</pre>
+
+<p>
+<code>/var/www/zabbix/include/defines.inc.php</code>
+</p>
+<pre class="example">
+変更前
+define('ZBX_GRAPH_FONT_NAME',           'DejaVuSans'); // font file name
+
+変更後
+define('ZBX_GRAPH_FONT_NAME',           'ipag'); // font file name
+</pre>
+
+<p>
+Apache設定内容 <code>/etc/httpd/conf.d/httpd-zabbix.conf</code>
+</p>
+<pre class="example">
+Alias /zabbix /var/www/zabbix
+&lt;Location /zabbix&gt;
+    # Apache 2.4
+    Require local
+    #Require host example.com
+&lt;/Location&gt;
+</pre>
+
+<p>
+<code>/etc/httpd/conf/httpd.conf</code>
+</p>
+<pre class="example">
+IncludeOptional conf.d/httpd-zabbix.conf
+</pre>
+
+<p>
+画面を起動する。
+</p>
+
+<video controls>
+   <source src="video/2014-10-17_zabbix_install_01.mp4">
+</video>
+
+<p>
+ウィザードで生成しれたファイルの内容 <code>/var/www/zabbix/conf/zabbix.conf.php</code>
+</p>
+<pre class="example">
+&lt;?php
+// Zabbix GUI configuration file
+global $DB;
+
+$DB['TYPE']     = 'POSTGRESQL';
+$DB['SERVER']   = 'localhost';
+$DB['PORT']     = '0';
+$DB['DATABASE'] = 'zabbix';
+$DB['USER']     = 'zabbix';
+$DB['PASSWORD'] = '**********';
+
+// SCHEMA is relevant only for IBM_DB2 database
+$DB['SCHEMA'] = '';
+
+$ZBX_SERVER      = 'localhost';
+$ZBX_SERVER_PORT = '10051';
+$ZBX_SERVER_NAME = '';
+
+$IMAGE_FORMAT_DEFAULT = IMAGE_FORMAT_PNG;
+?&gt;
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> Zabbix エージェントのインストール</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+Zabbix AgentプロセスのPID格納用ディレクトリの初期化。
+<code>/usr/lib/tmpfiles.d/zabbix-agentd.conf</code>
+</p>
+<pre class="example">
+$ sudo touch /usr/lib/tmpfiles.d/zabbix-agentd.conf
+$ sudo nano /usr/lib/tmpfiles.d/zabbix-agentd.conf
+d /run/zabbix 0755 zabbix zabbix -
+</pre>
+
+<pre class="example">
+$ sudo systemd-tmpfiles --create /usr/lib/tmpfiles.d/zabbix-agentd.conf
+</pre>
+
+<p>
+Zabbix Agentサービス起動・停止用のファイル <code>/usr/lib/systemd/system/zabbix-agentd.service</code>
+</p>
+<pre class="example">
+[Unit]
+Description=Zabbix agent daemon
+After=network.target
+
+[Service]
+Type=forking
+User=root
+ExecStart=/usr/local/sbin/zabbix_agentd
+PIDFile=/run/zabbix/zabbix_agentd.pid
+
+[Install]
+WantedBy=multi-user.target
+</pre>
+
+<p>
+Zabbix Agent設定ファイルに、PID及びログ出力先を変更する。
+</p>
+<pre class="example">
+$ sudo -u zabbix sed -i 's:# PidFile=.*:PidFile=/run/zabbix/zabbix_agentd.pid:' /etc/zabbix/zabbix_agentd.conf
+$ sudo -u zabbix sed -i 's:^LogFile=.*:LogFile=/var/log/zabbix/zabbix_agentd.log:' /etc/zabbix/zabbix_agentd.conf
+</pre>
+
+<p>
+Zabbix Agent設定ファイルに、Zabbix Serverの情報と監視ホスト名を指定する。
+</p>
+<pre class="example">
+Server=127.0.0.1
+ServerActive=127.0.0.1
+Hostname=testhost
+</pre>
+
+<p>
+ポートの確認
+</p>
+<pre class="example">
+$ sudo netstat -nutpl | grep zabbix
+tcp        0      0 0.0.0.0:10050           0.0.0.0:*               LISTEN      17764/zabbix_agentd
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> Zabbixのアンインストール</h2>
+<div class="outline-text-2" id="text-6">
+<pre class="example">
+$ sudo userdel zabbix
+</pre>
+
+<p>
+※未完成
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> 参考</h2>
+<div class="outline-text-2" id="text-7">
+<ul class="org-ul">
+<li><a href="https://www.zabbix.com/documentation/2.2/jp/start">Zabbix documentation in Japanese</a>
+</li>
+<li><a href="http://www.sraoss.co.jp/technology/zabbix/introduction/01-firststep.php">第 1 回 Zabbix を動かしてみよう</a>
+</li>
+<li><a href="http://tech-sketch.jp/2011/11/osszabbix1.html">OSS統合監視ツール「Zabbix」を利用して大規模環境監視(1)</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

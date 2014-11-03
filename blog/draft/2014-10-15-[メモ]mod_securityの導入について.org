@@ -1,0 +1,84 @@
+#+TITLE: [メモ]mod_securityの導入について
+#+DATE: 2014-10-15
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: mod_security
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+* 
+#+begin_example
+yum install mod_security mod_security_crs
+#+end_example
+
+#+begin_example
+yum install java-1.7.0-openjdk
+yum install java-1.7.0-openjdk-devel
+yum install java-1.7.0-openjdk-javadoc java-1.7.0-openjdk-headless
+#+end_example
+
+=/etc/yum.repos.d/jwall.repo= 
+#+begin_example
+[jwall]
+name=CentOS-jwall - jwall.org packages for noarch
+baseurl=http://download.jwall.org/yum/jwall
+enabled=0
+gpgcheck=1
+protect=1
+#+end_example
+
+#+begin_example
+yum --enablerepo=jwall install auditconsole
+#+end_example
+
+=/usr/lib/systemd/system/auditconsole.service=
+#+begin_example
+[Unit]
+Description=AuditConsole server
+After=syslog.target network.target
+
+[Service]
+Type=forking
+User=jwall
+PIDFile=/opt/AuditConsole/auditconsole.pid
+ExecStart=/opt/AuditConsole/bin/catalina.sh start
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill $MAINPID
+
+[Install]
+WantedBy=multi-user.target
+#+end_example
+
+=/opt/AuditConsole/bin/catalina.sh=
+#+begin_example
+# 2014/10/15 -----------------------------
+JAVA_HOME="/usr/lib/jvm/java-openjdk"
+JSSE_HOME="/usr/lib/jvm/java-openjdk/jre/"
+
+CATALINA_HOME=/opt/AuditConsole
+CATALINA_BASE=/opt/AuditConsole
+CATALINA_TMPDIR=/tmp/auditconsole
+CATALINA_PID="/opt/AuditConsole/auditconsole.pid"
+
+CONSOLE_HOME=/opt/AuditConsole
+CONSOLE_HTTP_PORT=18080
+CONSOLE_HTTPS_PORT=18443
+
+JAVA_OPTS="-Djava.awt.headless=true -Xmx256M "
+JAVA_OPTS="$JAVA_OPTS -Dconsole.http.port=$CONSOLE_HTTP_PORT -Dconsole.https.port=$CONSOLE_HTTPS_PORT"
+JAVA_OPTS="$JAVA_OPTS -Djava.net.preferIPv4Stack=true"
+# ------------------------------------------
+#+end_example
+
+#+begin_example
+$ sudo yum install postgresql-jdbc
+#+end_example
+
+#+begin_example
+$ createuser --pwprompt auditevent            ★接続ユーザの作成
+$ createdb --owner=auditevent auditevent      ★データベース作成
+#+end_example
+
+
+{{{more}}}

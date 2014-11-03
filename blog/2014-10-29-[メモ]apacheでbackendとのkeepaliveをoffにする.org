@@ -1,0 +1,73 @@
+#+TITLE: [メモ]ApacheでbackendとのKeepAliveをOFFにする
+#+DATE: 2014-10-29
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: apache
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+次のような構成でApacheとAPサーバ間のHTTP KeepAliveが有効にすると
+1. LBの振り分けが偏る可能性がある
+2. LBの無振り分け先の切り替えに影響が生じる可能性がある、詳細は こちらの記事 を参照してください。
+のような不都合があります。
+
+#+begin_example
++----------+         +------------+        +-----------+     +-------------+
+| Client   +---------> Apache     +-------->   LB      +-----> AP Server   |
++----------+         +------------+        +-----------+     +-------------+
+#+end_example
+
+とい言うわけでApacheとAPサーバ間KeepAliveをOFFにする方法を調査した。
+
+{{{more}}}
+
+* Apache側でKeepAliveを制御する
+=ProxyPass= ディレクティブの =keepalive= パラメータが期待通り動作しないので迷っていた、
+しかしドキュメントによると
+
+#+begin_example
+バックエンドサーバと Apache の間にファイアーウォールがある場合には、 このパラメータを
+使ってください。ファイアウォールは往々にして、 非活動状態のコネクションを落とそうとし
+ます。 このフラグは OS に指示して、KEEP_ALIVE メッセージを非活動状態の コネクションで
+も送るようにします。これによってファイアウォールによってコネクションが 落とされること
+を防げます。keepalive を有効にするには、このプロパティを On にしてください。
+#+end_example
+
+HTTP KeepAliveに関係しそうに見えたが、実はあんまり関係ないのようです。
+TCPレベルでコネクションをファイアウォールによる切断を防ぐためのパラメータです。
+
+更に調べると =mod_proxy_http= モジュールの環境変数にHTTP KeepAliveに関係するものが
+出てきた。
+
+- force-proxy-request-1.0
+  プロキシがバックエンドに HTTP/1.0 でリクエストを送るようにし、HTTP/1.1 の機能を無効にします。
+
+- proxy-nokeepalive
+  プロキシがリクエスト終了後にバックエンドとの接続を切るようにします。
+
+よし！これだそう。次のように設定したらうまくできた。
+#+begin_example
+<Location /test/>
+    ProxyPass http://dummyhost:8080/app1/
+    SetEnv proxy-nokeepalive 1
+</Location>
+#+end_example
+
+これで、ApacheからAPサーバへのHTTPリクエストヘッダに =Connection: close= が付与される
+ようになりました。 =tcpdump= でパケットのやり取りを確認すると、ちゃんと毎回クライアン
+トのからコネクション切断するためのfinパケットが送信されることを確認しました。
+
+
+* APサーバ側にてKeepAliveを制御する
+一般的にAPサーバ側でもKeepAliveの設定が可能です。
+流れ的に、HTTPレスポンスのHTTPヘッダに =Connection: close= を付与して返すことで
+リクエスト側にコネクション切断する旨を伝える。
+
+Tomcat起動時に次のJavaオプションを付けるとHTTP KeepAliveがOFFになります。
+#+begin_example
+-Dorg.apache.coyote.http11.Http11Protocol.MAX_KEEP_ALIVE_REQUESTS=1
+#+end_example
+
+* 参考
+- [[http://blog.nomadscafe.jp/2011/07/apache.html][今こそ見直すApacheの設定]]

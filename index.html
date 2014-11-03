@@ -9,14 +9,9 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="Table of Contents 1. SASとは
-2. SAS言語
-3. 統計分析のイメージ
-4. SASプログラムのイメージ
-5. 無償で使えるの？
-6. 日本での事例
-7. おまけに
-8. 参考リンク ある飲み会で JT のプログラムマーさんと出会って、最初彼からの自己紹介で「 &hellip;">
+  <meta name="description" content="Table of Contents 1. Apache側でKeepAliveを制御する
+2. APサーバ側にてKeepAliveを制御する
+3. 参考 次のような構成でApacheとAPサーバ間のHTTP KeepAliveが有効にすると LBの振り分けが偏る可能性がある &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -72,6 +67,262 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">[メモ]ApacheでbackendとのKeepAliveをOFFにする</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-10-29T00:00:00+09:00" pubdate data-updated="true">2014-10-29 (Wed)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. Apache側でKeepAliveを制御する</a></li>
+<li><a href="#sec-2">2. APサーバ側にてKeepAliveを制御する</a></li>
+<li><a href="#sec-3">3. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+次のような構成でApacheとAPサーバ間のHTTP KeepAliveが有効にすると
+</p>
+<ol class="org-ol">
+<li>LBの振り分けが偏る可能性がある
+</li>
+<li>LBの無振り分け先の切り替えに影響が生じる可能性がある、詳細は こちらの記事 を参照してください。
+</li>
+</ol>
+<p>
+のような不都合があります。
+</p>
+
+<pre class="example">
++----------+         +------------+        +-----------+     +-------------+
+| Client   +---------&gt; Apache     +--------&gt;   LB      +-----&gt; AP Server   |
++----------+         +------------+        +-----------+     +-------------+
+</pre>
+
+<p>
+とい言うわけでApacheとAPサーバ間KeepAliveをOFFにする方法を調査した。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html">[メモ]Zabbix導入記録</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-10-16T00:00:00+09:00" pubdate data-updated="true">2014-10-16 (Thu)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 構成</a></li>
+<li><a href="#sec-2">2. インストール</a></li>
+<li><a href="#sec-3">3. zabbixの起動</a></li>
+<li><a href="#sec-4">4. Zabbix フロントエンドのインストール</a></li>
+<li><a href="#sec-5">5. Zabbix エージェントのインストール</a></li>
+<li><a href="#sec-6">6. Zabbixのアンインストール</a></li>
+<li><a href="#sec-7">7. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+Zabbix2.4、CentOS7用のrpmが見つからなかったので手動ビルドすることにした。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]JBossAS7のソケット操作タイムアウト値について</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-10-08T00:00:00+09:00" pubdate data-updated="true">2014-10-08 (Wed)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. DEFAULT_CONNECTION_TIMEOUTオプションの役割</a></li>
+<li><a href="#sec-2">2. JBossASの実装</a></li>
+<li><a href="#sec-3">3. 注意書き</a></li>
+<li><a href="#sec-4">4. 参考リンク</a></li>
+</ul>
+</div>
+</div>
+<p>
+JBossAS の起動オプション <code>org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT</code> につい
+て誤解があったので、メモしておきます。
+</p>
+
+<p>
+まず、ドキュメントの説明。デフォルトタイムアウト値が60秒ですね。
+</p>
+<pre class="example">
+org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT
+Default socket timeout. The default value is 60000 ms.
+</pre>
+<p>
+説明だけでよく分からない、最初はサーバサイトワーカスレッドの処理時間タイムアウト値
+と理解しました。
+</p>
+
+<p>
+テストアプリでタイムアウト時の動作を確認する。
+</p>
+<pre class="example">
++----------+            +----------------+
+| SoapUI   +------------+  テストアプリ  |
++----------+            |                |
+                        +----------------+
+                        |  JBossAS 7.x   |
+                        +----------------+
+</pre>
+<p>
+SoapUIのリードタイムアウトを120秒に変更する、テストアプリに <code>Thread.sleep(70 * 1000)</code>
+コードを仕込んで処理時間を長くする。これでタイムアウトになると考えたのですが、結果的に
+タイムアウトせず、正常なレスポンスでした。これで、 <code>DEFAULT_CONNECTION_TIMEOUT</code> はワー
+カスレッドのタイムアウト値ではないことが分かりました。
+</p>
+
+<p>
+説明文にソケットのタイムアウト値であることが書かれたので <code>telnet</code> でソケット通信の各
+stepの処理時間をあえて長くして動作状況を観測してみました。
+</p>
+
+<ol class="org-ol">
+<li>telnetでコネクションを貼る
+</li>
+<li>ヘッダを途中まで送信する
+</li>
+<li>60秒待つこと
+</li>
+</ol>
+
+<pre class="example">
+$ telnet localhost 8080
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+POST http://localhost:8080/testapp/HelloWorld HTTP/1.1
+Connection: close
+Accept-Encoding: gzip,deflate
+Content-Type: text/xml;charset=UTF-8
+SOAPAction: "sayHello"
+Content-Length: 318
+Host: localhost:8080
+★ここで60秒を待つ
+Connection closed by foreign host.
+</pre>
+
+<p>
+step3のところで60秒後、サーバからfinパケットが送出されてコネクションが切れた。
+<code>DEFAULT_CONNECTION_TIMEOUT</code> パラメータの意味が少し掴みました。
+</p>
+
+<p>
+少し掘り下げて見たいので、コードリーディングして実装の概要を以下に紹介します。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -578,194 +829,6 @@ $ find . -type f -print0 | xargs -0 ls -alt
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-07-31-%5B%E6%A4%9C%E8%A8%BC%5Darchlinux%E3%81%ABjenkins%E5%B0%8E%E5%85%A5.html">[検証]ArchlinuxにJenkins導入</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-07-31T00:00:00+09:00" pubdate data-updated="true">2014-07-31 (Thu)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. インストール</a></li>
-<li><a href="#sec-2">2. パッケージ構成</a></li>
-<li><a href="#sec-3">3. 設定ファイル</a></li>
-<li><a href="#sec-4">4. サービス制御ファイル</a></li>
-<li><a href="#sec-5">5. サービス実行アカウントの確認</a></li>
-<li><a href="#sec-6">6. サービスを起動してみる</a></li>
-<li><a href="#sec-7">7. 次やりたいこと</a></li>
-</ul>
-</div>
-</div>
-<p>
-久々Jenkinsを触っていないので、今回Archlinux入れて検証したいと思います。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-07-31-%5B%E6%A4%9C%E8%A8%BC%5Darchlinux%E3%81%ABjenkins%E5%B0%8E%E5%85%A5.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-07-22-%5B%E6%A4%9C%E8%A8%BC%5Dweblogic%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%84%E3%83%AB%E3%83%A1%E3%83%B3%E3%83%86%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E6%A9%9F%E8%83%BD.html">[検証]Weblogicのインスツルメンテーション機能</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-07-22T00:00:00+09:00" pubdate data-updated="true">2014-07-22 (Tue)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 検証アプリの作成</a></li>
-<li><a href="#sec-2">2. インスツルメンテーション設定手順</a>
-<ul>
-<li><a href="#sec-2-1">2.1. 診断システム・モジュールの作成</a></li>
-<li><a href="#sec-2-2">2.2. アプリケーションの設定</a></li>
-<li><a href="#sec-2-3">2.3. 採集されたイベントデータの確認</a></li>
-</ul>
-</li>
-<li><a href="#sec-3">3. 参考リンク</a></li>
-</ul>
-</div>
-</div>
-<p>
-トラブルシューティング時にログでアプリケーションの動作を追うことが常套手段と言えるで
-しょう。しかし、アプリケーションにログ出力処理が実装されていないケースもあり得るで
-しょう。先日そのようなケースに遭遇してまして、メソッドのエントリとリターンのポイント
-ですらログ出力してくれなかった。コード規模が小さいのであれば、すぐログ出力処理を実装
-すればいいでしょうけど、大規模の場合それなりに大変でしょう。
-</p>
-
-<p>
-幸い、Weblogicサーバにはアプリケーションケーションの動作イベントを記録するような機能
-が提供されている。それはWebLogic診断フレームワークのインスツルメンテーション機能で
-す。以下はインスツルメンテーション機能の使い方を検証します。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-07-22-%5B%E6%A4%9C%E8%A8%BC%5Dweblogic%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%84%E3%83%AB%E3%83%A1%E3%83%B3%E3%83%86%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E6%A9%9F%E8%83%BD.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">[メモ]JDeveloper 11g/12c 開発環境の整備</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-07-22T00:00:00+09:00" pubdate data-updated="true">2014-07-22 (Tue)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 環境</a></li>
-<li><a href="#sec-2">2. 12cインストール時のtmp領域足りない問題</a></li>
-<li><a href="#sec-3">3. 12c起動時にプロセスクラッシュ問題</a></li>
-<li><a href="#sec-4">4. 32bit版起動時のUnsatisfiedLinkError</a></li>
-<li><a href="#sec-5">5. 文字化け</a></li>
-<li><a href="#sec-6">6. メニューバーの動作不具合</a></li>
-<li><a href="#sec-7">7. ランチャーから起動できるようにする</a></li>
-<li><a href="#sec-8">8. 未解決問題</a></li>
-<li><a href="#sec-9">9. 参考したリンク</a></li>
-</ul>
-</div>
-</div>
-<p>
-Archlinux環境にJDeveloper 11g/12c 複数バージョンインストール時のメモ。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -799,6 +862,18 @@ Archlinux環境にJDeveloper 11g/12c 複数バージョンインストール時�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">[メモ]ApacheでbackendとのKeepAliveをOFFにする</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html">[メモ]Zabbix導入記録</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]JBossAS7のソケット操作タイムアウト値について</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-10-05-%5B%E8%AA%BF%E6%9F%BB%5Dsas%E7%B5%B1%E8%A8%88%E3%82%BD%E3%83%95%E3%83%88%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]SAS統計ソフトについて</a>
       </li>
     
@@ -826,18 +901,6 @@ Archlinux環境にJDeveloper 11g/12c 複数バージョンインストール時�
         <a href="/blog/2014-08-07-%5B%E3%83%A1%E3%83%A2%5Dfind%E3%81%A7%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%9B%B4%E6%96%B0%E6%97%A5%E4%BB%98%E9%A0%86%E3%81%A7%E8%A1%A8%E7%A4%BA%E3%81%99%E3%82%8B.html">[メモ]findでファイル更新日付順で表示する</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2014-07-31-%5B%E6%A4%9C%E8%A8%BC%5Darchlinux%E3%81%ABjenkins%E5%B0%8E%E5%85%A5.html">[検証]ArchlinuxにJenkins導入</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-07-22-%5B%E6%A4%9C%E8%A8%BC%5Dweblogic%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%84%E3%83%AB%E3%83%A1%E3%83%B3%E3%83%86%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E6%A9%9F%E8%83%BD.html">[検証]Weblogicのインスツルメンテーション機能</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">[メモ]JDeveloper 11g/12c 開発環境の整備</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -845,11 +908,11 @@ Archlinux環境にJDeveloper 11g/12c 複数バージョンインストール時�
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (5)</a></li><li><a href='/blog/categories/linux/'>linux (13)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (6)</a></li><li><a href='/blog/categories/linux/'>linux (15)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 130.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 130.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 160.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 130.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 130.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 130.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 130.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 130.0%'>jboss(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 130.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 160.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 130.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 130.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 130.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 130.0%'>zabbix(1)</a> </span>
 </section>
 
 <section>

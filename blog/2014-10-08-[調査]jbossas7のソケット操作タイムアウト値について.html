@@ -1,0 +1,529 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>[調査]JBossAS7のソケット操作タイムアウト値について - Akira's Tech Notes</title>
+  <meta name="author" content="luozengbin">
+
+  
+  <meta name="description" content="Table of Contents 1. DEFAULT_CONNECTION_TIMEOUTオプションの役割
+2. JBossASの実装
+3. 注意書き
+4. 参考リンク JBossAS の起動オプション org.apache.coyote.http11. &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://luozengbin.github.io/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Akira's Tech Notes" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Akira's Tech Notes</a></h1>
+  
+    <h2>Java, Linux, Emacs</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:luozengbin.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">[調査]JBossAS7のソケット操作タイムアウト値について</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-10-08T00:00:00+09:00" pubdate data-updated="true">2014-10-08 (Wed)</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. DEFAULT_CONNECTION_TIMEOUTオプションの役割</a></li>
+<li><a href="#sec-2">2. JBossASの実装</a></li>
+<li><a href="#sec-3">3. 注意書き</a></li>
+<li><a href="#sec-4">4. 参考リンク</a></li>
+</ul>
+</div>
+</div>
+<p>
+JBossAS の起動オプション <code>org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT</code> につい
+て誤解があったので、メモしておきます。
+</p>
+
+<p>
+まず、ドキュメントの説明。デフォルトタイムアウト値が60秒ですね。
+</p>
+<pre class="example">
+org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT
+Default socket timeout. The default value is 60000 ms.
+</pre>
+<p>
+説明だけでよく分からない、最初はサーバサイトワーカスレッドの処理時間タイムアウト値
+と理解しました。
+</p>
+
+<p>
+テストアプリでタイムアウト時の動作を確認する。
+</p>
+<pre class="example">
++----------+            +----------------+
+| SoapUI   +------------+  テストアプリ  |
++----------+            |                |
+                        +----------------+
+                        |  JBossAS 7.x   |
+                        +----------------+
+</pre>
+<p>
+SoapUIのリードタイムアウトを120秒に変更する、テストアプリに <code>Thread.sleep(70 * 1000)</code>
+コードを仕込んで処理時間を長くする。これでタイムアウトになると考えたのですが、結果的に
+タイムアウトせず、正常なレスポンスでした。これで、 <code>DEFAULT_CONNECTION_TIMEOUT</code> はワー
+カスレッドのタイムアウト値ではないことが分かりました。
+</p>
+
+<p>
+説明文にソケットのタイムアウト値であることが書かれたので <code>telnet</code> でソケット通信の各
+stepの処理時間をあえて長くして動作状況を観測してみました。
+</p>
+
+<ol class="org-ol">
+<li>telnetでコネクションを貼る
+</li>
+<li>ヘッダを途中まで送信する
+</li>
+<li>60秒待つこと
+</li>
+</ol>
+
+<pre class="example">
+$ telnet localhost 8080
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+POST http://localhost:8080/testapp/HelloWorld HTTP/1.1
+Connection: close
+Accept-Encoding: gzip,deflate
+Content-Type: text/xml;charset=UTF-8
+SOAPAction: "sayHello"
+Content-Length: 318
+Host: localhost:8080
+★ここで60秒を待つ
+Connection closed by foreign host.
+</pre>
+
+<p>
+step3のところで60秒後、サーバからfinパケットが送出されてコネクションが切れた。
+<code>DEFAULT_CONNECTION_TIMEOUT</code> パラメータの意味が少し掴みました。
+</p>
+
+<p>
+少し掘り下げて見たいので、コードリーディングして実装の概要を以下に紹介します。
+</p>
+
+<p>
+<!-- more -->
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> DEFAULT_CONNECTION_TIMEOUTオプションの役割</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+JBossASのJava起動オプションで指定する
+<code>-Dorg.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT=xxxxx</code> オプションの値は最終的に
+ソケット操作のブロックタイムアウト値 <code>java.net.ServerSocket.setSoTimeout(xx)</code> に反映さ
+れる。
+</p>
+
+<p>
+サーバ側で以下のソケット操作でブロックされる時間が指定時間より超えるとタイムアウトさせ
+る機能です。
+</p>
+<pre class="example">
+ServerSocket.accept();
+SocketInputStream.read();
+DatagramSocket.receive();
+</pre>
+
+<p>
+例えば、HTTPヘッダ受信途中クライアント側がストール状態になり、
+<code>SocketInputStream.read()</code> 処理がずっと待ち続けるには行けないので（FDのリソース枯渇に
+なるかも知らない）、タイムアウトさせる必要があります。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> JBossASの実装</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+<code>org.apache.coyote.http11.Constants</code> にデフォルト値が60秒で定義されている。
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #729fcf; font-weight: bold;">final</span> <span style="color: #729fcf; font-weight: bold;">class</span> <span style="color: #2DA6F5; font-weight: bold;">Constants</span> {
+    ...............
+    <span style="color: #888a85; font-style: italic;">//</span><span style="color: #888a85; font-style: italic;">&#9733;&#12371;&#12371;&#12391;Java&#12458;&#12503;&#12471;&#12519;&#12531;&#12363;&#12425;&#20516;&#12434;&#21442;&#29031;&#12375;&#12390;&#12356;&#12427;</span>
+    <span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #729fcf; font-weight: bold;">static</span> <span style="color: #729fcf; font-weight: bold;">final</span> <span style="color: #2DA6F5; font-weight: bold;">int</span> DEFAULT_CONNECTION_TIMEOUT =
+            Integer.valueOf(System.getProperty(<span style="color: #ad7fa8;">"org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT"</span>, <span style="color: #ad7fa8;">"60000"</span>)).intValue();
+    .............
+</pre>
+</div>
+
+<p>
+この値は以下の流れで、 <code>JIoEndpoint</code> クラスの <code>soTimeout</code> 属性に反映される。
+</p>
+<pre class="example">
+1.org.jboss.as.web.WebConnectorService.start()
+2.  org.apache.catalina.connector.Connectorのコンストラクタ処理
+3.    apache.coyote.http11.Http11Protocolのコンストラクタ処理
+4.      org.apache.tomcat.util.net.JIoEndpoint.setSoTimeout(xx)
+</pre>
+
+<p>
+<code>acceptor</code> スレッドで新規コネクションをacceptしワーカスレッドに渡した後にワーカスレッ
+ドの <code>run</code> 関数内 <code>java.net.ServerSocket.setSoTimeout(xx)</code> 関数を呼び出し、値を設定す
+る。具体的な流れは以下となります。
+</p>
+
+<pre class="example">
+1. org.apache.tomcat.util.net.JIoEndpoint.Acceptor.run()
+2.   org.apache.tomcat.util.net.JIoEndpoint.processSocket(socket)
+3.     ★ここで分岐がある、別途検証する
+4.     org.apache.tomcat.util.net.JIoEndpoint.Workerが起動される
+5.       org.apache.tomcat.util.net.JIoEndpoint.Worker.run()
+6.         org.apache.tomcat.util.net.JIoEndpoint.setSocketOptions(socket)
+7.           socket.setSoTimeout(soTimeout);
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 注意書き</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+<code>org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT</code> が次のように誤解されることもあ
+るので、要注意です。
+</p>
+<pre class="example">
+ワーカスレッドの実行時間のタイムアウト値
+</pre>
+
+<p>
+あくまでもソケットのブロックタイムアウト値なので、アプリのロジック処理時と関係ないで
+す。主にHTTPヘッダとHTTP本文の読み取り処理のブロック時間を監視するために使われる。
+</p>
+
+<p>
+以下、HTTP本文読み取り処理でブロックタイムアウトが起きた時のサーバログです。
+</p>
+<pre class="example">
+Caused by: java.net.SocketTimeoutException: Read timed out
+	at java.net.SocketInputStream.socketRead0(Native Method) [rt.jar:1.7.0_65]
+	at java.net.SocketInputStream.read(SocketInputStream.java:152) [rt.jar:1.7.0_65]
+	at java.net.SocketInputStream.read(SocketInputStream.java:122) [rt.jar:1.7.0_65]
+	at org.apache.coyote.http11.InternalInputBuffer.fill(InternalInputBuffer.java:737) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
+	at org.apache.coyote.http11.InternalInputBuffer$InputStreamInputBuffer.doRead(InternalInputBuffer.java:767) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
+	at org.apache.coyote.http11.filters.IdentityInputFilter.doRead(IdentityInputFilter.java:116) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
+	at org.apache.coyote.http11.InternalInputBuffer.doRead(InternalInputBuffer.java:697) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
+	at org.apache.coyote.Request.doRead(Request.java:438) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
+	at org.apache.catalina.connector.InputBuffer.realReadBytes(InputBuffer.java:341) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
+	... 47 more
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> 参考リンク</h2>
+<div class="outline-text-2" id="text-4">
+<ul class="org-ul">
+<li><a href="https://docs.jboss.org/jbossweb/7.0.x/sysprops.html">JBossWeb System Properties</a>
+</li>
+<li><a href="http://docs.oracle.com/javase/jp/1.4/api/java/net/Socket.html#getSoTimeout%2528%2529">Java API Doc クラス Socket</a>
+</li>
+<li><a href="http://docs.oracle.com/javase/jp/6/api/java/net/SocketOptions.html#SO_TIMEOUT">Java API Doc - インタフェース SocketOptions</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">luozengbin</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-10-08T00:00:00+09:00" pubdate data-updated="true">2014-10-08 (Wed)</time>
+      
+
+<span class="categories">
+  Posted in
+  
+    <a class='category' href='/blog/categories/java/'>java</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://luozengbin.github.io/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html" data-via="" data-counturl="http://luozengbin.github.io/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014-10-05-%5B%E8%AA%BF%E6%9F%BB%5Dsas%E7%B5%B1%E8%A8%88%E3%82%BD%E3%83%95%E3%83%88%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html" title="Previous Post: [調査]SAS統計ソフトについて">&laquo; [調査]SAS統計ソフトについて</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html" title="Next Post: [メモ]Zabbix導入記録">[メモ]Zabbix導入記録 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <!-- create at 2017/07/01 
+       Google Chart Tools: Infographics
+       https://developers.google.com/chart/infographics/docs/qr_codes?csw=1
+  -->
+
+  <div style="position: relative; text-align: center">
+
+    <!-- Google Chart API でQRコード取得 -->
+    <img src="http://chart.apis.google.com/chart?chs=180x180&amp;cht=qr&amp;choe=UTF-8&amp;chl=http://luozengbin.github.io/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html" alt="post-qrcode" height="180" width="180" />
+
+    <!-- サイトのfaviconを重ねて表示する -->
+    <div style="position: absolute; top: 75px; width: 100%; margin: 0 auto; text-align: center">
+      <img style="border: 0.2em solid #FFF;" src="/favicon.png" alt="post-qrcode" height="30" width="30" />
+    </div>
+  </div>
+
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">[メモ]ApacheでbackendとのKeepAliveをOFFにする</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html">[メモ]Zabbix導入記録</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]JBossAS7のソケット操作タイムアウト値について</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-05-%5B%E8%AA%BF%E6%9F%BB%5Dsas%E7%B5%B1%E8%A8%88%E3%82%BD%E3%83%95%E3%83%88%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]SAS統計ソフトについて</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-16-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dkerbrose%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E5%A4%89%E6%9B%B4%E3%81%9F%E3%82%81%E3%81%AEpam%E8%A8%AD%E5%AE%9A.html">[レシピ]Kerbroseパスワード変更ためのPAM設定</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-15-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dkerberos%E8%AA%8D%E8%A8%BC%E7%92%B0%E5%A2%83%E3%81%AE%E6%A7%8B%E7%AF%89.html">[レシピ]Kerberos認証環境の構築</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5D%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%81%AEuid%E3%81%AE%E6%8A%BD%E5%87%BA.html">[レシピ]ローカルシステムのUIDの抽出</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dldap%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E6%A7%8B%E7%AF%89.html">[レシピ]LDAPサーバの構築</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-12-%5B%E3%83%A1%E3%83%A2%5Dsyslog-ng%E3%81%AE%E3%83%AD%E3%82%B0%E5%87%BA%E5%8A%9B%E5%BD%A2%E5%BC%8F%E3%81%AE%E5%A4%89%E6%9B%B4.html">[メモ]syslog-ngのログ出力形式の変更</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-07-%5B%E3%83%A1%E3%83%A2%5Dfind%E3%81%A7%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%9B%B4%E6%96%B0%E6%97%A5%E4%BB%98%E9%A0%86%E3%81%A7%E8%A1%A8%E7%A4%BA%E3%81%99%E3%82%8B.html">[メモ]findでファイル更新日付順で表示する</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+<section>
+  <h1>Categories</h1>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (6)</a></li><li><a href='/blog/categories/linux/'>linux (15)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+</section>
+<section>
+  <h1>Tag Cloud</h1>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 130.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 130.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 130.0%'>jboss(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 130.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 160.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 130.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 130.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 130.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 130.0%'>zabbix(1)</a> </span>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/luozengbin">@luozengbin</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'luozengbin',
+            count: 1,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - luozengbin -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'luozengbin';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://luozengbin.github.io/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html';
+        var disqus_url = 'http://luozengbin.github.io/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

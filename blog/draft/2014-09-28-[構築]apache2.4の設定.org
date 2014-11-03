@@ -181,110 +181,110 @@ $ rpm -ql httpd
 #+end_example
 
 初期インストールされたモジュール一覧
-|----------------------------+------------------------------------------------------------------------+---------|
-| モジュールファイル         | 説明                                                                   | 必須[1] |
-|----------------------------+------------------------------------------------------------------------+---------|
-| mod_access_compat.so       |                                                                        |         |
-| mod_actions.so             |                                                                        |         |
-| mod_alias.so               |                                                                        | ◯      |
-| mod_allowmethods.so        |                                                                        |         |
-| mod_asis.so                |                                                                        |         |
-| mod_auth_basic.so          |                                                                        |         |
-| mod_auth_digest.so         |                                                                        |         |
-| mod_authn_anon.so          |                                                                        |         |
-| mod_authn_core.so          |                                                                        |         |
-| mod_authn_dbd.so           |                                                                        |         |
-| mod_authn_dbm.so           |                                                                        |         |
-| mod_authn_file.so          |                                                                        |         |
-| mod_authn_socache.so       |                                                                        |         |
-| mod_authz_core.so          |                                                                        |         |
-| mod_authz_dbd.so           |                                                                        |         |
-| mod_authz_dbm.so           |                                                                        |         |
-| mod_authz_groupfile.so     |                                                                        |         |
-| mod_authz_host.so          |                                                                        |         |
-| mod_authz_owner.so         |                                                                        |         |
-| mod_authz_user.so          |                                                                        |         |
-| mod_autoindex.so           |                                                                        |         |
-| mod_buffer.so              |                                                                        | x       |
-| mod_cache.so               |                                                                        |         |
-| mod_cache_disk.so          |                                                                        |         |
-| mod_cache_socache.so       |                                                                        |         |
-| mod_cgi.so                 |                                                                        | x       |
-| mod_cgid.so                |                                                                        | x       |
-| mod_charset_lite.so        |                                                                        | x       |
-| mod_data.so                |                                                                        |         |
-| mod_dav.so                 |                                                                        | x       |
-| mod_dav_fs.so              |                                                                        | x       |
-| mod_dav_lock.so            |                                                                        | x       |
-| mod_dbd.so                 |                                                                        |         |
-| mod_deflate.so             |                                                                        |         |
-| mod_dialup.so              |                                                                        | x       |
-| mod_dir.so                 |                                                                        |         |
-| mod_dumpio.so              |                                                                        | △      |
-| mod_echo.so                |                                                                        | △      |
-| mod_env.so                 |                                                                        |         |
-| mod_expires.so             |                                                                        |         |
-| mod_ext_filter.so          |                                                                        |         |
-| mod_file_cache.so          |                                                                        |         |
-| mod_filter.so              |                                                                        |         |
-| mod_headers.so             |                                                                        |         |
-| mod_heartbeat.so           |                                                                        | x       |
-| mod_heartmonitor.so        |                                                                        | x       |
-| mod_include.so             |                                                                        |         |
-| mod_info.so                |                                                                        | ◯      |
-| mod_lbmethod_bybusyness.so |                                                                        |         |
-| mod_lbmethod_byrequests.so |                                                                        |         |
-| mod_lbmethod_bytraffic.so  |                                                                        |         |
-| mod_lbmethod_heartbeat.so  |                                                                        |         |
-| mod_log_config.so          |                                                                        | ◯      |
-| mod_log_debug.so           |                                                                        | x       |
-| mod_log_forensic.so        |                                                                        | ？      |
-| mod_logio.so               |                                                                        | △      |
-| mod_lua.so                 |                                                                        | x       |
-| mod_macro.so               |                                                                        |         |
-| mod_mime.so                | MIME タイプ、言語、文字セット、エンコーディングの関連付けを提供する    | ◯      |
-| mod_mime_magic.so          |                                                                        |         |
-| mod_mpm_event.so           |                                                                        | ◯      |
-| mod_mpm_prefork.so         |                                                                        | △      |
-| mod_mpm_worker.so          |                                                                        | △      |
-| mod_negotiation.so         |                                                                        |         |
-| mod_proxy.so               |                                                                        | ◯      |
-| mod_proxy_ajp.so           |                                                                        |         |
-| mod_proxy_balancer.so      |                                                                        |         |
-| mod_proxy_connect.so       |                                                                        |         |
-| mod_proxy_express.so       |                                                                        |         |
-| mod_proxy_fcgi.so          |                                                                        |         |
-| mod_proxy_fdpass.so        |                                                                        |         |
-| mod_proxy_ftp.so           |                                                                        | x       |
-| mod_proxy_http.so          |                                                                        | ◯      |
-| mod_proxy_scgi.so          |                                                                        |         |
-| mod_proxy_wstunnel.so      |                                                                        |         |
-| mod_ratelimit.so           |                                                                        | x       |
-| mod_reflector.so           |                                                                        | x       |
-| mod_remoteip.so            |                                                                        |         |
-| mod_reqtimeout.so          |                                                                        |         |
-| mod_request.so             |                                                                        | x       |
-| mod_rewrite.so             |                                                                        | ◯      |
-| mod_sed.so                 |                                                                        | x       |
-| mod_setenvif.so            |                                                                        |         |
-| mod_slotmem_plain.so       |                                                                        |         |
-| mod_slotmem_shm.so         |                                                                        |         |
-| mod_socache_dbm.so         |                                                                        |         |
-| mod_socache_memcache.so    |                                                                        |         |
-| mod_socache_shmcb.so       |                                                                        |         |
-| mod_speling.so             |                                                                        | x       |
-| mod_status.so              | サーバの稼働状況と性能情報を提供する                                   | ◯      |
-| mod_substitute.so          |                                                                        |         |
-| mod_suexec.so              |                                                                        |         |
-| mod_systemd.so             |                                                                        | △      |
-| mod_unique_id.so           |                                                                        |         |
-| mod_unixd.so               |                                                                        |         |
-| mod_userdir.so             |                                                                        | x       |
-| mod_usertrack.so           |                                                                        | x       |
-| mod_version.so             |                                                                        |         |
-| mod_vhost_alias.so         |                                                                        |         |
-| mod_watchdog.so            | 他のモジュールに定期的にタスクを実行するインフラを提供するモジュール。 | x       |
-|----------------------------+------------------------------------------------------------------------+---------|
+|----------------------------+-----------+-------------------------------------------------------------------------------------+---------|
+| モジュールファイル         | 2.4新機能 | 説明                                                                                | 必須[1] |
+|----------------------------+-----------+-------------------------------------------------------------------------------------+---------|
+| mod_access_compat.so       |           |                                                                                     |         |
+| mod_actions.so             |           |                                                                                     |         |
+| mod_alias.so               |           |                                                                                     | ◯      |
+| mod_allowmethods.so        |           |                                                                                     |         |
+| mod_asis.so                |           |                                                                                     |         |
+| mod_auth_basic.so          |           |                                                                                     |         |
+| mod_auth_digest.so         |           |                                                                                     |         |
+| mod_authn_anon.so          |           |                                                                                     |         |
+| mod_authn_core.so          |           |                                                                                     |         |
+| mod_authn_dbd.so           |           |                                                                                     |         |
+| mod_authn_dbm.so           |           |                                                                                     |         |
+| mod_authn_file.so          |           |                                                                                     |         |
+| mod_authn_socache.so       |           |                                                                                     |         |
+| mod_authz_core.so          |           |                                                                                     |         |
+| mod_authz_dbd.so           |           |                                                                                     |         |
+| mod_authz_dbm.so           |           |                                                                                     |         |
+| mod_authz_groupfile.so     |           |                                                                                     |         |
+| mod_authz_host.so          |           |                                                                                     |         |
+| mod_authz_owner.so         |           |                                                                                     |         |
+| mod_authz_user.so          |           |                                                                                     |         |
+| mod_autoindex.so           |           |                                                                                     |         |
+| mod_buffer.so              | ○        | リクエスト、レスポンスの内容をapacheのメモリ内にバッファーリングする                | x       |
+| mod_cache.so               |           |                                                                                     |         |
+| mod_cache_disk.so          |           |                                                                                     |         |
+| mod_cache_socache.so       |           |                                                                                     |         |
+| mod_cgi.so                 |           | CGI スクリプトの実行                                                                | x       |
+| mod_cgid.so                |           | 外部 CGI デーモンを使った CGI スクリプトの実行                                      | x       |
+| mod_charset_lite.so        |           | 特定文字コード変換                                                                  | x       |
+| mod_data.so                | ○        | 画像ファイルを RFC2397 の data: 形式のURI に変換する機能                            | x       |
+| mod_dav.so                 |           | 分散オーサリングとバージョン管理 (WebDAV) 機能                                      | x       |
+| mod_dav_fs.so              |           | mod_dav のためのファイルシステムプロバイダ                                          | x       |
+| mod_dav_lock.so            |           | mod_dav 用の汎用ロックモジュール                                                    | x       |
+| mod_dbd.so                 |           | データベースコネクション管理モジュール                                              | x       |
+| mod_deflate.so             |           | クライアントへ送られる前にコンテンツを圧縮する                                      |         |
+| mod_dialup.so              | ○        | 静的コンテンツを限定されたレートで送信する                                          | x       |
+| mod_dir.so                 |           | 「最後のスラッシュ」のリダイレクトと、ディレクトリの インデックスファイルを扱う機能 |         |
+| mod_dumpio.so              |           | 望むようにすべての I/O をエラーログにダンプする                                     | △      |
+| mod_echo.so                |           | プロトコルモジュールの概要を示すための単純なエコーサーバ                            | △      |
+| mod_env.so                 |           |                                                                                     |         |
+| mod_expires.so             |           |                                                                                     |         |
+| mod_ext_filter.so          |           |                                                                                     |         |
+| mod_file_cache.so          |           |                                                                                     |         |
+| mod_filter.so              |           |                                                                                     |         |
+| mod_headers.so             |           |                                                                                     |         |
+| mod_heartbeat.so           |           |                                                                                     | x       |
+| mod_heartmonitor.so        |           |                                                                                     | x       |
+| mod_include.so             |           |                                                                                     |         |
+| mod_info.so                |           |                                                                                     | ◯      |
+| mod_lbmethod_bybusyness.so |           |                                                                                     |         |
+| mod_lbmethod_byrequests.so |           |                                                                                     |         |
+| mod_lbmethod_bytraffic.so  |           |                                                                                     |         |
+| mod_lbmethod_heartbeat.so  |           |                                                                                     |         |
+| mod_log_config.so          |           |                                                                                     | ◯      |
+| mod_log_debug.so           |           |                                                                                     | x       |
+| mod_log_forensic.so        |           |                                                                                     | ？      |
+| mod_logio.so               |           |                                                                                     | △      |
+| mod_lua.so                 |           |                                                                                     | x       |
+| mod_macro.so               |           |                                                                                     |         |
+| mod_mime.so                |           | MIME タイプ、言語、文字セット、エンコーディングの関連付けを提供する                 | ◯      |
+| mod_mime_magic.so          |           |                                                                                     |         |
+| mod_mpm_event.so           |           |                                                                                     | ◯      |
+| mod_mpm_prefork.so         |           |                                                                                     | △      |
+| mod_mpm_worker.so          |           |                                                                                     | △      |
+| mod_negotiation.so         |           |                                                                                     |         |
+| mod_proxy.so               |           |                                                                                     | ◯      |
+| mod_proxy_ajp.so           |           |                                                                                     |         |
+| mod_proxy_balancer.so      |           |                                                                                     |         |
+| mod_proxy_connect.so       |           |                                                                                     |         |
+| mod_proxy_express.so       |           |                                                                                     |         |
+| mod_proxy_fcgi.so          |           |                                                                                     |         |
+| mod_proxy_fdpass.so        |           |                                                                                     |         |
+| mod_proxy_ftp.so           |           |                                                                                     | x       |
+| mod_proxy_http.so          |           |                                                                                     | ◯      |
+| mod_proxy_scgi.so          |           |                                                                                     |         |
+| mod_proxy_wstunnel.so      |           |                                                                                     |         |
+| mod_ratelimit.so           |           |                                                                                     | x       |
+| mod_reflector.so           |           |                                                                                     | x       |
+| mod_remoteip.so            |           |                                                                                     |         |
+| mod_reqtimeout.so          |           |                                                                                     |         |
+| mod_request.so             |           |                                                                                     | x       |
+| mod_rewrite.so             |           |                                                                                     | ◯      |
+| mod_sed.so                 |           |                                                                                     | x       |
+| mod_setenvif.so            |           |                                                                                     |         |
+| mod_slotmem_plain.so       |           |                                                                                     |         |
+| mod_slotmem_shm.so         |           |                                                                                     |         |
+| mod_socache_dbm.so         |           |                                                                                     |         |
+| mod_socache_memcache.so    |           |                                                                                     |         |
+| mod_socache_shmcb.so       |           |                                                                                     |         |
+| mod_speling.so             |           |                                                                                     | x       |
+| mod_status.so              |           | サーバの稼働状況と性能情報を提供する                                                | ◯      |
+| mod_substitute.so          |           |                                                                                     |         |
+| mod_suexec.so              |           |                                                                                     |         |
+| mod_systemd.so             |           |                                                                                     | △      |
+| mod_unique_id.so           |           |                                                                                     |         |
+| mod_unixd.so               |           |                                                                                     |         |
+| mod_userdir.so             |           |                                                                                     | x       |
+| mod_usertrack.so           |           |                                                                                     | x       |
+| mod_version.so             |           |                                                                                     |         |
+| mod_vhost_alias.so         |           |                                                                                     |         |
+| mod_watchdog.so            |           | 他のモジュールに定期的にタスクを実行するインフラを提供するモジュール。              | x       |
+|----------------------------+-----------+-------------------------------------------------------------------------------------+---------|
 [1] Apache必要最小限構成で必須とするモジュール
 
 エラーページ一覧

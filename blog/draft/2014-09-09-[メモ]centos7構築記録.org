@@ -316,6 +316,21 @@ yum install audispd-plugins
 #+end_example
 
 
+* EPELの設定
+http://www.websec-room.com/2014/01/15/1535
+#+begin_example
+$ sudo rpm -Uvh http://mirror.pnl.gov/epel/7/x86_64/e/epel-release-7-2.noarch.rpm
+#+end_example
+
+/etc/yum.repos.d/epel.repo
+enabled=0
+
+
+yum -y install yum-plugin-priorities
+http://centossrv.com/rpmforge.shtml
+
+wget http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el7.rf.x86_64.rpm
+yum  update rpmforge-release
 
 * 参考情報
 http://www.unix-power.net/centos7/systemctl.html
