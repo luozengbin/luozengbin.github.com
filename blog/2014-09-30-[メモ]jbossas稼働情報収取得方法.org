@@ -10,10 +10,12 @@
 コマンドインタフェースから =JBossAS 7.x= アプリケーションサーバの稼働情報収取得方法に
 ついて検証してみた。主に以下の方法が存在する。
 
-- =jboss-cli.sh= コマンドでサーバの設定情報やRuntime情報を取得する。
-- remoting-jmx インタフェースでMBeanサーバから情報を取得する。
+1. =jboss-cli.sh= コマンドでサーバの設定情報やRuntime情報を取得する。
+2. RESTful Management Interfaces HTTP通信でJSON形式で情報ヲ取得する。
+3. remoting-jmx インタフェースでMBeanサーバから情報を取得する。
 
-２つ方式、取れる情報が次のようなイメージ、用途に応じて選ぶことになると思います。
+1と2の情報源が一緒です。取れる情報が次のようなイメージ、用途に応じて選ぶことになると思
+います。
 #+begin_example
 +-------------+
 | jboss-cli   |
@@ -35,7 +37,7 @@ $ jboss-cli.sh -c controller=<hostname:port>
 
 ** JVMスレッドプール情報取得
 #+begin_example
-[standalone@lab002:9999 /] /core-service=platform-mbean/type=threading:read-resource(recursive=true, include-runtime=true)
+[standalone@localhost:9999 /] /core-service=platform-mbean/type=threading:read-resource(recursive=true, include-runtime=true)
 {
     "outcome" => "success",
     "result" => {
@@ -60,13 +62,13 @@ $ jboss-cli.sh -c controller=<hostname:port>
         "object-name" => "java.lang:type=Threading"
     }
 }
-[standalone@lab002:9999 /]
+[standalone@localhost:9999 /]
 #+end_example
 
 ** JVMメモリ情報取得
 メモリ概要情報
 #+begin_example
-[standalone@lab002:9999 /] /core-service=platform-mbean/type=memory:read-resource(recursive=true, include-runtime=true)
+[standalone@localhost:9999 /] /core-service=platform-mbean/type=memory:read-resource(recursive=true, include-runtime=true)
 {
     "outcome" => "success",
     "result" => {
@@ -87,12 +89,12 @@ $ jboss-cli.sh -c controller=<hostname:port>
         "verbose" => false
     }
 }
-[standalone@lab002:9999 /] 
+[standalone@localhost:9999 /] 
 #+end_example
 
 メモリ詳細情報
 #+begin_example
-[standalone@lab002:9999 /] /core-service=platform-mbean/type=memory-pool:read-resource(recursive=true, include-runtime=true)
+[standalone@localhost:9999 /] /core-service=platform-mbean/type=memory-pool:read-resource(recursive=true, include-runtime=true)
 {
     "outcome" => "success",
     "result" => {"name" => {
@@ -264,12 +266,12 @@ $ jboss-cli.sh -c controller=<hostname:port>
         }
     }}
 }
-[standalone@lab002:9999 /] 
+[standalone@localhost:9999 /] 
 #+end_example
 
 GCの実行状況
 #+begin_example
-[standalone@lab002:9999 /] /core-service=platform-mbean/type=garbage-collector:read-resource(recursive=true, include-runtime=true)
+[standalone@localhost:9999 /] /core-service=platform-mbean/type=garbage-collector:read-resource(recursive=true, include-runtime=true)
 {
     "outcome" => "success",
     "result" => {"name" => {
@@ -299,7 +301,7 @@ GCの実行状況
         }
     }}
 }
-[standalone@lab002:9999 /]
+[standalone@localhost:9999 /]
 #+end_example
 ** データベース接続プール情報取得
 #+begin_example
@@ -328,7 +330,7 @@ GCの実行状況
 
 ** JDBCステートメントキャッシュ情報
 #+begin_example
-[standalone@lab002:9999 /] /subsystem=datasources/data-source=ExampleDS/statistics=jdbc:read-resource(include-runtime=true, recursive=true)
+[standalone@localhost:9999 /] /subsystem=datasources/data-source=ExampleDS/statistics=jdbc:read-resource(include-runtime=true, recursive=true)
 {
     "outcome" => "success",
     "result" => {
@@ -340,16 +342,16 @@ GCの実行状況
         "PreparedStatementCacheMissCount" => "0"
     }
 }
-[standalone@lab002:9999 /]
+[standalone@localhost:9999 /]
 #+end_example
 
 ** 起動オプション、システム属性などの確認
 #+begin_example
-[standalone@lab002:9999 /] /core-service=platform-mbean/type=runtime:read-resource(recursive=true, include-runtime=true)
+[standalone@localhost:9999 /] /core-service=platform-mbean/type=runtime:read-resource(recursive=true, include-runtime=true)
 {
     "outcome" => "success",
     "result" => {
-        "name" => "2147@lab002",
+        "name" => "2147@localhost",
         "vm-name" => "OpenJDK 64-Bit Server VM",
         "vm-vendor" => "Oracle Corporation",
         "vm-version" => "24.65-b04",
@@ -424,18 +426,18 @@ GCの実行状況
             "javax.xml.validation.SchemaFactory:http://www.w3.org/2001/XMLSchema" => "__redirected.__SchemaFactory",
             "javax.xml.xpath.XPathFactory:http://java.sun.com/jaxp/xpath/dom" => "__redirected.__XPathFactory",
             "jboss.home.dir" => "/opt/jboss-eap-6.2",
-            "jboss.host.name" => "lab002",
+            "jboss.host.name" => "localhost",
             "jboss.modules.dir" => "/opt/jboss-eap-6.2/modules",
             "jboss.modules.metrics" => "true",
             "jboss.modules.system.pkgs" => "org.jboss.byteman",
-            "jboss.node.name" => "lab002",
-            "jboss.qualified.host.name" => "lab002",
+            "jboss.node.name" => "localhost",
+            "jboss.qualified.host.name" => "localhost",
             "jboss.server.base.dir" => "/opt/jboss-eap-6.2/standalone",
             "jboss.server.config.dir" => "/opt/jboss-eap-6.2/standalone/configuration",
             "jboss.server.data.dir" => "/opt/jboss-eap-6.2/standalone/data",
             "jboss.server.deploy.dir" => "/opt/jboss-eap-6.2/standalone/data/content",
             "jboss.server.log.dir" => "/opt/jboss-eap-6.2/standalone/log",
-            "jboss.server.name" => "lab002",
+            "jboss.server.name" => "localhost",
             "jboss.server.persist.config" => "true",
             "jboss.server.temp.dir" => "/opt/jboss-eap-6.2/standalone/tmp",
             "line.separator" => "
@@ -474,12 +476,12 @@ GCの実行状況
         "object-name" => "java.lang:type=Runtime"
     }
 }
-[standalone@lab002:9999 /] 
+[standalone@localhost:9999 /] 
 #+end_example
 
 ** EJBスレッドプールの確認
 #+begin_example
-[standalone@lab002:9999 /] /subsystem=ejb3/thread-pool=default:read-resource(include-runtime=true, recursive=true)
+[standalone@localhost:9999 /] /subsystem=ejb3/thread-pool=default:read-resource(include-runtime=true, recursive=true)
 {
     "outcome" => "success",
     "result" => {
@@ -499,12 +501,12 @@ GCの実行状況
         "thread-factory" => undefined
     }
 }
-[standalone@lab002:9999 /] 
+[standalone@localhost:9999 /] 
 #+end_example
 
 ** トランザクション情報の確認
 #+begin_example
-[standalone@lab002:9999 /] /subsystem=transactions:read-resource(include-runtime=true, recursive=true)
+[standalone@localhost:9999 /] /subsystem=transactions:read-resource(include-runtime=true, recursive=true)
 {
     "outcome" => "success",
     "result" => {
@@ -548,7 +550,7 @@ GCの実行状況
         }}
     }
 }
-[standalone@lab002:9999 /] 
+[standalone@localhost:9999 /] 
 #+end_example
 
 
@@ -797,7 +799,34 @@ $>
 #+end_example
 
 
+* =RESTful= 方式
+#+begin_example
+$ curl --digest http://localhost:9990/management?json.pretty -u admin
+Enter host password for user 'admin':
+{
+    "management-major-version" : 1,
+    "management-micro-version" : 0,
+    "management-minor-version" : 5,
+    "name" : "localhost",
+    "namespaces" : [],
+    "product-name" : "EAP",
+    "product-version" : "6.2.4.GA",
+    "profile-name" : null,
+    "release-codename" : "Janus",
+    "release-version" : "7.3.4.Final-redhat-1",
+    "schema-locations" : [],
+    "core-service" : {
+        "management" : null,
+        "service-container" : null,
+        "module-loading" : null,
+        "server-environment" : null,
+        "platform-mbean" : null,
+        "patching" : null
+    },
+#+end_example
+
 * 参考情報
 - [[https://docs.jboss.org/author/display/AS71/CLI%2BRecipes][CLI Recipes]]
 - [[http://zorka.io/install/jboss7.html][JBoss 7.x and Wildfly 8.0 monitoring]]
 - [[http://www.denniskanbier.nl/blog/monitoring/jboss-eap-6-monitoring-using-remoting-jmx-and-zabbix/][JBoss EAP 6 monitoring using remoting-jmx and Zabbix]]
+- [[http://blog.akquinet.de/2014/09/18/jboss-eap-wildfly-management-interfaces-and-clients/][JBoss EAP / Wildfly Management Interfaces and Clients]]

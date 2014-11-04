@@ -1,0 +1,994 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Jboss-lci | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/jboss-lci/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2014-11-04T18:37:04+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]JBossAS稼働情報収取得方法]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-09-30-%5B%E3%83%A1%E3%83%A2%5Djbossas%E7%A8%BC%E5%83%8D%E6%83%85%E5%A0%B1%E5%8F%8E%E5%8F%96%E5%BE%97%E6%96%B9%E6%B3%95.html"/>
+    <updated>2014-09-30T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]jbossas稼働情報収取得方法</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. <code>jboss-cli.sh</code> 方式</a>
+<ul>
+<li><a href="#sec-1-1">1.1. JBoss管理インスタンスへ接続する</a></li>
+<li><a href="#sec-1-2">1.2. JVMスレッドプール情報取得</a></li>
+<li><a href="#sec-1-3">1.3. JVMメモリ情報取得</a></li>
+<li><a href="#sec-1-4">1.4. データベース接続プール情報取得</a></li>
+<li><a href="#sec-1-5">1.5. JDBCステートメントキャッシュ情報</a></li>
+<li><a href="#sec-1-6">1.6. 起動オプション、システム属性などの確認</a></li>
+<li><a href="#sec-1-7">1.7. EJBスレッドプールの確認</a></li>
+<li><a href="#sec-1-8">1.8. トランザクション情報の確認</a></li>
+</ul>
+</li>
+<li><a href="#sec-2">2. <code>remoting-jmx</code> 方式</a>
+<ul>
+<li><a href="#sec-2-1">2.1. JBossAS接続用のjmxterm起動スクリプト</a></li>
+<li><a href="#sec-2-2">2.2. jmxterm基本的な使い方</a></li>
+<li><a href="#sec-2-3">2.3. Web系ワーカスレッドの情報取得</a></li>
+<li><a href="#sec-2-4">2.4. リクエストプロセッサーの稼働状況</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. <code>RESTful</code> 方式</a></li>
+<li><a href="#sec-4">4. 参考情報</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+コマンドインタフェースから <code>JBossAS 7.x</code> アプリケーションサーバの稼働情報収取得方法に
+ついて検証してみた。主に以下の方法が存在する。
+</p>
+
+
+
+
+<ol class="org-ol">
+<li><code>jboss-cli.sh</code> コマンドでサーバの設定情報やRuntime情報を取得する。
+</li>
+<li>RESTful Management Interfaces HTTP通信でJSON形式で情報ヲ取得する。
+</li>
+<li>remoting-jmx インタフェースでMBeanサーバから情報を取得する。
+</li>
+</ol>
+
+
+
+
+<p>
+1と2の情報源が一緒です。取れる情報が次のようなイメージ、用途に応じて選ぶことになると思
+います。
+</p>
+
+
+<pre class="example">
++-------------+
+| jboss-cli   |
+|   +---------+-----+
+|   |         |     |
+|   |         | JMX |
+|   |         |     |
+|   +---------+-----+
++-------------+
+</pre>
+
+
+
+
+<p>
+<!-- more -->
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> <code>jboss-cli.sh</code> 方式</h2>
+<div class="outline-text-2" id="text-1">
+</div><div id="outline-container-sec-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> JBoss管理インスタンスへ接続する</h3>
+<div class="outline-text-3" id="text-1-1">
+<pre class="example">
+$ jboss-cli.sh -c controller=&lt;hostname:port&gt;
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> JVMスレッドプール情報取得</h3>
+<div class="outline-text-3" id="text-1-2">
+<pre class="example">
+[standalone@localhost:9999 /] /core-service=platform-mbean/type=threading:read-resource(recursive=true, include-runtime=true)
+{
+    "outcome" =&gt; "success",
+    "result" =&gt; {
+        "all-thread-ids" =&gt; [
+            137L,
+            .......
+            2L
+        ],
+        "thread-contention-monitoring-supported" =&gt; true,
+        "thread-cpu-time-supported" =&gt; true,
+        "current-thread-cpu-time-supported" =&gt; true,
+        "object-monitor-usage-supported" =&gt; true,
+        "synchronizer-usage-supported" =&gt; true,
+        "thread-contention-monitoring-enabled" =&gt; false,
+        "thread-cpu-time-enabled" =&gt; true,
+        "thread-count" =&gt; 36,
+        "peak-thread-count" =&gt; 78,
+        "total-started-thread-count" =&gt; 130L,
+        "daemon-thread-count" =&gt; 14,
+        "current-thread-cpu-time" =&gt; 5399864L,
+        "current-thread-user-time" =&gt; 0L,
+        "object-name" =&gt; "java.lang:type=Threading"
+    }
+}
+[standalone@localhost:9999 /]
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> JVMメモリ情報取得</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+メモリ概要情報
+</p>
+<pre class="example">
+[standalone@localhost:9999 /] /core-service=platform-mbean/type=memory:read-resource(recursive=true, include-runtime=true)
+{
+    "outcome" =&gt; "success",
+    "result" =&gt; {
+        "heap-memory-usage" =&gt; {
+            "init" =&gt; 1366294528L,
+            "used" =&gt; 253812744L,
+            "committed" =&gt; 1320878080L,
+            "max" =&gt; 1321795584L
+        },
+        "non-heap-memory-usage" =&gt; {
+            "init" =&gt; 24313856L,
+            "used" =&gt; 62715312L,
+            "committed" =&gt; 63045632L,
+            "max" =&gt; 318767104L
+        },
+        "object-name" =&gt; "java.lang:type=Memory",
+        "object-pending-finalization-count" =&gt; 0,
+        "verbose" =&gt; false
+    }
+}
+[standalone@localhost:9999 /]
+</pre>
+
+<p>
+メモリ詳細情報
+</p>
+<pre class="example">
+[standalone@localhost:9999 /] /core-service=platform-mbean/type=memory-pool:read-resource(recursive=true, include-runtime=true)
+{
+    "outcome" =&gt; "success",
+    "result" =&gt; {"name" =&gt; {
+        "Eden_Space" =&gt; {
+            "name" =&gt; "Eden_Space",
+            "type" =&gt; "HEAP",
+            "valid" =&gt; true,
+            "memory-manager-names" =&gt; [
+                "MarkSweepCompact",
+                "Copy"
+            ],
+            "usage-threshold-supported" =&gt; false,
+            "collection-usage-threshold-supported" =&gt; true,
+            "usage-threshold" =&gt; undefined,
+            "collection-usage-threshold" =&gt; 0L,
+            "usage" =&gt; {
+                "init" =&gt; 364445696L,
+                "used" =&gt; 227453064L,
+                "committed" =&gt; 364445696L,
+                "max" =&gt; 364642304L
+            },
+            "peak-usage" =&gt; {
+                "init" =&gt; 364445696L,
+                "used" =&gt; 364445696L,
+                "committed" =&gt; 364642304L,
+                "max" =&gt; 364642304L
+            },
+            "usage-threshold-exceeded" =&gt; undefined,
+            "usage-threshold-count" =&gt; undefined,
+            "collection-usage-threshold-exceeded" =&gt; false,
+            "collection-usage-threshold-count" =&gt; 0L,
+            "collection-usage" =&gt; {
+                "init" =&gt; 364445696L,
+                "used" =&gt; 0L,
+                "committed" =&gt; 364445696L,
+                "max" =&gt; 364642304L
+            },
+            "object-name" =&gt; "java.lang:type=MemoryPool,name=\"Eden Space\""
+        },
+        "Survivor_Space" =&gt; {
+            "name" =&gt; "Survivor_Space",
+            "type" =&gt; "HEAP",
+            "valid" =&gt; true,
+            "memory-manager-names" =&gt; [
+                "MarkSweepCompact",
+                "Copy"
+            ],
+            "usage-threshold-supported" =&gt; false,
+            "collection-usage-threshold-supported" =&gt; true,
+            "usage-threshold" =&gt; undefined,
+            "collection-usage-threshold" =&gt; 0L,
+            "usage" =&gt; {
+                "init" =&gt; 45481984L,
+                "used" =&gt; 970896L,
+                "committed" =&gt; 45547520L,
+                "max" =&gt; 45547520L
+            },
+            "peak-usage" =&gt; {
+                "init" =&gt; 45481984L,
+                "used" =&gt; 24101280L,
+                "committed" =&gt; 45547520L,
+                "max" =&gt; 45547520L
+            },
+            "usage-threshold-exceeded" =&gt; undefined,
+            "usage-threshold-count" =&gt; undefined,
+            "collection-usage-threshold-exceeded" =&gt; false,
+            "collection-usage-threshold-count" =&gt; 0L,
+            "collection-usage" =&gt; {
+                "init" =&gt; 45481984L,
+                "used" =&gt; 970896L,
+                "committed" =&gt; 45547520L,
+                "max" =&gt; 45547520L
+            },
+            "object-name" =&gt; "java.lang:type=MemoryPool,name=\"Survivor Space\""
+        },
+        "Perm_Gen" =&gt; {
+            "name" =&gt; "Perm_Gen",
+            "type" =&gt; "NON_HEAP",
+            "valid" =&gt; true,
+            "memory-manager-names" =&gt; ["MarkSweepCompact"],
+            "usage-threshold-supported" =&gt; true,
+            "collection-usage-threshold-supported" =&gt; true,
+            "usage-threshold" =&gt; 0L,
+            "collection-usage-threshold" =&gt; 0L,
+            "usage" =&gt; {
+                "init" =&gt; 21757952L,
+                "used" =&gt; 57597424L,
+                "committed" =&gt; 57802752L,
+                "max" =&gt; 268435456L
+            },
+            "peak-usage" =&gt; {
+                "init" =&gt; 21757952L,
+                "used" =&gt; 57597424L,
+                "committed" =&gt; 57802752L,
+                "max" =&gt; 268435456L
+            },
+            "usage-threshold-exceeded" =&gt; false,
+            "usage-threshold-count" =&gt; 0L,
+            "collection-usage-threshold-exceeded" =&gt; false,
+            "collection-usage-threshold-count" =&gt; 0L,
+            "collection-usage" =&gt; {
+                "init" =&gt; 21757952L,
+                "used" =&gt; 55181008L,
+                "committed" =&gt; 55181312L,
+                "max" =&gt; 268435456L
+            },
+            "object-name" =&gt; "java.lang:type=MemoryPool,name=\"Perm Gen\""
+        },
+        "Code_Cache" =&gt; {
+            "name" =&gt; "Code_Cache",
+            "type" =&gt; "NON_HEAP",
+            "valid" =&gt; true,
+            "memory-manager-names" =&gt; ["CodeCacheManager"],
+            "usage-threshold-supported" =&gt; true,
+            "collection-usage-threshold-supported" =&gt; false,
+            "usage-threshold" =&gt; 0L,
+            "collection-usage-threshold" =&gt; undefined,
+            "usage" =&gt; {
+                "init" =&gt; 2555904L,
+                "used" =&gt; 5117888L,
+                "committed" =&gt; 5242880L,
+                "max" =&gt; 50331648L
+            },
+            "peak-usage" =&gt; {
+                "init" =&gt; 2555904L,
+                "used" =&gt; 5123264L,
+                "committed" =&gt; 5242880L,
+                "max" =&gt; 50331648L
+            },
+            "usage-threshold-exceeded" =&gt; false,
+            "usage-threshold-count" =&gt; 0L,
+            "collection-usage-threshold-exceeded" =&gt; undefined,
+            "collection-usage-threshold-count" =&gt; undefined,
+            "collection-usage" =&gt; undefined,
+            "object-name" =&gt; "java.lang:type=MemoryPool,name=\"Code Cache\""
+        },
+        "Tenured_Gen" =&gt; {
+            "name" =&gt; "Tenured_Gen",
+            "type" =&gt; "HEAP",
+            "valid" =&gt; true,
+            "memory-manager-names" =&gt; ["MarkSweepCompact"],
+            "usage-threshold-supported" =&gt; true,
+            "collection-usage-threshold-supported" =&gt; true,
+            "usage-threshold" =&gt; 0L,
+            "collection-usage-threshold" =&gt; 0L,
+            "usage" =&gt; {
+                "init" =&gt; 910884864L,
+                "used" =&gt; 36957616L,
+                "committed" =&gt; 910884864L,
+                "max" =&gt; 911605760L
+            },
+            "peak-usage" =&gt; {
+                "init" =&gt; 910884864L,
+                "used" =&gt; 36957616L,
+                "committed" =&gt; 910884864L,
+                "max" =&gt; 911605760L
+            },
+            "usage-threshold-exceeded" =&gt; false,
+            "usage-threshold-count" =&gt; 0L,
+            "collection-usage-threshold-exceeded" =&gt; false,
+            "collection-usage-threshold-count" =&gt; 0L,
+            "collection-usage" =&gt; {
+                "init" =&gt; 910884864L,
+                "used" =&gt; 36957616L,
+                "committed" =&gt; 910884864L,
+                "max" =&gt; 911605760L
+            },
+            "object-name" =&gt; "java.lang:type=MemoryPool,name=\"Tenured Gen\""
+        }
+    }}
+}
+[standalone@localhost:9999 /]
+</pre>
+
+<p>
+GCの実行状況
+</p>
+<pre class="example">
+[standalone@localhost:9999 /] /core-service=platform-mbean/type=garbage-collector:read-resource(recursive=true, include-runtime=true)
+{
+    "outcome" =&gt; "success",
+    "result" =&gt; {"name" =&gt; {
+        "MarkSweepCompact" =&gt; {
+            "collection-count" =&gt; 6L,
+            "collection-time" =&gt; 1183L,
+            "memory-pool-names" =&gt; [
+                "Eden_Space",
+                "Survivor_Space",
+                "Tenured_Gen",
+                "Perm_Gen"
+            ],
+            "name" =&gt; "MarkSweepCompact",
+            "object-name" =&gt; "java.lang:type=GarbageCollector,name=MarkSweepCompact",
+            "valid" =&gt; true
+        },
+        "Copy" =&gt; {
+            "collection-count" =&gt; 13L,
+            "collection-time" =&gt; 3003L,
+            "memory-pool-names" =&gt; [
+                "Eden_Space",
+                "Survivor_Space"
+            ],
+            "name" =&gt; "Copy",
+            "object-name" =&gt; "java.lang:type=GarbageCollector,name=Copy",
+            "valid" =&gt; true
+        }
+    }}
+}
+[standalone@localhost:9999 /]
+</pre>
+</div>
+</div>
+<div id="outline-container-sec-1-4" class="outline-3">
+<h3 id="sec-1-4"><span class="section-number-3">1.4</span> データベース接続プール情報取得</h3>
+<div class="outline-text-3" id="text-1-4">
+<pre class="example">
+[standalone@localhost:9999 /] /subsystem=datasources/data-source=ExampleDS/statistics=pool:read-resource(include-runtime=true, recursive=true)
+{
+    "outcome" =&gt; "success",
+    "result" =&gt; {
+        "ActiveCount" =&gt; "0",
+        "AvailableCount" =&gt; "20",
+        "AverageBlockingTime" =&gt; "0",
+        "AverageCreationTime" =&gt; "0",
+        "CreatedCount" =&gt; "0",
+        "DestroyedCount" =&gt; "0",
+        "InUseCount" =&gt; "0",
+        "MaxCreationTime" =&gt; "0",
+        "MaxUsedCount" =&gt; "0",
+        "MaxWaitCount" =&gt; "0",
+        "MaxWaitTime" =&gt; "0",
+        "TimedOut" =&gt; "0",
+        "TotalBlockingTime" =&gt; "0",
+        "TotalCreationTime" =&gt; "0"
+    }
+}
+[standalone@localhost:9999 /]
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-5" class="outline-3">
+<h3 id="sec-1-5"><span class="section-number-3">1.5</span> JDBCステートメントキャッシュ情報</h3>
+<div class="outline-text-3" id="text-1-5">
+<pre class="example">
+[standalone@localhost:9999 /] /subsystem=datasources/data-source=ExampleDS/statistics=jdbc:read-resource(include-runtime=true, recursive=true)
+{
+    "outcome" =&gt; "success",
+    "result" =&gt; {
+        "PreparedStatementCacheAccessCount" =&gt; "0",
+        "PreparedStatementCacheAddCount" =&gt; "0",
+        "PreparedStatementCacheCurrentSize" =&gt; "0",
+        "PreparedStatementCacheDeleteCount" =&gt; "0",
+        "PreparedStatementCacheHitCount" =&gt; "0",
+        "PreparedStatementCacheMissCount" =&gt; "0"
+    }
+}
+[standalone@localhost:9999 /]
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-6" class="outline-3">
+<h3 id="sec-1-6"><span class="section-number-3">1.6</span> 起動オプション、システム属性などの確認</h3>
+<div class="outline-text-3" id="text-1-6">
+<pre class="example">
+[standalone@localhost:9999 /] /core-service=platform-mbean/type=runtime:read-resource(recursive=true, include-runtime=true)
+{
+    "outcome" =&gt; "success",
+    "result" =&gt; {
+        "name" =&gt; "2147@localhost",
+        "vm-name" =&gt; "OpenJDK 64-Bit Server VM",
+        "vm-vendor" =&gt; "Oracle Corporation",
+        "vm-version" =&gt; "24.65-b04",
+        "spec-name" =&gt; "Java Virtual Machine Specification",
+        "spec-vendor" =&gt; "Oracle Corporation",
+        "spec-version" =&gt; "1.7",
+        "management-spec-version" =&gt; "1.2",
+        "class-path" =&gt; "/opt/jboss-eap-6.2/jboss-modules.jar",
+        "library-path" =&gt; "/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib",
+        "boot-class-path-supported" =&gt; true,
+        "boot-class-path" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/resources.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/rt.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jsse.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jce.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/charsets.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/rhino.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jfr.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/classes",
+        "input-arguments" =&gt; [
+            "-D[Standalone]",
+            "-XX:+UseCompressedOops",
+            "-Xms1303m",
+            "-Xmx1303m",
+            "-XX:MaxPermSize=256m",
+            "-Djava.net.preferIPv4Stack=true",
+            "-Djboss.modules.system.pkgs=org.jboss.byteman",
+            "-Djava.awt.headless=true",
+            "-Djboss.modules.metrics=true",
+            "-Dorg.apache.tomcat.util.ENABLE_MODELER=true",
+            "-Dorg.jboss.boot.log.file=/opt/jboss-eap-6.2/standalone/log/server.log",
+            "-Dlogging.configuration=file:/opt/jboss-eap-6.2/standalone/configuration/logging.properties"
+        ],
+        "start-time" =&gt; 1412040330424L,
+        "system-properties" =&gt; {
+            "[Standalone]" =&gt; "",
+            "awt.toolkit" =&gt; "sun.awt.X11.XToolkit",
+            "catalina.home" =&gt; "/opt/jboss-eap-6.2/standalone/tmp",
+            "file.encoding" =&gt; "UTF-8",
+            "file.encoding.pkg" =&gt; "sun.io",
+            "file.separator" =&gt; "/",
+            "java.awt.graphicsenv" =&gt; "sun.awt.X11GraphicsEnvironment",
+            "java.awt.headless" =&gt; "true",
+            "java.awt.printerjob" =&gt; "sun.print.PSPrinterJob",
+            "java.class.path" =&gt; "/opt/jboss-eap-6.2/jboss-modules.jar",
+            "java.class.version" =&gt; "51.0",
+            "java.endorsed.dirs" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/endorsed",
+            "java.ext.dirs" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/ext:/usr/java/packages/lib/ext",
+            "java.home" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre",
+            "java.io.tmpdir" =&gt; "/tmp",
+            "java.library.path" =&gt; "/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib",
+            "java.naming.factory.url.pkgs" =&gt; "org.jboss.as.naming.interfaces:org.jboss.ejb.client.naming",
+            "java.net.preferIPv4Stack" =&gt; "true",
+            "java.protocol.handler.pkgs" =&gt; "org.jboss.net.protocol|org.jboss.vfs.protocol",
+            "java.runtime.name" =&gt; "OpenJDK Runtime Environment",
+            "java.runtime.version" =&gt; "1.7.0_65-mockbuild_2014_07_16_06_06-b00",
+            "java.specification.name" =&gt; "Java Platform API Specification",
+            "java.specification.vendor" =&gt; "Oracle Corporation",
+            "java.specification.version" =&gt; "1.7",
+            "java.util.logging.manager" =&gt; "org.jboss.logmanager.LogManager",
+            "java.vendor" =&gt; "Oracle Corporation",
+            "java.vendor.url" =&gt; "http://java.oracle.com/",
+            "java.vendor.url.bug" =&gt; "http://bugreport.sun.com/bugreport/",
+            "java.version" =&gt; "1.7.0_65",
+            "java.vm.info" =&gt; "mixed mode",
+            "java.vm.name" =&gt; "OpenJDK 64-Bit Server VM",
+            "java.vm.specification.name" =&gt; "Java Virtual Machine Specification",
+            "java.vm.specification.vendor" =&gt; "Oracle Corporation",
+            "java.vm.specification.version" =&gt; "1.7",
+            "java.vm.vendor" =&gt; "Oracle Corporation",
+            "java.vm.version" =&gt; "24.65-b04",
+            "javax.management.builder.initial" =&gt; "org.jboss.as.jmx.PluggableMBeanServerBuilder",
+            "javax.xml.datatype.DatatypeFactory" =&gt; "__redirected.__DatatypeFactory",
+            "javax.xml.parsers.DocumentBuilderFactory" =&gt; "__redirected.__DocumentBuilderFactory",
+            "javax.xml.parsers.SAXParserFactory" =&gt; "__redirected.__SAXParserFactory",
+            "javax.xml.stream.XMLEventFactory" =&gt; "__redirected.__XMLEventFactory",
+            "javax.xml.stream.XMLInputFactory" =&gt; "__redirected.__XMLInputFactory",
+            "javax.xml.stream.XMLOutputFactory" =&gt; "__redirected.__XMLOutputFactory",
+            "javax.xml.transform.TransformerFactory" =&gt; "__redirected.__TransformerFactory",
+            "javax.xml.validation.SchemaFactory:http://www.w3.org/2001/XMLSchema" =&gt; "__redirected.__SchemaFactory",
+            "javax.xml.xpath.XPathFactory:http://java.sun.com/jaxp/xpath/dom" =&gt; "__redirected.__XPathFactory",
+            "jboss.home.dir" =&gt; "/opt/jboss-eap-6.2",
+            "jboss.host.name" =&gt; "localhost",
+            "jboss.modules.dir" =&gt; "/opt/jboss-eap-6.2/modules",
+            "jboss.modules.metrics" =&gt; "true",
+            "jboss.modules.system.pkgs" =&gt; "org.jboss.byteman",
+            "jboss.node.name" =&gt; "localhost",
+            "jboss.qualified.host.name" =&gt; "localhost",
+            "jboss.server.base.dir" =&gt; "/opt/jboss-eap-6.2/standalone",
+            "jboss.server.config.dir" =&gt; "/opt/jboss-eap-6.2/standalone/configuration",
+            "jboss.server.data.dir" =&gt; "/opt/jboss-eap-6.2/standalone/data",
+            "jboss.server.deploy.dir" =&gt; "/opt/jboss-eap-6.2/standalone/data/content",
+            "jboss.server.log.dir" =&gt; "/opt/jboss-eap-6.2/standalone/log",
+            "jboss.server.name" =&gt; "localhost",
+            "jboss.server.persist.config" =&gt; "true",
+            "jboss.server.temp.dir" =&gt; "/opt/jboss-eap-6.2/standalone/tmp",
+            "line.separator" =&gt; "
+",
+            "logging.configuration" =&gt; "file:/opt/jboss-eap-6.2/standalone/configuration/logging.properties",
+            "module.path" =&gt; "/opt/jboss-eap-6.2/modules",
+            "org.apache.tomcat.util.ENABLE_MODELER" =&gt; "true",
+            "org.apache.xml.security.ignoreLineBreaks" =&gt; "true",
+            "org.jboss.boot.log.file" =&gt; "/opt/jboss-eap-6.2/standalone/log/server.log",
+            "org.jboss.resolver.warning" =&gt; "true",
+            "org.jboss.security.context.ThreadLocal" =&gt; "true",
+            "org.xml.sax.driver" =&gt; "__redirected.__XMLReaderFactory",
+            "os.arch" =&gt; "amd64",
+            "os.name" =&gt; "Linux",
+            "os.version" =&gt; "2.6.32-358.el6.x86_64",
+            "path.separator" =&gt; ":",
+            "sun.arch.data.model" =&gt; "64",
+            "sun.boot.class.path" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/resources.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/rt.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jsse.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jce.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/charsets.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/rhino.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jfr.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/classes",
+            "sun.boot.library.path" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/amd64",
+            "sun.cpu.endian" =&gt; "little",
+            "sun.cpu.isalist" =&gt; "",
+            "sun.io.unicode.encoding" =&gt; "UnicodeLittle",
+            "sun.java.command" =&gt; "/opt/jboss-eap-6.2/jboss-modules.jar -mp /opt/jboss-eap-6.2/modules -jaxpmodule javax.xml.jaxp-provider org.jboss.as.standalone -Djboss.home.dir=/opt/jboss-eap-6.2 -Djboss.server.base.dir=/opt/jboss-eap-6.2/standalone",
+            "sun.java.launcher" =&gt; "SUN_STANDARD",
+            "sun.jnu.encoding" =&gt; "UTF-8",
+            "sun.management.compiler" =&gt; "HotSpot 64-Bit Tiered Compilers",
+            "sun.os.patch.level" =&gt; "unknown",
+            "user.country" =&gt; "JP",
+            "user.dir" =&gt; "/root",
+            "user.home" =&gt; "/root",
+            "user.language" =&gt; "ja",
+            "user.name" =&gt; "root",
+            "user.timezone" =&gt; "Asia/Tokyo"
+        },
+        "uptime" =&gt; 11324677L,
+        "object-name" =&gt; "java.lang:type=Runtime"
+    }
+}
+[standalone@localhost:9999 /]
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-7" class="outline-3">
+<h3 id="sec-1-7"><span class="section-number-3">1.7</span> EJBスレッドプールの確認</h3>
+<div class="outline-text-3" id="text-1-7">
+<pre class="example">
+[standalone@localhost:9999 /] /subsystem=ejb3/thread-pool=default:read-resource(include-runtime=true, recursive=true)
+{
+    "outcome" =&gt; "success",
+    "result" =&gt; {
+        "active-count" =&gt; 0,
+        "completed-task-count" =&gt; 0L,
+        "current-thread-count" =&gt; 0,
+        "keepalive-time" =&gt; {
+            "time" =&gt; 100L,
+            "unit" =&gt; "MILLISECONDS"
+        },
+        "largest-thread-count" =&gt; 0,
+        "max-threads" =&gt; 10,
+        "name" =&gt; "default",
+        "queue-size" =&gt; 0,
+        "rejected-count" =&gt; 0,
+        "task-count" =&gt; 0L,
+        "thread-factory" =&gt; undefined
+    }
+}
+[standalone@localhost:9999 /]
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-1-8" class="outline-3">
+<h3 id="sec-1-8"><span class="section-number-3">1.8</span> トランザクション情報の確認</h3>
+<div class="outline-text-3" id="text-1-8">
+<pre class="example">
+[standalone@localhost:9999 /] /subsystem=transactions:read-resource(include-runtime=true, recursive=true)
+{
+    "outcome" =&gt; "success",
+    "result" =&gt; {
+        "default-timeout" =&gt; 300,
+        "enable-statistics" =&gt; false,
+        "enable-tsm-status" =&gt; false,
+        "hornetq-store-enable-async-io" =&gt; false,
+        "jdbc-action-store-drop-table" =&gt; false,
+        "jdbc-action-store-table-prefix" =&gt; undefined,
+        "jdbc-communication-store-drop-table" =&gt; false,
+        "jdbc-communication-store-table-prefix" =&gt; undefined,
+        "jdbc-state-store-drop-table" =&gt; false,
+        "jdbc-state-store-table-prefix" =&gt; undefined,
+        "jdbc-store-datasource" =&gt; undefined,
+        "jts" =&gt; false,
+        "node-identifier" =&gt; "1",
+        "number-of-aborted-transactions" =&gt; 0L,
+        "number-of-application-rollbacks" =&gt; 0L,
+        "number-of-committed-transactions" =&gt; 0L,
+        "number-of-heuristics" =&gt; 0L,
+        "number-of-inflight-transactions" =&gt; 0L,
+        "number-of-nested-transactions" =&gt; 0L,
+        "number-of-resource-rollbacks" =&gt; 0L,
+        "number-of-timed-out-transactions" =&gt; 0L,
+        "number-of-transactions" =&gt; 0L,
+        "object-store-path" =&gt; "tx-object-store",
+        "object-store-relative-to" =&gt; "jboss.server.data.dir",
+        "path" =&gt; "var",
+        "process-id-socket-binding" =&gt; undefined,
+        "process-id-socket-max-ports" =&gt; 10,
+        "process-id-uuid" =&gt; true,
+        "recovery-listener" =&gt; false,
+        "relative-to" =&gt; "jboss.server.data.dir",
+        "socket-binding" =&gt; "txn-recovery-environment",
+        "status-socket-binding" =&gt; "txn-status-manager",
+        "use-hornetq-store" =&gt; false,
+        "use-jdbc-store" =&gt; false,
+        "log-store" =&gt; {"log-store" =&gt; {
+            "type" =&gt; "default",
+            "transactions" =&gt; undefined
+        }}
+    }
+}
+[standalone@localhost:9999 /]
+</pre>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> <code>remoting-jmx</code> 方式</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+JBossAS 7.x のJMX情報を参照するには <code>$JBOSS_HOME/bin/jconsole.sh</code> のGUIツールを利用す
+るのが一般的だと思います。コマンドから参照するにはJDKのJMX APIを用いて自前のコードで
+頑張るか。 <code>jmxterm</code> といゆツールを使うかです。ここでは後者について検証しました。
+<code>jmxterm</code> でlocalhostのJBossASのJMX情報参照はOKで、リモートからは認証処理で失敗した。
+</p>
+</div>
+
+<div id="outline-container-sec-2-1" class="outline-3">
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> JBossAS接続用のjmxterm起動スクリプト</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+<code>jmxterm</code> は <a href="http://wiki.cyclopsgroup.org/jmxterm">ここ</a> からダウンロードできる。
+</p>
+<pre class="example">
+#!/bin/sh
+
+EAP_HOME=/opt/jboss-eap-6.2
+HOST_URL=service:jmx:remoting-jmx://localhost:9999
+
+java -classpath `dirname $0`/jmxterm-1.0-alpha-4-uber.jar:$EAP_HOME/bin/client/jboss-cli-client.jar org.codehaus.classworlds.uberjar.boot.Bootstrapper -l "$HOST_URL"
+</pre>
+
+<p>
+起動時のイメージ
+</p>
+<pre class="example">
+# ./jmxterm.sh
+9 30, 2014 12:42:18 午後 org.xnio.Xnio &lt;clinit&gt;
+INFO: XNIO Version 3.0.7.GA-redhat-1
+9 30, 2014 12:42:18 午後 org.xnio.nio.NioXnio &lt;clinit&gt;
+INFO: XNIO NIO Implementation Version 3.0.7.GA-redhat-1
+9 30, 2014 12:42:18 午後 org.jboss.remoting3.EndpointImpl &lt;clinit&gt;
+INFO: JBoss Remoting version 3.2.18.GA-redhat-1
+Welcome to JMX terminal. Type "help" for available commands.
+$&gt;
+</pre>
+
+<p>
+リモートから接続する場合、認証でエラー
+</p>
+<pre class="example">
+$ ./jmxterm.sh
+9 30, 2014 12:43:31 午後 org.xnio.Xnio &lt;clinit&gt;
+INFO: XNIO Version 3.0.7.GA-redhat-1
+9 30, 2014 12:43:31 午後 org.xnio.nio.NioXnio &lt;clinit&gt;
+INFO: XNIO NIO Implementation Version 3.0.7.GA-redhat-1
+9 30, 2014 12:43:31 午後 org.jboss.remoting3.EndpointImpl &lt;clinit&gt;
+INFO: JBoss Remoting version 3.2.18.GA-redhat-1
+9 30, 2014 12:43:34 午後 org.jboss.remoting3.remote.RemoteConnection handleException
+ERROR: JBREM000200: Remote connection failed: javax.security.sasl.SaslException: Authentication failed: all available authentication mechanisms failed
+---------------------------------------------------
+constituent[0]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/jmxterm.jar
+constituent[1]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-beanutils.jar
+constituent[2]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-cli.jar
+constituent[3]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-collections.jar
+constituent[4]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-lang.jar
+constituent[5]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-logging.jar
+constituent[6]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-io.jar
+constituent[7]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/jcli.jar
+constituent[8]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/jline.jar
+---------------------------------------------------
+javax.security.sasl.SaslException: Authentication failed: all available authentication mechanisms failed
+    at org.jboss.remoting3.remote.ClientConnectionOpenListener$Capabilities.handleEvent(ClientConnectionOpenListener.java:367)
+    at org.jboss.remoting3.remote.ClientConnectionOpenListener$Capabilities.handleEvent(ClientConnectionOpenListener.java:229)
+    at org.xnio.ChannelListeners.invokeChannelListener(ChannelListeners.java:72)
+    at org.xnio.channels.TranslatingSuspendableChannel.handleReadable(TranslatingSuspendableChannel.java:189)
+    at org.xnio.channels.TranslatingSuspendableChannel$1.handleEvent(TranslatingSuspendableChannel.java:103)
+    at org.xnio.ChannelListeners.invokeChannelListener(ChannelListeners.java:72)
+    at org.xnio.channels.TranslatingSuspendableChannel.handleReadable(TranslatingSuspendableChannel.java:189)
+    at org.xnio.ssl.JsseConnectedSslStreamChannel.handleReadable(JsseConnectedSslStreamChannel.java:180)
+    at org.xnio.channels.TranslatingSuspendableChannel$1.handleEvent(TranslatingSuspendableChannel.java:103)
+    at org.xnio.ChannelListeners.invokeChannelListener(ChannelListeners.java:72)
+    at org.xnio.nio.NioHandle.run(NioHandle.java:90)
+    at org.xnio.nio.WorkerThread.run(WorkerThread.java:187)
+    at ...asynchronous invocation...(Unknown Source)
+    at org.jboss.remoting3.EndpointImpl.doConnect(EndpointImpl.java:270)
+    at org.jboss.remoting3.EndpointImpl.doConnect(EndpointImpl.java:251)
+    at org.jboss.remoting3.EndpointImpl.connect(EndpointImpl.java:349)
+    at org.jboss.remoting3.EndpointImpl.connect(EndpointImpl.java:333)
+    at org.jboss.remotingjmx.RemotingConnector.internalRemotingConnect(RemotingConnector.java:227)
+    at org.jboss.remotingjmx.RemotingConnector.internalConnect(RemotingConnector.java:148)
+    at org.jboss.remotingjmx.RemotingConnector.connect(RemotingConnector.java:99)
+    at javax.management.remote.JMXConnectorFactory.connect(JMXConnectorFactory.java:270)
+    at org.cyclopsgroup.jmxterm.cc.SessionImpl.doConnect(SessionImpl.java:85)
+    at org.cyclopsgroup.jmxterm.cc.SessionImpl.connect(SessionImpl.java:49)
+    at org.cyclopsgroup.jmxterm.cc.CommandCenter.connect(CommandCenter.java:110)
+    at org.cyclopsgroup.jmxterm.boot.CliMain.execute(CliMain.java:139)
+    at org.cyclopsgroup.jmxterm.boot.CliMain.main(CliMain.java:48)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke(Method.java:483)
+    at org.codehaus.classworlds.Launcher.launchStandard(Launcher.java:353)
+    at org.codehaus.classworlds.Launcher.launch(Launcher.java:264)
+    at org.codehaus.classworlds.Launcher.mainWithExitCode(Launcher.java:430)
+    at org.codehaus.classworlds.Launcher.main(Launcher.java:375)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke(Method.java:483)
+    at org.codehaus.classworlds.uberjar.boot.Bootstrapper.bootstrap(Bootstrapper.java:209)
+    at org.codehaus.classworlds.uberjar.boot.Bootstrapper.main(Bootstrapper.java:116)
+$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-2-2" class="outline-3">
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> jmxterm基本的な使い方</h3>
+<div class="outline-text-3" id="text-2-2">
+<pre class="example">
+★ドメインリストの取得
+$&gt;domains
+#following domains are available
+Catalina
+JMImplementation
+com.sun.management
+java.lang
+java.nio
+java.util.logging
+jboss.as
+jboss.as.expr
+jboss.jta
+jboss.modules
+jboss.msc
+jboss.remoting.handler
+jboss.web
+jboss.ws
+
+★特定ドメインのbeanリストの取得
+$&gt;beans -d jboss.web
+#domain = jboss.web:
+jboss.web:J2EEApplication=none,J2EEServer=none,WebModule=//default-host/,j2eeType=Servlet,name=WelcomeContextConsoleServlet
+jboss.web:J2EEApplication=none,J2EEServer=none,j2eeType=WebModule,name=//default-host/
+jboss.web:J2EEApplication=none,J2EEServer=none,j2eeType=WebModule,name=//default-host/sss
+jboss.web:address="/0.0.0.0",port=8080,type=Connector
+jboss.web:address="/0.0.0.0",port=8080,type=ProtocolHandler
+jboss.web:host=default-host,name=ErrorReportValve,type=Valve
+jboss.web:host=default-host,name=SecurityContextAssociationValve,path=/sss,type=Valve
+jboss.web:host=default-host,name=StandardContextValve,path=/,type=Valve
+jboss.web:host=default-host,name=StandardContextValve,path=/sss,type=Valve
+jboss.web:host=default-host,name=StandardHostValve,type=Valve
+jboss.web:host=default-host,path=/,type=Cache
+jboss.web:host=default-host,path=/,type=Manager
+jboss.web:host=default-host,path=/sss,realmPath=/realm0,type=Realm
+jboss.web:host=default-host,path=/sss,type=Cache
+jboss.web:host=default-host,path=/sss,type=Manager
+jboss.web:host=default-host,type=Host
+jboss.web:name=StandardEngineValve,type=Valve
+jboss.web:name=http--0.0.0.0-8080,type=GlobalRequestProcessor
+jboss.web:name=http--0.0.0.0-8080,type=ThreadPool
+jboss.web:serviceName=jboss.web,type=Service
+jboss.web:type=Engine
+
+★beanの中身を参照する
+★ -b の後ろはbeansコマンドで出力した文字列を指定する。
+★ *  全部の属性とメソッドを出力する
+★ bean所属のドメインを指定する
+$&gt;get -b jboss.web:address="/0.0.0.0",port=8080,type=Connector * -d jboss.web
+#mbean = jboss.web:address="/0.0.0.0",port=8080,type=Connector:
+port = 8080;
+
+protocol = HTTP/1.1;
+
+useIPVHosts = false;
+
+objectName = jboss.web:type=Connector,port=8080,address="/0.0.0.0";
+
+redirectPort = 443;
+
+........
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-2-3" class="outline-3">
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> Web系ワーカスレッドの情報取得</h3>
+<div class="outline-text-3" id="text-2-3">
+<font color="red"><strong>
+<p>
+これはJMX方式しか取れないぽい。
+</p>
+</strong></font>
+<p>
+Web系ワーカスレッドの実装はtomcatそのものが取り入れられているぽいで、JBossASに
+<code>-Dorg.apache.tomcat.util.ENABLE_MODELER=true</code> オプションを付けて起動する必要がある。
+</p>
+
+<pre class="example">
+$&gt;get -b jboss.web:address="/0.0.0.0",port=8080,type=Connector * -d jboss.web
+#mbean = jboss.web:address="/0.0.0.0",port=8080,type=Connector:
+port = 8080;
+
+protocol = HTTP/1.1;
+
+useIPVHosts = false;
+
+objectName = jboss.web:type=Connector,port=8080,address="/0.0.0.0";
+
+redirectPort = 443;
+
+secure = false;
+
+proxyName = null;
+
+enableLookups = false;
+
+maxPostSize = 2097152;
+
+proxyPort = 0;
+
+available = true;
+
+modelerType = org.apache.catalina.connector.Connector;
+
+info = org.apache.catalina.connector.Connector/2.1;
+
+bufferSize = 2048;
+
+scheme = http;
+
+xpoweredBy = false;
+
+allowTrace = false;
+
+domain = jboss.web;
+
+useBodyEncodingForURI = false;
+
+controller = jboss.web:type=Connector,port=8080,address="/0.0.0.0";
+
+uRIEncoding = null;
+
+maxSavePostSize = 4096;
+
+protocolHandlerClassName = org.apache.coyote.http11.Http11Protocol;
+
+$&gt;
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-2-4" class="outline-3">
+<h3 id="sec-2-4"><span class="section-number-3">2.4</span> リクエストプロセッサーの稼働状況</h3>
+<div class="outline-text-3" id="text-2-4">
+<pre class="example">
+$&gt;get -b jboss.web:name=http--0.0.0.0-8080,type=GlobalRequestProcessor *
+#mbean = jboss.web:name=http--0.0.0.0-8080,type=GlobalRequestProcessor:
+bytesSent = 0;
+
+bytesReceived = 0;
+
+processingTime = 0;
+
+errorCount = 0;
+
+maxTime = 0;
+
+requestCount = 0;
+
+modelerType = org.apache.coyote.RequestGroupInfo;
+
+$&gt;
+</pre>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> <code>RESTful</code> 方式</h2>
+<div class="outline-text-2" id="text-3">
+<pre class="example">
+$ curl --digest http://localhost:9990/management?json.pretty -u admin
+Enter host password for user 'admin':
+{
+    "management-major-version" : 1,
+    "management-micro-version" : 0,
+    "management-minor-version" : 5,
+    "name" : "localhost",
+    "namespaces" : [],
+    "product-name" : "EAP",
+    "product-version" : "6.2.4.GA",
+    "profile-name" : null,
+    "release-codename" : "Janus",
+    "release-version" : "7.3.4.Final-redhat-1",
+    "schema-locations" : [],
+    "core-service" : {
+        "management" : null,
+        "service-container" : null,
+        "module-loading" : null,
+        "server-environment" : null,
+        "platform-mbean" : null,
+        "patching" : null
+    },
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> 参考情報</h2>
+<div class="outline-text-2" id="text-4">
+<ul class="org-ul">
+<li><a href="https://docs.jboss.org/author/display/AS71/CLI+Recipes">CLI Recipes</a>
+</li>
+<li><a href="http://zorka.io/install/jboss7.html">JBoss 7.x and Wildfly 8.0 monitoring</a>
+</li>
+<li><a href="http://www.denniskanbier.nl/blog/monitoring/jboss-eap-6-monitoring-using-remoting-jmx-and-zabbix/">JBoss EAP 6 monitoring using remoting-jmx and Zabbix</a>
+</li>
+<li><a href="http://blog.akquinet.de/2014/09/18/jboss-eap-wildfly-management-interfaces-and-clients/">JBoss EAP / Wildfly Management Interfaces and Clients</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

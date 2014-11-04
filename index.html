@@ -391,6 +391,104 @@ step3のところで60秒後、サーバからfinパケットが送出されて�
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2014-09-30-%5B%E3%83%A1%E3%83%A2%5Djbossas%E7%A8%BC%E5%83%8D%E6%83%85%E5%A0%B1%E5%8F%8E%E5%8F%96%E5%BE%97%E6%96%B9%E6%B3%95.html">[メモ]JBossAS稼働情報収取得方法</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-09-30T00:00:00+09:00" pubdate data-updated="true">2014-09-30 (Tue)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. <code>jboss-cli.sh</code> 方式</a>
+<ul>
+<li><a href="#sec-1-1">1.1. JBoss管理インスタンスへ接続する</a></li>
+<li><a href="#sec-1-2">1.2. JVMスレッドプール情報取得</a></li>
+<li><a href="#sec-1-3">1.3. JVMメモリ情報取得</a></li>
+<li><a href="#sec-1-4">1.4. データベース接続プール情報取得</a></li>
+<li><a href="#sec-1-5">1.5. JDBCステートメントキャッシュ情報</a></li>
+<li><a href="#sec-1-6">1.6. 起動オプション、システム属性などの確認</a></li>
+<li><a href="#sec-1-7">1.7. EJBスレッドプールの確認</a></li>
+<li><a href="#sec-1-8">1.8. トランザクション情報の確認</a></li>
+</ul>
+</li>
+<li><a href="#sec-2">2. <code>remoting-jmx</code> 方式</a>
+<ul>
+<li><a href="#sec-2-1">2.1. JBossAS接続用のjmxterm起動スクリプト</a></li>
+<li><a href="#sec-2-2">2.2. jmxterm基本的な使い方</a></li>
+<li><a href="#sec-2-3">2.3. Web系ワーカスレッドの情報取得</a></li>
+<li><a href="#sec-2-4">2.4. リクエストプロセッサーの稼働状況</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. <code>RESTful</code> 方式</a></li>
+<li><a href="#sec-4">4. 参考情報</a></li>
+</ul>
+</div>
+</div>
+<p>
+コマンドインタフェースから <code>JBossAS 7.x</code> アプリケーションサーバの稼働情報収取得方法に
+ついて検証してみた。主に以下の方法が存在する。
+</p>
+
+<ol class="org-ol">
+<li><code>jboss-cli.sh</code> コマンドでサーバの設定情報やRuntime情報を取得する。
+</li>
+<li>RESTful Management Interfaces HTTP通信でJSON形式で情報ヲ取得する。
+</li>
+<li>remoting-jmx インタフェースでMBeanサーバから情報を取得する。
+</li>
+</ol>
+
+<p>
+1と2の情報源が一緒です。取れる情報が次のようなイメージ、用途に応じて選ぶことになると思
+います。
+</p>
+<pre class="example">
++-------------+
+| jboss-cli   |
+|   +---------+-----+
+|   |         |     |
+|   |         | JMX |
+|   |         |     |
+|   +---------+-----+
++-------------+
+</pre>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-09-30-%5B%E3%83%A1%E3%83%A2%5Djbossas%E7%A8%BC%E5%83%8D%E6%83%85%E5%A0%B1%E5%8F%8E%E5%8F%96%E5%BE%97%E6%96%B9%E6%B3%95.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2014-08-16-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dkerbrose%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E5%A4%89%E6%9B%B4%E3%81%9F%E3%82%81%E3%81%AEpam%E8%A8%AD%E5%AE%9A.html">[レシピ]Kerbroseパスワード変更ためのPAM設定</a></h1>
     
     
@@ -775,60 +873,6 @@ Archlinuxでsyslog-ngのデフォルト出力形式は以下のようなイメ�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-08-07-%5B%E3%83%A1%E3%83%A2%5Dfind%E3%81%A7%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%9B%B4%E6%96%B0%E6%97%A5%E4%BB%98%E9%A0%86%E3%81%A7%E8%A1%A8%E7%A4%BA%E3%81%99%E3%82%8B.html">[メモ]findでファイル更新日付順で表示する</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-08-07T00:00:00+09:00" pubdate data-updated="true">2014-08-07 (Thu)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>
-PJではメンバたち日々の作業成果物がどこかの共有ディレクトリに格納されているでしょう。
-共有ディレクトリに最近更新や追加されたファイルを見たい時がよくあることです。
-いちいち作業担当者に聞くのもうざいので。 <code>find</code> 、 <code>xargs</code> コマンドを駆使して実現して
-みた。
-</p>
-
-<pre class="example">
-$ find . -type f -print0 | xargs -0 ls -alt
-</pre>
-
-<ul class="org-ul">
-<li><code>find -type f</code> はファイルのみを対象とする
-</li>
-<li><code>find -print0</code> は検出されたファイルのフルパスをNULLキャラクターで分割して出力する
-</li>
-<li><code>xargs -0</code> もしくは <code>xargs --null</code> 入力ストリームの分割はNULLキャラクターを用いる
-</li>
-</ul>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -878,6 +922,10 @@ $ find . -type f -print0 | xargs -0 ls -alt
       </li>
     
       <li class="post">
+        <a href="/blog/2014-09-30-%5B%E3%83%A1%E3%83%A2%5Djbossas%E7%A8%BC%E5%83%8D%E6%83%85%E5%A0%B1%E5%8F%8E%E5%8F%96%E5%BE%97%E6%96%B9%E6%B3%95.html">[メモ]JBossAS稼働情報収取得方法</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-08-16-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dkerbrose%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E5%A4%89%E6%9B%B4%E3%81%9F%E3%82%81%E3%81%AEpam%E8%A8%AD%E5%AE%9A.html">[レシピ]Kerbroseパスワード変更ためのPAM設定</a>
       </li>
     
@@ -897,10 +945,6 @@ $ find . -type f -print0 | xargs -0 ls -alt
         <a href="/blog/2014-08-12-%5B%E3%83%A1%E3%83%A2%5Dsyslog-ng%E3%81%AE%E3%83%AD%E3%82%B0%E5%87%BA%E5%8A%9B%E5%BD%A2%E5%BC%8F%E3%81%AE%E5%A4%89%E6%9B%B4.html">[メモ]syslog-ngのログ出力形式の変更</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2014-08-07-%5B%E3%83%A1%E3%83%A2%5Dfind%E3%81%A7%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%9B%B4%E6%96%B0%E6%97%A5%E4%BB%98%E9%A0%86%E3%81%A7%E8%A1%A8%E7%A4%BA%E3%81%99%E3%82%8B.html">[メモ]findでファイル更新日付順で表示する</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -908,11 +952,11 @@ $ find . -type f -print0 | xargs -0 ls -alt
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (6)</a></li><li><a href='/blog/categories/linux/'>linux (15)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (7)</a></li><li><a href='/blog/categories/linux/'>linux (15)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 130.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 130.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 130.0%'>jboss(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 130.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 160.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 130.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 130.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 130.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 130.0%'>zabbix(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 130.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 130.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 130.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 130.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 130.0%'>jboss-lci(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 130.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 160.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 130.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 130.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 130.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 130.0%'>zabbix(1)</a> </span>
 </section>
 
 <section>
