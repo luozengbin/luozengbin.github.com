@@ -9,10 +9,11 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="PJではメンバたち日々の作業成果物がどこかの共有ディレクトリに格納されているでしょう。
-共有ディレクトリに最近更新や追加されたファイルを見たい時がよくあることです。
-いちいち作業担当者に聞くのもうざいので。 find 、 xargs コマンドを駆使して実現して
-みた。 $ find . - &hellip;">
+  <meta name="description" content="
+Table of Contents 1. デフォルトの出力形式
+2. 出力形式変更手順
+3. 参考情報 Archlinuxでsyslog-ngのデフォルト出力形式は以下のようなイメージになります。ちょっと物
+足りない気がして、形式の変更方法を調べてみました。 ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -68,6 +69,61 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-08-12-%5B%E3%83%A1%E3%83%A2%5Dsyslog-ng%E3%81%AE%E3%83%AD%E3%82%B0%E5%87%BA%E5%8A%9B%E5%BD%A2%E5%BC%8F%E3%81%AE%E5%A4%89%E6%9B%B4.html">[メモ]syslog-ngのログ出力形式の変更</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-12T00:00:00+09:00" pubdate data-updated="true">2014-08-12 (Tue)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. デフォルトの出力形式</a></li>
+<li><a href="#sec-2">2. 出力形式変更手順</a></li>
+<li><a href="#sec-3">3. 参考情報</a></li>
+</ul>
+</div>
+</div>
+<p>
+Archlinuxでsyslog-ngのデフォルト出力形式は以下のようなイメージになります。ちょっと物
+足りない気がして、形式の変更方法を調べてみました。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-08-12-%5B%E3%83%A1%E3%83%A2%5Dsyslog-ng%E3%81%AE%E3%83%AD%E3%82%B0%E5%87%BA%E5%8A%9B%E5%BD%A2%E5%BC%8F%E3%81%AE%E5%A4%89%E6%9B%B4.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -838,150 +894,6 @@ Emacsをドキュメントビューアとして使っていますが、時々漢
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html">[メモ]リモートXの接続方法</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-06-21T00:00:00+09:00" pubdate data-updated="true">2014-06-21 (Sat)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 検証環境</a></li>
-<li><a href="#sec-2">2. xhostによるXアプリを起動する方式</a></li>
-<li><a href="#sec-3">3. SSH X11フォワード方式</a></li>
-<li><a href="#sec-4">4. VNC方式</a></li>
-<li><a href="#sec-5">5. ローカルで異なるユーザでXアプリの起動</a></li>
-<li><a href="#sec-6">6. 参考サイト</a></li>
-</ul>
-</div>
-</div>
-<p>
-リモートLinuxサーバでXアプリを利用するケースはしばしばあります。
-実現方式について調べてみた。
-</p>
-
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="right" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<thead>
-<tr>
-<th scope="col" class="right">No</th>
-<th scope="col" class="left">サーバ側</th>
-<th scope="col" class="left">クライアント側</th>
-<th scope="col" class="left">備考</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="right">1</td>
-<td class="left">DISPLAY変数の指定</td>
-<td class="left">xhostよりアクセス許可</td>
-<td class="left">クライアント側6000番ポートの開放が必要</td>
-</tr>
-
-<tr>
-<td class="right">2</td>
-<td class="left">SSH X11 Forwarding</td>
-<td class="left">ssh -X で接続する</td>
-<td class="left">サーバ側：X11Forwarding yes が必要　</td>
-</tr>
-
-<tr>
-<td class="right">3</td>
-<td class="left">Xdmcp(udp:177)</td>
-<td class="left">Xサーバとして動く</td>
-<td class="left">Display Managerがエントリ画面になる</td>
-</tr>
-
-<tr>
-<td class="right">4</td>
-<td class="left">VNCサーバ(tcp:5901〜)</td>
-<td class="left">VNCビューア</td>
-<td class="left">よく使われる</td>
-</tr>
-
-<tr>
-<td class="right">5</td>
-<td class="left">XRDP</td>
-<td class="left">XRDPクライアントソフト</td>
-<td class="left">WindowsのRemote Desktop Procotol</td>
-</tr>
-</tbody>
-</table>
-
-<p>
-VNCとXRDP以外のサーバとクライアントの役割
-</p>
-<ul class="org-ul">
-<li>サーバ側:       Xアプリを動かす側
-</li>
-<li>クライアント側: Xサーバを動かす側
-</li>
-</ul>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 検証環境</h2>
-<div class="outline-text-2" id="text-1">
-<ul class="org-ul">
-<li>クライアント: GDM経由でGnome3が動いているGUI環境
-</li>
-<li>サーバ: CUIモードLinux環境
-</li>
-</ul>
-
-<pre class="example">
-┏━━━━━━━┓      ┏━━━━━━━┓
-┃ クライアント ┃      ┃   サーバ     ┃
-┃  mimi-air    ┣━━━┫    pipi      ┃
-┃192.168.100.13┃      ┃192.169.100.4 ┃
-┗━━━━━━━┛      ┗━━━━━━━┛
-</pre>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -1015,6 +927,10 @@ VNCとXRDP以外のサーバとクライアントの役割
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html">[メモ]自宅サーバディスク増設記録</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">[メモ]ApacheでbackendとのKeepAliveをOFFにする</a>
@@ -1052,10 +968,6 @@ VNCとXRDP以外のサーバとクライアントの役割
         <a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dldap%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E6%A7%8B%E7%AF%89.html">[レシピ]LDAPサーバの構築</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2014-08-12-%5B%E3%83%A1%E3%83%A2%5Dsyslog-ng%E3%81%AE%E3%83%AD%E3%82%B0%E5%87%BA%E5%8A%9B%E5%BD%A2%E5%BC%8F%E3%81%AE%E5%A4%89%E6%9B%B4.html">[メモ]syslog-ngのログ出力形式の変更</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -1063,11 +975,11 @@ VNCとXRDP以外のサーバとクライアントの役割
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (7)</a></li><li><a href='/blog/categories/linux/'>linux (15)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (7)</a></li><li><a href='/blog/categories/linux/'>linux (16)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 130.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 130.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 130.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 130.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 130.0%'>jboss-lci(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 130.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 160.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 130.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 130.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 130.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 130.0%'>zabbix(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 130.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 130.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 130.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 130.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 130.0%'>jboss-lci(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 130.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 130.0%'>lvm(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 160.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 130.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 130.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 130.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 130.0%'>zabbix(1)</a> </span>
 </section>
 
 <section>

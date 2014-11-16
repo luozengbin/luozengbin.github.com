@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-11-04T18:37:04+09:00</updated>
+  <updated>2014-11-16T23:41:18+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,786 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]自宅サーバディスク増設記録]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html"/>
+    <updated>2014-11-16T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]自宅サーバディスク増設記録</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. ツールの整備</a></li>
+<li><a href="#sec-3">3. ディスク情報確認</a></li>
+<li><a href="#sec-4">4. 現在のパーティション構成</a></li>
+<li><a href="#sec-5">5. 増設後のパーティション構成</a></li>
+<li><a href="#sec-6">6. 増設手順</a>
+<ul>
+<li><a href="#sec-6-1">6.1. gdiskでパーティションを初期化する</a></li>
+<li><a href="#sec-6-2">6.2. LVMパーティション再構成</a></li>
+<li><a href="#sec-6-3">6.3. 増設結果を確認する</a></li>
+</ul>
+</li>
+<li><a href="#sec-7">7. 参考情報</a></li>
+</ul>
+</div>
+</div>
+<p>
+半年前、約1年ちょっと使った <a href="http://www.wdc.com/global/products/specs/?driveID=1092&language=6">WD Blue(WD10EZEX)</a> ディスクが壊れた (I/Oスピードが激遅い現
+象が起きた)ため、RMA保証手続きで交換しました。交換で約1ヶ月かかる、かつサーバがRAID0構
+成のため、代用品を購入し、復旧を実施した。RAM交換で届いたディスクがずっと置いたまま、
+今日もう一台のNASサーバに増設を実施します。
+</p>
+
+<p>
+<!-- more -->
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 環境</h2>
+<div class="outline-text-2" id="text-1">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">OS</td>
+<td class="left">CentOS Linux release 7.0.1406 (Core)</td>
+</tr>
+
+<tr>
+<td class="left">/dev/sda</td>
+<td class="left"><a href="http://www.crucial.com/usa/en/storage-ssd-mx100-ja">Crucial MX100 2.5インチ内蔵型SSD 256GB SATAIII</a></td>
+</tr>
+
+<tr>
+<td class="left">/dev/sdb</td>
+<td class="left">増設HDD: WD10EZEX [1TB SATA600 7200]</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> ツールの整備</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+<code>hdparm</code> は HDD (SATA/IDE)デバイスのパフォーマンスとベンチマークのツールです｡
+</p>
+<pre class="example">
+$ sudo yum install hdparm
+</pre>
+
+<p>
+<code>sdparm</code> SCSIデバイスのパフォーマンスとベンチマークのツールです｡
+</p>
+<pre class="example">
+$ sudo yum install sdparm
+</pre>
+
+<p>
+GPTをサポートするパーティションリングツール
+</p>
+<pre class="example">
+$ sudo yum install gdisk
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> ディスク情報確認</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+<code>/dev/sda</code> SSDのハード情報を確認する。
+</p>
+<pre class="example">
+$ sudo hdparm -I /dev/sda
+
+/dev/sda:
+
+ATA device, with non-removable media
+	Model Number:       Crucial_CT256MX100SSD1
+	Serial Number:      ************
+	Firmware Revision:  *****
+	Transport:          Serial, ATA8-AST, SATA 1.0a, SATA II Extensions, SATA Rev 2.5, SATA Rev 2.6, SATA Rev 3.0
+Standards:
+	Used: unknown (minor revision code 0x0028)
+	Supported: 9 8 7 6 5 
+	Likely used: 9
+Configuration:
+	Logical		max	current
+	cylinders	16383	16383
+	heads		16	16
+	sectors/track	63	63
+	--
+	CHS current addressable sectors:   16514064
+	LBA    user addressable sectors:  268435455
+	LBA48  user addressable sectors:  500118192
+	Logical  Sector size:                   512 bytes
+	Physical Sector size:                  4096 bytes
+	Logical Sector-0 offset:                  0 bytes
+	device size with M = 1024*1024:      244198 MBytes
+	device size with M = 1000*1000:      256060 MBytes (256 GB)
+	cache/buffer size  = unknown
+	Form Factor: 2.5 inch
+	Nominal Media Rotation Rate: Solid State Device
+Capabilities:
+	LBA, IORDY(can be disabled)
+	Queue depth: 32
+	Standby timer values: spec'd by Standard, with device specific minimum
+	R/W multiple sector transfer: Max = 16	Current = 16
+	Advanced power management level: 254
+	DMA: mdma0 mdma1 mdma2 udma0 udma1 udma2 udma3 udma4 udma5 *udma6 
+	     Cycle time: min=120ns recommended=120ns
+	PIO: pio0 pio1 pio2 pio3 pio4 
+	     Cycle time: no flow control=120ns  IORDY flow control=120ns
+Commands/features:
+	Enabled	Supported:
+	   *	SMART feature set
+	    	Security Mode feature set
+	   *	Power Management feature set
+	   *	Write cache
+	   *	Look-ahead
+	   *	Host Protected Area feature set
+	   *	WRITE_BUFFER command
+	   *	READ_BUFFER command
+	   *	NOP cmd
+	   *	DOWNLOAD_MICROCODE
+	   *	Advanced Power Management feature set
+	    	SET_MAX security extension
+	   *	48-bit Address feature set
+	   *	Device Configuration Overlay feature set
+	   *	Mandatory FLUSH_CACHE
+	   *	FLUSH_CACHE_EXT
+	   *	SMART error logging
+	   *	SMART self-test
+	   *	General Purpose Logging feature set
+	   *	WRITE_{DMA|MULTIPLE}_FUA_EXT
+	   *	64-bit World wide name
+	   *	IDLE_IMMEDIATE with UNLOAD
+	    	Write-Read-Verify feature set
+	   *	WRITE_UNCORRECTABLE_EXT command
+	   *	{READ,WRITE}_DMA_EXT_GPL commands
+	   *	Segmented DOWNLOAD_MICROCODE
+	   *	Gen1 signaling speed (1.5Gb/s)
+	   *	Gen2 signaling speed (3.0Gb/s)
+	   *	Gen3 signaling speed (6.0Gb/s)
+	   *	Native Command Queueing (NCQ)
+	   *	Phy event counters
+	   *	NCQ priority information
+	   *	unknown 76[15]
+	   *	DMA Setup Auto-Activate optimization
+	    	Device-initiated interface power management
+	    	Asynchronous notification (eg. media change)
+	   *	Software settings preservation
+	    	unknown 78[8]
+	   *	SMART Command Transport (SCT) feature set
+	   *	SCT Write Same (AC2)
+	   *	SCT Features Control (AC4)
+	   *	SCT Data Tables (AC5)
+	   *	reserved 69[4]
+	   *	reserved 69[7]
+	   *	Data Set Management TRIM supported (limit 8 blocks)
+	   *	Deterministic read ZEROs after TRIM
+Security: 
+	Master password revision code = 65534
+		supported
+	not	enabled
+	not	locked
+		frozen
+	not	expired: security count
+		supported: enhanced erase
+	2min for SECURITY ERASE UNIT. 2min for ENHANCED SECURITY ERASE UNIT.
+Logical Unit WWN Device Identifier: ***************
+	NAA		: 5
+	IEEE OUI	: 00a075
+	Unique ID	: ********
+Checksum: correct
+</pre>
+
+<p>
+<code>/dev/sdb</code> HDDのハード情報を確認する。
+</p>
+<pre class="example">
+$ sudo hdparm -I /dev/sdb
+
+/dev/sdb:
+
+ATA device, with non-removable media
+	Model Number:       WDC WD10EZEX-00RKKA0
+	Serial Number:      WD-WMC**********
+	Firmware Revision:  80.00A80
+	Transport:          Serial, SATA 1.0a, SATA II Extensions, SATA Rev 2.5, SATA Rev 2.6, SATA Rev 3.0
+Standards:
+	Supported: 8 7 6 5 
+	Likely used: 8
+Configuration:
+	Logical		max	current
+	cylinders	16383	16383
+	heads		16	16
+	sectors/track	63	63
+	--
+	CHS current addressable sectors:   16514064
+	LBA    user addressable sectors:  268435455
+	LBA48  user addressable sectors: 1953525168
+	Logical  Sector size:                   512 bytes
+	Physical Sector size:                  4096 bytes
+	device size with M = 1024*1024:      953869 MBytes
+	device size with M = 1000*1000:     1000204 MBytes (1000 GB)
+	cache/buffer size  = unknown
+Capabilities:
+	LBA, IORDY(can be disabled)
+	Queue depth: 32
+	Standby timer values: spec'd by Standard, with device specific minimum
+	R/W multiple sector transfer: Max = 16	Current = 16
+	DMA: mdma0 mdma1 mdma2 udma0 udma1 udma2 udma3 udma4 udma5 *udma6 
+	     Cycle time: min=120ns recommended=120ns
+	PIO: pio0 pio1 pio2 pio3 pio4 
+	     Cycle time: no flow control=120ns  IORDY flow control=120ns
+Commands/features:
+	Enabled	Supported:
+	   *	SMART feature set
+	    	Security Mode feature set
+	   *	Power Management feature set
+	   *	Write cache
+	   *	Look-ahead
+	   *	Host Protected Area feature set
+	   *	WRITE_BUFFER command
+	   *	READ_BUFFER command
+	   *	NOP cmd
+	   *	DOWNLOAD_MICROCODE
+	    	Power-Up In Standby feature set
+	   *	SET_FEATURES required to spinup after power up
+	    	SET_MAX security extension
+	   *	48-bit Address feature set
+	   *	Device Configuration Overlay feature set
+	   *	Mandatory FLUSH_CACHE
+	   *	FLUSH_CACHE_EXT
+	   *	SMART error logging
+	   *	SMART self-test
+	   *	General Purpose Logging feature set
+	   *	64-bit World wide name
+	   *	{READ,WRITE}_DMA_EXT_GPL commands
+	   *	Segmented DOWNLOAD_MICROCODE
+	   *	Gen1 signaling speed (1.5Gb/s)
+	   *	Gen2 signaling speed (3.0Gb/s)
+	   *	Gen3 signaling speed (6.0Gb/s)
+	   *	Native Command Queueing (NCQ)
+	   *	Host-initiated interface power management
+	   *	Phy event counters
+	   *	NCQ priority information
+	   *	unknown 76[15]
+	   *	DMA Setup Auto-Activate optimization
+	   *	Software settings preservation
+	   *	SMART Command Transport (SCT) feature set
+	   *	SCT Write Same (AC2)
+	   *	SCT Features Control (AC4)
+	   *	SCT Data Tables (AC5)
+	    	unknown 206[7]
+	    	unknown 206[12] (vendor specific)
+	    	unknown 206[13] (vendor specific)
+Security: 
+	Master password revision code = 65534
+		supported
+	not	enabled
+	not	locked
+		frozen
+	not	expired: security count
+		supported: enhanced erase
+	112min for SECURITY ERASE UNIT. 112min for ENHANCED SECURITY ERASE UNIT. 
+Logical Unit WWN Device Identifier: ****************
+	NAA		: 5
+	IEEE OUI	: 0014ee
+	Unique ID	: ******
+Checksum: correct
+$
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> 現在のパーティション構成</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+<code>/dev/sda</code> の物理パーティション構成を確認する。
+</p>
+<pre class="example">
+$ sudo gdisk -l /dev/sda 
+GPT fdisk (gdisk) version 0.8.6
+
+Partition table scan:
+  MBR: protective
+  BSD: not present
+  APM: not present
+  GPT: present
+
+Found valid GPT with protective MBR; using GPT.
+Disk /dev/sda: 500118192 sectors, 238.5 GiB
+Logical sector size: 512 bytes
+Disk identifier (GUID): A2BE7525-7A02-4E36-8C41-B9E4487690BD
+Partition table holds up to 128 entries
+First usable sector is 34, last usable sector is 500118158
+Partitions will be aligned on 2048-sector boundaries
+Total free space is 2669 sectors (1.3 MiB)
+
+Number  Start (sector)    End (sector)  Size       Code  Name
+   1            2048          411647   200.0 MiB   EF00  EFI System Partition
+   2          411648         1435647   500.0 MiB   0700  
+   3         1435648       500117503   237.8 GiB   8E00  
+$
+</pre>
+
+<p>
+LVMの構成状況
+</p>
+<pre class="example">
+$ sudo lvmdiskscan
+  /dev/centos/swap [       7.27 GiB] 
+  /dev/sda1        [     200.00 MiB] 
+  /dev/centos/root [      50.00 GiB] 
+  /dev/sda2        [     500.00 MiB] 
+  /dev/centos/home [     180.52 GiB] 
+........
+</pre>
+
+<p>
+先頭の物理パーティションをブート関係用にマウントしています。
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">/dev/sda1</td>
+<td class="left">vfat</td>
+<td class="left">/boot/efi</td>
+<td class="left">200MB</td>
+</tr>
+
+<tr>
+<td class="left">/dev/sda2</td>
+<td class="left">xfs</td>
+<td class="left">/boot</td>
+<td class="left">500MB</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+三番目の物理パーティションをLVMで割って使っています。
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">PV</th>
+<th scope="col" class="left">VG</th>
+<th scope="col" class="left">LV</th>
+<th scope="col" class="left">Format</th>
+<th scope="col" class="left">Mount Point</th>
+<th scope="col" class="left">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">/dev/sda3</td>
+<td class="left">centos</td>
+<td class="left">/dev/centos/swap</td>
+<td class="left">swap</td>
+<td class="left">&#xa0;</td>
+<td class="left">7.27G</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">/dev/centos/home</td>
+<td class="left">xfs</td>
+<td class="left">/</td>
+<td class="left">180G</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">/dev/centos/root</td>
+<td class="left">xfs</td>
+<td class="left">/home</td>
+<td class="left">50G</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> 増設後のパーティション構成</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+増設したHDDに <code>vg01</code> を増やして、 <code>/home</code> と <code>/var</code> をこちら配置するようにする。
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">PV</th>
+<th scope="col" class="left">VG</th>
+<th scope="col" class="left">LV</th>
+<th scope="col" class="left">Format</th>
+<th scope="col" class="left">Mount Point</th>
+<th scope="col" class="left">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">/dev/sda3</td>
+<td class="left">centos</td>
+<td class="left">/dev/centos/swap</td>
+<td class="left">swap</td>
+<td class="left">&#xa0;</td>
+<td class="left">7.27G</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">/dev/centos/root</td>
+<td class="left">xfs</td>
+<td class="left">/</td>
+<td class="left">230G</td>
+</tr>
+
+<tr>
+<td class="left">/dev/sdb1</td>
+<td class="left">vg01</td>
+<td class="left">/dev/vg01/home</td>
+<td class="left">xfs</td>
+<td class="left">/home</td>
+<td class="left">431G</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">/dev/vg01/var</td>
+<td class="left">xfs</td>
+<td class="left">/var</td>
+<td class="left">500G</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> 増設手順</h2>
+<div class="outline-text-2" id="text-6">
+</div><div id="outline-container-sec-6-1" class="outline-3">
+<h3 id="sec-6-1"><span class="section-number-3">6.1</span> gdiskでパーティションを初期化する</h3>
+<div class="outline-text-3" id="text-6-1">
+<pre class="example">
+$ sudo gdisk /dev/sdb
+GPT fdisk (gdisk) version 0.8.6
+
+Partition table scan:
+  MBR: not present
+  BSD: not present
+  APM: not present
+  GPT: not present
+
+Creating new GPT entries.
+
+Command (? for help): o        ★GPTパーティションテーブルを新規作成する
+This option deletes all partitions and creates a new protective MBR.
+Proceed? (Y/N): Y
+
+Command (? for help): n        ★新規パーティションを作成する
+Partition number (1-128, default 1): 
+First sector (34-1953525134, default = 2048) or {+-}size{KMGTP}: 
+Last sector (2048-1953525134, default = 1953525134) or {+-}size{KMGTP}: 
+Current type is 'Linux filesystem'
+Hex code or GUID (L to show codes, Enter = 8300): 8e00 ★パーティションタイプをLVMにする
+Changed type of partition to 'Linux LVM'
+
+Command (? for help): w
+
+Final checks complete. About to write GPT data. THIS WILL OVERWRITE EXISTING
+PARTITIONS!!
+
+Do you want to proceed? (Y/N): Y
+OK; writing new GUID partition table (GPT) to /dev/sdb.
+The operation has completed successfully.
+$
+</pre>
+
+<p>
+結果を確認する
+</p>
+<pre class="example">
+$ sudo gdisk -l /dev/sdb
+GPT fdisk (gdisk) version 0.8.6
+
+Partition table scan:
+  MBR: protective
+  BSD: not present
+  APM: not present
+  GPT: present
+
+Found valid GPT with protective MBR; using GPT.
+Disk /dev/sdb: 1953525168 sectors, 931.5 GiB
+Logical sector size: 512 bytes
+Disk identifier (GUID): DE117DAF-1D96-4505-89EC-6F1E6BB08E4C
+Partition table holds up to 128 entries
+First usable sector is 34, last usable sector is 1953525134
+Partitions will be aligned on 2048-sector boundaries
+Total free space is 2014 sectors (1007.0 KiB)
+
+Number  Start (sector)    End (sector)  Size       Code  Name
+   1            2048      1953525134   931.5 GiB   8E00  Linux LVM
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-6-2" class="outline-3">
+<h3 id="sec-6-2"><span class="section-number-3">6.2</span> LVMパーティション再構成</h3>
+<div class="outline-text-3" id="text-6-2">
+<p>
+PV <code>/dev/sdb1</code> 作成する
+</p>
+<pre class="example">
+$ sudo pvcreate /dev/sdb1
+  Physical volume "/dev/sdb1" successfully created
+</pre>
+
+<p>
+VG <code>vg01</code> を作成する
+</p>
+<pre class="example">
+$ sudo vgcreate vg01 /dev/sdb1
+  Volume group "vg01" successfully created
+</pre>
+
+<p>
+VG <code>centos</code> の <code>home</code> 論理ボリュームを 一旦 <code>home0</code> にリネームする。
+</p>
+<pre class="example">
+$ sudo lvrename centos home home0
+  Renamed "home" to "home0" in volume group "centos"
+</pre>
+
+<p>
+VG <code>vg01</code> 上で <code>/var</code> 用の <code>var</code> 論理ボリュームを作成する。
+</p>
+<pre class="example">
+$ sudo lvcreate -L 500G vg01 -n var
+  Logical volume "var" created
+</pre>
+
+<p>
+VG <code>vg01</code> 上残りに容量を <code>/home</code> 用の <code>home</code> 論理ボリュームを作成する。
+</p>
+<pre class="example">
+$ sudo lvcreate -l +100%FREE vg01 -n home
+  Logical volume "home" created
+</pre>
+
+<p>
+<code>var</code> 論理ボリュームを <code>xfs</code> タイプファイルシステムでフォーマットする。
+</p>
+<pre class="example">
+$ sudo mkfs.xfs /dev/mapper/vg01-var 
+meta-data=/dev/mapper/vg01-var   isize=256    agcount=4, agsize=32768000 blks
+         =                       sectsz=4096  attr=2, projid32bit=1
+         =                       crc=0
+data     =                       bsize=4096   blocks=131072000, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=64000, version=2
+         =                       sectsz=4096  sunit=1 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+
+$#+end_example
+
+=home= 論理ボリュームを =xfs= タイプファイルシステムでフォーマットする。
+#+begin_example
+$ sudo mkfs.xfs /dev/mapper/vg01-home 
+meta-data=/dev/mapper/vg01-home  isize=256    agcount=4, agsize=28279296 blks
+         =                       sectsz=4096  attr=2, projid32bit=1
+         =                       crc=0
+data     =                       bsize=4096   blocks=113117184, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=55233, version=2
+         =                       sectsz=4096  sunit=1 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+$
+</pre>
+
+<p>
+<code>/home</code> 領域データをコピーする。
+</p>
+<pre class="example">
+$ sudo mount /dev/mapper/vg01-home /mnt/
+$ sudo cp --archive /home /mnt
+$ ls -al /mnt/
+合計 4
+drwxr-xr-x   3 root root   17 11月 16 22:04 .
+drwxr-xr-x. 17 root root 4096 11月 10 21:46 ..
+drwxr-xr-x.  3 root root   18  9月 14 23:07 home
+$ sudo mv /mnt/home/* /mnt/
+$ sudo rm -rf /mnt/home/
+$ sudo umount /mnt
+</pre>
+
+<p>
+<code>/var</code> 領域を使用しているサービスを止めて、データをコピーする。
+</p>
+<pre class="example">
+$ sudo systemctl stop xxxxx.service
+$ sudo mount /dev/mapper/vg01-var /mnt/
+$ sudo cp --archive /var /mnt
+$ sudo mv /mnt/var/* /mnt/
+$ sudo rm -rf /mnt/var/
+$ sudo umount /mnt
+</pre>
+
+<p>
+<code>/etc/fstab</code> を適切に変更する。
+</p>
+<pre class="example">
+/dev/mapper/centos-root /                       xfs     defaults        1 1
+/dev/mapper/centos-swap swap                    swap    defaults        0 0
+/dev/mapper/vg01-home   /home                   xfs     defaults        1 2
+/dev/mapper/vg01-var    /var                    xfs     defaults        1 2
+.....
+</pre>
+
+<p>
+旧 <code>/var</code> ディレクトリ名を適当に変更し、システムを再起動する。
+</p>
+<pre class="example">
+$ sudo mv /var /var.0
+</pre>
+
+<p>
+<code>root</code> 論理ボリュームを拡張する
+</p>
+<pre class="example">
+★home0論理ボリュームの削除
+$ sudo lvremove -f centos/home0
+  Logical volume "home0" successfully removed
+
+★root論理ボリュームの拡大
+$ sudo lvextend -l +100%FREE centos/root
+  Extending logical volume root to 230.52 GiB
+  Logical volume root successfully resized
+
+★xfsファイルシステムサイズの拡大
+$ xfs_growfs /
+</pre>
+</div>
+</div>
+
+
+<div id="outline-container-sec-6-3" class="outline-3">
+<h3 id="sec-6-3"><span class="section-number-3">6.3</span> 増設結果を確認する</h3>
+<div class="outline-text-3" id="text-6-3">
+<p>
+<code>lvmdiskscan</code> の表示
+</p>
+<pre class="example">
+$ sudo lvmdiskscan 
+  /dev/centos/swap [       7.27 GiB] 
+  /dev/sda1        [     200.00 MiB] 
+  /dev/centos/root [     230.52 GiB] 
+  /dev/sda2        [     500.00 MiB] 
+  /dev/vg01/var    [     500.00 GiB] 
+  /dev/sda3        [     237.79 GiB] LVM physical volume
+  /dev/vg01/home   [     431.51 GiB] 
+  /dev/sdb1        [     931.51 GiB] LVM physical volume
+  4 disks
+  2 partitions
+  0 LVM physical volume whole disks
+  2 LVM physical volumes
+</pre>
+
+<p>
+<code>df -h</code> の表示
+</p>
+<pre class="example">
+$ df -h
+ファイルシス            サイズ  使用  残り 使用% マウント位置
+/dev/sda1                 200M  9.6M  191M    5% /boot/efi
+/dev/sda2                 494M  203M  292M   42% /boot
+/dev/mapper/centos-root   231G   16G  215G    7% /
+/dev/mapper/vg01-home     432G  379M  431G    1% /home
+/dev/mapper/vg01-var      500G   13G  488G    3% /var
+.......
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> 参考情報</h2>
+<div class="outline-text-2" id="text-7">
+<ul class="org-ul">
+<li><a href="https://wiki.archlinux.org/index.php/Lvm#lvextend">Archlinux Wiki - LVM</a>
+</li>
+<li><a href="http://kuenishi.hatenadiary.jp/entry/20070325/1174833266">ディスクを加えてXFS on LVMを拡張する</a>
+</li>
+<li><a href="https://access.redhat.com/documentation/ja-JP/Red_Hat_Enterprise_Linux/6/html/Storage_Administration_Guide/xfsgrow.html">XFS ファイルシステムのサイズの拡大</a>
+</li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[メモ]ApacheでbackendとのKeepAliveをOFFにする]]></title>
@@ -10323,431 +11103,6 @@ $ make install
 <li>オンライン辞書サービスを使って単語の解釈を表示したい
 </li>
 <li>テキスト読み上げ機能と連携したい
-</li>
-</ul>
-</div>
-</div>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[メモ]リモートXの接続方法]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-06-21-%5B%E3%83%A1%E3%83%A2%5D%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88x%E3%81%AE%E6%8E%A5%E7%B6%9A%E6%96%B9%E6%B3%95.html"/>
-    <updated>2014-06-21T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[メモ]リモートxの接続方法</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 検証環境</a></li>
-<li><a href="#sec-2">2. xhostによるXアプリを起動する方式</a></li>
-<li><a href="#sec-3">3. SSH X11フォワード方式</a></li>
-<li><a href="#sec-4">4. VNC方式</a></li>
-<li><a href="#sec-5">5. ローカルで異なるユーザでXアプリの起動</a></li>
-<li><a href="#sec-6">6. 参考サイト</a></li>
-</ul>
-</div>
-</div>
-<p>
-リモートLinuxサーバでXアプリを利用するケースはしばしばあります。
-実現方式について調べてみた。
-</p>
-
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="right" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<thead>
-<tr>
-<th scope="col" class="right">No</th>
-<th scope="col" class="left">サーバ側</th>
-<th scope="col" class="left">クライアント側</th>
-<th scope="col" class="left">備考</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="right">1</td>
-<td class="left">DISPLAY変数の指定</td>
-<td class="left">xhostよりアクセス許可</td>
-<td class="left">クライアント側6000番ポートの開放が必要</td>
-</tr>
-
-<tr>
-<td class="right">2</td>
-<td class="left">SSH X11 Forwarding</td>
-<td class="left">ssh -X で接続する</td>
-<td class="left">サーバ側：X11Forwarding yes が必要　</td>
-</tr>
-
-<tr>
-<td class="right">3</td>
-<td class="left">Xdmcp(udp:177)</td>
-<td class="left">Xサーバとして動く</td>
-<td class="left">Display Managerがエントリ画面になる</td>
-</tr>
-
-<tr>
-<td class="right">4</td>
-<td class="left">VNCサーバ(tcp:5901〜)</td>
-<td class="left">VNCビューア</td>
-<td class="left">よく使われる</td>
-</tr>
-
-<tr>
-<td class="right">5</td>
-<td class="left">XRDP</td>
-<td class="left">XRDPクライアントソフト</td>
-<td class="left">WindowsのRemote Desktop Procotol</td>
-</tr>
-</tbody>
-</table>
-
-<p>
-VNCとXRDP以外のサーバとクライアントの役割
-</p>
-<ul class="org-ul">
-<li>サーバ側:       Xアプリを動かす側
-</li>
-<li>クライアント側: Xサーバを動かす側
-</li>
-</ul>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 検証環境</h2>
-<div class="outline-text-2" id="text-1">
-<ul class="org-ul">
-<li>クライアント: GDM経由でGnome3が動いているGUI環境
-</li>
-<li>サーバ: CUIモードLinux環境
-</li>
-</ul>
-
-<pre class="example">
-┏━━━━━━━┓      ┏━━━━━━━┓
-┃ クライアント ┃      ┃   サーバ     ┃
-┃  mimi-air    ┣━━━┫    pipi      ┃
-┃192.168.100.13┃      ┃192.169.100.4 ┃
-┗━━━━━━━┛      ┗━━━━━━━┛
-</pre>
-
-<p>
-<!-- more -->
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> xhostによるXアプリを起動する方式</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-通信イメージ
-</p>
-<pre class="example">
-┏━━━━━━━━━━━━━━━━━┓        ┏━━━━━━━┓
-┃    クライアント（Xサーバ）       ┃        ┃   サーバ     ┃
-┃ Unixソケット                tcp  ┃        ┃   Xアプリ    ┃
-┃ /tmp/.X11-unix/X0   &lt;----&gt;  6000 &lt;&lt;━━━━┫$DISPLAY      ┃
-┗━━━━━━━━━━━━━━━━━┛        ┗━━━━━━━┛
-</pre>
-
-<p>
-GDMパラメータにTCP接続許可の設定を行う。
-</p>
-<ul class="org-ul">
-<li><code>/etc/gdm/custom.conf</code> に <code>DisallowTcp=false</code> を追加する。
-</li>
-<li><code>/usr/share/gdm/gdm.schemas</code> に <code>security/DisallowTCP</code> の値を <code>false</code> へ変更する。
-</li>
-</ul>
-
-<p>
-設定後、GDMを再起動して <code>netstat</code> コマンドで <code>6000</code> ポートがリスニング状態であること
-を確認したうえで、 <code>xhost</code> コマンドでサーバからのアクセスを許可するようにする。
-XサーバのTCP受け待ちポート番号は <code>6000+スクリン番号</code> 式で決まる。 Xサーバがスクリン１
-で起動された場合TCP受け待ちポート番号が6001となります。通常は０番スクリーンが利用され
-る。
-</p>
-
-<pre class="example">
-[akira@mimi-air ~]$ sudo netstat -nutpl | grep 6000
-tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      2115/Xorg
-tcp6       0      0 :::6000                 :::*                    LISTEN      2115/Xorg
-
-★アクセス許可
-[akira@mimi-air ~]$ xhost + 192.168.100.4
-192.168.100.4 being added to access control list
-
-★アクセス許可リストの確認
-[akira@mimi-air ~]$ xhost
-access control enabled, only authorized clients can connect
-INET:pipi
-SI:localuser:akira
-SI:localuser:gdm
-SI:localuser:root
-[akira@mimi-air ~]$
-</pre>
-
-<p>
-サーバ側の <code>DISPLAY</code> 環境変数をクライアントをXサーバへ指すように変更する。
-</p>
-<pre class="example">
-★環境変数設定
-[akira@pipi ~]$ export DISPLAY=192.168.100.13:0.0
-
-★環境変数確認
-[akira@pipi ~]$ env | grep DISPLAY
-DISPLAY=192.168.100.13:0.0
-
-★Xアプリ起動して確認する
-[akira@pipi ~]$ leafpad
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> SSH X11フォワード方式</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-通信イメージ
-</p>
-<pre class="example">
-┏━━━━━━━━━━━━━━━━━┓        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-┃    クライアント（Xサーバ）       ┃        ┃      サーバ (Xアプリ)                      ┃
-┃ Unixソケット                tcp  ┃ ssh -X ┃tcp                      Unixソケット       ┃
-┃ /tmp/.X11-unix/X0   &lt;----&gt;  ssh  &lt;&lt;━━━━┫sshd &lt;---&gt; tcp:6010 &lt;--&gt; /tmp/.X11-unix/X10 ┃
-┗━━━━━━━━━━━━━━━━━┛        ┗━━━━━━━━━━━━━━━━━━━━━━┛
-</pre>
-
-<p>
-設定作業と接続手順
-</p>
-<ul class="org-ul">
-<li>サーバ側のSSHにX11フォワードを許可するようにする。
-</li>
-<li>クライアントから <code>ssh -X</code> で接続する。
-</li>
-</ul>
-
-<p>
-クライアントからサーバに接続するに際にサーバサイトで以下の処理が実装される。
-</p>
-<ul class="org-ul">
-<li>DISPLAY環境変数を <code>localhost:10.0</code> に設定する。
-</li>
-<li><code>xauth</code> コマンドで <code>~/.Xauthority</code> に認証用クッキーを追加する。
-</li>
-</ul>
-
-<p>
-<code>ssh -X</code> で接続時にエラーが起きた場合、 <code>-v</code> オプションでデバッグメッセージの出力を有
-効にするとトラブルの原因究明に効果的かもしれない。
-</p>
-
-<pre class="example">
-■サーバ側
-------------------------------------------------------------
-
-★サーバ側のX11Forwarding設定値を確認する
-[akira@pipi ~]$ cat /etc/ssh/sshd_config | grep X11Forwarding
-X11Forwarding yes
-[akira@pipi ~]$ 
-
-■クライアント側
-------------------------------------------------------------
-★-Xオプションつけてサーバへ接続する
-[akira@mimi-air ~]$ ssh -X pipi
-Last login: Sun Jun 22 08:58:59 2014 from 192.168.100.13
-
-■サーバ側
-------------------------------------------------------------
-★DISPLAY環境変数の確認
-[akira@pipi ~]$ env | grep DISPLAY
-DISPLAY=localhost:10.0
-
-★~/.Xauthorityに登録されたクッキーの確認
-[akira@pipi ~]$ xauth list
-pipi/unix:10  MIT-MAGIC-COOKIE-1  75af091faa9e151987efb8fb46c5e2d3
-
-★6010ポートのリスリング状態の確認
-[akira@pipi ~]$ sudo netstat -nutpl | grep 6010 
-tcp        0      0 127.0.0.1:6010          0.0.0.0:*               LISTEN      9772/sshd: akira@pt 
-
-★Xアプリを起動して見る
-[akira@pipi ~]$ leafpad 
-Xlib:  extension "RANDR" missing on display "localhost:10.0".
-Gtk-Message: Failed to load module "canberra-gtk-module"
-leafpad: can't save config file - /home/akira/.config/leafpad/leafpadrc
-</pre>
-
-<p>
-サーバ側X11フォワードが有効でない、クライアントにて <code>ssh -X localhost</code> でX11のunixソケッ
-トをTCPの6010ポートに変換する。クライアントからサーバへ接続時にローカルの6010ポートを
-サーバ側にフォワードする方式もあります。この場合、サーバ側の <code>DISPLAY</code> 環境変数と
-<code>~/.Xauthority</code> の認証クッキーの追加を手動で行う必要があります。
-</p>
-
-<p>
-以下はその接続イメージです。
-</p>
-<pre class="example">
-┏━━━━━━━━━━━━━━┓    ┏━━━━━━━━━━━━━━┓
-┃    クライアント（Xサーバ） ┃    ┃     サーバ(Xアプリ)        ┃
-┃ Unixソケット               ┃    ┃                            ┃
-┃ /tmp/.X11-unix/X0          ┃    ┃        /tmp/.X11-unix/X10  ┃
-┃     ↓                     ┃    ┃                ↑          ┃
-┃  tcp:6010 &lt;-------&gt; ssh    ┣━━┫ sshd &lt;---&gt; localhost:6010  ┃
-┗━━━━━━━━━━━━━━┛    ┗━━━━━━━━━━━━━━┛
-</pre>
-
-<p>
-設定作業と接続手順
-</p>
-<ul class="org-ul">
-<li>ローカルののSSHにX11フォワードを許可するようにする。
-</li>
-<li>クライアントにて <code>ssh -X localhost</code> で接続する。
-</li>
-<li><code>ssh -R 6010</code> でサーバへ接続する
-</li>
-<li>サーバ側の <code>DISPLAY</code> 環境変数を設定する
-</li>
-<li>サーバ側の <code>~/.Xauthority</code> 認証クッキーを追加する
-</li>
-</ul>
-
-<pre class="example">
-■クライアント側
-------------------------------------------------------------
-★クライアント側のssh設定の確認
-[akira@mimi-air ~]$ cat /etc/ssh/sshd_config | grep X11Forwarding
-X11Forwarding yes
-
-★X11のUnixソケットをTCPへ変換する
-[akira@mimi-air ~]$ ssh -X localhost
-Last login: Sat Jun 21 13:10:45 2014 from localhost.localdomain
-
-[akira@mimi-air ~]$ sudo netstat -nutpl | grep 6010
-[sudo] password for akira: 
-tcp        0      0 127.0.0.1:6010          0.0.0.0:*               LISTEN      18706/sshd: akira@p 
-tcp6       0      0 ::1:6010                :::*                    LISTEN      18706/sshd: akira@p 
-
-★sshポートフォワーディングしてサーバへ接続する
-[akira@mimi-air ~]$ ssh -R 6010:localhost:6010 pipi
-Last login: Sun Jun 22 09:52:34 2014 from 192.168.100.13
-
-■サーバ側
-------------------------------------------------------------
-★ポートフォワーディング有効であることを確認する
-[akira@pipi ~]$ sudo netstat -nutpl | grep 6010
-tcp        0      0 127.0.0.1:6010          0.0.0.0:*               LISTEN      11106/sshd: akira@p 
-
-★DISPLAY環境変数の指定
-[akira@pipi ~]$ export DISPLAY=localhost:10.0
-
-★Xアプリ起動失敗：X認証失敗が原因です
-[akira@pipi ~]$ leafpad 
-leafpad: Cannot open display: 
-
-■クライアント側
-------------------------------------------------------------
-[akira@mimi-air ~]$ X11 connection rejected because of wrong authentication.
-
-★X認証用クッキーを確認する
-[akira@mimi-air ~]$ xauth list
-mimi-air/unix:10  MIT-MAGIC-COOKIE-1  47ed008f47dc3eae07294ee49b26fb35
-[akira@mimi-air ~]$ 
-
-■サーバ側
-------------------------------------------------------------
-★既存のサーバサイトのX認証クッキーを削除する
-[akira@pipi ~]$ xauth list
-pipi/unix:10  MIT-MAGIC-COOKIE-1  75af091faa9e151987efb8fb46c5e2d3
-[akira@pipi ~]$ xauth remove unix:10
-
-★クライアント側登録されたX認証クッキーをサーバ側にも登録する
-[akira@pipi ~]$ xauth add unix:10 MIT-MAGIC-COOKIE-1  47ed008f47dc3eae07294ee49b26fb35
-
-★Xアプリ起動成功
-[akira@pipi ~]$ leafpad 
-Xlib:  extension "RANDR" missing on display "localhost:10.0".
-Gtk-Message: Failed to load module "canberra-gtk-module"
-leafpad: can't save config file - /home/akira/.config/leafpad/leafpadrc
-[akira@pipi ~]$
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> VNC方式</h2>
-<div class="outline-text-2" id="text-4">
-<ul class="org-ul">
-<li><a href="https://wiki.archlinux.org/index.php/Vncserver_%2528%25E6%2597%25A5%25E6%259C%25AC%25E8%25AA%259E%2529">Archlinux Wiki: Vncserver (日本語)</a>
-</li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> ローカルで異なるユーザでXアプリの起動</h2>
-<div class="outline-text-2" id="text-5">
-<p>
-以下のようにコンソールからローカルの環境の別ユーザでXアプリを起動しようとするとエラー
-になります。
-</p>
-
-<pre class="example">
-★sudo -u で試す
-[akira@mimi-air ~]$ sudo -u milan leafpad 
-[sudo] password for akira: 
-No protocol specified
-leafpad: ディスプレイをオープンできません: 
-
-★suでユーザ切り替えたから試す
-[akira@mimi-air ~]$ su - milan
-パスワード:
-[milan@mimi-air ~]$ leafpad 
-leafpad: ディスプレイをオープンできません: 
-[milan@mimi-air ~]$
-</pre>
-
-<p>
-次の手順で設定すれば、普通に起動出来ます。
-</p>
-<ul class="org-ul">
-<li><code>DISPLAY</code> 環境変数の指定
-</li>
-<li><code>xauth</code> でX認証クッキーの登録
-</li>
-</ul>
-
-<pre class="example">
-[akira@mimi-air ~]$ su - milan
-パスワード:
-[milan@mimi-air ~]$ export DISPLAY=:0
-[milan@mimi-air ~]$ xauth list
-[milan@mimi-air ~]$ xauth add unix:0 MIT-MAGIC-COOKIE-1  75de7d9075e9582838e38aad909df062
-[milan@mimi-air ~]$ leafpad 
-[milan@mimi-air ~]$
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6"><span class="section-number-2">6</span> 参考サイト</h2>
-<div class="outline-text-2" id="text-6">
-<ul class="org-ul">
-<li><a href="http://vega.sra-tohoku.co.jp/~kabe/vsd/ssh-x.html">最近の豪華なX11環境でsshを使ってＸプロトコルを中継する</a>
-</li>
-<li><a href="http://www.ibm.com/developerworks/jp/linux/tutorials/l-basics/">Linux ビギナーのための基本タスク</a>
 </li>
 </ul>
 </div>

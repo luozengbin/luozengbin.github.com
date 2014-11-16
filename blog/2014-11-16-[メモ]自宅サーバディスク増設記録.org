@@ -1,0 +1,520 @@
+#+TITLE: [メモ]自宅サーバディスク増設記録
+#+DATE: 2014-11-16
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: lvm
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+半年前、約1年ちょっと使った [[http://www.wdc.com/global/products/specs/?driveID%3D1092&language%3D6][WD Blue(WD10EZEX)]] ディスクが壊れた (I/Oスピードが激遅い現
+象が起きた)ため、RMA保証手続きで交換しました。交換で約1ヶ月かかる、かつサーバがRAID0構
+成のため、代用品を購入し、復旧を実施した。RAM交換で届いたディスクがずっと置いたまま、
+今日もう一台のNASサーバに増設を実施します。
+
+{{{more}}}
+
+* 環境
+|----------+------------------------------------------------|
+| OS       | CentOS Linux release 7.0.1406 (Core)           |
+| /dev/sda | [[http://www.crucial.com/usa/en/storage-ssd-mx100-ja][Crucial MX100 2.5インチ内蔵型SSD 256GB SATAIII]] |
+| /dev/sdb | 増設HDD: WD10EZEX [1TB SATA600 7200]           |
+|----------+------------------------------------------------|
+
+* ツールの整備
+=hdparm= は HDD (SATA/IDE)デバイスのパフォーマンスとベンチマークのツールです｡
+#+begin_example
+$ sudo yum install hdparm
+#+end_example
+
+=sdparm= SCSIデバイスのパフォーマンスとベンチマークのツールです｡
+#+begin_example
+$ sudo yum install sdparm
+#+end_example
+
+GPTをサポートするパーティションリングツール
+#+begin_example
+$ sudo yum install gdisk
+#+end_example
+
+* ディスク情報確認
+=/dev/sda= SSDのハード情報を確認する。
+#+begin_example
+$ sudo hdparm -I /dev/sda
+
+/dev/sda:
+
+ATA device, with non-removable media
+	Model Number:       Crucial_CT256MX100SSD1
+	Serial Number:      ************
+	Firmware Revision:  *****
+	Transport:          Serial, ATA8-AST, SATA 1.0a, SATA II Extensions, SATA Rev 2.5, SATA Rev 2.6, SATA Rev 3.0
+Standards:
+	Used: unknown (minor revision code 0x0028)
+	Supported: 9 8 7 6 5 
+	Likely used: 9
+Configuration:
+	Logical		max	current
+	cylinders	16383	16383
+	heads		16	16
+	sectors/track	63	63
+	--
+	CHS current addressable sectors:   16514064
+	LBA    user addressable sectors:  268435455
+	LBA48  user addressable sectors:  500118192
+	Logical  Sector size:                   512 bytes
+	Physical Sector size:                  4096 bytes
+	Logical Sector-0 offset:                  0 bytes
+	device size with M = 1024*1024:      244198 MBytes
+	device size with M = 1000*1000:      256060 MBytes (256 GB)
+	cache/buffer size  = unknown
+	Form Factor: 2.5 inch
+	Nominal Media Rotation Rate: Solid State Device
+Capabilities:
+	LBA, IORDY(can be disabled)
+	Queue depth: 32
+	Standby timer values: spec'd by Standard, with device specific minimum
+	R/W multiple sector transfer: Max = 16	Current = 16
+	Advanced power management level: 254
+	DMA: mdma0 mdma1 mdma2 udma0 udma1 udma2 udma3 udma4 udma5 *udma6 
+	     Cycle time: min=120ns recommended=120ns
+	PIO: pio0 pio1 pio2 pio3 pio4 
+	     Cycle time: no flow control=120ns  IORDY flow control=120ns
+Commands/features:
+	Enabled	Supported:
+	   *	SMART feature set
+	    	Security Mode feature set
+	   *	Power Management feature set
+	   *	Write cache
+	   *	Look-ahead
+	   *	Host Protected Area feature set
+	   *	WRITE_BUFFER command
+	   *	READ_BUFFER command
+	   *	NOP cmd
+	   *	DOWNLOAD_MICROCODE
+	   *	Advanced Power Management feature set
+	    	SET_MAX security extension
+	   *	48-bit Address feature set
+	   *	Device Configuration Overlay feature set
+	   *	Mandatory FLUSH_CACHE
+	   *	FLUSH_CACHE_EXT
+	   *	SMART error logging
+	   *	SMART self-test
+	   *	General Purpose Logging feature set
+	   *	WRITE_{DMA|MULTIPLE}_FUA_EXT
+	   *	64-bit World wide name
+	   *	IDLE_IMMEDIATE with UNLOAD
+	    	Write-Read-Verify feature set
+	   *	WRITE_UNCORRECTABLE_EXT command
+	   *	{READ,WRITE}_DMA_EXT_GPL commands
+	   *	Segmented DOWNLOAD_MICROCODE
+	   *	Gen1 signaling speed (1.5Gb/s)
+	   *	Gen2 signaling speed (3.0Gb/s)
+	   *	Gen3 signaling speed (6.0Gb/s)
+	   *	Native Command Queueing (NCQ)
+	   *	Phy event counters
+	   *	NCQ priority information
+	   *	unknown 76[15]
+	   *	DMA Setup Auto-Activate optimization
+	    	Device-initiated interface power management
+	    	Asynchronous notification (eg. media change)
+	   *	Software settings preservation
+	    	unknown 78[8]
+	   *	SMART Command Transport (SCT) feature set
+	   *	SCT Write Same (AC2)
+	   *	SCT Features Control (AC4)
+	   *	SCT Data Tables (AC5)
+	   *	reserved 69[4]
+	   *	reserved 69[7]
+	   *	Data Set Management TRIM supported (limit 8 blocks)
+	   *	Deterministic read ZEROs after TRIM
+Security: 
+	Master password revision code = 65534
+		supported
+	not	enabled
+	not	locked
+		frozen
+	not	expired: security count
+		supported: enhanced erase
+	2min for SECURITY ERASE UNIT. 2min for ENHANCED SECURITY ERASE UNIT.
+Logical Unit WWN Device Identifier: ***************
+	NAA		: 5
+	IEEE OUI	: 00a075
+	Unique ID	: ********
+Checksum: correct
+#+end_example
+
+=/dev/sdb= HDDのハード情報を確認する。
+#+begin_example
+$ sudo hdparm -I /dev/sdb
+
+/dev/sdb:
+
+ATA device, with non-removable media
+	Model Number:       WDC WD10EZEX-00RKKA0
+	Serial Number:      WD-WMC**********
+	Firmware Revision:  80.00A80
+	Transport:          Serial, SATA 1.0a, SATA II Extensions, SATA Rev 2.5, SATA Rev 2.6, SATA Rev 3.0
+Standards:
+	Supported: 8 7 6 5 
+	Likely used: 8
+Configuration:
+	Logical		max	current
+	cylinders	16383	16383
+	heads		16	16
+	sectors/track	63	63
+	--
+	CHS current addressable sectors:   16514064
+	LBA    user addressable sectors:  268435455
+	LBA48  user addressable sectors: 1953525168
+	Logical  Sector size:                   512 bytes
+	Physical Sector size:                  4096 bytes
+	device size with M = 1024*1024:      953869 MBytes
+	device size with M = 1000*1000:     1000204 MBytes (1000 GB)
+	cache/buffer size  = unknown
+Capabilities:
+	LBA, IORDY(can be disabled)
+	Queue depth: 32
+	Standby timer values: spec'd by Standard, with device specific minimum
+	R/W multiple sector transfer: Max = 16	Current = 16
+	DMA: mdma0 mdma1 mdma2 udma0 udma1 udma2 udma3 udma4 udma5 *udma6 
+	     Cycle time: min=120ns recommended=120ns
+	PIO: pio0 pio1 pio2 pio3 pio4 
+	     Cycle time: no flow control=120ns  IORDY flow control=120ns
+Commands/features:
+	Enabled	Supported:
+	   *	SMART feature set
+	    	Security Mode feature set
+	   *	Power Management feature set
+	   *	Write cache
+	   *	Look-ahead
+	   *	Host Protected Area feature set
+	   *	WRITE_BUFFER command
+	   *	READ_BUFFER command
+	   *	NOP cmd
+	   *	DOWNLOAD_MICROCODE
+	    	Power-Up In Standby feature set
+	   *	SET_FEATURES required to spinup after power up
+	    	SET_MAX security extension
+	   *	48-bit Address feature set
+	   *	Device Configuration Overlay feature set
+	   *	Mandatory FLUSH_CACHE
+	   *	FLUSH_CACHE_EXT
+	   *	SMART error logging
+	   *	SMART self-test
+	   *	General Purpose Logging feature set
+	   *	64-bit World wide name
+	   *	{READ,WRITE}_DMA_EXT_GPL commands
+	   *	Segmented DOWNLOAD_MICROCODE
+	   *	Gen1 signaling speed (1.5Gb/s)
+	   *	Gen2 signaling speed (3.0Gb/s)
+	   *	Gen3 signaling speed (6.0Gb/s)
+	   *	Native Command Queueing (NCQ)
+	   *	Host-initiated interface power management
+	   *	Phy event counters
+	   *	NCQ priority information
+	   *	unknown 76[15]
+	   *	DMA Setup Auto-Activate optimization
+	   *	Software settings preservation
+	   *	SMART Command Transport (SCT) feature set
+	   *	SCT Write Same (AC2)
+	   *	SCT Features Control (AC4)
+	   *	SCT Data Tables (AC5)
+	    	unknown 206[7]
+	    	unknown 206[12] (vendor specific)
+	    	unknown 206[13] (vendor specific)
+Security: 
+	Master password revision code = 65534
+		supported
+	not	enabled
+	not	locked
+		frozen
+	not	expired: security count
+		supported: enhanced erase
+	112min for SECURITY ERASE UNIT. 112min for ENHANCED SECURITY ERASE UNIT. 
+Logical Unit WWN Device Identifier: ****************
+	NAA		: 5
+	IEEE OUI	: 0014ee
+	Unique ID	: ******
+Checksum: correct
+$ 
+#+end_example
+
+* 現在のパーティション構成
+
+=/dev/sda= の物理パーティション構成を確認する。
+#+begin_example
+$ sudo gdisk -l /dev/sda 
+GPT fdisk (gdisk) version 0.8.6
+
+Partition table scan:
+  MBR: protective
+  BSD: not present
+  APM: not present
+  GPT: present
+
+Found valid GPT with protective MBR; using GPT.
+Disk /dev/sda: 500118192 sectors, 238.5 GiB
+Logical sector size: 512 bytes
+Disk identifier (GUID): A2BE7525-7A02-4E36-8C41-B9E4487690BD
+Partition table holds up to 128 entries
+First usable sector is 34, last usable sector is 500118158
+Partitions will be aligned on 2048-sector boundaries
+Total free space is 2669 sectors (1.3 MiB)
+
+Number  Start (sector)    End (sector)  Size       Code  Name
+   1            2048          411647   200.0 MiB   EF00  EFI System Partition
+   2          411648         1435647   500.0 MiB   0700  
+   3         1435648       500117503   237.8 GiB   8E00  
+$ 
+#+end_example
+
+LVMの構成状況
+#+begin_example
+$ sudo lvmdiskscan
+  /dev/centos/swap [       7.27 GiB] 
+  /dev/sda1        [     200.00 MiB] 
+  /dev/centos/root [      50.00 GiB] 
+  /dev/sda2        [     500.00 MiB] 
+  /dev/centos/home [     180.52 GiB] 
+........
+#+end_example
+
+先頭の物理パーティションをブート関係用にマウントしています。
+|-----------+------+-----------+-------|
+| /dev/sda1 | vfat | /boot/efi | 200MB |
+| /dev/sda2 | xfs  | /boot     | 500MB |
+|-----------+------+-----------+-------|
+
+三番目の物理パーティションをLVMで割って使っています。
+|-----------+--------+------------------+--------+-------------+-------|
+| PV        | VG     | LV               | Format | Mount Point | Size  |
+|-----------+--------+------------------+--------+-------------+-------|
+| /dev/sda3 | centos | /dev/centos/swap | swap   |             | 7.27G |
+|           |        | /dev/centos/home | xfs    | /           | 180G  |
+|           |        | /dev/centos/root | xfs    | /home       | 50G   |
+|-----------+--------+------------------+--------+-------------+-------|
+
+* 増設後のパーティション構成
+増設したHDDに =vg01= を増やして、 =/home= と =/var= をこちら配置するようにする。
+|-----------+--------+------------------+--------+-------------+-------|
+| PV        | VG     | LV               | Format | Mount Point | Size  |
+|-----------+--------+------------------+--------+-------------+-------|
+| /dev/sda3 | centos | /dev/centos/swap | swap   |             | 7.27G |
+|           |        | /dev/centos/root | xfs    | /           | 230G  |
+| /dev/sdb1 | vg01   | /dev/vg01/home   | xfs    | /home       | 431G  |
+|           |        | /dev/vg01/var    | xfs    | /var        | 500G  |
+|-----------+--------+------------------+--------+-------------+-------|
+
+* 増設手順
+** gdiskでパーティションを初期化する
+
+#+begin_example
+$ sudo gdisk /dev/sdb
+GPT fdisk (gdisk) version 0.8.6
+
+Partition table scan:
+  MBR: not present
+  BSD: not present
+  APM: not present
+  GPT: not present
+
+Creating new GPT entries.
+
+Command (? for help): o        ★GPTパーティションテーブルを新規作成する
+This option deletes all partitions and creates a new protective MBR.
+Proceed? (Y/N): Y
+
+Command (? for help): n        ★新規パーティションを作成する
+Partition number (1-128, default 1): 
+First sector (34-1953525134, default = 2048) or {+-}size{KMGTP}: 
+Last sector (2048-1953525134, default = 1953525134) or {+-}size{KMGTP}: 
+Current type is 'Linux filesystem'
+Hex code or GUID (L to show codes, Enter = 8300): 8e00 ★パーティションタイプをLVMにする
+Changed type of partition to 'Linux LVM'
+
+Command (? for help): w
+
+Final checks complete. About to write GPT data. THIS WILL OVERWRITE EXISTING
+PARTITIONS!!
+
+Do you want to proceed? (Y/N): Y
+OK; writing new GUID partition table (GPT) to /dev/sdb.
+The operation has completed successfully.
+$
+#+end_example
+
+結果を確認する
+#+begin_example
+$ sudo gdisk -l /dev/sdb
+GPT fdisk (gdisk) version 0.8.6
+
+Partition table scan:
+  MBR: protective
+  BSD: not present
+  APM: not present
+  GPT: present
+
+Found valid GPT with protective MBR; using GPT.
+Disk /dev/sdb: 1953525168 sectors, 931.5 GiB
+Logical sector size: 512 bytes
+Disk identifier (GUID): DE117DAF-1D96-4505-89EC-6F1E6BB08E4C
+Partition table holds up to 128 entries
+First usable sector is 34, last usable sector is 1953525134
+Partitions will be aligned on 2048-sector boundaries
+Total free space is 2014 sectors (1007.0 KiB)
+
+Number  Start (sector)    End (sector)  Size       Code  Name
+   1            2048      1953525134   931.5 GiB   8E00  Linux LVM
+#+end_example
+
+** LVMパーティション再構成
+PV =/dev/sdb1= 作成する
+#+begin_example
+$ sudo pvcreate /dev/sdb1
+  Physical volume "/dev/sdb1" successfully created
+#+end_example
+
+VG =vg01= を作成する
+#+begin_example
+$ sudo vgcreate vg01 /dev/sdb1
+  Volume group "vg01" successfully created
+#+end_example
+
+VG =centos= の =home= 論理ボリュームを 一旦 =home0= にリネームする。
+#+begin_example
+$ sudo lvrename centos home home0
+  Renamed "home" to "home0" in volume group "centos"
+#+end_example
+
+VG =vg01= 上で =/var= 用の =var= 論理ボリュームを作成する。
+#+begin_example
+$ sudo lvcreate -L 500G vg01 -n var
+  Logical volume "var" created
+#+end_example
+
+VG =vg01= 上残りに容量を =/home= 用の =home= 論理ボリュームを作成する。
+#+begin_example
+$ sudo lvcreate -l +100%FREE vg01 -n home
+  Logical volume "home" created
+#+end_example
+
+=var= 論理ボリュームを =xfs= タイプファイルシステムでフォーマットする。
+#+begin_example
+$ sudo mkfs.xfs /dev/mapper/vg01-var 
+meta-data=/dev/mapper/vg01-var   isize=256    agcount=4, agsize=32768000 blks
+         =                       sectsz=4096  attr=2, projid32bit=1
+         =                       crc=0
+data     =                       bsize=4096   blocks=131072000, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=64000, version=2
+         =                       sectsz=4096  sunit=1 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+
+$#+end_example
+
+=home= 論理ボリュームを =xfs= タイプファイルシステムでフォーマットする。
+#+begin_example
+$ sudo mkfs.xfs /dev/mapper/vg01-home 
+meta-data=/dev/mapper/vg01-home  isize=256    agcount=4, agsize=28279296 blks
+         =                       sectsz=4096  attr=2, projid32bit=1
+         =                       crc=0
+data     =                       bsize=4096   blocks=113117184, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=55233, version=2
+         =                       sectsz=4096  sunit=1 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+$
+#+end_example
+
+=/home= 領域データをコピーする。
+#+begin_example
+$ sudo mount /dev/mapper/vg01-home /mnt/
+$ sudo cp --archive /home /mnt
+$ ls -al /mnt/
+合計 4
+drwxr-xr-x   3 root root   17 11月 16 22:04 .
+drwxr-xr-x. 17 root root 4096 11月 10 21:46 ..
+drwxr-xr-x.  3 root root   18  9月 14 23:07 home
+$ sudo mv /mnt/home/* /mnt/
+$ sudo rm -rf /mnt/home/
+$ sudo umount /mnt
+#+end_example
+
+=/var= 領域を使用しているサービスを止めて、データをコピーする。
+#+begin_example
+$ sudo systemctl stop xxxxx.service
+$ sudo mount /dev/mapper/vg01-var /mnt/
+$ sudo cp --archive /var /mnt
+$ sudo mv /mnt/var/* /mnt/
+$ sudo rm -rf /mnt/var/
+$ sudo umount /mnt
+#+end_example
+
+=/etc/fstab= を適切に変更する。
+#+begin_example
+/dev/mapper/centos-root /                       xfs     defaults        1 1
+/dev/mapper/centos-swap swap                    swap    defaults        0 0
+/dev/mapper/vg01-home   /home                   xfs     defaults        1 2
+/dev/mapper/vg01-var    /var                    xfs     defaults        1 2
+.....
+#+end_example
+
+旧 =/var= ディレクトリ名を適当に変更し、システムを再起動する。
+#+begin_example
+$ sudo mv /var /var.0
+#+end_example
+
+=root= 論理ボリュームを拡張する
+#+begin_example
+★home0論理ボリュームの削除
+$ sudo lvremove -f centos/home0
+  Logical volume "home0" successfully removed
+
+★root論理ボリュームの拡大
+$ sudo lvextend -l +100%FREE centos/root
+  Extending logical volume root to 230.52 GiB
+  Logical volume root successfully resized
+
+★xfsファイルシステムサイズの拡大
+$ xfs_growfs /
+#+end_example
+
+
+** 増設結果を確認する
+=lvmdiskscan= の表示
+#+begin_example
+$ sudo lvmdiskscan 
+  /dev/centos/swap [       7.27 GiB] 
+  /dev/sda1        [     200.00 MiB] 
+  /dev/centos/root [     230.52 GiB] 
+  /dev/sda2        [     500.00 MiB] 
+  /dev/vg01/var    [     500.00 GiB] 
+  /dev/sda3        [     237.79 GiB] LVM physical volume
+  /dev/vg01/home   [     431.51 GiB] 
+  /dev/sdb1        [     931.51 GiB] LVM physical volume
+  4 disks
+  2 partitions
+  0 LVM physical volume whole disks
+  2 LVM physical volumes
+#+end_example
+
+=df -h= の表示
+#+begin_example
+$ df -h
+ファイルシス            サイズ  使用  残り 使用% マウント位置
+/dev/sda1                 200M  9.6M  191M    5% /boot/efi
+/dev/sda2                 494M  203M  292M   42% /boot
+/dev/mapper/centos-root   231G   16G  215G    7% /
+/dev/mapper/vg01-home     432G  379M  431G    1% /home
+/dev/mapper/vg01-var      500G   13G  488G    3% /var
+.......
+#+end_example
+
+* 参考情報
+- [[https://wiki.archlinux.org/index.php/Lvm#lvextend][Archlinux Wiki - LVM]]
+- [[http://kuenishi.hatenadiary.jp/entry/20070325/1174833266][ディスクを加えてXFS on LVMを拡張する]]
+- [[https://access.redhat.com/documentation/ja-JP/Red_Hat_Enterprise_Linux/6/html/Storage_Administration_Guide/xfsgrow.html][XFS ファイルシステムのサイズの拡大]]
+
