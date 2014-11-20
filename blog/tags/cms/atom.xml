@@ -1,0 +1,810 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Cms | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/cms/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2014-11-20T15:12:30+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]CMS GCログの見方]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html"/>
+    <updated>2014-11-05T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]cms-gcログの見方</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 基本おさらい</a></li>
+<li><a href="#sec-2">2. 実験するためのプログラム</a></li>
+<li><a href="#sec-3">3. CMSログの見方</a>
+<ul>
+<li><a href="#sec-3-1">3.1. New領域GCログ</a></li>
+<li><a href="#sec-3-2">3.2. Old領域GCログ</a></li>
+<li><a href="#sec-3-3">3.3. concurrent mode failure</a></li>
+<li><a href="#sec-3-4">3.4. 手動FullGC時のログ</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 基本おさらい</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+CMSとは <code>Concurrent Mark &amp; Sweep</code> 、JVM OLD領域GC処理アルゴリズムの一種です。
+CMSはアプリケーションを停止する時間を削減することが出来ます。処理の流れは下図に示す。
+</p>
+
+<p>
+※Concurrentは同時という意味です。
+</p>
+
+<pre class="example">
+       ①        ②          ③    ④
+---&gt; | ==&gt; | ============&gt; | ==&gt; | ==========&gt; -----&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+       STW                   STW
+
+凡例
++--------------------+
+| ==&gt; GCスレッド     |
+| --&gt; アプリスレッド |
++--------------------+
+</pre>
+
+<p>
+図上示している通り、①と③の処理だけアプリケーションが停止する。
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">①</td>
+<td class="left">Initial Mark</td>
+<td class="left">STW</td>
+<td class="left">Rootを起点に利用されてるオブジェクトをマークする</td>
+</tr>
+
+<tr>
+<td class="left">②-1</td>
+<td class="left">Concurrent Mark</td>
+<td class="left">&#xa0;</td>
+<td class="left">①でマークされたオブジェクトを起点に使用中のオブジェクトをマークする</td>
+</tr>
+
+<tr>
+<td class="left">②-2</td>
+<td class="left">Concurrent precleaning</td>
+<td class="left">&#xa0;</td>
+<td class="left">②-1処理中アプリによる生じた変化部分をマークする、③の処理時間を短縮するため</td>
+</tr>
+
+<tr>
+<td class="left">③</td>
+<td class="left">Parallel Remark</td>
+<td class="left">STW</td>
+<td class="left">②処理中アプリによる生じた変化部分をマークする</td>
+</tr>
+
+<tr>
+<td class="left">④-1</td>
+<td class="left">Concurrent Sweeping</td>
+<td class="left">&#xa0;</td>
+<td class="left">マーク処理によって判明した使用済みオブジェクトを削除する</td>
+</tr>
+
+<tr>
+<td class="left">④-2</td>
+<td class="left">Concurrent Reset</td>
+<td class="left">&#xa0;</td>
+<td class="left">CMS処理自体のリセット</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+<!-- more -->
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 実験するためのプログラム</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+メモリを大量に消費するWebサービス
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #8ac6f2; font-weight: bold;">package</span> test.<span style="color: #e5786d;">example</span>;
+
+<span style="color: #8ac6f2; font-weight: bold;">import</span> <span style="color: #e5786d;">javax</span>.<span style="color: #e5786d;">jws</span>.<span style="color: #92a65e; font-weight: bold;">WebMethod</span>;
+<span style="color: #8ac6f2; font-weight: bold;">import</span> <span style="color: #e5786d;">javax</span>.<span style="color: #e5786d;">jws</span>.<span style="color: #92a65e; font-weight: bold;">WebParam</span>;
+<span style="color: #8ac6f2; font-weight: bold;">import</span> <span style="color: #e5786d;">javax</span>.<span style="color: #e5786d;">jws</span>.<span style="color: #92a65e; font-weight: bold;">WebService</span>;
+<span style="color: #8ac6f2; font-weight: bold;">import</span> <span style="color: #e5786d;">javax</span>.<span style="color: #e5786d;">jws</span>.<span style="color: #e5786d;">soap</span>.<span style="color: #92a65e; font-weight: bold;">SOAPBinding</span>;
+
+<span style="color: #e5786d;">@WebService</span>
+<span style="color: #e5786d;">@SOAPBinding</span>(style = <span style="color: #e5786d;">SOAPBinding</span>.<span style="color: #e5786d;">Style</span>.DOCUMENT, use = <span style="color: #e5786d;">SOAPBinding</span>.<span style="color: #e5786d;">Use</span>.LITERAL, parameterStyle = <span style="color: #e5786d;">SOAPBinding</span>.<span style="color: #e5786d;">ParameterStyle</span>.WRAPPED)
+<span style="color: #8ac6f2; font-weight: bold;">public</span> <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">HelloWorld</span> {
+
+    <span style="color: #e5786d;">@WebMethod</span>(action = <span style="color: #95e454;">"sayHello"</span>)
+    <span style="color: #8ac6f2; font-weight: bold;">public</span> <span style="color: #92a65e; font-weight: bold;">String</span> <span style="color: #cae682;">sayHello</span>(<span style="color: #e5786d;">@WebParam</span>(name = <span style="color: #95e454;">"name"</span> ) <span style="color: #92a65e; font-weight: bold;">String</span> <span style="color: #cae682;">name</span>) <span style="color: #8ac6f2; font-weight: bold;">throws</span> <span style="color: #92a65e; font-weight: bold;">CustomException</span> {
+
+        System.out.println(<span style="color: #95e454;">"Hello: "</span> + name);
+
+        <span style="color: #e5786d;">java</span>.<span style="color: #e5786d;">util</span>.<span style="color: #92a65e; font-weight: bold;">List</span> <span style="color: #cae682;">l</span>  =  <span style="color: #8ac6f2; font-weight: bold;">new</span> <span style="color: #e5786d;">java</span>.<span style="color: #e5786d;">util</span>.<span style="color: #92a65e; font-weight: bold;">ArrayList</span>&lt;&gt;();
+        <span style="color: #92a65e; font-weight: bold;">int</span> <span style="color: #cae682;">x</span>  = 0;
+        <span style="color: #8ac6f2; font-weight: bold;">while</span> (x &lt; 6300) {
+            <span style="color: #92a65e; font-weight: bold;">Thread</span> <span style="color: #cae682;">t</span>  =  <span style="color: #8ac6f2; font-weight: bold;">new</span> <span style="color: #92a65e; font-weight: bold;">Thread</span>();
+            l.add(t);
+
+            <span style="color: #8ac6f2; font-weight: bold;">try</span> {
+                Thread.sleep(10);
+            } <span style="color: #8ac6f2; font-weight: bold;">catch</span> (<span style="color: #92a65e; font-weight: bold;">Exception</span> <span style="color: #cae682;">e</span>) {
+            }
+            x++;
+            System.out.println(x);
+        }
+        <span style="color: #8ac6f2; font-weight: bold;">return</span> <span style="color: #95e454;">"Hello "</span> + name + <span style="color: #95e454;">"!"</span>;
+    }
+}
+</pre>
+</div>
+
+<p>
+Webサービスを載せるAPサーバの起動オプションにGC関係のパラメータを追加する。
+Old領域のGCを発生しやすくため、ヒープサイズを小さめに割り当てる。
+</p>
+<pre class="example">
+JAVA_OPTS="$JAVA_OPTS -Xms512m -Xmx512m -XX:MaxPermSize=256m"
+JAVA_OPTS="$JAVA_OPTS -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled"
+JAVA_OPTS="$JAVA_OPTS -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps"
+JAVA_OPTS="$JAVA_OPTS -Xloggc:/tmp/gc-`date '+%Y-%m-%d'`.log"
+</pre>
+
+<p>
+以下のオプション、GC時に詳細なオブジェクト統計情報も出力する。ここでは略します。
+</p>
+<pre class="example">
+JAVA_OPTS="$JAVA_OPTS -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution"
+</pre>
+
+<p>
+SoapUIから100多重で負荷を掛けて、テストアプリを実行させる。
+</p>
+
+<p>
+SoapUIから負荷を掛けた後はしばらく、New領域のGCログが出続ける。Old領域が満タンな状態
+になる前にOld領域のGCログが出始める。以下はOld領域GC発生前後のログを示す。
+</p>
+
+<pre class="example">
+2014-11-05T14:24:49.336+0900: 214.204: [GC2014-11-05T14:24:49.336+0900: 214.204: [DefNew: 76672K-&gt;8512K(76672K), 0.0978870 secs] 455251K-&gt;395770K(515776K), 0.0981100 secs] [Times: user=0.08 sys=0.00, real=0.10 secs] 
+2014-11-05T14:24:51.971+0900: 216.840: [GC2014-11-05T14:24:51.971+0900: 216.840: [DefNew: 76672K-&gt;8412K(76672K), 0.0816580 secs] 463930K-&gt;404301K(515776K), 0.0818720 secs] [Times: user=0.06 sys=0.00, real=0.08 secs] 
+2014-11-05T14:24:54.767+0900: 219.636: [GC2014-11-05T14:24:54.767+0900: 219.636: [DefNew: 76572K-&gt;8415K(76672K), 0.1165260 secs] 472461K-&gt;412833K(515776K), 0.1172920 secs] [Times: user=0.06 sys=0.01, real=0.12 secs] 
+2014-11-05T14:24:54.899+0900: 219.768: [GC [1 CMS-initial-mark: 404417K(439104K)] 414152K(515776K), 0.0252080 secs] [Times: user=0.02 sys=0.00, real=0.03 secs] 
+2014-11-05T14:24:55.043+0900: 219.912: [CMS-concurrent-mark-start]
+2014-11-05T14:24:56.941+0900: 221.810: [GC2014-11-05T14:24:56.941+0900: 221.810: [DefNew: 76575K-&gt;8512K(76672K), 0.0933500 secs] 480993K-&gt;423185K(515776K), 0.0935560 secs] [Times: user=0.07 sys=0.00, real=0.10 secs] 
+2014-11-05T14:24:58.119+0900: 222.988: [CMS-concurrent-mark: 2.773/3.076 secs] [Times: user=2.38 sys=0.46, real=3.07 secs] 
+2014-11-05T14:24:58.119+0900: 222.988: [CMS-concurrent-preclean-start]
+2014-11-05T14:24:58.127+0900: 222.996: [CMS-concurrent-preclean: 0.007/0.008 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
+2014-11-05T14:24:58.127+0900: 222.996: [CMS-concurrent-abortable-preclean-start]
+ CMS: abort preclean due to time 2014-11-05T14:25:03.224+0900: 228.092: [CMS-concurrent-abortable-preclean: 2.683/5.096 secs] [Times: user=2.44 sys=0.08, real=5.10 secs] 
+2014-11-05T14:25:03.224+0900: 228.093: [GC[YG occupancy: 48273 K (76672 K)]2014-11-05T14:25:03.224+0900: 228.093: [Rescan (non-parallel) 2014-11-05T14:25:03.224+0900: 228.093: [grey object rescan, 0.0011680 secs]2014-11-05T14:25:03.225+0900: 228.094: [root rescan, 0.2362360 secs], 0.2375020 secs]2014-11-05T14:25:03.462+0900: 228.331: [weak refs processing, 0.0044290 secs]2014-11-05T14:25:03.466+0900: 228.335: [class unloading, 0.0089260 secs]2014-11-05T14:25:03.475+0900: 228.344: [scrub symbol table, 0.0179240 secs]2014-11-05T14:25:03.493+0900: 228.362: [scrub string table, 0.0013030 secs] [1 CMS-remark: 414673K(439104K)] 462947K(515776K), 0.2714240 secs] [Times: user=0.26 sys=0.00, real=0.27 secs] 
+2014-11-05T14:25:03.504+0900: 228.373: [CMS-concurrent-sweep-start]
+2014-11-05T14:25:03.816+0900: 228.685: [CMS-concurrent-sweep: 0.310/0.312 secs] [Times: user=0.23 sys=0.00, real=0.31 secs] 
+2014-11-05T14:25:03.817+0900: 228.686: [CMS-concurrent-reset-start]
+2014-11-05T14:25:03.819+0900: 228.687: [CMS-concurrent-reset: 0.001/0.001 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+2014-11-05T14:25:04.454+0900: 229.323: [GC [1 CMS-initial-mark: 394635K(439104K)] 443918K(515776K), 0.0809520 secs] [Times: user=0.08 sys=0.00, real=0.08 secs] 
+2014-11-05T14:25:04.538+0900: 229.407: [CMS-concurrent-mark-start]
+2014-11-05T14:25:05.602+0900: 230.471: [CMS-concurrent-mark: 1.064/1.064 secs] [Times: user=1.01 sys=0.00, real=1.07 secs] 
+2014-11-05T14:25:05.603+0900: 230.471: [CMS-concurrent-preclean-start]
+2014-11-05T14:25:05.605+0900: 230.474: [CMS-concurrent-preclean: 0.003/0.003 secs] [Times: user=0.01 sys=0.00, real=0.00 secs] 
+2014-11-05T14:25:05.605+0900: 230.474: [CMS-concurrent-abortable-preclean-start]
+ CMS: abort preclean due to time 2014-11-05T14:25:10.648+0900: 235.516: [CMS-concurrent-abortable-preclean: 1.979/5.042 secs] [Times: user=1.89 sys=0.01, real=5.04 secs] 
+2014-11-05T14:25:10.648+0900: 235.517: [GC[YG occupancy: 55959 K (76672 K)]2014-11-05T14:25:10.648+0900: 235.517: [Rescan (non-parallel) 2014-11-05T14:25:10.648+0900: 235.517: [grey object rescan, 0.0012890 secs]2014-11-05T14:25:10.649+0900: 235.518: [root rescan, 0.1016560 secs], 0.1030300 secs]2014-11-05T14:25:10.751+0900: 235.620: [weak refs processing, 0.0000500 secs]2014-11-05T14:25:10.751+0900: 235.620: [class unloading, 0.0078410 secs]2014-11-05T14:25:10.759+0900: 235.628: [scrub symbol table, 0.0162830 secs]2014-11-05T14:25:10.775+0900: 235.644: [scrub string table, 0.0010720 secs] [1 CMS-remark: 394635K(439104K)] 450595K(515776K), 0.1292870 secs] [Times: user=0.12 sys=0.01, real=0.13 secs] 
+2014-11-05T14:25:10.777+0900: 235.646: [CMS-concurrent-sweep-start]
+2014-11-05T14:25:10.981+0900: 235.850: [CMS-concurrent-sweep: 0.203/0.203 secs] [Times: user=0.20 sys=0.00, real=0.20 secs] 
+2014-11-05T14:25:10.981+0900: 235.850: [CMS-concurrent-reset-start]
+2014-11-05T14:25:10.983+0900: 235.852: [CMS-concurrent-reset: 0.001/0.001 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+2014-11-05T14:25:32.473+0900: 257.342: [GC2014-11-05T14:25:32.474+0900: 257.342: [DefNew: 76664K-&gt;2361K(76672K), 0.0146410 secs] 463666K-&gt;389381K(515776K), 0.0148600 secs] [Times: user=0.01 sys=0.00, real=0.02 secs] 
+2014-11-05T14:26:44.480+0900: 329.349: [GC2014-11-05T14:26:44.480+0900: 329.349: [DefNew: 70521K-&gt;1291K(76672K), 0.0214830 secs] 457541K-&gt;388311K(515776K), 0.0216760 secs] [Times: user=0.01 sys=0.00, real=0.02 secs] 
+2014-11-05T14:27:56.504+0900: 401.373: [GC2014-11-05T14:27:56.504+0900: 401.373: [DefNew: 69451K-&gt;1214K(76672K), 0.0102000 secs] 456471K-&gt;388234K(515776K), 0.0103740 secs] [Times: user=0.01 sys=0.00, real=0.01 secs]
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> CMSログの見方</h2>
+<div class="outline-text-2" id="text-3">
+</div><div id="outline-container-sec-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> New領域GCログ</h3>
+<div class="outline-text-3" id="text-3-1">
+<p>
+New領域のGCは <code>minor GC</code> と呼ばれる場合があります。
+</p>
+
+<p>
+<code>DefNew</code> と <code>PraNew</code> 文字が含まれた行は <code>New</code> 領域のGC処理ログです。シングルコアの場合
+<code>DefNew=、マルチコアは =PraNew</code> となります。
+</p>
+
+<p>
+New領域のGCログは一行で完結する。ログ先頭の <code>GC</code> タグはSTWであることを示している。(つ
+まりNew領域のGC処理はStop the worldです)続きの部分はGC前後New領域内メモリの変化を示し
+ている、その次の部分は、JVM全体のメモリ使用量の変化を示している。
+</p>
+<pre class="example">
+2014-11-05T16:59:21.544+0900: 9486.413: [GC2014-11-05T16:59:21.544+0900: 9486.413: [DefNew: 68932K-&gt;1046K(76672K), 0.0122090 secs] 472847K-&gt;405094K(515776K), 0.0123880 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
+                                          ★                                        ~~~~~~  ~~~~~   ~~~~  ~~~~                     ~~~~~~~  ~~~~~~
+                                                                                      A       B       C     D                         E       F
+</pre>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">A</td>
+<td class="left">New領域のGC</td>
+<td class="left">DefNew</td>
+</tr>
+
+<tr>
+<td class="left">B</td>
+<td class="left">GC前New領域の使用量</td>
+<td class="left">68932K</td>
+</tr>
+
+<tr>
+<td class="left">C</td>
+<td class="left">GC後New領域の使用量</td>
+<td class="left">1046K</td>
+</tr>
+
+<tr>
+<td class="left">D</td>
+<td class="left">New領域GCの閾値</td>
+<td class="left">76672K</td>
+</tr>
+
+<tr>
+<td class="left">E</td>
+<td class="left">GC前JVMメモリの使用量</td>
+<td class="left">472847K</td>
+</tr>
+
+<tr>
+<td class="left">F</td>
+<td class="left">GC後JVMメモリの使用量</td>
+<td class="left">405094K</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+New領域容量の変化とJMV全体のメモリ容量の変化からOLD領域の増加サイズを算出する。
+</p>
+
+<pre class="example">
+New領域変化容量： 68932 K - 1046K   = 67886K
+JVM全体変化容量： 472847K - 405094K = 67753K
+★OLD領域の増加サイズ： New領域変化容量 - JVM全体変化容量 = 133K
+</pre>
+
+<p>
+最後の <code>real</code> 部分はSTW(アプリ停止時間)の時間となります、10ミリ秒ですね。
+</p>
+<pre class="example">
+[Times: user=0.01 sys=0.00, real=0.01 secs]
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3-2" class="outline-3">
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> Old領域GCログ</h3>
+<div class="outline-text-3" id="text-3-2">
+<p>
+以下は通常なCMS処理のログです。
+</p>
+<pre class="example">
+★CMS起きる前のNewGCログ
+2014-11-05T16:59:21.544+0900: 9486.413: [GC2014-11-05T16:59:21.544+0900: 9486.413: [DefNew: 68932K-&gt;1046K(76672K), 0.0122090 secs] 472847K-&gt;405094K(515776K), 0.0123880 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
+
+★①
+2014-11-05T16:59:21.564+0900: 9486.433: [GC [1 CMS-initial-mark: 404047K(439104K)] 405358K(515776K), 0.0084940 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
+
+★②-1
+2014-11-05T16:59:21.573+0900: 9486.442: [CMS-concurrent-mark-start]
+2014-11-05T16:59:21.727+0900: 9486.596: [CMS-concurrent-mark: 0.154/0.154 secs] [Times: user=0.14 sys=0.00, real=0.15 secs] 
+
+★②-2
+2014-11-05T16:59:21.727+0900: 9486.596: [CMS-concurrent-preclean-start]
+2014-11-05T16:59:21.754+0900: 9486.623: [CMS-concurrent-preclean: 0.027/0.027 secs] [Times: user=0.00 sys=0.00, real=0.03 secs] 
+
+★③
+2014-11-05T16:59:21.754+0900: 9486.623: [GC[YG occupancy: 1535 K (76672 K)]2014-11-05T16:59:21.754+0900: 9486.623: [Rescan (non-parallel) 2014-11-05T16:59:21.754+0900: 9486.623: [grey object rescan, 0.0012560 secs]2014-11-05T16:59:21.755+0900: 9486.624: [root rescan, 0.0064000 secs], 0.0077470 secs]2014-11-05T16:59:21.762+0900: 9486.631: [weak refs processing, 0.0003290 secs]2014-11-05T16:59:21.762+0900: 9486.631: [class unloading, 0.0108870 secs]2014-11-05T16:59:21.773+0900: 9486.642: [scrub symbol table, 0.0156480 secs]2014-11-05T16:59:21.789+0900: 9486.658: [scrub string table, 0.0012200 secs] [1 CMS-remark: 404047K(439104K)] 405583K(515776K), 0.0371740 secs] [Times: user=0.04 sys=0.01, real=0.04 secs] 
+
+★④-1
+2014-11-05T16:59:21.792+0900: 9486.661: [CMS-concurrent-sweep-start]
+2014-11-05T16:59:22.187+0900: 9487.056: [CMS-concurrent-sweep: 0.395/0.395 secs] [Times: user=0.38 sys=0.00, real=0.39 secs] 
+
+★④-2
+2014-11-05T16:59:22.189+0900: 9487.057: [CMS-concurrent-reset-start]
+
+2014-11-05T16:59:22.190+0900: 9487.059: [CMS-concurrent-reset: 0.001/0.001 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
+
+★CMS後のNewGCログ
+2014-11-05T17:00:32.559+0900: 9557.428: [GC2014-11-05T17:00:32.559+0900: 9557.428: [DefNew: 69206K-&gt;1062K(76672K), 0.0103860 secs] 104633K-&gt;36628K(515776K), 0.0105880 secs] [Times: user=0.01 sys=0.00, real=0.01 secs]
+</pre>
+<p>
+CMS前後のNewGCログのJVMメモリ使用量からメモリが掃除されることをわかります。
+405094K → 104633K、約293MBが掃除された。
+</p>
+
+<p>
+Initial Markフェースログの先頭に <code>GC</code> 文字が現れるので、STWが発生することが分かります。
+</p>
+<pre class="example">
+★①
+2014-11-05T16:59:21.564+0900: 9486.433: [GC [1 CMS-initial-mark: 404047K(439104K)] 405358K(515776K), 0.0084940 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
+                                                                 ~~~~~~  ~~~~~~    ~~~~~~  ~~~~~~                                                 ~~~~~~~~~~~~
+                                                                   A        B        C       D                                                         E
+</pre>
+<p>
+Initial Markフェースログの内訳
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">A</td>
+<td class="left">CMS起動時のOLD領域使用量</td>
+<td class="left">404047K</td>
+</tr>
+
+<tr>
+<td class="left">B</td>
+<td class="left">CMSトリガーするOLD領域閾値</td>
+<td class="left">439104K</td>
+</tr>
+
+<tr>
+<td class="left">C</td>
+<td class="left">CMS起動時JVMのメモリの使用量</td>
+<td class="left">405358K</td>
+</tr>
+
+<tr>
+<td class="left">D</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">E</td>
+<td class="left">Initial Markフェースで消費した時間</td>
+<td class="left">10 ミリ秒</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+続いて、Concurrent MarkとConcurrent precleaning処理の時間を示している。この部分の処理
+はアプリケーションと平行で行われるため、停止時間生じない。
+</p>
+<pre class="example">
+★②-1
+2014-11-05T16:59:21.573+0900: 9486.442: [CMS-concurrent-mark-start]
+2014-11-05T16:59:21.727+0900: 9486.596: [CMS-concurrent-mark: 0.154/0.154 secs] [Times: user=0.14 sys=0.00, real=0.15 secs] 
+                                                                                                            ~~~~~~~~~~~~~~
+                                                                                                                  F
+★②-2
+2014-11-05T16:59:21.727+0900: 9486.596: [CMS-concurrent-preclean-start]
+2014-11-05T16:59:21.754+0900: 9486.623: [CMS-concurrent-preclean: 0.027/0.027 secs] [Times: user=0.00 sys=0.00, real=0.03 secs] 
+                                                                                                                ~~~~~~~~~~~~~~
+                                                                                                                      G
+</pre>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">F</td>
+<td class="left">Concurrent Markフェースで消費した時間</td>
+<td class="left">150 ミリ秒</td>
+</tr>
+
+<tr>
+<td class="left">G</td>
+<td class="left">Concurrent Precleanフェースで消費した時間</td>
+<td class="left">30ミリ秒</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Parallel Remarkフェーズのログは１行で完結する、折り返してインデントを付けると次の形に
+なります。
+</p>
+<pre class="example">
+★③
+2014-11-05T16:59:21.754+0900: 9486.623:
+[GC
+    [YG occupancy: 1535 K (76672 K)]
+                   ~~~~    ~~~~~
+                    H        I
+    2014-11-05T16:59:21.754+0900: 9486.623:
+                                            [
+                                              Rescan (non-parallel)
+                                                2014-11-05T16:59:21.754+0900: 9486.623: [grey object rescan, 0.0012560 secs]
+                                                2014-11-05T16:59:21.755+0900: 9486.624: [root rescan, 0.0064000 secs]
+                                             , 0.0077470 secs
+                                            ]
+    2014-11-05T16:59:21.762+0900: 9486.631: [weak refs processing, 0.0003290 secs]
+    2014-11-05T16:59:21.762+0900: 9486.631: [class unloading, 0.0108870 secs]
+    2014-11-05T16:59:21.773+0900: 9486.642: [scrub symbol table, 0.0156480 secs]
+    2014-11-05T16:59:21.789+0900: 9486.658: [scrub string table, 0.0012200 secs]
+
+    [1 CMS-remark: 404047K(439104K)] 405583K(515776K), 0.0371740 secs
+                   ~~~~~~  ~~~~~~    ~~~~~~  ~~~~~~
+                     J       K         L       M
+]
+[Times: user=0.04 sys=0.01, real=0.04 secs]
+                            ~~~~~~~~~~~~~~
+                                 N
+</pre>
+<p>
+内訳
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">H</td>
+<td class="left">現時点New領域の使用量</td>
+<td class="left">1535K</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">I</td>
+<td class="left">New領域GCの閾値</td>
+<td class="left">76672K</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">J</td>
+<td class="left">現時点OLD領域使用量</td>
+<td class="left">404047K</td>
+<td class="left">変化なし</td>
+</tr>
+
+<tr>
+<td class="left">K</td>
+<td class="left">CMSトリガーするOLD領域閾値</td>
+<td class="left">439104K</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">L</td>
+<td class="left">現時点JVMのメモリの使用量</td>
+<td class="left">405583K</td>
+<td class="left">225K増加</td>
+</tr>
+
+<tr>
+<td class="left">M</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">N</td>
+<td class="left">Parallel Remarkフェーズで消費した時間</td>
+<td class="left">40 ミリ秒</td>
+<td class="left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+<p>
+処理時間からみるとParallel RemarkフェーズはInitial Markフフェーズより時間がかかること
+が分かりました。
+</p>
+
+<p>
+続いて、Concurrent SweepとConcurrent Reset処理の時間を示している。この部分の処理
+はアプリケーションと平行で行われるため、停止時間生じない。
+</p>
+<pre class="example">
+★④-1
+2014-11-05T16:59:21.792+0900: 9486.661: [CMS-concurrent-sweep-start]
+2014-11-05T16:59:22.187+0900: 9487.056: [CMS-concurrent-sweep: 0.395/0.395 secs] [Times: user=0.38 sys=0.00, real=0.39 secs]
+                                                                                                             ~~~~~~~~~~~~~~
+                                                                                                                   O
+★④-2
+2014-11-05T16:59:22.189+0900: 9487.057: [CMS-concurrent-reset-start]
+2014-11-05T16:59:22.190+0900: 9487.059: [CMS-concurrent-reset: 0.001/0.001 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]
+                                                                                                             ~~~~~~~~~~~~~~~
+                                                                                                                   P
+</pre>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">O</td>
+<td class="left">Concurrent Sweepフェースで消費した時間</td>
+<td class="left">390 ミリ秒</td>
+</tr>
+
+<tr>
+<td class="left">P</td>
+<td class="left">Concurrent Resetフェースで消費した時間</td>
+<td class="left">10ミリ秒</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+フェース①〜④の処理時間とJVMメモリ容量変化は以下となります。
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="right" />
+
+<col  class="right" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">&#xa0;</th>
+<th scope="col" class="left">フェーズ名</th>
+<th scope="col" class="left">一時停止</th>
+<th scope="col" class="right">処理時間(ミリ秒)</th>
+<th scope="col" class="right">JVMメモリ(MB)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">①</td>
+<td class="left">Initial Mark</td>
+<td class="left">◯</td>
+<td class="right">10</td>
+<td class="right">395.8</td>
+</tr>
+
+<tr>
+<td class="left">②-1</td>
+<td class="left">Concurrent Mark</td>
+<td class="left">&#xa0;</td>
+<td class="right">150</td>
+<td class="right">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">②-2</td>
+<td class="left">Concurrent precleaning</td>
+<td class="left">&#xa0;</td>
+<td class="right">30</td>
+<td class="right">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">③</td>
+<td class="left">Parallel Remark</td>
+<td class="left">◯</td>
+<td class="right">40</td>
+<td class="right">396.0</td>
+</tr>
+
+<tr>
+<td class="left">④-1</td>
+<td class="left">Concurrent Sweeping</td>
+<td class="left">&#xa0;</td>
+<td class="right">390</td>
+<td class="right">102.0</td>
+</tr>
+
+<tr>
+<td class="left">④-2</td>
+<td class="left">Concurrent Reset</td>
+<td class="left">&#xa0;</td>
+<td class="right">10</td>
+<td class="right">&#xa0;</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">630</td>
+<td class="right">-294</td>
+</tr>
+</tbody>
+</table>
+<p>
+CMS全体処理で630ミリ秒かかる、そのうち50ミリ秒の停止時間が発生する。掃除されたメモリ
+容量約294MB。
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-3-3" class="outline-3">
+<h3 id="sec-3-3"><span class="section-number-3">3.3</span> concurrent mode failure</h3>
+<div class="outline-text-3" id="text-3-3">
+<p>
+次の状況に置いて、コンカレントGCが縮退しFullGCを引き起こす可能性があります。
+</p>
+<ul class="org-ul">
+<li>システムが高負荷時に、新しいオブジェクトの生成速度がGCのメモリ解放速度より早い
+</li>
+<li>Java ヒープの断片化率が非常に高い時
+</li>
+</ul>
+
+<p>
+また、縮退後のFullGCは <code>Serial Old</code> モードで行われるため、アプリ停止時間が長くなります。
+</p>
+
+<p>
+<code>Initial Mark</code> 次の <code>Concurrent Mark</code> で縮退が起きて、 <code>FullGC</code> が起こった例。
+</p>
+<pre class="example">
+2014-11-20T14:04:17.969+0900: 423.523: [GC [1 CMS-initial-mark: 439103K(439104K)] 451488K(515776K), 0.0209760 secs] [Times: user=0.02 sys=0.00, real=0.02 secs] 
+2014-11-20T14:04:18.110+0900: 423.663: [CMS-concurrent-mark-start]
+2014-11-20T14:04:19.105+0900: 424.659: [Full GC2014-11-20T14:04:19.105+0900: 424.659: [CMS2014-11-20T14:04:19.745+0900: 425.299: [CMS-concurrent-mark: 1.632/1.636 secs] [Times: user=1.41 sys=0.17, real=1.64 secs] 
+ (concurrent mode failure): 439103K-&gt;439103K(439104K), 1.7507640 secs] 515775K-&gt;458321K(515776K), [CMS Perm : 57066K-&gt;57066K(95504K)], 1.7509190 secs] [Times: user=1.74 sys=0.00, real=1.75 secs]
+</pre>
+
+<p>
+<code>FullGC</code> を示すログに内容を分解すると次のようになります。
+</p>
+<pre class="example">
+2014-11-20T14:04:19.105+0900: 424.659:
+    [Full GC2014-11-20T14:04:19.105+0900: 424.659: 
+
+          ★CMS失敗時の内容
+          [CMS2014-11-20T14:04:19.745+0900: 425.299: 
+               [CMS-concurrent-mark: 1.632/1.636 secs]
+               [Times: user=1.41 sys=0.17, real=1.64 secs]  
+               (concurrent mode failure): 439103K-&gt;439103K(439104K), 1.7507640 secs] 
+
+          ★縮退後、FullGC実施後の結果
+          515775K-&gt;458321K(515776K), [CMS Perm : 57066K-&gt;57066K(95504K)], 1.7509190 secs]
+
+    [Times: user=1.74 sys=0.00, real=1.75 secs]
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3-4" class="outline-3">
+<h3 id="sec-3-4"><span class="section-number-3">3.4</span> 手動FullGC時のログ</h3>
+<div class="outline-text-3" id="text-3-4">
+<p>
+CMS GCを利用した場合でも手動でFullGCを起こすことは可能です。以下は手動GC掛けられた時
+にのGCログとなります。
+</p>
+
+<pre class="example">
+2014-11-20T15:03:39.462+0900: 2611.658: [Full GC2014-11-20T15:03:39.462+0900: 2611.658: [CMS: 365597K-&gt;33109K(439104K), 0.3923750 secs] 408803K-&gt;33109K(515776K), [CMS Perm : 57580K-&gt;57357K(95888K)], 0.3925240 secs] [Times: user=0.36 sys=0.00, real=0.39 secs] 
+
+★分解
+2014-11-20T15:03:39.462+0900: 2611.658: 
+    [Full GC2014-11-20T15:03:39.462+0900: 2611.658: 
+          [CMS: 365597K-&gt;33109K(439104K), 0.3923750 secs] 408803K-&gt;33109K(515776K), 
+          [CMS Perm : 57580K-&gt;57357K(95888K)], 0.3925240 secs] 
+    [Times: user=0.36 sys=0.00, real=0.39 secs]
+</pre>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> 参考</h2>
+<div class="outline-text-2" id="text-4">
+<ul class="org-ul">
+<li><a href="http://wall-climb.com/2009/10/12/%25E3%2582%25B3%25E3%2583%25B3%25E3%2582%25AB%25E3%2583%25AC%25E3%2583%25B3%25E3%2583%2588gc%25E3%2581%25AE%25E6%25B3%25A8%25E6%2584%258F%25E7%2582%25B9/">コンカレントGCの注意点</a>
+</li>
+<li><a href="http://automation123.blogspot.jp/2012/02/understanding-concurrent-mark-sweep.html">Understanding Concurrent Mark Sweep Garbage Collector Logs</a>
+</li>
+<li><a href="https://blogs.oracle.com/poonam/entry/understanding_cms_gc_logs">Understanding CMS GC Logs</a>
+</li>
+<li><a href="http://a4dosanddos.hatenablog.com/entry/2014/01/24/011007">「Java」GC ログを出力する</a>
+</li>
+<li><a href="http://h50146.www5.hp.com/products/software/oe/hpux/developer/column02/gabage_02/">Javaのかなめ、「ガベージ・コレクション」をやさしく学ぶ・後編</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

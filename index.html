@@ -145,6 +145,154 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html">[メモ]CMS GCログの見方</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-11-05T00:00:00+09:00" pubdate data-updated="true">2014-11-05 (Wed)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 基本おさらい</a></li>
+<li><a href="#sec-2">2. 実験するためのプログラム</a></li>
+<li><a href="#sec-3">3. CMSログの見方</a>
+<ul>
+<li><a href="#sec-3-1">3.1. New領域GCログ</a></li>
+<li><a href="#sec-3-2">3.2. Old領域GCログ</a></li>
+<li><a href="#sec-3-3">3.3. concurrent mode failure</a></li>
+<li><a href="#sec-3-4">3.4. 手動FullGC時のログ</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. 参考</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 基本おさらい</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+CMSとは <code>Concurrent Mark &amp; Sweep</code> 、JVM OLD領域GC処理アルゴリズムの一種です。
+CMSはアプリケーションを停止する時間を削減することが出来ます。処理の流れは下図に示す。
+</p>
+
+<p>
+※Concurrentは同時という意味です。
+</p>
+
+<pre class="example">
+       ①        ②          ③    ④
+---&gt; | ==&gt; | ============&gt; | ==&gt; | ==========&gt; -----&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+       STW                   STW
+
+凡例
++--------------------+
+| ==&gt; GCスレッド     |
+| --&gt; アプリスレッド |
++--------------------+
+</pre>
+
+<p>
+図上示している通り、①と③の処理だけアプリケーションが停止する。
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">①</td>
+<td class="left">Initial Mark</td>
+<td class="left">STW</td>
+<td class="left">Rootを起点に利用されてるオブジェクトをマークする</td>
+</tr>
+
+<tr>
+<td class="left">②-1</td>
+<td class="left">Concurrent Mark</td>
+<td class="left">&#xa0;</td>
+<td class="left">①でマークされたオブジェクトを起点に使用中のオブジェクトをマークする</td>
+</tr>
+
+<tr>
+<td class="left">②-2</td>
+<td class="left">Concurrent precleaning</td>
+<td class="left">&#xa0;</td>
+<td class="left">②-1処理中アプリによる生じた変化部分をマークする、③の処理時間を短縮するため</td>
+</tr>
+
+<tr>
+<td class="left">③</td>
+<td class="left">Parallel Remark</td>
+<td class="left">STW</td>
+<td class="left">②処理中アプリによる生じた変化部分をマークする</td>
+</tr>
+
+<tr>
+<td class="left">④-1</td>
+<td class="left">Concurrent Sweeping</td>
+<td class="left">&#xa0;</td>
+<td class="left">マーク処理によって判明した使用済みオブジェクトを削除する</td>
+</tr>
+
+<tr>
+<td class="left">④-2</td>
+<td class="left">Concurrent Reset</td>
+<td class="left">&#xa0;</td>
+<td class="left">CMS処理自体のリセット</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">[メモ]ApacheでbackendとのKeepAliveをOFFにする</a></h1>
     
     
@@ -807,89 +955,6 @@ $ cat /etc/group | awk -F: '{print $3 "\t" $1}' | sort -n
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dldap%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E6%A7%8B%E7%AF%89.html">[レシピ]LDAPサーバの構築</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-08-12T00:00:00+09:00" pubdate data-updated="true">2014-08-12 (Tue)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 知識のおさらい</a>
-<ul>
-<li><a href="#sec-1-1">1.1. 用語</a></li>
-<li><a href="#sec-1-2">1.2. LDAPの役割</a></li>
-<li><a href="#sec-1-3">1.3. LDAPへ接続時（バインド）の認証方式</a></li>
-<li><a href="#sec-1-4">1.4. LDAPによるLinuxのログイン認証</a></li>
-<li><a href="#sec-1-5">1.5. LDAPによるSambaサーバのユーザ認証</a></li>
-<li><a href="#sec-1-6">1.6. LDAPデータ構造サンプル</a></li>
-<li><a href="#sec-1-7">1.7. よく使用するObjectClass</a></li>
-<li><a href="#sec-1-8">1.8. ldapsearchの使い方</a></li>
-<li><a href="#sec-1-9">1.9. ldapaddの使い方</a></li>
-<li><a href="#sec-1-10">1.10. ldapdeleteの使い方</a></li>
-<li><a href="#sec-1-11">1.11. ldapmodifyの使い方</a></li>
-<li><a href="#sec-1-12">1.12. slapindexの使い方</a></li>
-</ul>
-</li>
-<li><a href="#sec-2">2. 環境構成</a></li>
-<li><a href="#sec-3">3. OpenLDAPのインストール</a></li>
-<li><a href="#sec-4">4. OpenLDAPサーバ設定と起動</a></li>
-<li><a href="#sec-5">5. OpenLDAPログ出力設定</a></li>
-<li><a href="#sec-6">6. LDAPクライアントの設定</a></li>
-<li><a href="#sec-7">7. LDAPクライアントとサーバ間の通信内容</a></li>
-<li><a href="#sec-8">8. LDAPによるLinuxのログイン認証設定</a>
-<ul>
-<li><a href="#sec-8-1">8.1. LDAP連携用ライブラリの導入</a></li>
-<li><a href="#sec-8-2">8.2. LDAP認証PAMモジュールの設定</a></li>
-<li><a href="#sec-8-3">8.3. パスワード変更時の挙動</a></li>
-<li><a href="#sec-8-4">8.4. ログイン時の挙動</a></li>
-</ul>
-</li>
-<li><a href="#sec-9">9. 宿題</a></li>
-<li><a href="#sec-10">10. 参考情報</a></li>
-</ul>
-</div>
-</div>
-<p>
-夏休み中にOpenLDAPの構築復習を行いました。ここでメモしておきます。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dldap%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E6%A7%8B%E7%AF%89.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -927,6 +992,10 @@ $ cat /etc/group | awk -F: '{print $3 "\t" $1}' | sort -n
       </li>
     
       <li class="post">
+        <a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html">[メモ]CMS GCログの見方</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">[メモ]ApacheでbackendとのKeepAliveをOFFにする</a>
       </li>
     
@@ -958,10 +1027,6 @@ $ cat /etc/group | awk -F: '{print $3 "\t" $1}' | sort -n
         <a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5D%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%81%AEuid%E3%81%AE%E6%8A%BD%E5%87%BA.html">[レシピ]ローカルシステムのUIDの抽出</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dldap%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E6%A7%8B%E7%AF%89.html">[レシピ]LDAPサーバの構築</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -969,11 +1034,11 @@ $ cat /etc/group | awk -F: '{print $3 "\t" $1}' | sort -n
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (7)</a></li><li><a href='/blog/categories/linux/'>linux (16)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (8)</a></li><li><a href='/blog/categories/linux/'>linux (16)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 130.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 130.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 130.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 130.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 130.0%'>jboss-lci(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 130.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 130.0%'>lvm(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 160.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 130.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 130.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 130.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 130.0%'>zabbix(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 130.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 130.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 130.0%'>awk(1)</a> <a href='/blog/tags/cms' style='font-size: 130.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 130.0%'>ddskk(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 130.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 130.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 130.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 130.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 130.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 130.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 130.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 130.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 130.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 130.0%'>jboss-lci(1)</a> <a href='/blog/tags/jdev' style='font-size: 130.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 130.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 130.0%'>jmc(1)</a> <a href='/blog/tags/kerberos' style='font-size: 130.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 130.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 130.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 130.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 130.0%'>lvm(1)</a> <a href='/blog/tags/otcopress' style='font-size: 160.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 160.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 130.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 130.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 130.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 130.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 130.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 130.0%'>ssh(1)</a> <a href='/blog/tags/sync' style='font-size: 130.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 130.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 130.0%'>tcp(1)</a> <a href='/blog/tags/vpn' style='font-size: 130.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 130.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 130.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 130.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 130.0%'>zabbix(1)</a> </span>
 </section>
 
 <section>

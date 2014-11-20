@@ -7,8 +7,6 @@
 #+JEKYLL_COMMENTS: true
 #+JEKYLL_PUBLISHED: true
 
-{{{more}}}
-
 * 基本おさらい
 CMSとは =Concurrent Mark & Sweep= 、JVM OLD領域GC処理アルゴリズムの一種です。
 CMSはアプリケーションを停止する時間を削減することが出来ます。処理の流れは下図に示す。
@@ -42,9 +40,11 @@ CMSはアプリケーションを停止する時間を削減することが出�
 | ④-2 | Concurrent Reset       |     | CMS処理自体のリセット                                                        |
 |------+------------------------+-----+------------------------------------------------------------------------------|
 
+{{{more}}}
+
 * 実験するためのプログラム
 メモリを大量に消費するWebサービス
-#+begin_example
+#+begin_src java
 package test.example;
 
 import javax.jws.WebMethod;
@@ -77,15 +77,20 @@ public class HelloWorld {
 	    return "Hello " + name + "!";
 	}
 }
-#+end_example
+#+end_src
 
 Webサービスを載せるAPサーバの起動オプションにGC関係のパラメータを追加する。
 Old領域のGCを発生しやすくため、ヒープサイズを小さめに割り当てる。
 #+begin_example
 JAVA_OPTS="$JAVA_OPTS -Xms512m -Xmx512m -XX:MaxPermSize=256m"
 JAVA_OPTS="$JAVA_OPTS -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled"
-JAVA_OPTS="$JAVA_OPTS -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution"
+JAVA_OPTS="$JAVA_OPTS -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps"
 JAVA_OPTS="$JAVA_OPTS -Xloggc:/tmp/gc-`date '+%Y-%m-%d'`.log"
+#+end_example
+
+以下のオプション、GC時に詳細なオブジェクト統計情報も出力する。ここでは略します。
+#+begin_example
+JAVA_OPTS="$JAVA_OPTS -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution"
 #+end_example
 
 SoapUIから100多重で負荷を掛けて、テストアプリを実行させる。
@@ -311,25 +316,53 @@ Parallel Remarkフェーズのログは１行で完結する、折り返して�
 CMS全体処理で630ミリ秒かかる、そのうち50ミリ秒の停止時間が発生する。掃除されたメモリ
 容量約294MB。
 
-** CMS-concurrent-abortable-preclean
-#+begin_example
-2014-11-05T14:24:54.899+0900: 219.768: [GC [1 CMS-initial-mark: 404417K(439104K)] 414152K(515776K), 0.0252080 secs] [Times: user=0.02 sys=0.00, real=0.03 secs] 
-2014-11-05T14:24:55.043+0900: 219.912: [CMS-concurrent-mark-start]
-2014-11-05T14:24:56.941+0900: 221.810: [GC2014-11-05T14:24:56.941+0900: 221.810: [DefNew: 76575K->8512K(76672K), 0.0933500 secs] 480993K->423185K(515776K), 0.0935560 secs] [Times: user=0.07 sys=0.00, real=0.10 secs] 
-2014-11-05T14:24:58.119+0900: 222.988: [CMS-concurrent-mark: 2.773/3.076 secs] [Times: user=2.38 sys=0.46, real=3.07 secs] 
-2014-11-05T14:24:58.119+0900: 222.988: [CMS-concurrent-preclean-start]
-2014-11-05T14:24:58.127+0900: 222.996: [CMS-concurrent-preclean: 0.007/0.008 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
-2014-11-05T14:24:58.127+0900: 222.996: [CMS-concurrent-abortable-preclean-start] CMS: abort preclean due to time
-2014-11-05T14:25:03.224+0900: 228.092: [CMS-concurrent-abortable-preclean: 2.683/5.096 secs] [Times: user=2.44 sys=0.08, real=5.10 secs] 
-2014-11-05T14:25:03.224+0900: 228.093: [GC[YG occupancy: 48273 K (76672 K)]2014-11-05T14:25:03.224+0900: 228.093: [Rescan (non-parallel) 2014-11-05T14:25:03.224+0900: 228.093: [grey object rescan, 0.0011680 secs]2014-11-05T14:25:03.225+0900: 228.094: [root rescan, 0.2362360 secs], 0.2375020 secs]2014-11-05T14:25:03.462+0900: 228.331: [weak refs processing, 0.0044290 secs]2014-11-05T14:25:03.466+0900: 228.335: [class unloading, 0.0089260 secs]2014-11-05T14:25:03.475+0900: 228.344: [scrub symbol table, 0.0179240 secs]2014-11-05T14:25:03.493+0900: 228.362: [scrub string table, 0.0013030 secs] [1 CMS-remark: 414673K(439104K)] 462947K(515776K), 0.2714240 secs] [Times: user=0.26 sys=0.00, real=0.27 secs] 
-2014-11-05T14:25:03.504+0900: 228.373: [CMS-concurrent-sweep-start]
-2014-11-05T14:25:03.816+0900: 228.685: [CMS-concurrent-sweep: 0.310/0.312 secs] [Times: user=0.23 sys=0.00, real=0.31 secs] 
-2014-11-05T14:25:03.817+0900: 228.686: [CMS-concurrent-reset-start]
-2014-11-05T14:25:03.819+0900: 228.687: [CMS-concurrent-reset: 0.001/0.001 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
-#+end_example
 
 ** concurrent mode failure
+次の状況に置いて、コンカレントGCが縮退しFullGCを引き起こす可能性があります。
+- システムが高負荷時に、新しいオブジェクトの生成速度がGCのメモリ解放速度より早い
+- Java ヒープの断片化率が非常に高い時
+
+また、縮退後のFullGCは =Serial Old= モードで行われるため、アプリ停止時間が長くなります。
+
+=Initial Mark= 次の =Concurrent Mark= で縮退が起きて、 =FullGC= が起こった例。
+#+begin_example
+2014-11-20T14:04:17.969+0900: 423.523: [GC [1 CMS-initial-mark: 439103K(439104K)] 451488K(515776K), 0.0209760 secs] [Times: user=0.02 sys=0.00, real=0.02 secs] 
+2014-11-20T14:04:18.110+0900: 423.663: [CMS-concurrent-mark-start]
+2014-11-20T14:04:19.105+0900: 424.659: [Full GC2014-11-20T14:04:19.105+0900: 424.659: [CMS2014-11-20T14:04:19.745+0900: 425.299: [CMS-concurrent-mark: 1.632/1.636 secs] [Times: user=1.41 sys=0.17, real=1.64 secs] 
+ (concurrent mode failure): 439103K->439103K(439104K), 1.7507640 secs] 515775K->458321K(515776K), [CMS Perm : 57066K->57066K(95504K)], 1.7509190 secs] [Times: user=1.74 sys=0.00, real=1.75 secs] 
+#+end_example
+
+=FullGC= を示すログに内容を分解すると次のようになります。
+#+begin_example
+2014-11-20T14:04:19.105+0900: 424.659:
+    [Full GC2014-11-20T14:04:19.105+0900: 424.659: 
+
+          ★CMS失敗時の内容
+          [CMS2014-11-20T14:04:19.745+0900: 425.299: 
+               [CMS-concurrent-mark: 1.632/1.636 secs]
+               [Times: user=1.41 sys=0.17, real=1.64 secs]  
+               (concurrent mode failure): 439103K->439103K(439104K), 1.7507640 secs] 
+
+          ★縮退後、FullGC実施後の結果
+          515775K->458321K(515776K), [CMS Perm : 57066K->57066K(95504K)], 1.7509190 secs]
+
+    [Times: user=1.74 sys=0.00, real=1.75 secs]
+#+end_example
+
 ** 手動FullGC時のログ
+CMS GCを利用した場合でも手動でFullGCを起こすことは可能です。以下は手動GC掛けられた時
+にのGCログとなります。
+
+#+begin_example
+2014-11-20T15:03:39.462+0900: 2611.658: [Full GC2014-11-20T15:03:39.462+0900: 2611.658: [CMS: 365597K->33109K(439104K), 0.3923750 secs] 408803K->33109K(515776K), [CMS Perm : 57580K->57357K(95888K)], 0.3925240 secs] [Times: user=0.36 sys=0.00, real=0.39 secs] 
+
+★分解
+2014-11-20T15:03:39.462+0900: 2611.658: 
+    [Full GC2014-11-20T15:03:39.462+0900: 2611.658: 
+          [CMS: 365597K->33109K(439104K), 0.3923750 secs] 408803K->33109K(515776K), 
+          [CMS Perm : 57580K->57357K(95888K)], 0.3925240 secs] 
+    [Times: user=0.36 sys=0.00, real=0.39 secs] 
+#+end_example
 
 * 参考
 - [[http://wall-climb.com/2009/10/12/%25E3%2582%25B3%25E3%2583%25B3%25E3%2582%25AB%25E3%2583%25AC%25E3%2583%25B3%25E3%2583%2588gc%25E3%2581%25AE%25E6%25B3%25A8%25E6%2584%258F%25E7%2582%25B9/][コンカレントGCの注意点]]
