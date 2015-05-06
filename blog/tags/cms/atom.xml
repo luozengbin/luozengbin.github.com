@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: Cms | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/cms/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-11-20T15:12:30+09:00</updated>
+  <updated>2015-05-06T19:25:11+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -146,36 +146,36 @@ CMSはアプリケーションを停止する時間を削減することが出�
 </p>
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #8ac6f2; font-weight: bold;">package</span> test.<span style="color: #e5786d;">example</span>;
+<pre class="src src-java"><span style="color: #f0dfaf; font-weight: bold;">package</span> test.<span style="color: #bfebbf;">example</span>;
 
-<span style="color: #8ac6f2; font-weight: bold;">import</span> <span style="color: #e5786d;">javax</span>.<span style="color: #e5786d;">jws</span>.<span style="color: #92a65e; font-weight: bold;">WebMethod</span>;
-<span style="color: #8ac6f2; font-weight: bold;">import</span> <span style="color: #e5786d;">javax</span>.<span style="color: #e5786d;">jws</span>.<span style="color: #92a65e; font-weight: bold;">WebParam</span>;
-<span style="color: #8ac6f2; font-weight: bold;">import</span> <span style="color: #e5786d;">javax</span>.<span style="color: #e5786d;">jws</span>.<span style="color: #92a65e; font-weight: bold;">WebService</span>;
-<span style="color: #8ac6f2; font-weight: bold;">import</span> <span style="color: #e5786d;">javax</span>.<span style="color: #e5786d;">jws</span>.<span style="color: #e5786d;">soap</span>.<span style="color: #92a65e; font-weight: bold;">SOAPBinding</span>;
+<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #8cd0d3;">WebMethod</span>;
+<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #8cd0d3;">WebParam</span>;
+<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #8cd0d3;">WebService</span>;
+<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #bfebbf;">soap</span>.<span style="color: #8cd0d3;">SOAPBinding</span>;
 
-<span style="color: #e5786d;">@WebService</span>
-<span style="color: #e5786d;">@SOAPBinding</span>(style = <span style="color: #e5786d;">SOAPBinding</span>.<span style="color: #e5786d;">Style</span>.DOCUMENT, use = <span style="color: #e5786d;">SOAPBinding</span>.<span style="color: #e5786d;">Use</span>.LITERAL, parameterStyle = <span style="color: #e5786d;">SOAPBinding</span>.<span style="color: #e5786d;">ParameterStyle</span>.WRAPPED)
-<span style="color: #8ac6f2; font-weight: bold;">public</span> <span style="color: #8ac6f2; font-weight: bold;">class</span> <span style="color: #92a65e; font-weight: bold;">HelloWorld</span> {
+<span style="color: #bfebbf;">@WebService</span>
+<span style="color: #bfebbf;">@SOAPBinding</span>(style = <span style="color: #bfebbf;">SOAPBinding</span>.<span style="color: #bfebbf;">Style</span>.DOCUMENT, use = <span style="color: #bfebbf;">SOAPBinding</span>.<span style="color: #bfebbf;">Use</span>.LITERAL, parameterStyle = <span style="color: #bfebbf;">SOAPBinding</span>.<span style="color: #bfebbf;">ParameterStyle</span>.WRAPPED)
+<span style="color: #f0dfaf; font-weight: bold;">public</span> <span style="color: #f0dfaf; font-weight: bold;">class</span> <span style="color: #8cd0d3;">HelloWorld</span> {
 
-    <span style="color: #e5786d;">@WebMethod</span>(action = <span style="color: #95e454;">"sayHello"</span>)
-    <span style="color: #8ac6f2; font-weight: bold;">public</span> <span style="color: #92a65e; font-weight: bold;">String</span> <span style="color: #cae682;">sayHello</span>(<span style="color: #e5786d;">@WebParam</span>(name = <span style="color: #95e454;">"name"</span> ) <span style="color: #92a65e; font-weight: bold;">String</span> <span style="color: #cae682;">name</span>) <span style="color: #8ac6f2; font-weight: bold;">throws</span> <span style="color: #92a65e; font-weight: bold;">CustomException</span> {
+    <span style="color: #bfebbf;">@WebMethod</span>(action = <span style="color: #cc9393;">"sayHello"</span>)
+    <span style="color: #f0dfaf; font-weight: bold;">public</span> <span style="color: #8cd0d3;">String</span> <span style="color: #8cd0d3;">sayHello</span>(<span style="color: #bfebbf;">@WebParam</span>(name = <span style="color: #cc9393;">"name"</span> ) <span style="color: #8cd0d3;">String</span> <span style="color: #dfaf8f;">name</span>) <span style="color: #f0dfaf; font-weight: bold;">throws</span> <span style="color: #8cd0d3;">CustomException</span> {
 
-        System.out.println(<span style="color: #95e454;">"Hello: "</span> + name);
+        System.out.println(<span style="color: #cc9393;">"Hello: "</span> + name);
 
-        <span style="color: #e5786d;">java</span>.<span style="color: #e5786d;">util</span>.<span style="color: #92a65e; font-weight: bold;">List</span> <span style="color: #cae682;">l</span>  =  <span style="color: #8ac6f2; font-weight: bold;">new</span> <span style="color: #e5786d;">java</span>.<span style="color: #e5786d;">util</span>.<span style="color: #92a65e; font-weight: bold;">ArrayList</span>&lt;&gt;();
-        <span style="color: #92a65e; font-weight: bold;">int</span> <span style="color: #cae682;">x</span>  = 0;
-        <span style="color: #8ac6f2; font-weight: bold;">while</span> (x &lt; 6300) {
-            <span style="color: #92a65e; font-weight: bold;">Thread</span> <span style="color: #cae682;">t</span>  =  <span style="color: #8ac6f2; font-weight: bold;">new</span> <span style="color: #92a65e; font-weight: bold;">Thread</span>();
+        <span style="color: #bfebbf;">java</span>.<span style="color: #bfebbf;">util</span>.<span style="color: #8cd0d3;">List</span> <span style="color: #dfaf8f;">l</span>  =  <span style="color: #f0dfaf; font-weight: bold;">new</span> <span style="color: #bfebbf;">java</span>.<span style="color: #bfebbf;">util</span>.<span style="color: #8cd0d3;">ArrayList</span>&lt;&gt;();
+        <span style="color: #8cd0d3;">int</span> <span style="color: #dfaf8f;">x</span>  = 0;
+        <span style="color: #f0dfaf; font-weight: bold;">while</span> (x &lt; 6300) {
+            <span style="color: #8cd0d3;">Thread</span> <span style="color: #dfaf8f;">t</span>  =  <span style="color: #f0dfaf; font-weight: bold;">new</span> <span style="color: #8cd0d3;">Thread</span>();
             l.add(t);
 
-            <span style="color: #8ac6f2; font-weight: bold;">try</span> {
+            <span style="color: #f0dfaf; font-weight: bold;">try</span> {
                 Thread.sleep(10);
-            } <span style="color: #8ac6f2; font-weight: bold;">catch</span> (<span style="color: #92a65e; font-weight: bold;">Exception</span> <span style="color: #cae682;">e</span>) {
+            } <span style="color: #f0dfaf; font-weight: bold;">catch</span> (<span style="color: #8cd0d3;">Exception</span> <span style="color: #dfaf8f;">e</span>) {
             }
             x++;
             System.out.println(x);
         }
-        <span style="color: #8ac6f2; font-weight: bold;">return</span> <span style="color: #95e454;">"Hello "</span> + name + <span style="color: #95e454;">"!"</span>;
+        <span style="color: #f0dfaf; font-weight: bold;">return</span> <span style="color: #cc9393;">"Hello "</span> + name + <span style="color: #cc9393;">"!"</span>;
     }
 }
 </pre>

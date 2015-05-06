@@ -1,0 +1,196 @@
+#+TITLE: [メモ]Linux Huge Pageについて
+#+DATE: 2015-04-19
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS:
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+{{{more}}}
+
+
+* Huge Pageのメリット
+プログラムからメモリにアクセス際に論理アドレスから物理アドレスへの変換処理が行われる。
+論理アドレスと物理アドレスの対応表である「ページテーブル」はプロセス毎に用意されてい
+る。OSはこれを使ってページを探している。「ページテーブル」はメモリ領域に保管されてい
+るため、アドレス変換コストが高いものです。Linuxでは頻繁に使われているページマッピング
+情報は高速キャッシュに置かれるTLB(Translation Lookaside Buffer)に保持されます。
+
+TBLに保持できるエントリの数は限られている。TBLを有効使うために１ページあたりのサイズ
+を増やすことでTBL全体で管理できるプロセスメモリサイズが広がる。プロセスのメモリアクセ
+スTBL miss率が下がるので、性能が良くなる。
+
+まとめ
+
+- TBLは物理アドレスと論理アドレスの変換を高速する
+- TBLのサイズが限られている
+- ページサイズが大きいほど、TBL管理できるメモリ領域が広がる、TLBヒット率が上がる
+
+* システムページサイズ確認コマンド
+#+begin_example
+$ getconf PAGE_SIZE
+4096
+#+end_example
+
+デフォルトページサイズは4Kです。
+
+* ページサイズ何で決めているの？
+Wikipediaページ [[http://en.wikipedia.org/wiki/Page_%2528computer_memory%2529#Page_size_trade-off][Page (computer memory)]] より
+#+begin_example
+Page size is usually determined by processor architecture. Traditionally, pages in a
+system had uniform size, for example 4096 bytes. However, processor designs often
+allow two or more, sometimes simultaneous, page sizes due to the benefits and
+penalties. There are several points that can factor into choosing the best page
+size.
+#+end_example
+
+ページサイズはマシンに搭載するCPUのアーキテクチャで決まります。
+x86アーキテクチャのCPUは、 =4K= =2M= =1G(if architecturally supported)= などといった
+サイズに対応しています。
+
+x86アーキテクチャのLinuxに置いて、デフォルトページサイズは4KBで、デフォルトの huge
+page は 2MB となっている。カーネルコンパイル時に =PAGE_SHIFT= の値を調節することでデ
+フォルトページサイズを変更することができると思われます。デフォルトページサイズ
+
+[[https://github.com/torvalds/linux/blob/master/arch/x86/include/asm/page_types.h#L8][arch/x86/include/asm/page_types.h]]
+#+begin_example
+/* PAGE_SHIFT determines the page size */
+#define PAGE_SHIFT	12
+#define PAGE_SIZE	(_AC(1,UL) << PAGE_SHIFT)
+#define PAGE_MASK	(~(PAGE_SIZE-1))
+#+end_example
+
+ia64アーキテクチャのページサイズはカーネルコンパイルオプションで変更することが可能と
+なっています。
+
+[[https://github.com/torvalds/linux/blob/master/arch/ia64/include/asm/page.h#L29][arch/ia64/include/asm/page.h]]
+#+begin_example
+/*
+ * PAGE_SHIFT determines the actual kernel page size.
+ */
+#if defined(CONFIG_IA64_PAGE_SIZE_4KB)
+# define PAGE_SHIFT	12
+#elif defined(CONFIG_IA64_PAGE_SIZE_8KB)
+# define PAGE_SHIFT	13
+#elif defined(CONFIG_IA64_PAGE_SIZE_16KB)
+# define PAGE_SHIFT	14
+#elif defined(CONFIG_IA64_PAGE_SIZE_64KB)
+# define PAGE_SHIFT	16
+#else
+# error Unsupported page size!
+#endif
+#+end_example
+
+* Huge Pageパラメータ
+
+Huge Page機能の有効化は下記カーネルコンパイルオプションで制御できる。
+#+begin_example
+$ zcat /proc/config.gz | grep HUGETLB
+CONFIG_ARCH_WANT_GENERAL_HUGETLB=y
+# CONFIG_CGROUP_HUGETLB is not set
+CONFIG_HUGETLBFS=y
+CONFIG_HUGETLB_PAGE=y
+#+end_example
+
+Huge Pageの割り当てに関わるカーネルパラメータ
+#+begin_example
+# sysctl -a | grep huge
+vm.hugepages_treat_as_movable = 0
+vm.hugetlb_shm_group = 0
+vm.nr_hugepages = 10
+vm.nr_hugepages_mempolicy = 10
+vm.nr_overcommit_hugepages = 0
+#+end_example
+
+|-------------------------------+-----------------------------------------------|
+| vm.nr_hugepages               | システム前提利用可能なHuge Pageの数           |
+| vm.nr_hugepages_mempolicy     | NUMAアーキテクチャ各ノードHuge Page数のリシー |
+| vm.nr_overcommit_hugepages    | TODO:調査                                     |
+| vm.hugepages_treat_as_movable | TODO:調査                                     |
+| vm.hugetlb_shm_group          | TODO:調査                                     |
+|-------------------------------+-----------------------------------------------|
+
+echoで =vm.nr_hugepages= の値を変更する場合、適用される値は指定の通りとは限りません。
+カーネルは現在の連続空きメモリサイズを元に使用可能なHuge Page数を算出する。
+
+=/etc/security/limits.conf= リソースlimit設定ファイルにもHuge Pageと関わるパラメータ
+が存在します。
+
+#+begin_example
+soft    memlock        3145728
+hard    memlock        3145728
+#+end_example
+
+ここの =memlock= はユーザ毎に使用できるHuge Pageの上限値を制限することができる。
+
+=/proc/meminfo= からHuge Page割り当て状況を見ることが出来ます。
+#+begin_example
+$ cat /proc/meminfo | grep Huge
+AnonHugePages:    589824 kB
+HugePages_Total:      52
+HugePages_Free:       52
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+#+end_example
+
+=/proc/meminfo= にHuge Pageに関わる各項目の説明は以下に記述します。
+|-----------------+-------------------------------------|
+| HugePages_Total | システム全体利用可能なHuge Pageの数 |
+| HugePages_Free  | フリー状態なHuge Pageの数           |
+| HugePages_Rsvd  | TODO:調査                           |
+| HugePages_Surp  | TODO:調査                           |
+| Hugepagesize    | １つHuge Pageあたりのザイズ         |
+|-----------------+-------------------------------------|
+
+NUMAアーキテクチャで各ノードHuge Pageの割り当て状況を見るには
+#+begin_example
+cat /sys/devices/system/node/node*/meminfo | fgrep Huge
+#+end_example
+
+* Transparent Huge Page
+
+以下 [[http://blog.goo.ne.jp/u1low_cheap/e/72a7c5528858debe4e34df83430c480e][Transparent Huge Page]] から引用した内容。
+#+begin_example
+hugepage の確保は面倒な手順が必要です。Linux では「共有メモリ経由でのメモリ確保」と
+「hugetlbfs という特殊な file system に対する anonymous memory mapping によるメモリ確
+保」の 2 種類がありますのが、いずれもソースコードの変更が必要になります。簡単に利用す
+る方法としては「libhugetlbfs ライブラリによる malloc/new 関数の hook」という荒業もあ
+りますが、すべての領域が hugepage 上に乗ってしまうので少々使いづらいと言えます。また、
+いずれの方法でも予め必要なメモリ領域を hugepage 専用として確保しなければなりません。
+
+★★★
+それに対して Transparent Huge Page では、予め必要な領域を確保する必要がなく、名前の通
+り透過的に hugepage を扱えるようになる機構です。
+★★★
+#+end_example
+
+Transparent Huge Page を利用するためのパラメータ
+#+begin_example
+# cat /sys/kernel/mm/transparent_hugepage/enabled
+always madvise [never]
+
+★alwaysへ変更: 常にTHPを使用する
+# echo always > /sys/kernel/mm/transparent_hugepage/enabled
+# cat /sys/kernel/mm/transparent_hugepage/enabled
+[always] madvise never
+#+end_example
+
+Transparent Huge Pageで確保したサイズの確認方法
+#+begin_example
+# grep AnonHugePages /proc/meminfo
+AnonHugePages:    745472 kB
+#+end_example
+
+https://github.com/torvalds/linux/blob/master/Documentation/vm/transhuge.txt
+
+* 参考
+- [[http://ascii.jp/elem/000/000/567/567889/][仮想メモリーを支えるもうひとつのキャッシュ TLB]]
+- [[https://github.com/torvalds/linux/blob/master/Documentation/vm/hugetlbpage.txt][Documentation/vm/hugetlbpage.txt]]
+- [[http://www.lenky.info/archives/2012/03/1219][{中国語}Linux下hugetlbpage使用详解]]
+- [[http://developerblog.redhat.com/2014/03/10/examining-huge-pages-or-transparent-huge-pages-performance/][Examining Huge Pages or Transparent Huge Pages performance]]
+- [[http://d.hatena.ne.jp/watashihax125/20110201][Transparent Hugepage コードウォーク]]
+- [[http://unix.stackexchange.com/questions/29853/command-to-measure-tlb-misses-on-linux][Command to measure TLB misses on LINUX?]]
+- [[http://laysakura.hateblo.jp/entry/20111015/1318738362][perf statでL1,L2(,L3)キャッシュミス測定]]
+- [[https://javaworks.wordpress.com/2013/10/17/3-knobs-you-should-know-in-redhat-transparent-hugepage/][3 knobs you should know in redhat transparent hugepage]]

@@ -1,0 +1,28 @@
+#+TITLE: [メモ]mainが実行されるまで
+#+DATE: 2015-04-26
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: java
+#+JEKYLL_TAGS: jvm
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+{{{more}}}
+* JVMの起動
+- JNI_CreateJavaVM
+
+* クラスロード
+- Class ファイルの読み込み
+
+* リンク
+- Classファイルが正しいかチェック
+- staticフィールドの初期化
+  - ただしJavaコードの実行はしない
+- クラス間の関係を解決
+
+* 初期化
+- staticフィールドの初期化
+  - javaコードも
+- staticイニシャライザの実行
+* man実行
+

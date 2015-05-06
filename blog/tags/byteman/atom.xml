@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Byteman | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/byteman/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2015-05-06T19:25:11+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]JBoss ASでBytemanを使う]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-04-01-%5B%E3%83%A1%E3%83%A2%5Djbossas%E3%81%A7byteman%E3%82%92%E4%BD%BF%E3%81%86.html"/>
+    <updated>2015-04-01T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]jbossasでbytemanを使う</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 前提</a></li>
+<li><a href="#sec-2">2. インストール</a></li>
+<li><a href="#sec-3">3. JBossASプロセスへのアタッチ</a></li>
+<li><a href="#sec-4">4. トレース用スクリプトの作成</a></li>
+<li><a href="#sec-5">5. スクリプトの実行</a></li>
+<li><a href="#sec-6">6. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+ミドルウェアの内部動作をトレースするためによく使うので手順を残しておきます。
+</p>
+
+
+
+
+<p>
+<!-- more -->
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 前提</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>JBossAS 7系
+</li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> インストール</h2>
+<div class="outline-text-2" id="text-2">
+<pre class="example">
+$ wget http://downloads.jboss.org/byteman/2.2.1/byteman-download-2.2.1-bin.zip
+$ unzip byteman-download-2.2.1-bin.zip
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> JBossASプロセスへのアタッチ</h2>
+<div class="outline-text-2" id="text-3">
+<pre class="example">
+$ export BYTEMAN_HOME=`pwd`/byteman-download-2.2.1
+$ export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64
+$ JBOSS_PID=`ps -ef | grep [j]boss-modules.jar | awk '{print $2}'`
+$ ${BYTEMAN_HOME}/bin/bminstall.sh -b ${JBOSS_PID}
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> トレース用スクリプトの作成</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+JBossASサーバソケット受信バッファーサイズを調べるスクリプト
+<code>trace_socket_receive_buffer_size.btm</code> を作成する
+</p>
+
+<pre class="example">
+RULE trace http ReceiveBufferSize
+CLASS org.apache.tomcat.util.net.JIoEndpoint
+METHOD processSocket
+AT ENTRY
+BIND socket = $1
+IF TRUE
+DO
+  traceln("socket.getReceiveBufferSize() = " + socket.getReceiveBufferSize()), traceStack()
+ENDRULE
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> スクリプトの実行</h2>
+<div class="outline-text-2" id="text-5">
+<pre class="example">
+$ ${BYTEMAN_HOME}/bin/bmsubmit.sh trace_socket_receive_buffer_size.btm
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> 参考</h2>
+<div class="outline-text-2" id="text-6">
+<ul class="org-ul">
+<li><a href="https://developer.jboss.org/wiki/ABytemanTutorial#how_do_i_run_jboss_as_with_byteman">A Byteman Tutorial</a>
+</li>
+<li><a href="http://nekop.hatenablog.com/entry/20101220/1292825812">BytemanによるJava黒魔術</a>
+</li>
+<li><a href="http://d.hatena.ne.jp/Kazuhira/20131022/1382455739">バイトコード操作ツール、Bytemanを試す</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

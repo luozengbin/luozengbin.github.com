@@ -1,0 +1,87 @@
+#+TITLE: [まとめ]JBoss AS 7過負荷時TCPコネクションの振る舞い
+#+DATE: 2015-04-01
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: java
+#+JEKYLL_TAGS: tcp JBossAS
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+* 前提事項
+本記事は以下の環境を前提とする。
+
+- Linux/x86_64
+- JBoss AS 7
+
+{{{more}}}
+
+* 最大ワーカスレッド数の設定方法
+- 方式1: -Dorg.apache.tomcat.util.net.MAX_THREADS=999
+- 方式2: コネクタ定義のmax-connectionsで指定する
+
+両方指定した場合、方式2が優先される。指定しない場合 512 x JVMに割り当てたコア数
+
+* スレッド起動のタイミング
+サーバ起動時にワーカースレッドの初期値が0、リクエストが来るたびに新規スレッドを作る。
+スレッドの数がmax-connectionsの数に達した時にログに以下のメッセージがを出力される。
+
+#+begin_example
+INFO [JIoEndpoint] Maximum number of threads (xxx) created for connector with address /127.0.0.1 and port 8080
+#+end_example
+
+* 過負荷時の挙動
+下記AとBの何れが起きた場合、クライアントからすると無応答や応答が激遅いことが感じるので
+防止の対策を講じることをおすすめします。
+
+** A.クライアントからPSHパケット再送が発生するパターン
+以下の状況に置いて、クライアントからのリクエスデータ[1]がサーバ側のTCPバッファーに詰ま
+る。TCPバッファー[2]が一杯になると、パケットがdropされるのでクライアントからのデータ再
+送が発生する。
+
+  - CPU高負荷時、Acceptorスレッドが回らない状況
+  - GCによって、Acceptorスレッドの働きが良くない状況
+  - CPU高負荷時、ワーカスレッドがリクエストデータ受信処理で止まっている
+  - GCによって、ワーカスレッドがリクエストデータ受信処理で止まっている
+
+また、Acceptorスレッドが止まる場合新規接続(3WHS完了)がbacklogキューに溜まるので
+backlogキューが溢れる可能性もあります。
+
+※上記に関して、Threadサブシステム利用時も同様です。
+
+** B.TCP3WHSパケット再送が発生するパターン
+CPU高負荷でAcceptorスレッドが止まってかつbacklogキューが溢れた場合、コネクションの確立
+ができない、クライアントからのsyn(1)やack(3)の再送が起きる。
+TCP SYNの再送間隔は以下の通り、約64秒でタイムアウトになる。
+#+begin_example
+1回目 +1秒
+2回目 +2秒
+3回目 +4秒
+4回目 +8秒
+5回目 +16秒
+6回目 +32秒  タイムアウト
+#+end_example
+クライアントからすると応答が激遅いと感じることがある。
+
+※上記に関して、Threadサブシステム利用時も同様です。
+
+** C.新規接続が拒否されるパターン
+同時接続数がmax-connections値を超えた場合、Acceptorスレッドが新規コネクションを受付し、
+その後のワーカースレッド割り当て処理でワーカースレッドがないことを気付き、ソケットをク
+ローズする(FINパケットを送出)。
+
+注意：
+このケースに置いて必ずじもCPU高負荷とは限らない、ワーカスレッドがアプリに掴み放しの場
+合も起こりえる。
+
+* 過負荷の対策
+実際の運用上はどちらも発生しりえる。それぞれのパターンに置いてLBがどう振る舞うかを明確
+した上でワーカースレッドのbusy数とCPUの使用率を監視し、閉塞運用、スペアインスタンスの
+運用などを設計することが大事だと思います。
+
+* 参考
+[1] HTTPリクエスト電文のヘッダ部やボディ部の内容
+[2] TCP接続単位にTCPバッファーが持っている、デフォルト値は
+    net.ipv4.tcp_rmemのdefaultパラメータ値の1/2になります、約42KB。
+    https://github.com/torvalds/linux/blob/master/net/ipv4/tcp.c#L3072
+
+

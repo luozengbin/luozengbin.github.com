@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: VirtualBox | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/virtualbox/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2015-05-06T19:25:11+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]VirtualBox HostOnly on Linux]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html"/>
+    <updated>2015-02-06T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]virtualbox-hostonly-on-linux</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. VirtualBox使用出来るネットワークアダプタ</a></li>
+<li><a href="#sec-2">2. 複数アダプターユースケース</a></li>
+<li><a href="#sec-3">3. ホストオンリーネットワークの追加手順</a>
+<ul>
+<li><a href="#sec-3-1">3.1. カーネルモジュールのロード</a></li>
+<li><a href="#sec-3-2">3.2. ホストオンリーネットワークの追加</a></li>
+<li><a href="#sec-3-3">3.3. アダプターと紐付ける</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+VirtualBox上で動く仮想マシンにデフォルトではNATネットワークアダプタが割り当てられてい
+るため、Host OSとの通信ができないです。これを回避するために <code>ホストオンリーネットワー
+ク</code> アダプターを使えば回避できる。最近のバージョン追加手順が変わったため、メモしてお
+きます。
+</p>
+
+
+
+
+<p>
+<!-- more -->
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> VirtualBox使用出来るネットワークアダプタ</h2>
+<div class="outline-text-2" id="text-1">
+<ol class="org-ol">
+<li>NAT
+VirtualBox のデフォルト設定。ゲスト OS からインターネットは繋がる。
+ゲスト OS とホストOS 間は繋がらない。
+</li>
+<li>ブリッジネットワーク
+ゲスト OS のネットワークがホスト OS と同じネットワークに繋がる。イン
+ターネットに繋がり、ゲスト OS とホスト OS の間が繋がる。同じネットワー
+ク上の他の PC からも見える。
+</li>
+<li>内部ネットワーク
+仮想マシンを複数起動したときに、各マシン間を繋ぐためのネットワーク？
+</li>
+<li>ホストオンリーネットワーク
+ホスト OS と ゲスト OS 間のネットワーク。ゲスト OS をローカルのウェ
+ブサービス開発環境として利用する場合、次のようなネットワークだと都合
+が良いです。
+</li>
+</ol>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 複数アダプターユースケース</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+アダプタ ２ に「ホストオンリーネットワーク」を割り当て、アダプ
+タ １に「NAT」を割り当てます。こうすると、ホスト OS とゲスト OS 間が繋
+がり、NAT によりゲスト OS から外部ネットへのアクセスもきるようになります。
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> ホストオンリーネットワークの追加手順</h2>
+<div class="outline-text-2" id="text-3">
+</div><div id="outline-container-sec-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> カーネルモジュールのロード</h3>
+<div class="outline-text-3" id="text-3-1">
+<pre class="example">
+sudo modprobe vboxdrv
+sudo modprobe vboxnetadp
+sudo modprobe vboxnetflt
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3-2" class="outline-3">
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> ホストオンリーネットワークの追加</h3>
+<div class="outline-text-3" id="text-3-2">
+<p>
+ホストと通信するための仮想ブリッジを追加するイメージとなります。またこのブリッジに対
+してIPの指定やDHCPサーバ機能の有効化も可能です。VirtualBoxのグローバル設定ダイアログか
+らホストオンリーネットワークを追加する。
+</p>
+
+<ul class="org-ul">
+<li>ホストオンリーネットワークの追加
+<img src="img/2015-02-06-vbox001.png" alt="2015-02-06-vbox001.png" />
+</li>
+
+<li>ブリッジにIPを割り当てる
+<img src="img/2015-02-06-vbox002.png" alt="2015-02-06-vbox002.png" />
+</li>
+
+<li>DHCPサーバを有効化する
+<img src="img/2015-02-06-vbox003.png" alt="2015-02-06-vbox003.png" />
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-3-3" class="outline-3">
+<h3 id="sec-3-3"><span class="section-number-3">3.3</span> アダプターと紐付ける</h3>
+<div class="outline-text-3" id="text-3-3">
+<p>
+仮想マシンのネットワークディバイス設定でアダプター２を有効化し、作成したホストオンリー
+ネットワークと紐付ける。
+  <img src="img/2015-02-06-vbox004.png" alt="2015-02-06-vbox004.png" />
+</p>
+
+<p>
+仮想マシンを機能すると共に仮想ブリッジディバイスがホストOS上で自動的に生成されること
+を確認する。
+</p>
+
+<pre class="example">
+$ ifconfig
+★省略..........
+
+vboxnet0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
+        inet 192.168.56.1  netmask 255.255.255.0  broadcast 192.168.56.255
+        inet6 fe80::800:27ff:fe00:0  prefixlen 64  scopeid 0x20&lt;link&gt;
+        ether 0a:00:27:00:00:00  txqueuelen 1000  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 107  bytes 18000 (17.5 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+</pre>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> 参考</h2>
+<div class="outline-text-2" id="text-4">
+<ul class="org-ul">
+<li><a href="https://wiki.archlinux.org/index.php/VirtualBox#Load_the_VirtualBox_kernel_modules">Load the VirtualBox kernel modules</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

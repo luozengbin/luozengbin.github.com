@@ -1,0 +1,50 @@
+#+TITLE: [メモ][Linux]アプリケーション実行時のトレース方法
+#+DATE: 2015-05-04
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: 
+#+JEKYLL_TAGS: 
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+
+{{{more}}}
+
+* 参考
+- [[http://www.intellilink.co.jp/article/column/oss11.html][第11回「 strace ノススメ」]]
+- [[http://d.hatena.ne.jp/pyopyopyo/20061018/p1][glibc でバックトレースを表示する方法]]
+- [[http://mikilab.doshisha.ac.jp/dia/seminar/2002/pdf/sltrace.pdf][第1回 strace/ltraceゼミ]]
+- [[http://koseki.hatenablog.com/entry/20090619/TraceProc][実行中のアプリケーションを外から観察するコマンド。]]
+- [[http://dsas.blog.klab.org/archives/51024395.html][オープンソースを楽しむエンジニアの一日 ～　コードを楽しく読む工夫 ]]
+- [[http://dsas.blog.klab.org/archives/51025093.html][オープンソースを楽しむエンジニアの二日目 - ftraceコマンドを書く ]]
+- [[http://0xcc.net/blog/archives/000073.html][普通のやつらの下を行け: BFDでデバッグ情報の取得]]
+- [[http://blog-ja.intransient.info/2010/03/addr2lineshared-library.html?m%3D1][addr2line（相当）のshared library対応版]]
+
+- [[http://www.csus4.net/d/japanese_translations_of_tanel_poder_s_posts_and_articles/peeking-into-linux-kernel-land-using-proc-filesystem-for-quickndirty-troubleshooting-ja/][トラブルシューティングのために/procファイルシステムを使用してLinuxカーネルランドを覗く]]
+
+- [[http://stackoverflow.com/questions/7639309/how-to-use-gdb-to-find-what-function-a-memory-address-corresponds-to][How to use GDB to find what function a memory address corresponds to]]
+- [[http://stackoverflow.com/questions/7556045/how-to-map-function-address-to-function-in-so-files][How to map function address to function in *.so files]]
+- [[http://stackoverflow.com/questions/4514745/how-do-i-view-the-list-of-functions-a-linux-shared-library-is-exporting][How do I view the list of functions a Linux shared library is exporting?]]
+
+- [[http://99blues.dyndns.org/blog/2010/07/kcachegrind/][KCachegrindを使ったコード改善 (準備編)]]
+- [[http://99blues.dyndns.org/blog/2010/07/kcachegrind_2/][KCachegrindを使ったコード改善 (入門編)]]
+- [[http://99blues.dyndns.org/blog/2010/07/kcachegrind_2/][KCachegrindを使ったコード改善 (実践編)]]
+
+- [[https://balau82.wordpress.com/2010/10/06/trace-and-profile-function-calls-with-gcc/][Trace and profile function calls with GCC]]
+- [[http://ndevilla.free.fr/etrace/][Run-time function call tree with gcc]]
+- [[http://stackoverflow.com/questions/5816950/automatic-tracing-of-program-execution][Automatic tracing of program execution]]
+
+- [[http://www.brendangregg.com/linuxperf.html][Linux Performance]]
+- [[http://www.brendangregg.com/perf.html][perf Examples]]
+- [[http://www.brendangregg.com/FlameGraphs/cpuflamegraphs.html][CPU Flame Graphs]]
+- [[https://github.com/brendangregg/perf-tools][brendangregg/perf-tools]]
+- [[http://d.hatena.ne.jp/jitsu102/20111229/1325116539][Linuxモニタリングツール pmap, IPTraf, ntop を使ってみた]]
+
+- [[http://blog.csdn.net/justlinux2010/article/details/10284217][SystemTap----利用stap命令来查找内核函数定义]]
+- [[http://d.hatena.ne.jp/mmitou/20120717/1342547435][Systemtap Begginers Guide の1章と2章のメモ]]
+- http://blog.csdn.net/justlinux2010/article/category/1570309
+
+
+- http://gperftools.googlecode.com/git/doc/heapprofile.html
+- [[http://linux.cn/topic-linux-system-performance-monitoring.html#rd?sukey%3Dcbbc36a2500a2e6c115e83519f5d263d7dd2a5514e10774f378b55b3f06ce343ae3ada51ce6f494ea44d50c167899a07][Linux 性能监测专题]]
+

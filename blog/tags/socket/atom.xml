@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: Socket | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/socket/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2014-11-20T15:12:30+09:00</updated>
+  <updated>2015-05-06T19:25:11+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -24,8 +24,14 @@
 <ul>
 <li><a href="#sec-1">1. DEFAULT_CONNECTION_TIMEOUTオプションの役割</a></li>
 <li><a href="#sec-2">2. JBossASの実装</a></li>
-<li><a href="#sec-3">3. 注意書き</a></li>
-<li><a href="#sec-4">4. 参考リンク</a></li>
+<li><a href="#sec-3">3. タイムアウト時の挙動</a>
+<ul>
+<li><a href="#sec-3-1">3.1. HTTPヘッダー受信途中タイムアウトの場合</a></li>
+<li><a href="#sec-3-2">3.2. リクエスト本文受信途中タイムアウトの場合</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. 注意書き</a></li>
+<li><a href="#sec-5">5. 参考リンク</a></li>
 </ul>
 </div>
 </div>
@@ -183,11 +189,11 @@ DatagramSocket.receive();
 </p>
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #729fcf; font-weight: bold;">final</span> <span style="color: #729fcf; font-weight: bold;">class</span> <span style="color: #2DA6F5; font-weight: bold;">Constants</span> {
+<pre class="src src-java"><span style="color: #b4fa70;">public</span> <span style="color: #b4fa70;">final</span> <span style="color: #b4fa70;">class</span> <span style="color: #8cc4ff;">Constants</span> {
     ...............
-    <span style="color: #888a85; font-style: italic;">//</span><span style="color: #888a85; font-style: italic;">&#9733;&#12371;&#12371;&#12391;Java&#12458;&#12503;&#12471;&#12519;&#12531;&#12363;&#12425;&#20516;&#12434;&#21442;&#29031;&#12375;&#12390;&#12356;&#12427;</span>
-    <span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #729fcf; font-weight: bold;">static</span> <span style="color: #729fcf; font-weight: bold;">final</span> <span style="color: #2DA6F5; font-weight: bold;">int</span> DEFAULT_CONNECTION_TIMEOUT =
-            Integer.valueOf(System.getProperty(<span style="color: #ad7fa8;">"org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT"</span>, <span style="color: #ad7fa8;">"60000"</span>)).intValue();
+    <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;&#12371;&#12371;&#12391;Java&#12458;&#12503;&#12471;&#12519;&#12531;&#12363;&#12425;&#20516;&#12434;&#21442;&#29031;&#12375;&#12390;&#12356;&#12427;</span>
+    <span style="color: #b4fa70;">public</span> <span style="color: #b4fa70;">static</span> <span style="color: #b4fa70;">final</span> <span style="color: #8cc4ff;">int</span> DEFAULT_CONNECTION_TIMEOUT =
+            Integer.valueOf(System.getProperty(<span style="color: #e9b96e;">"org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT"</span>, <span style="color: #e9b96e;">"60000"</span>)).intValue();
     .............
 </pre>
 </div>
@@ -224,23 +230,104 @@ DatagramSocket.receive();
 
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> 注意書き</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> タイムアウト時の挙動</h2>
 <div class="outline-text-2" id="text-3">
+</div><div id="outline-container-sec-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> HTTPヘッダー受信途中タイムアウトの場合</h3>
+<div class="outline-text-3" id="text-3-1">
 <p>
-<code>org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT</code> が次のように誤解されることもあ
-るので、要注意です。
+Cookiesが大きいの場合、HTTPヘッダー電文が複数パケットに分割する可能性が高い。
+ネットワーク障害でHTTPヘッダー受信途中でタイムアウトが起きた場合サーバからFINパケット
+よりコネクションが切断される。
+</p>
+
+<p>
+以下はHTTPヘッダー受信処理のコードの抜粋です。タイムアウトが起きた場合★３の部分が実
+行される。 エラーログを吐かずに処理が終了してしまう。
+</p>
+
+<p>
+<a href="http://anonsvn.jboss.org/repos/jbossweb/tags/JBOSSWEB_7_2_2_FINAL/src/main/java/org/apache/coyote/http11/Http11Processor.java">org.apache.coyote.http11.Http11Processor</a>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #e9b96e;">/**</span>
+<span style="color: #e9b96e;"> * Process pipelined HTTP requests on the specified socket.</span>
+<span style="color: #e9b96e;"> *</span>
+<span style="color: #e9b96e;"> * </span><span style="color: #e6a8df;">@param</span><span style="color: #e9b96e;"> socket Socket from which the HTTP requests will be read</span>
+<span style="color: #e9b96e;"> *               and the HTTP responses will be written.</span>
+<span style="color: #e9b96e;"> *</span>
+<span style="color: #e9b96e;"> * </span><span style="color: #e6a8df;">@throws</span><span style="color: #e9b96e;"> IOException error during an I/O operation</span>
+<span style="color: #e9b96e;"> */</span>
+<span style="color: #b4fa70;">public</span> <span style="color: #8cc4ff;">SocketState</span> <span style="color: #fce94f;">process</span>(<span style="color: #8cc4ff;">Socket</span> <span style="color: #fcaf3e;">socket</span>)
+    <span style="color: #b4fa70;">throws</span> <span style="color: #8cc4ff;">IOException</span> {
+    <span style="color: #8cc4ff;">RequestInfo</span> <span style="color: #fcaf3e;">rp</span> = request.getRequestProcessor();
+    rp.setStage(<span style="color: #e6a8df;">org</span>.<span style="color: #e6a8df;">apache</span>.<span style="color: #e6a8df;">coyote</span>.<span style="color: #e6a8df;">Constants</span>.STAGE_PARSE);
+
+    <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;&#9733;&#9733;&#65296; &#12356;&#12429;&#12356;&#12429;&#30465;&#30053;&#12377;&#12427;</span>
+
+    <span style="color: #b4fa70;">while</span> (!error &amp;&amp; keepAlive &amp;&amp; !event) {
+
+        <span style="color: #73d216;">// </span><span style="color: #73d216;">Parsing the request header</span>
+        <span style="color: #b4fa70;">try</span> {
+            <span style="color: #b4fa70;">if</span> (!disableUploadTimeout &amp;&amp; keptAlive) {
+                <span style="color: #b4fa70;">if</span> (keepAliveTimeout &gt; 0) {
+                    socket.setSoTimeout(keepAliveTimeout);
+                }
+                <span style="color: #b4fa70;">else</span> <span style="color: #b4fa70;">if</span> (soTimeout &gt; 0) {
+                    socket.setSoTimeout(soTimeout);
+                }
+            }
+
+            <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;&#9733;&#9733;&#65297; HTTP&#12504;&#12483;&#12480;&#12540;&#65297;&#34892;&#30446;&#12398;&#21463;&#20449;&#20966;&#29702;</span>
+            inputBuffer.parseRequestLine();
+            request.setStartTime(System.currentTimeMillis());
+            keptAlive = <span style="color: #e6a8df;">true</span>;
+            <span style="color: #b4fa70;">if</span> (!disableUploadTimeout) {
+                socket.setSoTimeout(timeout);
+            }
+
+            <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;&#9733;&#9733;&#65298; HTTP&#12504;&#12483;&#12480;&#12540;&#12398;&#21463;&#20449;&#20966;&#29702;</span>
+            inputBuffer.parseHeaders();
+        } <span style="color: #b4fa70;">catch</span> (<span style="color: #8cc4ff;">IOException</span> <span style="color: #fcaf3e;">e</span>) {
+
+            <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;&#9733;&#9733;&#65299; &#12493;&#12483;&#12488;&#12527;&#12540;&#12463;IO&#12456;&#12521;&#12540;&#26178;&#12289;&#20966;&#29702;&#12434;&#27490;&#12417;&#12427;</span>
+            error = <span style="color: #e6a8df;">true</span>;
+            <span style="color: #b4fa70;">break</span>;
+        } <span style="color: #b4fa70;">catch</span> (<span style="color: #8cc4ff;">Throwable</span> <span style="color: #fcaf3e;">t</span>) {
+            <span style="color: #e6a8df;">CoyoteLogger</span>.HTTP_LOGGER.errorParsingHeader(t);
+            <span style="color: #73d216;">// </span><span style="color: #73d216;">400 - Bad Request</span>
+            response.setStatus(400);
+            error = <span style="color: #e6a8df;">true</span>;
+        }
+</pre>
+</div>
+
+<p>
+★３の部分にエラー出力処理を追加しらた、タイムアウト時下記のエラートレースが出力され
+た。
 </p>
 <pre class="example">
-ワーカスレッドの実行時間のタイムアウト値
+19:23:49,020 ERROR [stderr] (http-/0.0.0.0:8080-1) java.net.SocketTimeoutException: Read timed out
+19:23:49,020 ERROR [stderr] (http-/0.0.0.0:8080-1)  at java.net.SocketInputStream.socketRead0(Native Method)
+19:23:49,021 ERROR [stderr] (http-/0.0.0.0:8080-1)  at java.net.SocketInputStream.read(SocketInputStream.java:152)
+19:23:49,021 ERROR [stderr] (http-/0.0.0.0:8080-1)  at java.net.SocketInputStream.read(SocketInputStream.java:122)
+19:23:49,027 ERROR [stderr] (http-/0.0.0.0:8080-1)  at org.apache.coyote.http11.InternalInputBuffer.fill(InternalInputBuffer.java:721)
+19:23:49,028 ERROR [stderr] (http-/0.0.0.0:8080-1)  at org.apache.coyote.http11.InternalInputBuffer.parseHeader(InternalInputBuffer.java:660)
+19:23:49,028 ERROR [stderr] (http-/0.0.0.0:8080-1)  at org.apache.coyote.http11.InternalInputBuffer.parseHeaders(InternalInputBuffer.java:516)
+19:23:49,029 ERROR [stderr] (http-/0.0.0.0:8080-1)  at org.apache.coyote.http11.Http11Processor.process(Http11Processor.java:828)
+19:23:49,032 ERROR [stderr] (http-/0.0.0.0:8080-1)  at org.apache.coyote.http11.Http11Protocol$Http11ConnectionHandler.process(Http11Protocol.java:653)
+19:23:49,033 ERROR [stderr] (http-/0.0.0.0:8080-1)  at org.apache.tomcat.util.net.JIoEndpoint$Worker.run(JIoEndpoint.java:920)
+19:23:49,034 ERROR [stderr] (http-/0.0.0.0:8080-1)  at java.lang.Thread.run(Thread.java:745)
 </pre>
+</div>
+</div>
 
+<div id="outline-container-sec-3-2" class="outline-3">
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> リクエスト本文受信途中タイムアウトの場合</h3>
+<div class="outline-text-3" id="text-3-2">
 <p>
-あくまでもソケットのブロックタイムアウト値なので、アプリのロジック処理時と関係ないで
-す。主にHTTPヘッダとHTTP本文の読み取り処理のブロック時間を監視するために使われる。
-</p>
-
-<p>
-以下、HTTP本文読み取り処理でブロックタイムアウトが起きた時のサーバログです。
+以下、HTTP本文読み取り処理(HTTP POST)でブロックタイムアウトが起きた時のサーバログです。
 </p>
 <pre class="example">
 Caused by: java.net.SocketTimeoutException: Read timed out
@@ -257,13 +344,35 @@ Caused by: java.net.SocketTimeoutException: Read timed out
 </pre>
 </div>
 </div>
+</div>
 
 
 
 
 <div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> 参考リンク</h2>
+<h2 id="sec-4"><span class="section-number-2">4</span> 注意書き</h2>
 <div class="outline-text-2" id="text-4">
+<p>
+<code>org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT</code> が次のように誤解されることもあ
+るので、要注意です。
+</p>
+<pre class="example">
+ワーカスレッドの実行時間のタイムアウト値
+</pre>
+
+<p>
+あくまでもソケットのブロックタイムアウト値なので、アプリのロジック処理時と関係ないで
+す。主にHTTPヘッダとHTTP本文の読み取り処理のブロック時間を監視するために使われる。
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> 参考リンク</h2>
+<div class="outline-text-2" id="text-5">
 <ul class="org-ul">
 <li><a href="https://docs.jboss.org/jbossweb/7.0.x/sysprops.html">JBossWeb System Properties</a>
 </li>

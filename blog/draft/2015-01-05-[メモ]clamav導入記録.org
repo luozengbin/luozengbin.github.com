@@ -1,0 +1,308 @@
+#+TITLE: [メモ]ClamAV導入記録
+#+DATE: 2015-01-05
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: clamav
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+* アーキテクチャ
+#+begin_example
+[client command]            [service procss]        [files]               [service procss]
++--------------+            +--------------+        +------------+        +-----------+
+|              | command    |              | ref    |   virus    |        |           |
+|  clamdscan   +------------>    clamd     +--------> databases  <--------+ freshclam |
+|              |    +------->              |        |            | update |           |
++--------------+    |       +--+--------+--+        +------------+        +-----------+
+                    |          |        |
++--------------+  monitor    scan     scan
+|              |    |          |        |
+| clamdtop     +----+       +--+--------+--+
+|              |            |              |
++--------------+            |  filesystem  |
+                            |              |
+                            +--------------+
+#+end_example
+
+* インストール
+
+#+begin_example
+$ sudo pacman -S clamav
+#+end_example
+
+
+#+begin_example
+/etc/
+/etc/clamav/
+/etc/clamav/clamd.conf
+/etc/clamav/clamd.conf.sample
+/etc/clamav/freshclam.conf
+/etc/clamav/freshclam.conf.sample
+/etc/logrotate.d/
+/etc/logrotate.d/clamav
+/usr/
+/usr/bin/
+/usr/bin/clamav-config
+/usr/bin/clambc
+/usr/bin/clamconf
+/usr/bin/clamd
+/usr/bin/clamdscan
+/usr/bin/clamdtop
+/usr/bin/clamscan
+/usr/bin/clamsubmit
+/usr/bin/freshclam
+/usr/bin/sigtool
+/usr/include/
+/usr/include/clamav.h
+/usr/lib/
+/usr/lib/libclamav.so
+/usr/lib/libclamav.so.6
+/usr/lib/libclamav.so.6.1.22
+/usr/lib/libclamunrar.so
+/usr/lib/libclamunrar.so.6
+/usr/lib/libclamunrar.so.6.1.22
+/usr/lib/libclamunrar_iface.so
+/usr/lib/libclamunrar_iface.so.6
+/usr/lib/libclamunrar_iface.so.6.1.22
+/usr/lib/pkgconfig/
+/usr/lib/pkgconfig/libclamav.pc
+/usr/lib/systemd/
+/usr/lib/systemd/system/
+/usr/lib/systemd/system/clamd.service
+/usr/lib/systemd/system/freshclamd.service
+/usr/lib/tmpfiles.d/
+/usr/lib/tmpfiles.d/clamav.conf
+/usr/share/
+/usr/share/man/
+/usr/share/man/man1/
+/usr/share/man/man1/clambc.1.gz
+/usr/share/man/man1/clamconf.1.gz
+/usr/share/man/man1/clamdscan.1.gz
+/usr/share/man/man1/clamdtop.1.gz
+/usr/share/man/man1/clamscan.1.gz
+/usr/share/man/man1/clamsubmit.1.gz
+/usr/share/man/man1/freshclam.1.gz
+/usr/share/man/man1/sigtool.1.gz
+/usr/share/man/man5/
+/usr/share/man/man5/clamav-milter.conf.5.gz
+/usr/share/man/man5/clamd.conf.5.gz
+/usr/share/man/man5/freshclam.conf.5.gz
+/usr/share/man/man8/
+/usr/share/man/man8/clamav-milter.8.gz
+/usr/share/man/man8/clamd.8.gz
+/var/
+/var/lib/
+/var/lib/clamav/
+/var/log/
+/var/log/clamav/
+#+end_example
+
+
+#+begin_example
+$ sudo freshclam
+ClamAV update process started at Mon Jan  5 17:06:33 2015
+Downloading main.cvd [100%]
+main.cvd updated (version: 55, sigs: 2424225, f-level: 60, builder: neo)
+Downloading daily.cvd [100%]
+daily.cvd updated (version: 19880, sigs: 1302029, f-level: 63, builder: neo)
+Downloading bytecode.cvd [100%]
+bytecode.cvd updated (version: 244, sigs: 44, f-level: 63, builder: dgoddard)
+Database updated (3726298 signatures) from db.jp.clamav.net (IP: 218.44.253.75)
+WARNING: Clamd was NOT notified: Can't connect to clamd through /var/lib/clamav/clamd.sock: No such file or directory
+
+$ ls -al /var/lib/clamav/
+合計 95160
+drwxr-xr-x  2 clamav clamav     4096  1月  5 17:21 .
+drwxr-xr-x 47 root   root       4096  1月  5 16:44 ..
+-rw-r--r--  1 clamav clamav    72027  1月  5 17:08 bytecode.cvd
+-rw-r--r--  1 clamav clamav 32630167  1月  5 17:08 daily.cvd
+-rw-r--r--  1 clamav clamav 64720632  1月  5 17:07 main.cvd
+-rw-------  1 clamav clamav       52  1月  5 17:21 mirrors.dat
+#+end_example
+
+
+#+begin_example
+$ sudo touch /etc/tmpfiles.d/clamd.conf
+$ sudo cat /etc/tmpfiles.d/clamd.conf
+D /var/run/clamav 0755 clamav clamav -
+#+end_example
+
+
+* ウィルスデータベースの自動更新
+=/etc/clamav/freshclam.conf=
+#+begin_example
+
+# ログ出力先
+UpdateLogFile /var/log/clamav/freshclam.log
+
+# ウィルス定義ファイル入手元
+DatabaseMirror db.jp.clamav.net
+
+# ウィルス定義ファイル更新をclamdに通知する
+NotifyClamd /etc/clamav/clamd.conf
+
+# １日にウィルスデータベース更新回数
+Checks 12
+#+end_example
+
+* サービス起動
+#+begin_example
+$ sudo systemctl enable clamd.service
+$ sudo systemctl enable freshclamd.service
+
+$ sudo systemctl start clamd.service
+$ sudo systemctl start freshclamd.service
+#+end_example
+
+* 自動スキャン
+=clamd= デーモンプロセス起動するだけで自動的にウィルスをスキャンしてくれないです。
+定期的に =clamdscan= コマンドを実行し、特定のディレクトリに対してウィルススキャンする
+ジョブが必要となります。
+
+#+begin_src sh
+#!/bin/bash
+
+PATH=/usr/bin:/bin
+
+# clamdデーモンプロセス起動してるかを確認する
+if [[ `pgrep clamd` ]]; then
+    CLAMSCANTMP=`mktemp`
+    clamdscan /home > $CLAMSCANTMP 2>&1
+    clamdscan /var > $CLAMSCANTMP 2>&1
+    [ ! -z "$(grep FOUND$ $CLAMSCANTMP)" ] { \
+        grep FOUND$ $CLAMSCANTMP | mail -s "Virus Found in `hostname`" akira
+    }
+    rm -f $CLAMSCANTMP
+fi
+#+end_src
+
+https://www.centosblog.com/how-to-install-clamav-and-configure-daily-scanning-on-centos/
+http://fedorasrv.com/clamav.shtml
+
+* オンアクセススキャン
+カーネルコンパイルオプションにて =fanotify= サポートを確認する。
+#+begin_example
+$ zcat /proc/config.gz | grep CONFIG_FANOTIFY
+CONFIG_FANOTIFY=y
+CONFIG_FANOTIFY_ACCESS_PERMISSIONS=y
+#+end_example
+
+
+#+begin_example
+LogFile /var/log/clamav/clamd.log
+LogTime yes
+PidFile /run/clamav/clamd.pid
+TemporaryDirectory /tmp
+LocalSocket /var/lib/clamav/clamd.sock
+User root
+
+
+##
+## On-access Scan Settings
+##
+ScanOnAccess yes
+
+# Don't scan files larger than OnAccessMaxFileSize
+# Value of 0 disables the limit.
+# Default: 5M
+OnAccessMaxFileSize 10M
+
+# Set the include paths (all files inside them will be scanned). You can have
+# multiple OnAccessIncludePath directives but each directory must be added
+# in a separate line. (On-access scan only)
+OnAccessIncludePath /home/akira/Downloads
+#+end_example
+
+#+begin_example
+Mon Jan  5 18:05:00 2015 -> Self checking every 600 seconds.
+Mon Jan  5 18:05:00 2015 -> ERROR: ScanOnAccess: fanotify_init failed: Operation not permitted
+Mon Jan  5 18:05:00 2015 -> ScanOnAccess: clamd must be started by root
+#+end_example
+
+#+begin_example
+Mon Jan  5 18:08:33 2015 -> Self checking every 600 seconds.
+Mon Jan  5 18:08:33 2015 -> ScanOnAccess: Protecting directory '/home/akira/Downloads'
+Mon Jan  5 18:08:33 2015 -> ScanOnAccess: Max file size limited to 10485760 bytes
+
+Mon Jan  5 18:09:38 2015 -> ScanOnAccess: /home/akira/Downloads/eicar.txt: Eicar-Test-Signature FOUND
+#+end_example
+
+* ClamAVウイルス発見時メール通知させたい
+** 案１
+=/etc/clamav/clamd.conf= の =VirusEvent= ディレクティブにてウィルスが検出された時に実
+行するコマンドを定義する。
+
+#+begin_example
+##
+## Notification Settings
+##
+# Execute a command when virus is found. In the command string %v will
+# be replaced with the virus name.
+VirusEvent /etc/clamav/eventhandler.sh "%v"
+#+end_example
+
+コマンドに渡せるパラメータはウィルス名のみとなるため情報が足りない。
+=/etc/clamav/eventhandler.sh= にて時刻情報を利用しclamdのログから感染したファイル情報
+を切り出してメール送信するスタマイで実装をしました。
+
+#+begin_example
+#!/bin/sh
+
+LOCAL_DT=`LANG=c; date +'%a %b %e %k:%M:%S %Y'`
+
+START_LN=`fgrep -n "${LOCAL_DT}" /var/log/clamav/clamd.log \
+          | awk  -F":" '{print $1}' |  head -1`
+END_LN=`cat /var/log/clamav/clamd.log | wc -l`
+SCAN_LOG=`sed -n "${START_LN},${END_LN}p" /var/log/clamav/clamd.log`
+
+cat << EOM | mail -s "[clamav-alert]$1 Found" akira@localhost
+-------------------------------------------------------
+Virus Mail Information
+-------------------------------------------------------
+Virus Name: ${1}
+ClamAV Log: ${SCAN_LOG} 
+-------------------------------------------------------
+EOM
+#+end_example
+
+以下はウィルスが検出された際のメールサンプルです。
+#+begin_example
+[-- Message  5 -- 25 lines, 979 bytes --]:
+From root@mimi.localdomain  Mon Jan  5 21:32:19 2015
+Return-Path: <root@mimi.localdomain>
+X-Original-To: akira@localhost
+Delivered-To: akira@localhost.localdomain
+Date: Mon, 05 Jan 2015 21:32:19 +0900
+To: akira@localhost.localdomain
+Subject: [clamav-alert]Virus Eicar-Test-Signature Found
+User-Agent: mail v14.7.10
+Content-Type: text/plain; charset=US-ASCII
+From: root@mimi.localdomain (root)
+Status: RO
+
+-------------------------------------------------------
+Virus Mail Information
+-------------------------------------------------------
+Virus Name: Eicar-Test-Signature
+ClamAV Log: Mon Jan  5 21:32:19 2015 -> ScanOnAccess: /home/akira/Downloads/eicar.txt: Eicar-Test-Signature FOUND 
+-------------------------------------------------------
+#+end_example
+
+
+http://zashikiro.hateblo.jp/entry/2012/10/15/080012
+http://netlog.jpn.org/r271-635/2010/06/clamav_bootscan_mail.html
+http://d.hatena.ne.jp/tak_yah/20120229
+
+{{{more}}}
+
+** 案２
+ログを監視する。
+
+
+* 参考
+- [[%20http://blog.drmn.jp/2014/03/clamav.html][ClamAV のオンアクセス スキャン]]
+- [[http://askubuntu.com/questions/114000/how-to-update-clamav-definitions-database][How to update ClamAV definitions database?]]
+- [[http://oss.sios.com/guest-blog/clamav-fanotify][ClamAVでのfanotifyの有効化]]
+- [[https://www.ipa.go.jp/security/fy22/reports/tech1-tg/b_03.html][情報セキュリティ技術動向調査（2010 年下期）]]
+- [[http://fedorasrv.com/clamav.shtml][アンチウィルスソフト導入(Clam AntiVirus)]]

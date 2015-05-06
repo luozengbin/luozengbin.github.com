@@ -114,17 +114,87 @@ public final class Constants {
 7.           socket.setSoTimeout(soTimeout);
 #+end_example
 
-* 注意書き
-=org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT= が次のように誤解されることもあ
-るので、要注意です。
+* タイムアウト時の挙動
+** HTTPヘッダー受信途中タイムアウトの場合
+Cookiesが大きいの場合、HTTPヘッダー電文が複数パケットに分割する可能性が高い。
+ネットワーク障害でHTTPヘッダー受信途中でタイムアウトが起きた場合サーバからFINパケット
+よりコネクションが切断される。
+
+以下はHTTPヘッダー受信処理のコードの抜粋です。タイムアウトが起きた場合★３の部分が実
+行される。 エラーログを吐かずに処理が終了してしまう。
+
+[[http://anonsvn.jboss.org/repos/jbossweb/tags/JBOSSWEB_7_2_2_FINAL/src/main/java/org/apache/coyote/http11/Http11Processor.java][org.apache.coyote.http11.Http11Processor]]
+#+begin_src java
+    /**
+     * Process pipelined HTTP requests on the specified socket.
+     *
+     * @param socket Socket from which the HTTP requests will be read
+     *               and the HTTP responses will be written.
+     *
+     * @throws IOException error during an I/O operation
+     */
+    public SocketState process(Socket socket)
+        throws IOException {
+        RequestInfo rp = request.getRequestProcessor();
+        rp.setStage(org.apache.coyote.Constants.STAGE_PARSE);
+
+        //★★★０ いろいろ省略する
+
+        while (!error && keepAlive && !event) {
+
+            // Parsing the request header
+            try {
+                if (!disableUploadTimeout && keptAlive) {
+                    if (keepAliveTimeout > 0) {
+                        socket.setSoTimeout(keepAliveTimeout);
+                    }
+                    else if (soTimeout > 0) {
+                        socket.setSoTimeout(soTimeout);
+                    }
+                }
+
+                //★★★１ HTTPヘッダー１行目の受信処理
+                inputBuffer.parseRequestLine();
+                request.setStartTime(System.currentTimeMillis());
+                keptAlive = true;
+                if (!disableUploadTimeout) {
+                    socket.setSoTimeout(timeout);
+                }
+
+                //★★★２ HTTPヘッダーの受信処理
+                inputBuffer.parseHeaders();
+            } catch (IOException e) {
+
+                //★★★３ ネットワークIOエラー時、処理を止める
+                error = true;
+                break;
+            } catch (Throwable t) {
+                CoyoteLogger.HTTP_LOGGER.errorParsingHeader(t);
+                // 400 - Bad Request
+                response.setStatus(400);
+                error = true;
+            }
+#+end_src
+
+★３の部分にエラー出力処理を追加しらた、タイムアウト時下記のエラートレースが出力され
+た。
 #+begin_example
-ワーカスレッドの実行時間のタイムアウト値
+19:23:49,020 ERROR [stderr] (http-/0.0.0.0:8080-1) java.net.SocketTimeoutException: Read timed out
+19:23:49,020 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at java.net.SocketInputStream.socketRead0(Native Method)
+19:23:49,021 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at java.net.SocketInputStream.read(SocketInputStream.java:152)
+19:23:49,021 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at java.net.SocketInputStream.read(SocketInputStream.java:122)
+19:23:49,027 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.coyote.http11.InternalInputBuffer.fill(InternalInputBuffer.java:721)
+19:23:49,028 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.coyote.http11.InternalInputBuffer.parseHeader(InternalInputBuffer.java:660)
+19:23:49,028 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.coyote.http11.InternalInputBuffer.parseHeaders(InternalInputBuffer.java:516)
+19:23:49,029 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.coyote.http11.Http11Processor.process(Http11Processor.java:828)
+19:23:49,032 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.coyote.http11.Http11Protocol$Http11ConnectionHandler.process(Http11Protocol.java:653)
+19:23:49,033 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.tomcat.util.net.JIoEndpoint$Worker.run(JIoEndpoint.java:920)
+19:23:49,034 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at java.lang.Thread.run(Thread.java:745)
 #+end_example
 
-あくまでもソケットのブロックタイムアウト値なので、アプリのロジック処理時と関係ないで
-す。主にHTTPヘッダとHTTP本文の読み取り処理のブロック時間を監視するために使われる。
+** リクエスト本文受信途中タイムアウトの場合
 
-以下、HTTP本文読み取り処理でブロックタイムアウトが起きた時のサーバログです。
+以下、HTTP本文読み取り処理(HTTP POST)でブロックタイムアウトが起きた時のサーバログです。
 #+begin_example
 Caused by: java.net.SocketTimeoutException: Read timed out
 	at java.net.SocketInputStream.socketRead0(Native Method) [rt.jar:1.7.0_65]
@@ -138,6 +208,16 @@ Caused by: java.net.SocketTimeoutException: Read timed out
 	at org.apache.catalina.connector.InputBuffer.realReadBytes(InputBuffer.java:341) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
 	... 47 more
 #+end_example
+
+* 注意書き
+=org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT= が次のように誤解されることもあ
+るので、要注意です。
+#+begin_example
+ワーカスレッドの実行時間のタイムアウト値
+#+end_example
+
+あくまでもソケットのブロックタイムアウト値なので、アプリのロジック処理時と関係ないで
+す。主にHTTPヘッダとHTTP本文の読み取り処理のブロック時間を監視するために使われる。
 
 * 参考リンク
 - [[https://docs.jboss.org/jbossweb/7.0.x/sysprops.html][JBossWeb System Properties]]

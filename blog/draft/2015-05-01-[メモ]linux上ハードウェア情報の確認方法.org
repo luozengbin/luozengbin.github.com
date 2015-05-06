@@ -1,0 +1,109 @@
+#+TITLE: [メモ]Linux上ハードウェア情報の確認方法
+#+DATE: 2015-05-01
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: infra
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+* CPU情報
+
+#+begin_example
+$ lscpu
+アーキテクチャ: x86_64
+CPU 操作モード:   32-bit, 64-bit
+バイト順序:       Little Endian
+CPU:                   4
+オンラインになっている CPU のリスト:0-3
+コアあたりのスレッド数:2
+ソケットあたりのコア数:2
+ソケット数:       1
+NUMA ノード数:     1
+ベンダー ID:       GenuineIntel
+CPU ファミリー:   6
+モデル:             42
+モデル名:          Intel(R) Core(TM) i5-2557M CPU @ 1.70GHz
+ステッピング:    7
+CPU MHz:               900.601
+CPU 最大 MHz:        2700.0000
+CPU 最小 MHz:        800.0000
+BogoMIPS:              3401.48
+仮想化:             VT-x
+L1d キャッシュ:   32K
+L1i キャッシュ:   32K
+L2 キャッシュ:    256K
+L3 キャッシュ:    3072K
+NUMA ノード 0 CPU:  0-3
+#+end_example
+
+=lstopo=
+#+begin_example
+$ lstopo --of console
+Machine (3869MB)
+  Socket L#0 + L3 L#0 (3072KB)
+    L2 L#0 (256KB) + L1d L#0 (32KB) + L1i L#0 (32KB) + Core L#0
+      PU L#0 (P#0)
+      PU L#1 (P#2)
+    L2 L#1 (256KB) + L1d L#1 (32KB) + L1i L#1 (32KB) + Core L#1
+      PU L#2 (P#1)
+      PU L#3 (P#3)
+  HostBridge L#0
+    PCI 8086:0116
+      GPU L#0 "card0"
+      GPU L#1 "renderD128"
+      GPU L#2 "controlD64"
+    PCIBridge
+      PCI 14e4:4353
+    PCI 8086:1c03
+      Block L#3 "sda"
+#+end_example
+
+#+begin_example
+$ lstopo -v
+Machine (P#0 local=3961672KB total=3961672KB DMIProductName=MacBookAir4,2 DMIProductVersion=1.0 DMIBoardVendor="Apple Inc." DMIBoardName=Mac-742912EFDBEE19B3 DMIBoardVersion=MacBookAir4,2 DMIBoardAssetTag="Base Board Asset Tag#" DMIChassisVendor="Apple Inc." DMIChassisType=10 DMIChassisVersion=Mac-742912EFDBEE19B3 DMIChassisAssetTag= DMIBIOSVendor="Apple Inc." DMIBIOSVersion=MBA41.88Z.0077.B11.1310091428 DMIBIOSDate=10/09/2013 DMISysVendor="Apple Inc." Backend=Linux LinuxCgroup=/ OSName=Linux OSRelease=4.0.1-1-ARCH OSVersion="#1 SMP PREEMPT Wed Apr 29 12:00:26 CEST 2015" HostName=mimi Architecture=x86_64 hwlocVersion=1.10.1)
+  Socket L#0 (P#0 CPUVendor=GenuineIntel CPUFamilyNumber=6 CPUModelNumber=42 CPUModel="Intel(R) Core(TM) i5-2557M CPU @ 1.70GHz")
+    L3Cache L#0 (size=3072KB linesize=64 ways=12)
+      L2Cache L#0 (size=256KB linesize=64 ways=8)
+        L1dCache L#0 (size=32KB linesize=64 ways=8)
+          L1iCache L#0 (size=32KB linesize=64 ways=8)
+            Core L#0 (P#0)
+              PU L#0 (P#0)
+              PU L#1 (P#2)
+      L2Cache L#1 (size=256KB linesize=64 ways=8)
+        L1dCache L#1 (size=32KB linesize=64 ways=8)
+          L1iCache L#1 (size=32KB linesize=64 ways=8)
+            Core L#1 (P#1)
+              PU L#2 (P#1)
+              PU L#3 (P#3)
+  Bridge Host->PCI L#0 (P#0 buses=0000:[00-97])
+    PCI 8086:0116 (P#32 busid=0000:00:02.0 class=0300(VGA) PCIVendor="Intel Corporation" PCIDevice="2nd Generation Core Processor Family Integrated Graphics Controller") "Intel Corporation 2nd Generation Core Processor Family Integrated Graphics Controller"
+      GPU L#0 "card0"
+      GPU L#1 "renderD128"
+      GPU L#2 "controlD64"
+    Bridge PCI->PCI (P#449 busid=0000:00:1c.1 id=8086:1c12 class=0604(PCI_B) buses=0000:[02-02] PCIVendor="Intel Corporation" PCIDevice="6 Series/C200 Series Chipset Family PCI Express Root Port 2") "Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 2"
+      PCI 14e4:4353 (P#8192 busid=0000:02:00.0 class=0280(Net) PCIVendor="Broadcom Corporation" PCIDevice="BCM43224 802.11a/b/g/n") "Broadcom Corporation BCM43224 802.11a/b/g/n"
+    PCI 8086:1c03 (P#498 busid=0000:00:1f.2 class=0106(SATA) PCIVendor="Intel Corporation" PCIDevice="6 Series/C200 Series Chipset Family 6 port SATA AHCI Controller") "Intel Corporation 6 Series/C200 Series Chipset Family 6 port SATA AHCI Controller"
+      Block L#3 "sda"
+depth 0:	1 Machine (type #1)
+ depth 1:	1 Socket (type #3)
+  depth 2:	1 L3Cache (type #4)
+   depth 3:	2 L2Cache (type #4)
+    depth 4:	2 L1dCache (type #4)
+     depth 5:	2 L1iCache (type #4)
+      depth 6:	2 Core (type #5)
+       depth 7:	4 PU (type #6)
+Special depth -3:	2 Bridge (type #9)
+Special depth -4:	3 PCI Device (type #10)
+Special depth -5:	4 OS Device (type #11)
+#+end_example
+
+#+begin_example
+$ lstopo `hostname -s`.png
+#+end_example
+
+file:img/2015-05-01-mimi.png
+
+=hwloc=
+
+{{{more}}}

@@ -1,0 +1,546 @@
+#+TITLE: [メモ]fail2ban導入記録
+#+DATE: 2014-12-28
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: linux
+#+JEKYLL_TAGS: fail2ban
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+* fan2ban機能概要
+ログファイルを監視し、単位時間内特定のログが規定回数以上出力された場合、アクションを
+実行する。一般的iptablesを利用しIPレベルでクライアントをブロックする。
+
+manページより
+#+begin_example
+$ man fail2ban
+NAME
+   fail2ban - a set of server and client programs to limit brute force authentication
+   attempts.
+
+DESCRIPTION
+   Fail2Ban consists of a client, server and configuration files to limit brute force
+   authentication attempts.
+
+   The server program fail2ban-server is responsible for monitoring log files and
+   issuing ban/unban commands.  It gets configured through a simple protocol by
+   fail2ban-client, which can also read configuration files and issue corresponding
+   configuration commands to the server.
+#+end_example
+
+pythonで実装されている、サーバ⇔クライアント型ソフトウェア。
+#+begin_example
++------------------+             +-------------------+            +----------------+
+|                  |             |                   | BAN Action | iptables       |
+| fail2ban-client  +-------------+ fail2ban-server   +------------+ firewalld      |
+|                  |    +--------+                   |            | sendmail       |
++--------+---------+    |        +--------+----------+            +----------------+
+         |              |         ログ監視|
+         |              |                 |
++--------+---------+    |        +--------+----------+
+| jail             |    |        |                   |
+| 設定ファイル     +----+        | /var/log/message  |
+|                  |             | /var/log/httpd/*  |
++------------------+             | /var/log/xxxxx/*  |
+                                 |                   |
+                                 +-------------------+
+#+end_example
+fail2ban-clientでサーバの設定情報を参照や動的にフィルタルールを変更することができる。
+
+{{{more}}}
+
+* ファイル構成
+- バイナリ
+  #+begin_example
+  /usr/bin/fail2ban-client
+  /usr/bin/fail2ban-server
+  /usr/bin/fail2ban-regex
+  /usr/bin/fail2ban-testcases
+  #+end_example
+
+  | /usr/bin/fail2ban-client    | configure and control the server                      |
+  | /usr/bin/fail2ban-server    | サーバ：ログファイル監視、ban/unbanコマンドを実行する |
+  | /usr/bin/fail2ban-regex     | test Fail2ban "failregex" option                      |
+  | /usr/bin/fail2ban-testcases |                                                       |
+- 設定ファイル
+  #+begin_example
+  /etc/fail2ban/fail2ban.conf
+  /etc/fail2ban/fail2ban.d/*.conf
+  /etc/fail2ban/jail.conf
+  /etc/fail2ban/jail.d/*.conf
+  /etc/fail2ban/action.d/*.conf
+  /etc/fail2ban/filter.d/*.conf
+  /etc/fail2ban/paths-common.conf
+  /etc/fail2ban/paths-debian.conf
+  /etc/fail2ban/paths-fedora.conf
+  /etc/fail2ban/paths-freebsd.conf
+  /etc/fail2ban/paths-osx.conf
+  /etc/logrotate.d/fail2ban
+  #+end_example
+
+  | fail2ban.conf       | Fail2Ban global configuration (such as logging)                        |
+  | filter.d/*.conf     | Filters specifying how to detect authentication failures               |
+  | action.d/*.conf     | Actions defining the commands for banning and unbanning of IP addresss |
+  | jail.conf           | Jails defining combinations of Filters with Actions.                   |
+  | paths-common.conf   | 予め定義された監視対象ログパス (sshd, apache, nginx, postfix など)     |
+  | paths-<distro>.conf | 各ディストリビューションに特化したパス情報の定義                       |
+
+  =man jail.conf= より
+  ソフト更新、メンテしやすいために設定変更時に直接*.confを編集せずに、同名の.localファ
+  イルを新規作成する、もしくは*.d/ディレクトリにカスタマイズ設定ファイルを格納するこ
+  とをおすすめする。
+- ログファイルと永続化ストア
+  #+begin_example
+  /var/log/fail2ban.log
+  /var/lib/fail2ban/fail2ban.sqlite3
+  #+end_example
+
+  | /var/log/fail2ban.log              | 実行ログ                    |
+  | /var/lib/fail2ban/fail2ban.sqlite3 | BAN記録、バージョン情報など |
+
+* インストール
+CentOS7でのインストール
+#+begin_example
+sudo yum install --enablerepo=epel fail2ban
+sudo yum install whois
+#+end_example
+
+epelのfail2banに以下のサブパッケージから構成される。
+#+begin_example
+fail2ban-server       fail2ban本体
+fail2ban-firewalld    firewalldとの連携定義（banaction = firewallcmd-ipset）
+fail2ban-systemd      systemdのjournalログ機能との連携定義 (backend=systemd)
+fail2ban-sendmail     メール送信時のアクション定義
+#+end_example
+
+* 最初の設定
+=/etc/fial2ban/jail.conf= デフォルト設定ファイルに既にたくさん jail が予め定義されてい
+る。設定ファイルは次のセクションから構成される。
+
+| [INCLUDES]  | 別のconfファイルをインポートする   |
+| [DEFAULT]   | デフォルトアクション、通知先の指定 |
+| [sshd]      | sshdログイン失敗検知jail           |
+| [sshd-ddos] | sshd-ddos高下知検知jail            |
+| ...         | ....                               |
+
+各セクションの詳細項目説明は =man jail.conf= から引ける。ここでは自分が気になる項目の
+み紹介します。
+
+| [DEFAULT]      | ignoreip  | 検査対象外IPセグメント                               |
+|                | bantime   | IP拒否行為の継続時間(秒単位)                         |
+|                | findtime  | maxretryの検査単位時間                               |
+|                | maxretry  | 不正接続の再試行回数                                 |
+|                | destemail | banメールの通知先                                    |
+|                | sender    | banメールの送信元                                    |
+|                | action    | デフォルトbanアクションの指定                        |
+|                | backend   | backend  to be used to detect changes in the logpath |
+|                |           | ログ監視アルゴリズムの指定 (詳細はmanページへ参照)   |
+| [任意なjail名] | logpath   | 監視対象ログファイルのパス                           |
+|                | filter    | ログを検知するための正規表現定義                     |
+|                |           | filter.d/配下のファイル名（.confを除く）を指定する   |
+|                | port      | ブロック対象ポート                                   |
+|                | action    | banアクションの定義                                  |
+
+*基本のコンセプト*
+#+begin_html
+<font color="red"><strong>
+#+end_html
+findtimeで指定された時間内にログファイルにfilterで定義された正規表現にマッチした回数
+がmaxretryを超えるとactionで指定されたコマンドセットを実行し接続元をブロックする。
+#+begin_html
+</strong></font>
+#+end_html
+
+*ログ監視backendの選択*
+| pyinotify | カーネルのinotify APIを利用したファイルシステムイベントを監視する |
+|           | inotifyのpythonラッパーライブラリに依存する                       |
+| gamin     | FAM (File Alteration Monitor) systemを用いたファイル監視          |
+|           | inotifyが出る前のもの                                             |
+| polling   | fail2banプログラム内で定期的ポーリングする                        |
+| systemd   | systemd journalのログエントリイベントを拾う                       |
+|           | これを指定する場合、logpathの値が無視される                       |
+
+以下は、１０分以内にsshdログイン失敗回数が５回達すると接続元のIPをBANする設定例です。
+ファイル内 =%(xxxx)= 部分は可変部となります、実際の値は =[DEFAULT]= セクションを参照
+して読み替えてください。
+
+=/etc/fail2ban/jail.d/00-myjail.conf=
+#+begin_example
+[DEFAULT]
+destemail = root@localhost
+sender = root@localhost
+bantime  = 600
+findtime  = 600
+maxretry = 5
+
+★/etc/fail2ban/jail.confに定義されたため、実質不要です。
+#=======================================================
+#
+# mta = sendmail
+# protocol = tcp
+# banaction = firewallcmd-ipset
+# backend = systemd
+#
+# ## firewallcmd-ipsetコマンドでIPをブロックすると共にログ内容をsendmailで送信する
+# action_mwl = %(banaction)s[name=%(__name__)s, port="%(port)s", protocol="%(protocol)s", chain="%(chain)s"]
+#              %(mta)s-whois-lines[name=%(__name__)s, dest="%(destemail)s", logpath=%(logpath)s, chain="%(chain)s"]
+#=======================================================
+
+# action_mwlの定義を引用する
+action = %(action_mwl)s
+
+#
+# SSH servers JAIL
+#
+[sshd]
+enabled = true
+port    = ssh
+logpath = %(sshd_log)s   ★sshd_log変数は/etc/jail2ban/path-xxxx.confに予め定義されている
+                         ★sshd_log = /var/log/secure
+#+end_example
+
+* データサンプル
+- /var/log/fail2ban.log ログファイル
+  #+begin_example
+  ★ 起動ログ
+  2014-12-29 17:39:33,226 fail2ban.server.server[4827]: INFO    Changed logging target to /var/log/fail2ban.log for Fail2ban v0.9.0
+  2014-12-29 17:39:33,232 fail2ban.server.database[4827]: INFO    Connected to fail2ban persistent database '/var/lib/fail2ban/fail2ban.sqlite3'
+  2014-12-29 17:39:33,236 fail2ban.server.jail[4827]: INFO    Creating new jail 'sshd'
+  2014-12-29 17:39:33,239 fail2ban.server.jail[4827]: INFO    Jail 'sshd' uses systemd
+  2014-12-29 17:39:33,365 fail2ban.server.jail[4827]: INFO    Initiated 'systemd' backend
+  2014-12-29 17:39:33,399 fail2ban.server.filter[4827]: INFO    Set maxRetry = 5
+  2014-12-29 17:39:33,401 fail2ban.server.actions[4827]: INFO    Set banTime = 600
+  2014-12-29 17:39:33,403 fail2ban.server.filter[4827]: INFO    Set findtime = 600
+  2014-12-29 17:39:33,404 fail2ban.server.filter[4827]: INFO    Set maxlines = 10
+  2014-12-29 17:39:33,561 fail2ban.filter [4827]: INFO    Added journal match for: '_SYSTEMD_UNIT=sshd.service + _COMM=sshd'
+  2014-12-29 17:39:33,616 fail2ban.server.jail[4827]: INFO    Jail 'sshd' started
+   
+   
+  ★ BANログ（IP拒否）
+  2014-12-29 17:44:04,011 fail2ban.server.filter[4827]: INFO    [sshd] Found 192.168.100.4
+  2014-12-29 17:44:12,759 fail2ban.server.filter[4827]: INFO    [sshd] Found 192.168.100.4
+  2014-12-29 17:44:15,507 fail2ban.server.filter[4827]: INFO    [sshd] Found 192.168.100.4
+  2014-12-29 17:44:18,898 fail2ban.server.filter[4827]: INFO    [sshd] Found 192.168.100.4
+  2014-12-29 17:44:21,560 fail2ban.server.filter[4827]: INFO    [sshd] Found 192.168.100.4
+  2014-12-29 17:44:21,608 fail2ban.server.actions[4827]: NOTICE  [sshd] Ban 192.168.100.4
+   
+  ★ UNBANログ（IP拒否解除）
+  2014-12-29 18:02:02,644 fail2ban.server.actions[5909]: NOTICE  [sshd] Unban 192.168.100.4
+   
+  ★停止ログ
+  2014-12-29 17:50:50,604 fail2ban.server.server[4827]: INFO    Stopping all jails
+  2014-12-29 17:50:51,337 fail2ban.server.actions[4827]: NOTICE  [sshd] Unban 192.168.100.4
+  2014-12-29 17:50:52,077 fail2ban.server.jail[4827]: INFO    Jail 'sshd' stopped
+  2014-12-29 17:50:52,111 fail2ban.server.server[4827]: INFO    Exiting Fail2ban
+  #+end_example
+- /var/lib/fail2ban/fail2ban.sqlite3
+  ban2テーブルにBAN履歴が次のような形で記録される。
+  #+begin_example
+  {jail: "sshd",
+   ip: "192.168.100.4",
+   timeofban: "1419853315.41614",
+   data:
+   {
+       "matches": 
+       ["2014-12-29T20:41:51.460131 nassrv.myhome.local sshd[16687]: User root from 192.168.100.4 not allowed because not listed in AllowUsers", 
+        "2014-12-29T20:41:53.274983 nassrv.myhome.local sshd[16692]: User root from 192.168.100.4 not allowed because not listed in AllowUsers", 
+        "2014-12-29T20:41:54.013890 nassrv.myhome.local sshd[16696]: User root from 192.168.100.4 not allowed because not listed in AllowUsers", 
+        "2014-12-29T20:41:54.694156 nassrv.myhome.local sshd[16700]: User root from 192.168.100.4 not allowed because not listed in AllowUsers",
+        "2014-12-29T20:41:55.416141 nassrv.myhome.local sshd[16704]: User root from 192.168.100.4 not allowed because not listed in AllowUsers"
+       ],
+       "failures": 5
+   }
+  }
+  #+end_example
+- BAN通知メールサンプル
+  #+begin_example
+  Subject: [Fail2Ban] sshd: banned 192.168.100.4 from nassrv.myhome.local
+  From: Fail2Ban <root@localhost>
+  To: root@localhost
+  Date: Mon, 29 Dec 2014 11:41:55 +0000
+   
+  Hi,
+   
+  The IP 192.168.100.4 has just been banned by Fail2Ban after
+  5 attempts against sshd.
+   
+   
+  Here is more information about 192.168.100.4:
+   
+   
+  #
+  # ARIN WHOIS data and services are subject to the Terms of Use
+  # available at: https://www.arin.net/whois_tou.html
+  #
+  # If you see inaccuracies in the results, please report at
+  # http://www.arin.net/public/whoisinaccuracy/index.xhtml
+  #
+   
+   
+  #
+  # The following results may also be obtained via:
+  # http://whois.arin.net/rest/nets;q=192.168.100.4?showDetails=true&showARIN=false&ext=netref2
+  #
+   
+  NetRange:       192.168.0.0 - 192.168.255.255
+  CIDR:           192.168.0.0/16
+  NetName:        PRIVATE-ADDRESS-CBLK-RFC1918-IANA-RESERVED
+  NetHandle:      NET-192-168-0-0-1
+  Parent:         NET192 (NET-192-0-0-0-0)
+  NetType:        IANA Special Use
+  OriginAS:       
+  Organization:   Internet Assigned Numbers Authority (IANA)
+  RegDate:        1994-03-15
+  Updated:        2013-08-30
+  Comment:        These addresses are in use by many millions of independently operated networks, which might be as small as a single computer connected to a home gateway, and are automatically configured in hundreds of millions of devices.  They are only intended for use within a private context  and traffic that needs to cross the Internet will need to use a different, unique address.
+  Comment:        
+  Comment:        These addresses can be used by anyone without any need to coordinate with IANA or an Internet registry.  The traffic from these addresses does not come from ICANN or IANA.  We are not the source of activity you may see on logs or in e-mail records.  Please refer to http://www.iana.org/abuse/answers
+  Comment:        
+  Comment:        These addresses were assigned by the IETF, the organization that develops Internet protocols, in the Best Current Practice document, RFC 1918 which can be found at:
+  Comment:        http://datatracker.ietf.org/doc/rfc1918
+  Ref:            http://whois.arin.net/rest/net/NET-192-168-0-0-1
+   
+  OrgName:        Internet Assigned Numbers Authority
+  OrgId:          IANA
+  Address:        12025 Waterfront Drive
+  Address:        Suite 300
+  City:           Los Angeles
+  StateProv:      CA
+  PostalCode:     90292
+  Country:        US
+  RegDate:        
+  Updated:        2012-08-31
+  Ref:            http://whois.arin.net/rest/org/IANA
+   
+  OrgAbuseHandle: IANA-IP-ARIN
+  OrgAbuseName:   ICANN
+  OrgAbusePhone:  +1-310-301-5820 
+  OrgAbuseEmail:  abuse@iana.org
+  OrgAbuseRef:    http://whois.arin.net/rest/poc/IANA-IP-ARIN
+   
+  OrgTechHandle: IANA-IP-ARIN
+  OrgTechName:   ICANN
+  OrgTechPhone:  +1-310-301-5820 
+  OrgTechEmail:  abuse@iana.org
+  OrgTechRef:    http://whois.arin.net/rest/poc/IANA-IP-ARIN
+   
+   
+  #
+  # ARIN WHOIS data and services are subject to the Terms of Use
+  # available at: https://www.arin.net/whois_tou.html
+  #
+  # If you see inaccuracies in the results, please report at
+  # http://www.arin.net/public/whoisinaccuracy/index.xhtml
+  #
+   
+   
+  Lines containing IP:192.168.100.4 in /var/log/secure
+   
+  Dec 29 20:41:51 nassrv sshd[16687]: User root from 192.168.100.4 not allowed because not listed in AllowUsers
+  Dec 29 20:41:51 nassrv sshd[16687]: Connection closed by 192.168.100.4 [preauth]
+  Dec 29 20:41:53 nassrv sshd[16692]: User root from 192.168.100.4 not allowed because not listed in AllowUsers
+  Dec 29 20:41:53 nassrv sshd[16692]: Connection closed by 192.168.100.4 [preauth]
+  Dec 29 20:41:54 nassrv sshd[16696]: User root from 192.168.100.4 not allowed because not listed in AllowUsers
+  Dec 29 20:41:54 nassrv sshd[16696]: Connection closed by 192.168.100.4 [preauth]
+  Dec 29 20:41:54 nassrv sshd[16700]: User root from 192.168.100.4 not allowed because not listed in AllowUsers
+  Dec 29 20:41:54 nassrv sshd[16700]: Connection closed by 192.168.100.4 [preauth]
+  Dec 29 20:41:55 nassrv sshd[16704]: User root from 192.168.100.4 not allowed because not listed in AllowUsers
+  Dec 29 20:41:55 nassrv sshd[16704]: Connection closed by 192.168.100.4 [preauth]
+   
+   
+  Regards,
+   
+  Fail2Ban
+  #+end_example
+- fail2ban-clientで実行時情報を参照する
+  #+begin_example
+  $ sudo fail2ban-client status sshd
+  Status for the jail: sshd
+  |- Filter
+  |  |- Currently failed:	0
+  |  |- Total failed:	5
+  |  `- Journal matches:	_SYSTEMD_UNIT=sshd.service + _COMM=sshd
+  `- Actions
+     |- Currently banned:	1
+     |- Total banned:	1
+     `- Banned IP list:	192.168.100.4
+  #+end_example
+
+* 実運用における設定
+** しつこい攻撃者だけ長期BANする
+fail2ban自身のサーバログを監視するための =recidive= というfilterがプレインストールされ
+ている。これを利用し、同じIPが頻繁に fail2ban でBANされたら、BAN期間を伸ばすJAIL定義
+は以下となります。
+
+=/etc/fail2ban/jail.d/00-xxrecidive.conf=
+#+begin_example
+[recidive]
+enabled  = true
+filter   = recidive
+logpath  = /var/log/fail2ban.log
+backend  = pyinotify
+port     = all
+protocol = all
+bantime  = 604800  ; 1 week
+findtime = 86400   ; 1 day
+maxretry = 5
+#+end_example
+
+=fail2ban 0.9= バージョンではこれがうまく動作しないので要注意です。バグは [[https://github.com/fail2ban/fail2ban/issues/872][ここ]] と [[https://bugs.archlinux.org/task/42374][ここ]]
+で報告されている。
+
+** Tiny Tiny RSSログインアタック拒否
+=tt-rss/config.php= にログの出力先をデータベースからsyslogへ変更する。
+
+#+begin_example
+// Log destination to use. Possible values: sql (uses internal logging
+// you can read in Preferences -> System), syslog - logs to system log.
+// Setting this to blank uses PHP logging (usually to http server
+// error.log).
+define('LOG_DESTINATION', 'syslog');
+#+end_example
+
+ログインエラー時に次のログがsyslogに出力される。
+#+begin_example
+Dec 30 00:48:00 nassrv httpd: [tt-rss] E_USER_WARNING (512) (classes/handler/public.php:583) Failed login attempt for bar from 192.168.100.12
+#+end_example
+
+=/etc/fail2ban/filter.d/tt-rss.local= を新規作成し、以下の内容でファイルを更新する。
+#+begin_example
+[Definition]
+failregex= httpd: \[tt-rss\] E_USER_WARNING \(512\) \(classes/handler/public.php:583\) Failed login attempt for .* from <HOST>
+
+ignoreregex =
+#+end_example
+
+=/etc/fail2ban/jail.d/00-myjail.conf= に =tt-rss= JAIL定義を追加する。
+#+begin_example
+[tt-rss]
+enabled  = true
+filter   = tt-rss
+port     = http,https
+backend  = pyinotify
+logpath  = /var/log/syslog
+#+end_example
+
+** ownCloudログインアタック拒否
+ログインエラー時に次のログが =owncloud/data/owncloud.log= に出力される。
+#+begin_example
+{"app":"core","message":"Login failed: 'luozengbin' (Remote IP: '106.128.167.233', X-Forwarded-For: '')","level":2,"time":"2015-01-05T16:14:43+09:00"}
+#+end_example
+
+=/etc/fail2ban/filter.d/owncloud.local= を新規作成し、以下の内容でファイルを更新する。
+#+begin_example
+[INCLUDES]
+before = common.conf
+
+[Definition]
+failregex={"app":"core","message":"Login failed: user '.*' , wrong password, IP:<HOST>","level":2,"time":".*"}
+          {"app":"core","message":"Login failed: '.*' \(Remote IP: '<HOST>', X-Forwarded-For: '.*'\)","level":2,"time":".*"}
+
+
+ignoreregex =
+#+end_example
+
+=/etc/fail2ban/jail.d/00-myjail.conf= に =ownclond= JAIL定義を追加する。
+#+begin_example
+[owncloud]
+enabled  = true
+filter   = owncloud
+port     = http,https
+backend  = pyinotify
+logpath  = /var/www/owncloud/data/owncloud.log
+#+end_example
+
+=fail2ban-client= でjailををリロードする
+#+begin_example
+# fail2ban-client reload
+#+end_example
+
+ログインアタックを実施し、 =fail2ban-client= でjailの状態を確認する。
+#+begin_example
+# fail2ban-client status owncloud
+Status for the jail: owncloud
+|- Filter
+|  |- Currently failed:	0
+|  |- Total failed:	5
+|  `- File list:	/var/www/owncloud/data/owncloud.log
+`- Actions
+   |- Currently banned:	1
+   |- Total banned:	1
+   `- Banned IP list:	192.168.100.12
+#+end_example
+
+** Zabbixと連携する
+カスタマイズ BANアクションで任意なコマンドを実行することが可能なので、
+=zabbix_sender= を用いてZabbixとの連携を簡単に実現します。
+
+=/etc/fail2ban/action.d/zabbix_sender.local= に新規BANアクションを定義する。
+#+begin_example
+# zabbix_sender action configuration file
+#
+# Author: WAKANA Akira
+#
+#
+
+[Definition]
+
+# Option:  actionstart
+# Notes.:  command executed once at the start of Fail2Ban.
+# Values:  CMD
+# ★fail2ban起動時に実行するコマンド
+actionstart = logger "start zabbix_sender action"
+
+# Option:  actionstop
+# Notes.:  command executed once at the end of Fail2Ban
+# Values:  CMD
+# ★fail2ban停止時に実行するコマンド
+actionstop = logger "stop zabbix_sender action"
+
+# Option:  actioncheck
+# Notes.:  command executed once before each actionban command
+# Values:  CMD
+#
+actioncheck = 
+
+# Option:  actionban
+# Notes.:  command executed when banning an IP. Take care that the
+#          command is executed with Fail2Ban user rights.
+# Tags:    See jail.conf(5) man page
+# Values:  CMD
+# ★BANアクションの定義
+actionban = zabbix_sender -z "<zabbix_server>" -s "<host_name>" -k "<item_name>" -o <item_value>
+
+
+# Option:  actionunban
+# Notes.:  command executed when unbanning an IP. Take care that the
+#          command is executed with Fail2Ban user rights.
+# Tags:    See jail.conf(5) man page
+# Values:  CMD
+# ★UNBANアクションの定義
+actionunban = logger "execute zabbix_sender unbanaction"
+
+[Init]
+# BANアクションにパラメータ部のデフォルト値定義
+zabbix_server = 192.168.100.5
+
+host_name = Zabbix server
+#+end_example
+
+=/etc/fail2ban/jail.d/xxxx.conf= JAIL定義ブロックの =action= 項目に =zabbix_sender=
+のパラメータを指定する。
+#+begin_example
+[sshd]
+enabled = true
+action = zabbix_sender[zabbix_server=127.0.0.1, host_name="Zabbix server", item_name="sshd_ban_action", item_value=4]
+#+end_example
+
+=sshd_ban_action= はZabbixサーバに定義されたZabbixトラッパー項目名です。
+
+
+* 参考
+- [[http://www.teradas.net/archives/15002/][fail2banでしつこい攻撃者だけ長期BANする方法]]
+- [[http://northwind.16mb.com/blog/fail2ban-%25E3%2581%25A7%25E4%25B8%258D%25E6%25AD%25A3%25E3%2582%25A2%25E3%2582%25AF%25E3%2582%25BB%25E3%2582%25B9%25E9%2598%25B2%25E6%25AD%25A2-dovecot-%25E7%25B7%25A8/][Fail2ban で不正アクセス防止 (dovecot 編)]]
+- [[http://blog.jicoman.info/2014/03/fail2ban_install/][fail2banをインストールしてサーバへの不正攻撃を防ぐ]]
+- [[http://drops.wooyun.org/tips/3029][{Chinese} fail2ban防暴力破解介绍使用]]
+- [[http://www.rojtberg.net/711/secure-owncloud-server/][Secure Owncloud Server]]

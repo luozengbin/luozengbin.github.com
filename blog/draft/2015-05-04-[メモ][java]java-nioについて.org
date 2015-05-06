@@ -1,0 +1,15 @@
+#+TITLE: [メモ][Java]Java NIOについて
+#+DATE: 2015-05-04
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: 
+#+JEKYLL_TAGS: 
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+
+
+{{{more}}}
+
+* 参考情報
+- [[http://www.iteye.com/magazines/132-Java-NIO][Java NIO 系列教程]]

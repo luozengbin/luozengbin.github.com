@@ -1,0 +1,52 @@
+#+TITLE: [メモ]JVMパラメータまとめその１
+#+DATE: 2015-04-19
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: java
+#+JEKYLL_TAGS: jvm
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+{{{more}}}
+
+* PrintGCCause
+GCを起こしたイベント情報を出力する
+
+* CMS GCパラメータ
+
+|------------------------------------+------------------------------------------------+--------------|
+| 項目名                             | 説明                                           | デフォルト値 |
+|------------------------------------+------------------------------------------------+--------------|
+| UseCMSInitiatingOccupancyOnly      |                                                |              |
+| CMSScavengeBeforeRemark            | CMS実施前に強制的MinorGCを行う                 |              |
+| CMSClassUnloadingEnabled           | Perm領域の掃除もCMS方式で行う                  |              |
+| CMSClassUnloadingMaxInterval       | TODO: 調査                                     |              |
+| CMSInitiatingPermOccupancyFraction | CMSの起動条件を示す、Perm領域の使用しきい値(%) |              |
+|------------------------------------+------------------------------------------------+--------------|
+
+* System.gc() に関わるパラメータ
+
+|----------------------------------------------+-----------------------------------------------+--------------|
+| 項目名                                       | 説明                                          | デフォルト値 |
+|----------------------------------------------+-----------------------------------------------+--------------|
+| DisableExplicitGC                            | 強制的GCを無視する                            | false        |
+| ExplicitGCInvokesConcurrent                  | 強制的GC時にCMS方式で行う（ヒープのみ）       | false        |
+| ExplicitGCInvokesConcurrentAndUnloadsClasses | 強制的GC時にCMS方式で行う（ヒープとPerm領域） | false        |
+|----------------------------------------------+-----------------------------------------------+--------------|
+
+* 参考
+- [[http://hllvm.group.iteye.com/group/topic/27945][{讨论} {HotSpot VM} JVM调优的"标准参数"的各种陷阱]]
+- [[http://hllvm.group.iteye.com/group/topic/45583][java虚拟机参数,-D开头的参数]]
+- [[http://hllvm.group.iteye.com/group/topic/42357][{HotSpot VM} 如何降低新生代GC时间？]]
+- [[http://d.hatena.ne.jp/tanakakns/20120508/1336467306][JavaVMのメモリ管理に関するまとめ（Javaヒープ、GC、ダンプ等）]]
+- [[http://www.infoq.com/jp/articles/Java_Garbage_Collection_Distilled][Javaガベージコレクションのエッセンス]]
+- [[http://www.oracle.com/technetwork/articles/java/vmoptions-jsp-140102.html][Some Useful -XX Options]]
+- [[https://blog.codecentric.de/en/2012/07/useful-jvm-flags-part-1-jvm-types-and-compiler-modes/][Useful JVM Flags – Part 1 (JVM Types and Compiler Modes)]]
+- [[https://blog.codecentric.de/en/2012/07/useful-jvm-flags-part-2-flag-categories-and-jit-compiler-diagnostics/][Useful JVM Flags – Part 2 (Flag Categories and JIT Compiler Diagnostics)]]
+- [[https://blog.codecentric.de/en/2012/07/useful-jvm-flags-part-3-printing-all-xx-flags-and-their-values/][Useful JVM Flags – Part 3 (Printing all XX Flags and their Values)]]
+- [[https://blog.codecentric.de/en/2012/07/useful-jvm-flags-part-4-heap-tuning/][Useful JVM Flags – Part 4 (Heap Tuning)]]
+- [[https://blog.codecentric.de/en/2012/08/useful-jvm-flags-part-5-young-generation-garbage-collection/][Useful JVM Flags – Part 5 (Young Generation Garbage Collection)]]
+- [[https://blog.codecentric.de/en/2013/01/useful-jvm-flags-part-6-throughput-collector/][Useful JVM Flags – Part 6 (Throughput Collector)]]
+- [[https://blog.codecentric.de/en/2013/10/useful-jvm-flags-part-7-cms-collector/][Useful JVM Flags – Part 7 (CMS Collector)]]
+- [[https://blog.codecentric.de/en/2014/01/useful-jvm-flags-part-8-gc-logging/][Useful JVM Flags – Part 8 (GC Logging)]]
+

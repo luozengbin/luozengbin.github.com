@@ -1,0 +1,64 @@
+#+TITLE: [メモ][Java]JDKのライセンスについて
+#+DATE: 2015-05-04
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: 
+#+JEKYLL_TAGS: 
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+{{{more}}}
+
+* 名称について
+* 種別
+Java Platform, Standard Edition（Java SE）
+- Oracle Java SE
+- Oracle Java SE Advanced
+- Oracle Java SE Advanced Desktop
+- Oracle Java SE Suite
+- OpenJDK
+* OpenJDKについて
+- http://ja.wikipedia.org/wiki/OpenJDK
+- [[http://openjdk.java.net/faq/][OpenJDK FAQ]]
+
+OpenJDKとして、GPL第二版ライセンスに Classpath リンク例外を追加したライセンスで公開し、
+サンのエンタープライズ向けサーバー製品GlassFishおよびJava統合開発環境のNetBeansと同じ
+ライセンスを選択可能とした。
+
+
+- [[http://sourceforge.jp/magazine/11/10/21/0520204][OpenJDKの移植性を高めたIcedTea、OpenJDK 7ベースのバージョン2.0が登場]]
+
+* Oracle JDKについて
+ほぼ [[http://www.oracle.com/technetwork/jp/java/javase/overview/faqs-jsp-315926-ja.html][Java SE 一般的なFAQ]] にまとめられているので、ここにポイントだけ列挙します。
+- Oracle JDKはフリーソフトウェア
+- 無料であり、汎用コンピューティング向けに再配布できます。
+- Oracleバイナリ・コード・ライセンス（BCL）に従って無料で使用できます。
+- 組込みデバイスやその他のコンピューティング環境でJREを使用するには、オラクルからライ
+  センスを購入する必要があります。
+- [[https://www.java.com/ja/download/faq/distribution.xml][ライセンスと配布に関するFAQ]]
+- [[http://www.oracle.com/technetwork/java/javase/terms/license/index.html][Oracle Binary Code License Agreement for the Java SE Platform Products and JavaFX ]]
+
+[[http://www.oracle.com/technetwork/java/javase/terms/products/index.html?ssSourceSiteId%3Dotnjp][製品ラインナップ]]
+
+* Oracleの有償サポート
+以下サポートト内容の情報源は [[http://www.oracle.com/jp/technologies/java/standard-edition/advanced-suite/overview/index.html][こちら]] です。
+file:img/2015-05-04-javase-support.png
+
+各有償サポートの比較
+file:img/2015-05-04-javase-comparisons.png
+
+有償サポートに関する情報
+- [[http://www.ssl.fujitsu.com/products/soa/oracle/java_se_advanced/java-se-advanced-catalog.pdf][商用Java SE 製品/有償サポートを検討しませんか？]]
+- [[http://www.oracle.com/jp/technologies/java/standard-edition/advanced-suite/overview/index.html][Oracle Java SE AdvancedとOracle Java SE Suite]]
+- [[http://www.oracle.com/us/technologies/java/standard-edition/advanced-suite/overview/index.html][Oracle Java SE Advanced and Oracle Java SE Suite]]
+
+* オラクル買収前のJDKについいて
+- [[http://d.hatena.ne.jp/yhr/20061119/p1][{Javaトラブル解決} Java のライセンス]]
+- [[https://www.java.net/jrl.csp][JAVA RESEARCH LICENSE]]
+* Java Logosの使用について
+- [[http://www.oracle.com/us/technologies/java/java-licensing-logo-guidelines-1908204.pdf][Java licensing logo Guidelines]]
+- [[http://www.oracle.com/technetwork/java/logos-136640.html][The Java Technology Brand]]
+- [[https://kenai.com/projects/duke/pages/Home][Duke, the Java mascot]]
+- [[http://qiita.com/shohe_i/items/bfb45659337e5a301025][Java言語公式マスコットキャラクター「Duke」の生い立ちに関するOracle社の記事を和訳してみた]]
+- [[https://duke.kenai.com/][Duke Images]]
+

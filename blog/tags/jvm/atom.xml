@@ -1,0 +1,1236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Jvm | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/jvm/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2015-05-06T19:25:11+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[調査]JVMのスタックサイズについて]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html"/>
+    <updated>2015-04-22T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[調査]jvmのスタックサイズについて</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. JVMのスタック領域について</a></li>
+<li><a href="#sec-3">3. Javaスレッドのスタックページ構成</a></li>
+<li><a href="#sec-4">4. HotSpotの実装</a>
+<ul>
+<li><a href="#sec-4-1">4.1. glibc guard page</a></li>
+<li><a href="#sec-4-2">4.2. HotSpot Guard Pages</a></li>
+<li><a href="#sec-4-3">4.3. Normal Stack</a></li>
+</ul>
+</li>
+<li><a href="#sec-5">5. スタックサイズの制御</a></li>
+<li><a href="#sec-6">6. ulimit -sの影響範囲</a></li>
+<li><a href="#sec-7">7. -Xssと-XX:ThreadStackSizeの違い</a></li>
+<li><a href="#sec-8">8. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 環境</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+本記事の内容は以下環境を前提としています。
+</p>
+<ul class="org-ul">
+<li>GNU/Linux x86_64
+</li>
+<li>OpenJDK 64-Bit 1.7.0_xx
+</li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> JVMのスタック領域について</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+<code>-Xss</code> パラメータ、 <code>-XX:ThreadStackSize</code> パラメータと <code>ulimit -s</code> 混乱している記事を
+見受けたため、HotSpotの中身を調べることにしました。
+</p>
+
+<p>
+結論を先に、
+</p>
+<ul class="org-ul">
+<li><code>ulimit -s</code> の値は親プロセスのJVMランチャー自分のみスタックサイズの制限を受ける。
+</li>
+<li>JVMランチャー、JavaAPIから起動されたJavaスレッドのスタックサイズは
+<code>-XX:ThreadStackSize</code> パラメータ値が適用される。
+</li>
+<li>JVMランチャーから起動されたイニシャルスレッドのスタックサイズは <code>-Xss</code> パラメータの
+で制御できる。
+</li>
+<li>JNI経由で外部からJVMにアタッチしたスレッドのスタックサイズはJVMの管理対象外です。
+</li>
+</ul>
+
+<p>
+<!-- more -->
+</p>
+
+<p>
+JVMスタックに関して、公式のJVMスペックドキュメントは以下のように記載しています。
+</p>
+
+<p>
+<code>Java SE 7 Virtual Machine Specification</code> の <a href="http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-2.html#jvms-2.5.2">2.5.2. Java Virtual Machine Stacks</a> より
+</p>
+<pre class="example">
+Each Java Virtual Machine thread has a private Java Virtual Machine stack, created at
+the same time as the thread. A Java Virtual Machine stack stores frames (§2.6). A
+Java Virtual Machine stack is analogous to the stack of a conventional language such
+as C: it holds local variables and partial results, and plays a part in method
+invocation and return. Because the Java Virtual Machine stack is never manipulated
+directly except to push and pop frames, frames may be heap allocated. The memory for
+a Java Virtual Machine stack does not need to be contiguous.
+</pre>
+<p>
+※メモ： VMスタック内のFrameはヒープ上に配置されるかも知れない。
+</p>
+
+<p>
+<code>Java SE 7 Virtual Machine Specification</code> の <a href="http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-2.html#jvms-2.5.6">2.5.6. Native Method Stacks</a> より
+</p>
+<pre class="example">
+An implementation of the Java Virtual Machine may use conventional stacks,
+colloquially called "C stacks," to support native methods (methods written in a
+language other than the Java programming language). Native method stacks may also be
+used by the implementation of an interpreter for the Java Virtual Machine's
+instruction set in a language such as C. Java Virtual Machine implementations that
+cannot load native methods and that do not themselves rely on conventional stacks
+need not supply native method stacks. If supplied, native method stacks are typically
+allocated per thread when each thread is created.
+</pre>
+
+<p>
+仕様上ではJVMに <code>Java Stack</code> と <code>Native Stack</code> ２種類のスタックメモリが定義されています。
+</p>
+
+<ul class="org-ul">
+<li><code>Java Stack</code> Javaコード部分実行時に使われる領域
+</li>
+<li><code>Native Stack</code> はJNIライブラリを利用時に使われる領域
+</li>
+</ul>
+
+<p>
+以下は、JVMのメモリ論理構成イメージです。
+</p>
+<pre class="example">
++----------------+--------------+-------------+------------------------------------------------------+
+|                |              |             |  +-----------------+  +----------+  +-------------+  |
+|     Heap       |  NonHeap     | Code Cache  |  | Program Counter |  |JavaStack |  |Native Stack |  |
+|                |              |             |  +-----------------+  |          |  |             |  |
++----------------+--------------+-------------+                       +----------+  +-------------+  |
+                                              |                       | Frame #2 |  |             |  |
+                                              |                       +----------+  +-------------+  |
+                                              |  &lt;&lt; Thread &gt;&gt;         | Frame #1 |  |             |  |
+                                              |                       +----------+  +-------------+  |
+                                              +------------------------------------------------------+
+</pre>
+<p>
+<code>図1</code>
+</p>
+
+<p>
+<code>Java Stack</code> と <code>Native Stack</code> がスレッド毎に領域が確保されいます。
+</p>
+
+<p>
+<code>Troubleshooting Guide for HotSpot VM</code> の <a href="https://docs.oracle.com/javase/7/docs/webnotes/tsg/TSG-VM/html/crashes.html#gbyzz">4.1.3 Crash due to Stack Overflow</a> 記述によ
+るとHotSpotの実装上 <code>Java Stack</code> と <code>Native Stack</code> が同じスタック領域を共有するのようだ。
+</p>
+
+<pre class="example">
+In the HotSpot implementation, Java methods share stack frames with C/C++ native
+code, namely user native code and the virtual machine itself. Java methods generate
+code that checks that stack space is available a fixed distance towards the end of
+the stack so that the native code can be called without exceeding the stack
+space. This distance towards the end of the stack is called “Shadow Pages.” The
+size of the shadow pages is between 3 and 20 pages, depending on the platform. This
+distance is tunable, so that applications with native code needing more than the
+default distance can increase the shadow page size. The option to increase shadow
+pages is -XX:StackShadowPages=n, where n is greater than the default stack shadow
+pages for the platform.
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> Javaスレッドのスタックページ構成</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+HotSpotの実装から見るとJVMから起動されたJavaスレッドのスタックページは次の形で構成さ
+れると思います。VM内部スレッドやJITコンパイルスレッドのページ構成はまだ別です。
+</p>
+<pre class="example">
+   --+--                         +------------------------+
+     |                          /|                        |\
+     |                         / |    StackRedPages       | -XX:StackRedPages=1(4Kb)
+     |                        /  |                        |/
+     |   HotSpot Guard Pages--   +------------------------+
+     |                        \  |                        |\
+     |                         \ |    StackYellowPages    | -XX:StackYellowPages=2(8Kb)
+     |                          \|                        |/
+     |                           +------------------------+
+     |                          /|                        |\ ★Native Stackはここです★
+-XX:ThreadStackSize            / |    StackShadowPages    | -XX:StackShadowPages=20(80Kb)
+-XX:CompilerThreadStackSize   /  |                        |/
+-XX:VMThreadStackSize        /   +------------------------+
+     |                      /    |                        |
+     |                     /     |   +----------------+   |
+     |       Normal Stack--      |   |     Frame      |   | ★Java Stackはここです★
+     |                     \     |   +----------------+   |
+     |                      \    |   |     Frame      |   |
+     |                       \   |   +----------------+   |
+     |                        \  |   |     Frame      |   |
+     |                         \ |   +----------------+   |
+     |                          \|                        |
+   --+--                         +------------------------+
+</pre>
+<p>
+<code>図2</code>
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> HotSpotの実装</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+以下はHotSpotのソースコードのコメントに書かれたスタックページ構成図です。
+</p>
+
+<p>
+<a href="http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/os_cpu/linux_x86/vm/os_linux_x86.cpp#l668">jdk7:hotspot/src/os_cpu/linux_x86/vm/os_linux_x86.cpp</a>
+</p>
+<pre class="example">
+// Java thread:
+//
+//   Low memory addresses
+//    +------------------------+
+//    |                        |\  JavaThread created by VM does not have glibc
+//    |    glibc guard page    | - guard, attached Java thread usually has
+//    |                        |/  1 page glibc guard.
+// P1 +------------------------+ Thread::stack_base() - Thread::stack_size()
+//    |                        |\
+//    |  HotSpot Guard Pages   | - red and yellow pages
+//    |                        |/
+//    +------------------------+ JavaThread::stack_yellow_zone_base()
+//    |                        |\
+//    |      Normal Stack      | -
+//    |                        |/
+// P2 +------------------------+ Thread::stack_base()
+//
+// Non-Java thread:
+//
+//   Low memory addresses
+//    +------------------------+
+//    |                        |\
+//    |  glibc guard page      | - usually 1 page
+//    |                        |/
+// P1 +------------------------+ Thread::stack_base() - Thread::stack_size()
+//    |                        |\
+//    |      Normal Stack      | -
+//    |                        |/
+// P2 +------------------------+ Thread::stack_base()
+//
+// ** P1 (aka bottom) and size ( P2 = P1 - size) are the address and stack size returned from
+//    pthread_attr_getstack()
+</pre>
+<p>
+<code>図3</code>
+</p>
+
+<p>
+図の内容によるとJavaスレッドと非Javaスレッドのスタックページ構成が若干異なる。
+以下はJVMの非Javaスレッドのリストです。
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">VM thread</td>
+<td class="left">JVM自身のコアスレッド</td>
+</tr>
+
+<tr>
+<td class="left">Periodic task thread</td>
+<td class="left">WatcherThreadのシングルトンインスタンス、定義的なVMタスクを実行する</td>
+</tr>
+
+<tr>
+<td class="left">GC threads</td>
+<td class="left">その名の通りです、メモリ管理自動化役を務める</td>
+</tr>
+
+<tr>
+<td class="left">Compiler threads</td>
+<td class="left">ByteCodeからアセンブラにコンパイルするスレッド</td>
+</tr>
+
+<tr>
+<td class="left">Signal dispatcher thread</td>
+<td class="left">外部からシグナルをハンドリングする役を務める</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div id="outline-container-sec-4-1" class="outline-3">
+<h3 id="sec-4-1"><span class="section-number-3">4.1</span> glibc guard page</h3>
+<div class="outline-text-3" id="text-4-1">
+<p>
+<code>glibc guard page</code> はスタックポインタのオーバーフローを防ぐためのものです。Javaスレッ
+ドには <code>HotSpot Guard Pages</code> が別途用意されているため、この領域のサイズが0である。非
+Javaスレッドのスタック頂上位置には1ページ分が割り当てられる。以下はその実装内容です。
+</p>
+
+<ul class="org-ul">
+<li><a href="http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/os/linux/vm/os_linux.cpp#l923">pthread_attr_setguardsize(&amp;attr, os::Linux::default_guard_size(thr_type));</a>
+</li>
+<li><a href="http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/os_cpu/linux_x86/vm/os_linux_x86.cpp#l662">os::Linux::default_guard_size(thr_type)</a>
+</li>
+</ul>
+
+<div class="org-src-container">
+
+<pre class="src src-c++"><span style="color: #8cc4ff;">size_t</span> <span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::<span style="color: #fce94f;">default_guard_size</span>(<span style="color: #e6a8df;">os</span>::<span style="color: #8cc4ff;">ThreadType</span> <span style="color: #fcaf3e;">thr_type</span>) {
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">Creating guard page is very expensive. Java thread has HotSpot</span>
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">guard page, only enable glibc guard page for non-Java threads.</span>
+  <span style="color: #b4fa70;">return</span> (thr_type == java_thread ? 0 : page_size());
+}
+</pre>
+</div>
+
+<p>
+<code>glibc guard page</code> に関して以下の情報が参考になると思います。
+</p>
+<ul class="org-ul">
+<li>スタックガードの大きさの設定
+</li>
+<li><a href="http://linuxjm.sourceforge.jp/html/LDP_man-pages/man3/pthread_attr_setguardsize.3.html">PTHREAD_ATTR_SETGUARDSIZE</a>
+</li>
+<li><a href="http://codezine.jp/article/detail/1970">pthreadについて（スタックサイズ）</a>
+</li>
+<li><a href="http://www.nminoru.jp/~nminoru/programming/stackoverflow_handling.html#get-stack-region">スタックオーバーフローのハンドリング (Stack Overflow Handling)</a>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-4-2" class="outline-3">
+<h3 id="sec-4-2"><span class="section-number-3">4.2</span> HotSpot Guard Pages</h3>
+<div class="outline-text-3" id="text-4-2">
+<p>
+Javaスレッドスタックオーバーフローを検出するために書き込み不可の <code>HotSpot Guard
+Pages</code> ページがスタック領域のトップ位置に設けている。また <code>HotSpot Guard Pages</code> は
+<code>StackYellowPages</code> と <code>StackRedPages</code> から構成されている。
+</p>
+
+<p>
+<code>StackYellowPages</code> はスタックポインタのスタックオーバーフローの緩衝域として、余分のメ
+モリーを割り当てます。 <code>StackRedPages</code> まで行くとStackOverflowErrorが起きる。
+</p>
+
+<p>
+以下は構成イメージです。
+</p>
+<pre class="example">
+          +------------------------+
+         /|                        |\
+HotSpot / |    StackRedPages       | - 1ページ (4Kb)
+Guard  /  |                        |/
+Pages     +------------------------+
+       \  |                        |\
+        \ |    StackYellowPages    | - 2ページ (8Kb)
+         \|                        |/
+          +------------------------+
+          |                        |
+          |      Normal Stack      |
+          |                        |
+          +------------------------+
+</pre>
+<p>
+<code>図4</code>
+</p>
+
+<p>
+Linux/x86_64環境に置いて、 <code>StackYellowPages</code> と <code>StackRedPages</code> の初期値が2と1である。
+<code>-XX:StackYellowPages</code> と <code>-XX:StackRedPages</code> パラメータで変更することが可能である。
+</p>
+
+<p>
+下記は <code>HotSpot Guard Pages</code> の割当処理ロジックです。
+</p>
+
+<p>
+<a href="http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/share/vm/runtime/thread.cpp#l2257">jdk7:openjdk/hotspot/src/share/vm/runtime/thread.cpp</a>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">&#9733;Java&#12473;&#12524;&#12483;&#12489;&#36215;&#21205;&#26178;&#12398;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#20301;&#32622;&#12420;&#12469;&#12452;&#12474;&#12398;&#35336;&#31639;&#20966;&#29702;</span>
+<span style="color: #8cc4ff;">void</span> <span style="color: #e6a8df;">JavaThread</span>::<span style="color: #fce94f;">create_stack_guard_pages</span>() {
+  <span style="color: #b4fa70;">if</span> (! <span style="color: #e6a8df;">os</span>::uses_stack_guard_pages() || _stack_guard_state != stack_guard_unused) <span style="color: #b4fa70;">return</span>;
+
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">&#9733; &#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12398;&#20301;&#32622;&#12392;&#12469;&#12452;&#12474;&#12398;&#35336;&#31639;</span>
+  <span style="color: #8cc4ff;">address</span> <span style="color: #fcaf3e;">low_addr</span> = stack_base() - stack_size();
+  <span style="color: #8cc4ff;">size_t</span> <span style="color: #fcaf3e;">len</span> = (StackYellowPages + StackRedPages) * <span style="color: #e6a8df;">os</span>::vm_page_size();
+
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">&#9733; &#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#21106;&#24403;&#20966;&#29702;&#12399;&#12503;&#12521;&#12483;&#12488;&#12501;&#12457;&#12540;&#12512;&#20381;&#23384;&#12398;&#12383;&#12417;&#12289;&#21029;&#38306;&#25968;&#12434;&#12467;&#12540;&#12523;</span>
+  <span style="color: #8cc4ff;">int</span> <span style="color: #fcaf3e;">allocate</span> = <span style="color: #e6a8df;">os</span>::allocate_stack_guard_pages();
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">warning("Guarding at " PTR_FORMAT " for len " SIZE_FORMAT "\n", low_addr, len);</span>
+
+  <span style="color: #b4fa70;">if</span> (allocate &amp;&amp; !<span style="color: #e6a8df;">os</span>::create_stack_guard_pages((<span style="color: #8cc4ff;">char</span> *) low_addr, len)) {
+    warning(<span style="color: #e9b96e;">"Attempt to allocate stack guard pages failed."</span>);
+    <span style="color: #b4fa70;">return</span>;
+  }
+
+  <span style="color: #b4fa70;">if</span> (<span style="color: #e6a8df;">os</span>::guard_memory((<span style="color: #8cc4ff;">char</span> *) low_addr, len)) {
+    _stack_guard_state = stack_guard_enabled;
+  } <span style="color: #b4fa70;">else</span> {
+    warning(<span style="color: #e9b96e;">"Attempt to protect stack guard pages failed."</span>);
+    <span style="color: #b4fa70;">if</span> (<span style="color: #e6a8df;">os</span>::uncommit_memory((<span style="color: #8cc4ff;">char</span> *) low_addr, len)) {
+      warning(<span style="color: #e9b96e;">"Attempt to deallocate stack guard pages failed."</span>);
+    }
+  }
+}
+</pre>
+</div>
+
+<p>
+<a href="http://hg.openjdk.java.net/jdk7u/jdk7u60/hotspot/file/ba66650acf63/src/os/linux/vm/os_linux.cpp#l3062">jdk7u60:openjdk/hotspot/src/os/linux/vm/os_linux.cpp</a>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">&#9733;Linuxu&#23554;&#29992;&#12398;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#21106;&#24403;&#20966;&#29702;</span>
+<span style="color: #8cc4ff;">bool</span> <span style="color: #e6a8df;">os</span>::<span style="color: #fce94f;">pd_create_stack_guard_pages</span>(<span style="color: #8cc4ff;">char</span>* <span style="color: #fcaf3e;">addr</span>, <span style="color: #8cc4ff;">size_t</span> <span style="color: #fcaf3e;">size</span>) {
+
+  <span style="color: #b4fa70;">if</span> (<span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::is_initial_thread()) {
+    <span style="color: #73d216;">// </span><span style="color: #73d216;">As we manually grow stack up to bottom inside create_attached_thread(),</span>
+    <span style="color: #73d216;">// </span><span style="color: #73d216;">it's likely that os::Linux::initial_thread_stack_bottom is mapped and</span>
+    <span style="color: #73d216;">// </span><span style="color: #73d216;">we don't need to do anything special.</span>
+    <span style="color: #73d216;">// </span><span style="color: #73d216;">Check it first, before calling heavy function.</span>
+    <span style="color: #8cc4ff;">uintptr_t</span> <span style="color: #fcaf3e;">stack_extent</span> = (<span style="color: #8cc4ff;">uintptr_t</span>) <span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::initial_thread_stack_bottom();
+    <span style="color: #8cc4ff;">unsigned</span> <span style="color: #8cc4ff;">char</span> <span style="color: #fcaf3e;">vec</span>[1];
+
+    <span style="color: #b4fa70;">if</span> (mincore((<span style="color: #8cc4ff;">address</span>)stack_extent, <span style="color: #e6a8df;">os</span>::vm_page_size(), vec) == -1) {
+      <span style="color: #73d216;">// </span><span style="color: #73d216;">Fallback to slow path on all errors, including EAGAIN</span>
+      stack_extent = (<span style="color: #8cc4ff;">uintptr_t</span>) get_stack_commited_bottom(
+                                    <span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::initial_thread_stack_bottom(),
+                                    (<span style="color: #8cc4ff;">size_t</span>)addr - stack_extent);
+    }
+
+    <span style="color: #b4fa70;">if</span> (stack_extent &lt; (<span style="color: #8cc4ff;">uintptr_t</span>)addr) {
+      ::munmap((<span style="color: #8cc4ff;">void</span>*)stack_extent, (<span style="color: #8cc4ff;">uintptr_t</span>)(addr - stack_extent));
+    }
+  }
+
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">&#9733;&#12371;&#12371;&#12363;&#12425; mmap&#12471;&#12473;&#12486;&#12512;&#12467;&#12540;&#12523;&#12364;&#30330;&#34892;&#12373;&#12428;&#12427;&#12290;</span>
+  <span style="color: #73d216;">//  </span><span style="color: #73d216;">&#26368;&#24460;&#12398;&#24341;&#25968;&#12395;&#26360;&#12365;&#36796;&#12415;&#19981;&#21487;&#12398;&#12501;&#12521;&#12464;&#12364;&#20184;&#19982;&#12373;&#12428;&#12383;</span>
+  <span style="color: #b4fa70;">return</span> <span style="color: #e6a8df;">os</span>::commit_memory(addr, size, !ExecMem);
+}
+</pre>
+</div>
+
+<p>
+以下は <code>JBoss AS7</code> アプリケーションサーバ実行時、ワーカスレッドのスタック仮想メモリ割
+当状況です。
+</p>
+
+<pre class="example">
+$ cat /proc/`ps -ef | grep [j]boss.modules.system | awk '{print $2}'`/smaps
+...省略...
+7ff751076000-7ff751079000 ---p 00000000 00:00 0
+Size:                 12 kB    ★説明: StackRedPages(4Kb) + StackYellowPages(8Kb) = 12Kb
+Rss:                   0 kB
+Pss:                   0 kB
+Shared_Clean:          0 kB
+Shared_Dirty:          0 kB
+Private_Clean:         0 kB
+Private_Dirty:         0 kB
+Referenced:            0 kB
+Anonymous:             0 kB
+AnonHugePages:         0 kB
+Swap:                  0 kB
+KernelPageSize:        4 kB
+MMUPageSize:           4 kB
+Locked:                0 kB
+VmFlags: mr mw me ac          ★説明:書き込み不可
+7ff751079000-7ff751177000 rw-p 00000000 00:00 0                          [stack:21275]
+Size:               1016 kB   ★説明: ここからNormal Stackページ
+Rss:                 108 kB
+Pss:                 108 kB
+Shared_Clean:          0 kB
+Shared_Dirty:          0 kB
+Private_Clean:         0 kB
+Private_Dirty:       108 kB
+Referenced:          108 kB
+Anonymous:           108 kB
+AnonHugePages:         0 kB
+Swap:                  0 kB
+KernelPageSize:        4 kB
+MMUPageSize:           4 kB
+Locked:                0 kB
+VmFlags: rd wr mr mw me ac
+...省略...
+</pre>
+
+<p>
+次のSystemTapスクリプトで <code>HotSpot Guard Pages</code> の割当処理をトレースしてみた。
+</p>
+
+<p>
+<code>jvm_memory_trace.stp</code>
+</p>
+<pre class="example">
+#!/usr/bin/stap -p4
+probe process("/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/server/libjvm.so").function("commit_memory_impl")
+{
+   printf("---------------------------------------------------------\n")
+   printf("%d\t%s\n", tid(), $$parms)
+   print_ustack(ubacktrace())
+}
+</pre>
+
+<p>
+出力結果
+</p>
+<pre class="example">
+  |$ stap jvm_memory_trace.stp -c "java  -version"
+  |Using a compile server.
+  |WARNING: Missing unwind data for module, rerun with 'stap -d ...dk-1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/jli/libjli.so'
+  |WARNING: Missing unwind data for module, rerun with 'stap -d /usr/lib64/libpthread-2.17.so'
+  |java version "1.7.0_75"
+  |OpenJDK Runtime Environment (rhel-2.5.4.7.el7_1-x86_64 u75-b13)
+  |OpenJDK 64-Bit Server VM (build 24.75-b04, mixed mode)
+  |
+  |★省略★
+  |--------------------------------------------------------------------------------------------------------------
+①|12179   exec=0x0 size=0x3000 addr=0x7f1d05b57000  ★commit_memory_impl関数実行時の引数情報
+  | 0x7f1d04808371 : _ZN2os16pd_commit_memoryEPcmb+0x1/0xf0 [...1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/server/libjvm.so]
+  | 0x7f1d04802dee : _ZN2os13commit_memoryEPcmb+0x2e/0xd0 [...1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/server/libjvm.so]
+②| 0x7f1d048092df : _ZN2os27pd_create_stack_guard_pagesEPcm+0x7f/0x180 [...1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/server/libjvm.so]
+  | 0x7f1d04945519 : _ZN7Threads9create_vmEP14JavaVMInitArgsPb+0x339/0x1550 [...1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/server/libjvm.so]
+  | 0x7f1d0463fca7 : JNI_CreateJavaVM+0x67/0x2a0 [...1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/server/libjvm.so]
+  | 0x7f1d0562aa68 : 0x7f1d0562aa68 [...dk-1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/jli/libjli.so+0x2a68/0x20e000]
+  |--------------------------------------------------------------------------------------------------------------
+  |★以降は省略★
+</pre>
+
+<p>
+出力結果に①の <a href="http://hg.openjdk.java.net/jdk7u/jdk7u60/hotspot/file/ba66650acf63/src/os/linux/vm/os_linux.cpp#l2728">commit_memory_impl</a> 仮想メモリ割当処理の第２引数にメモリサイズを指定し
+ています。 <code>size=0x3000</code> の値が16進数ですので、10進数に変換すると12Kbです。予測通りで
+すね。
+</p>
+
+<p>
+gdbを用いて上記出力結果から②のソースコード位置を特定する方法を以下に示す。
+</p>
+<pre class="example">
+$ gdb /usr/lib/jvm/java-1.7.0-openjdk-1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/server/libjvm.so
+GNU gdb (GDB) Red Hat Enterprise Linux 7.6.1-64.el7
+★一部内容省略★
+Reading symbols from /usr/lib/jvm/java-1.7.0-openjdk-1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/server/libjvm.so...Reading symbols from /usr/lib/debug/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/server/libjvm.so.debug...done.
+done.
+★出力結果から関数名ぽいの文字列で関数を探す
+(gdb) info functions pd_create_stack_guard_pages
+All functions matching regular expression "pd_create_stack_guard_pages":
+
+★検索結果
+File /usr/src/debug/java-1.7.0-openjdk-1.7.0.75-2.5.4.7.el7_1.x86_64/openjdk/hotspot/src/os/linux/vm/os_linux.cpp:
+bool os::pd_create_stack_guard_pages(char*, unsigned long);
+(gdb)
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-4-3" class="outline-3">
+<h3 id="sec-4-3"><span class="section-number-3">4.3</span> Normal Stack</h3>
+<div class="outline-text-3" id="text-4-3">
+<p>
+Javaスレッドを前提に置いて、 <code>Normal Stack</code> には通常Javaメソッド実行時のフレーム情報
+が格納される。ただし、スレッドからC/C++メソッドを実行する時も <code>Normal Stack</code> が利用さ
+れる。スタックのトップ位置にC/C++メソッド実行用の <code>StackShadowPages</code> が設けられている。
+Linux/x86_64環境に置いて <code>StackShadowPages</code> の初期値が20である。
+</p>
+
+<pre class="example">
+              +------------------------+
+             /|                        |\
+            / |    StackShadowPages    | -XX:StackShadowPages=20(80Kb)
+           /  |                        |/ ★Native Stackはここです!
+          /   +------------------------+
+         /    |                        |
+        /     |   +----------------+   |  ★Java Stackはここです！
+Normal Stack  |   |     Frame      |   |
+        \     |   +----------------+   |
+         \    |   |     Frame      |   |
+          \   |   +----------------+   |
+           \  |   |     Frame      |   |
+            \ |   +----------------+   |
+             \|                        |
+              +------------------------+
+</pre>
+<p>
+<code>図5</code>
+</p>
+
+<p>
+以下は <code>StackShadowPages</code> 初期値の代入処理ロジックです。
+</p>
+
+<p>
+<a href="http://hg.openjdk.java.net/jdk7u/jdk7u60/hotspot/file/ba66650acf63/src/cpu/x86/vm/globals_x86.hpp#l60">jdk7:hotspot/src/cpu/x86/vm/globals_x86.hpp#l60</a>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span style="color: #ad7fa8;">#ifdef</span> AMD64
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Very large C++ stack frames using solaris-amd64 optimized builds</span>
+<span style="color: #73d216;">// </span><span style="color: #73d216;">due to lack of optimization caused by C++ compiler bugs</span>
+define_pd_global(intx, StackShadowPages, NOT_WIN64(20) WIN64_ONLY(6) DEBUG_ONLY(+2));
+<span style="color: #ad7fa8;">#else</span>
+define_pd_global(intx, StackShadowPages, 6 DEBUG_ONLY(+5));
+<span style="color: #ad7fa8;">#endif</span> <span style="color: #73d216;">// </span><span style="color: #73d216;">AMD64</span>
+</pre>
+</div>
+
+<p>
+<code>StackShadowPages</code> に関して以下の情報が参考になると思います。
+</p>
+<ul class="org-ul">
+<li><a href="https://docs.oracle.com/javase/7/docs/webnotes/tsg/TSG-VM/html/crashes.html#gbyzz">Troubleshooting Guide for HotSpot VM 4.1.3 Crash due to Stack Overflow</a>
+</li>
+<li><a href="http://bugs.java.com/bugdatabase/view_bug.do?bug_id=7059899a">JDK-7059899 : Stack overflows in Java code cause 64-bit JVMs to exit due to SIGSEGV</a>
+</li>
+<li><a href="https://access.redhat.com/solutions/698483">What does the StackShadowPages JVM setting do?</a>
+<pre class="example">
+StackShadowPages reserves a portion of the thread stack for native layer
+allocations. The page size usually is 4096b, which mean that 20 pages would occupy
+80Kb. The thread stack is sized through -Xss.
+
+Consider some config examples:
+
+   -Xss1024k -XX:StackShadowPages=10
+
+   [       984kb java stack    | 40kb native stack]
+
+   -Xss1024k -XX:StackShadowPages=20
+
+   [       944kb java stack    |   80kb native stack]
+
+   -Xss512k -XX:StackShadowPages=10
+
+   [ 472kb java stack | 40kb native stack]
+
+If you decrease just -Xss, the overall stack is decreased, but the StackShadowPages
+native reservation is not; only the java portion would lose space. Likewise if you
+only increase -Xss, only the java portion gains space with the increased stack.
+
+If you increase StackShadowPages, the java portion becomes smaller so that the native
+portion can be larger. If the native portion of a stack is exhausted, the JVM can
+fatally crash so sometimes StackShadowPages needs to be increased.
+</pre>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> スタックサイズの制御</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+従いましてJava Methodに使えるスタック領域(Java Stack)のサイズは次の式で計算出来る。
+</p>
+<font color="red"><strong>
+<p>
+Java Satck Size = Thread::stack_size() - ((StackRedPages + StackYellowPages + StackShadowPages) * PageSize)
+</p>
+</strong></font>
+
+<p>
+<code>Thread::stack_size()</code> の値はスレッド起動時にglibcの <a href="http://linuxjm.sourceforge.jp/html/LDP_man-pages/man3/pthread_attr_setstacksize.3.html">pthread_attr_setstacksize</a> 関数を
+用いて設定される。以下はHotSpotの実装です。
+</p>
+
+<ol class="org-ol">
+<li>JVM起動時に実行される処理
+<a href="http://hg.openjdk.java.net/jdk7u/jdk7u60/hotspot/file/ba66650acf63/src/os/linux/vm/os_linux.cpp#l4820">jdk7/hotspot/src/os/linux/vm/os_linux.cpp#4820</a>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">this is called _after_ the global arguments have been parsed</span>
+<span style="color: #8cc4ff;">jint</span> <span style="color: #e6a8df;">os</span>::<span style="color: #fce94f;">init_2</span>(<span style="color: #8cc4ff;">void</span>)
+{
+  &#9733;&#19968;&#37096;&#30465;&#30053;&#9733;
+
+
+  &#9733;&#12473;&#12524;&#12483;&#12489;&#12395;&#21106;&#24403;&#12427;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12398;&#26368;&#23567;&#35377;&#23481;&#20516;&#12398;&#35336;&#31639;
+
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">Check minimum allowable stack size for thread creation and to initialize</span>
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">the java system classes, including StackOverflowError - depends on page</span>
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">size.  Add a page for compiler2 recursion in main thread.</span>
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">Add in 2*BytesPerWord times page size to account for VM stack during</span>
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">class initialization depending on 32 or 64 bit VM.</span>
+  <span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::min_stack_allowed = MAX2(<span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::min_stack_allowed,
+            (<span style="color: #8cc4ff;">size_t</span>)(StackYellowPages+StackRedPages+StackShadowPages) * <span style="color: #e6a8df;">Linux</span>::page_size() +
+                    (2*BytesPerWord COMPILER2_PRESENT(+1)) * <span style="color: #e6a8df;">Linux</span>::vm_default_page_size());
+
+<span style="color: #ad7fa8;">#ifdef</span> ZERO
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">If this is Zero, allow at the very minimum one page each for the</span>
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">Zero stack and the native stack.  This won't make any difference</span>
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">for 4k pages, but is significant for large pages.</span>
+  <span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::min_stack_allowed = MAX2(<span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::min_stack_allowed,
+             (<span style="color: #8cc4ff;">size_t</span>)(StackYellowPages+StackRedPages+StackShadowPages+2) * <span style="color: #e6a8df;">Linux</span>::page_size());
+<span style="color: #ad7fa8;">#endif</span>
+
+  <span style="color: #8cc4ff;">size_t</span> <span style="color: #fcaf3e;">threadStackSizeInBytes</span> = ThreadStackSize * K;
+  <span style="color: #b4fa70;">if</span> (threadStackSizeInBytes != 0 &amp;&amp;
+      threadStackSizeInBytes &lt; <span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::min_stack_allowed) {
+        tty-&gt;print_cr(<span style="color: #e9b96e;">"\nThe stack size specified is too small, "</span>
+                      <span style="color: #e9b96e;">"Specify at least %dk"</span>,
+                      <span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::min_stack_allowed/ K);
+        <span style="color: #b4fa70;">return</span> JNI_ERR;
+  }
+
+  &#9733;-XX:ThreadStackSize&#12398;&#20516;&#12434;&#38745;&#30340;_stack_size_at_create&#22793;&#25968;&#12395;&#20195;&#20837;&#12377;&#12427;
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">Make the stack size a multiple of the page size so that</span>
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">the yellow/red zones can be guarded.</span>
+  <span style="color: #e6a8df;">JavaThread</span>::set_stack_size_at_create(round_to(threadStackSizeInBytes,
+        vm_page_size()));
+
+  &#9733;&#12452;&#12491;&#12471;&#12515;&#12523;&#12473;&#12524;&#12483;&#12489;&#12398;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#35373;&#23450;&#20966;&#29702;&#65288;&#9733;TODO: &#21029;&#36884;&#35519;&#26619;&#12377;&#12427;&#65289;
+  <span style="color: #e6a8df;">Linux</span>::capture_initial_stack(<span style="color: #e6a8df;">JavaThread</span>::stack_size_at_create());
+
+  &#9733;&#20197;&#19979;&#12399;&#30465;&#30053;&#9733;
+</pre>
+</div>
+</li>
+<li>新規スレッド起動時の処理
+<a href="http://hg.openjdk.java.net/jdk7u/jdk7u60/hotspot/file/ba66650acf63/src/os/linux/vm/os_linux.cpp#l901">jdk7:hotspot/src/os/linux/vm/os_linux.cpp#901</a>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span style="color: #8cc4ff;">bool</span> <span style="color: #e6a8df;">os</span>::<span style="color: #fce94f;">create_thread</span>(<span style="color: #8cc4ff;">Thread</span>* <span style="color: #fcaf3e;">thread</span>, <span style="color: #8cc4ff;">ThreadType</span> <span style="color: #fcaf3e;">thr_type</span>, <span style="color: #8cc4ff;">size_t</span> <span style="color: #fcaf3e;">stack_size</span>) {
+
+  &#9733;&#19968;&#37096;&#30465;&#30053;&#9733;
+
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">&#9733;&#12473;&#12524;&#12483;&#12489;&#31278;&#21029;&#27598;&#12395;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12434;&#27770;&#12417;&#12427;</span>
+  <span style="color: #b4fa70;">if</span> (<span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::supports_variable_stack_size()) {
+    <span style="color: #73d216;">// </span><span style="color: #73d216;">calculate stack size if it's not specified by caller</span>
+    <span style="color: #b4fa70;">if</span> (stack_size == 0) {
+      stack_size = <span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::default_stack_size(thr_type);
+
+      <span style="color: #b4fa70;">switch</span> (thr_type) {
+
+      <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;Java&#12527;&#12540;&#12459;&#12473;&#12524;&#12483;&#12489;&#12398;&#22580;&#21512;</span>
+      <span style="color: #b4fa70;">case</span> <span style="color: #e6a8df;">os</span>::java_thread:
+        <span style="color: #73d216;">// </span><span style="color: #73d216;">Java threads use ThreadStackSize which default value can be</span>
+        <span style="color: #73d216;">// </span><span style="color: #73d216;">changed with the flag -Xss</span>
+        assert (<span style="color: #e6a8df;">JavaThread</span>::stack_size_at_create() &gt; 0, <span style="color: #e9b96e;">"this should be set"</span>);
+        stack_size = <span style="color: #e6a8df;">JavaThread</span>::stack_size_at_create();
+        <span style="color: #b4fa70;">break</span>;
+
+      <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;JIT&#12467;&#12531;&#12497;&#12452;&#12521;&#12473;&#12524;&#12483;&#12489;&#12398;&#22580;&#21512;</span>
+      <span style="color: #b4fa70;">case</span> <span style="color: #e6a8df;">os</span>::compiler_thread:
+        <span style="color: #b4fa70;">if</span> (CompilerThreadStackSize &gt; 0) {
+          stack_size = (<span style="color: #8cc4ff;">size_t</span>)(CompilerThreadStackSize * K);
+          <span style="color: #b4fa70;">break</span>;
+        } <span style="color: #73d216;">// </span><span style="color: #73d216;">else fall through:</span>
+          <span style="color: #73d216;">// </span><span style="color: #73d216;">use VMThreadStackSize if CompilerThreadStackSize is not defined</span>
+
+      <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;VM&#12473;&#12524;&#12483;&#12489;&#12289;GC&#12473;&#12524;&#12483;&#12489;&#12289;&#12454;&#12457;&#12483;&#12481;&#12515;&#12540;&#12473;&#12524;&#12483;&#12489;&#12398;&#22580;&#21512;</span>
+      <span style="color: #b4fa70;">case</span> <span style="color: #e6a8df;">os</span>::vm_thread:
+      <span style="color: #b4fa70;">case</span> <span style="color: #e6a8df;">os</span>::pgc_thread:
+      <span style="color: #b4fa70;">case</span> <span style="color: #e6a8df;">os</span>::cgc_thread:
+      <span style="color: #b4fa70;">case</span> <span style="color: #e6a8df;">os</span>::watcher_thread:
+        <span style="color: #b4fa70;">if</span> (VMThreadStackSize &gt; 0) stack_size = (<span style="color: #8cc4ff;">size_t</span>)(VMThreadStackSize * K);
+        <span style="color: #b4fa70;">break</span>;
+      }
+    }
+
+    stack_size = MAX2(stack_size, <span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::min_stack_allowed);
+    <span style="color: #73d216;">// </span><span style="color: #73d216;">&#9733;glic&#38306;&#25968;&#29992;&#12356;&#12390;stack&#38936;&#22495;&#12434;&#30906;&#20445;&#12377;&#12427;</span>
+    pthread_attr_setstacksize(&amp;attr, stack_size);
+
+   &#9733;&#20197;&#19979;&#12399;&#30465;&#30053;&#9733;
+</pre>
+</div>
+</li>
+</ol>
+
+<p>
+以上コードの通り、JVMから起動されたスレッドの種別毎のスタックサイズが下記XXパラメータ値が適用されてい
+る。
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">引数</th>
+<th scope="col" class="left">Linux/x86_64環境初期値</th>
+<th scope="col" class="left">適用範囲</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">-XX:ThreadStackSize</td>
+<td class="left">1M</td>
+<td class="left">Javaスレッド</td>
+</tr>
+
+<tr>
+<td class="left">-XX:VMThreadStackSize</td>
+<td class="left">1M</td>
+<td class="left">VM thread、GC threads、VM Periodic Task Threadなど</td>
+</tr>
+
+<tr>
+<td class="left">-XX:CompilerThreadStackSize</td>
+<td class="left">4M</td>
+<td class="left">C1 C2 CompilerThread</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+以下は実機にて確認された各パラメータの初期値です。
+</p>
+<pre class="example">
+$ java -XX:+PrintFlagsFinal -version | grep -e "CompilerThreadStackSize\|ThreadStackSize\|VMThreadStackSize"
+     intx CompilerThreadStackSize                   = 0               {pd product}
+     intx ThreadStackSize                           = 1024            {pd product}
+     intx VMThreadStackSize                         = 1024            {pd product}
+java version "1.7.0_75"
+OpenJDK Runtime Environment (rhel-2.5.4.7.el7_1-x86_64 u75-b13)
+OpenJDK 64-Bit Server VM (build 24.75-b04, mixed mode)
+</pre>
+
+<p>
+<code>CompilerThreadStackSize</code> が指定しない場合下記コードにて初期値が代入される。
+</p>
+
+<p>
+<a href="http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/os_cpu/linux_x86/vm/os_linux_x86.cpp#l652">jdk7:hotspot/src/os_cpu/linux_x86/vm/os_linux_x86.cpp#652</a>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">return default stack size for thr_type</span>
+<span style="color: #8cc4ff;">size_t</span> <span style="color: #e6a8df;">os</span>::<span style="color: #e6a8df;">Linux</span>::<span style="color: #fce94f;">default_stack_size</span>(<span style="color: #e6a8df;">os</span>::<span style="color: #8cc4ff;">ThreadType</span> <span style="color: #fcaf3e;">thr_type</span>) {
+  <span style="color: #73d216;">// </span><span style="color: #73d216;">default stack size (compiler thread needs larger stack)</span>
+<span style="color: #ad7fa8;">#ifdef</span> AMD64
+  <span style="color: #8cc4ff;">size_t</span> <span style="color: #fcaf3e;">s</span> = (thr_type == <span style="color: #e6a8df;">os</span>::compiler_thread ? 4 * M : 1 * M);
+<span style="color: #ad7fa8;">#else</span>
+  <span style="color: #8cc4ff;">size_t</span> <span style="color: #fcaf3e;">s</span> = (thr_type == <span style="color: #e6a8df;">os</span>::compiler_thread ? 2 * M : 512 * K);
+<span style="color: #ad7fa8;">#endif</span> <span style="color: #73d216;">// </span><span style="color: #73d216;">AMD64</span>
+  <span style="color: #b4fa70;">return</span> s;
+}
+</pre>
+</div>
+
+<p>
+次のサンプルプログラムを実行して、各スレッドのスタックサイズ値を実測してみる。
+</p>
+
+<p>
+<code>HelloWorld.java</code>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #b4fa70;">public</span> <span style="color: #b4fa70;">class</span> <span style="color: #8cc4ff;">HelloWorld</span> <span style="color: #b4fa70;">implements</span> <span style="color: #8cc4ff;">Runnable</span> {
+
+    <span style="color: #b4fa70;">public</span> <span style="color: #8cc4ff;">void</span> <span style="color: #fce94f;">run</span>(){
+        <span style="color: #b4fa70;">while</span>(<span style="color: #e6a8df;">true</span>) {
+            <span style="color: #b4fa70;">try</span> {
+                Thread.sleep(1 * 1000L);
+                System.out.println(Thread.currentThread().toString() + <span style="color: #e9b96e;">": Hello World"</span>);
+            } <span style="color: #b4fa70;">catch</span> (<span style="color: #8cc4ff;">Exception</span> <span style="color: #fcaf3e;">e</span>) {
+            }
+        }
+    }
+
+    <span style="color: #b4fa70;">public</span> <span style="color: #b4fa70;">static</span> <span style="color: #8cc4ff;">void</span> <span style="color: #fce94f;">main</span>(<span style="color: #8cc4ff;">String</span>[] <span style="color: #fcaf3e;">args</span>) <span style="color: #b4fa70;">throws</span> <span style="color: #8cc4ff;">Exception</span> {
+        <span style="color: #8cc4ff;">Thread</span>[] <span style="color: #fcaf3e;">t_arry</span> =  <span style="color: #b4fa70;">new</span> <span style="color: #8cc4ff;">Thread</span>[5];
+        <span style="color: #b4fa70;">for</span> (<span style="color: #8cc4ff;">int</span> <span style="color: #fcaf3e;">i</span> = 0; i &lt; t_arry.<span style="color: #8cc4ff;">length</span>; i++) {
+            t_arry[i]  =  <span style="color: #b4fa70;">new</span> <span style="color: #8cc4ff;">Thread</span>(<span style="color: #b4fa70;">new</span> <span style="color: #8cc4ff;">HelloWorld</span>());
+            t_arry[i].start();
+        }
+        <span style="color: #b4fa70;">for</span> (<span style="color: #8cc4ff;">int</span> <span style="color: #fcaf3e;">i</span> = 0; i &lt; t_arry.<span style="color: #8cc4ff;">length</span>; i++) {
+            t_arry[i].join();
+        }
+
+    }
+}
+</pre>
+</div>
+
+<p>
+スタックサイズの実測値は次のスクリプトで取得しています。
+</p>
+
+<p>
+<code>jvm_stacksize.sh</code>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #73d216;">#</span><span style="color: #73d216;">!/bin/</span><span style="color: #b4fa70;">sh</span>
+
+<span style="color: #b4fa70;">if</span> [ ! $<span style="color: #fcaf3e;">#</span> -eq 1 ]; <span style="color: #b4fa70;">then</span>
+    <span style="color: #ad7fa8;">echo</span> <span style="color: #e9b96e;">"Usage ${0} &lt;JVM PID&gt;"</span>
+    <span style="color: #b4fa70;">exit</span> 1
+<span style="color: #b4fa70;">fi</span>
+
+<span style="color: #ad7fa8;">printf</span> <span style="color: #e9b96e;">"[ PID ]\t[StackSize]\t[GuardPages]\t[Thread Name]\n"</span>
+
+<span style="color: #73d216;"># </span><span style="color: #73d216;">jstack&#12398;&#20986;&#21147;&#32080;&#26524;&#12363;&#12425;&#12473;&#12524;&#12483;&#12489;ID&#12392;&#21517;&#21069;&#12434;&#25277;&#20986;&#12377;&#12427;</span>
+jstack $<span style="color: #fcaf3e;">1</span> | grep nid | sed -e <span style="color: #e9b96e;">"s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"</span> | sort | <span style="color: #b4fa70;">while </span><span style="color: #ad7fa8;">read</span> line
+<span style="color: #b4fa70;">do</span>
+    <span style="color: #73d216;"># </span><span style="color: #73d216;">&#12473;&#12524;&#12483;&#12489;ID&#12434;&#20999;&#12426;&#20986;&#12377;</span>
+    <span style="color: #fcaf3e;">pid_hex</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $1}'`</span>
+
+    <span style="color: #73d216;"># </span><span style="color: #73d216;">&#12473;&#12524;&#12483;&#12489;&#21517;&#12434;&#20999;&#12426;&#20986;&#12377;</span>
+    <span style="color: #fcaf3e;">thread_name</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $2}'`</span>
+
+    <span style="color: #73d216;"># </span><span style="color: #73d216;">&#12473;&#12524;&#12483;&#12489;ID&#12434;10&#36914;&#25968;&#12395;&#22793;&#25563;</span>
+    <span style="color: #fcaf3e;">pid</span>=<span style="color: #fa8072;">`printf '%d\n' ${pid_hex}`</span>
+
+    <span style="color: #73d216;"># </span><span style="color: #73d216;">/proc/&lt;pid&gt;/smaps &#12501;&#12449;&#12452;&#12523;&#12363;&#12425;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12289;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#12434;&#21462;&#24471;&#12377;&#12427;</span>
+    <span style="color: #fcaf3e;">guard_page</span>=<span style="color: #fa8072;">`cat /proc/$1/smaps | grep -B15 "stack:${pid}"| head -1 | awk '{print $2}'`</span>
+    <span style="color: #fcaf3e;">stack_page</span>=<span style="color: #fa8072;">`cat /proc/$1/smaps | grep -A1 "stack:${pid}" | tail -1 | awk '{print $2}'`</span>
+    <span style="color: #fcaf3e;">stack_size</span>=<span style="color: #fa8072;">`expr ${guard_page} + ${stack_page}`</span>
+    <span style="color: #ad7fa8;">printf</span> <span style="color: #e9b96e;">"%7d\t%11s\t%12s\t%s\n"</span> <span style="color: #e9b96e;">"${pid}"</span> <span style="color: #e9b96e;">"${stack_size}Kb"</span> <span style="color: #e9b96e;">"${guard_page}Kb"</span> <span style="color: #e9b96e;">"${thread_name}"</span>
+<span style="color: #b4fa70;">done</span>
+</pre>
+</div>
+
+<p>
+スタックサイズを明示的に指定して、サンプルを実行する。
+</p>
+<ul class="org-ul">
+<li>-XX:ThreadStackSize=512
+</li>
+<li>-XX:VMThreadStackSize: 2048
+</li>
+<li>-XX:CompilerThreadStackSize=3072
+</li>
+</ul>
+<pre class="example">
+java -XX:VMThreadStackSize=2048 -XX:CompilerThreadStackSize=3072 -XX:ThreadStackSize=512 HelloWorld
+Thread[Thread-0,5,main]: Hello World
+Thread[Thread-4,5,main]: Hello World
+Thread[Thread-1,5,main]: Hello World
+Thread[Thread-3,5,main]: Hello World
+Thread[Thread-2,5,main]: Hello World
+★以降は省略
+</pre>
+
+<p>
+測定結果
+</p>
+<pre class="example">
+$ ./jvm_stacksize.sh `ps -ef | grep "[j]ava.*HelloWorld" | awk '{print $2}'`
+[ PID ] [StackSize] [GuardPages]    [Thread Name]
+  17285      1048Kb         12Kb    main
+  17286      2096Kb          4Kb    GC task thread#0 (ParallelGC)
+  17287      2052Kb          4Kb    GC task thread#1 (ParallelGC)
+  17288      2052Kb          4Kb    GC task thread#2 (ParallelGC)
+  17289      2052Kb          4Kb    GC task thread#3 (ParallelGC)
+  17290      2052Kb          4Kb    VM Thread
+  17291     64584Kb         12Kb    Reference Handler
+  17292       516Kb         12Kb    Finalizer
+  17293       516Kb         12Kb    Signal Dispatcher
+  17294      3076Kb         12Kb    C2 CompilerThread0
+  17295      3076Kb         12Kb    C2 CompilerThread1
+  17296       516Kb         12Kb    Service Thread
+  17297      2052Kb          4Kb    VM Periodic Task Thread
+  17298       516Kb         12Kb    Thread-0
+  17299       516Kb         12Kb    Thread-1
+  17300       516Kb         12Kb    Thread-2
+  17301       516Kb         12Kb    Thread-3
+  17302       516Kb         12Kb    Thread-4
+  17342       516Kb         12Kb    Attach Listener
+</pre>
+
+<p>
+実測値はXXパラメータで指定した値より１ページ分多い。これは <code>glibc</code> 内部の
+<a href="https://www.sourceware.org/git/gitweb.cgi?p=glibc.git;a=blob;f=nptl/allocatestack.c;h=8e620c46e9523092a5cf141e77f35c94dcfd9810;hb=HEAD#l349">allocate_stack</a> 処理で追加されているものです。
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> ulimit -sの影響範囲</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+Linux環境に置いて、JVM内のスレッドは全てglibcの <code>pthread_create</code> 関数経由で起動される。
+スレッド起動時にスタックサイズ明示的に指定していない場合、 <code>ulimit -s</code> で設定された値
+がスタックのデフォルトサイズとして適用される。前文に書いた通りJVMはスレッド起動時に明
+示的 <code>pthread_attr_setstacksize</code> 関数でXXパラメータ値の元にスタックサイズを指定してい
+るため、これらのスレッドのスタックサイズは <code>ulimit -s</code> の値に影響されないだ。
+</p>
+
+<p>
+ただし、JVMランチャー自身は <code>ulimit -s</code> の制限値が適用される。
+</p>
+
+<p>
+<code>ulimit</code> コマンドでスタックの上限値 <code>RLIMIT_STACK</code> を64Kbを設定し、サンプルプログラム
+グライムを実行すると、ランチャーのスタックサイズが60Kbで収まった。
+</p>
+<pre class="example">
+$ ulimit -s 64
+$ java -Xss1024K -XX:VMThreadStackSize=2048 -XX:CompilerThreadStackSize=3072 -XX:ThreadStackSize=512 HelloWorld
+Thread[Thread-1,5,main]: Hello World
+Thread[Thread-3,5,main]: Hello World
+Thread[Thread-0,5,main]: Hello World
+Thread[Thread-2,5,main]: Hello World
+Thread[Thread-4,5,main]: Hello World
+★省略
+</pre>
+
+<p>
+<code>pmap</code> コマンドで仮想メモリマップの最上位アドレス近くにランチャーのスタックサイズを確
+認することができる。
+</p>
+<pre class="example">
+$ pmap `ps -ef | grep "[j]ava.*HelloWorld" | awk '{print $2}'`
+★省略
+00007f39d068d000      4K r---- ld-2.17.so
+00007f39d068e000      4K rw--- ld-2.17.so
+00007f39d068f000      4K rw---   [ anon ]
+00007fff7cf79000     60K rw---   [ stack ] ★ランチャーのスタックサイズ
+00007fff7cffe000      8K r-x--   [ anon ]
+ffffffffff600000      4K r-x--   [ anon ]
+ total          3513684K
+</pre>
+
+<p>
+JVM内の各スレッドのスタックサイズは下記の通りです、 <code>RLIMIT_STACK</code> に影響されていない
+ことが分かります。
+</p>
+<pre class="example">
+]$ ./jvm_stacksize.sh `ps -ef | grep "[j]ava.*HelloWorld" | awk '{print $2}'`
+[ PID ] [StackSize] [GuardPages]    [Thread Name]
+  10770      1048Kb         12Kb    main
+  10771      2096Kb          4Kb    GC task thread#0 (ParallelGC)
+  10772      2052Kb          4Kb    GC task thread#1 (ParallelGC)
+  10773      2052Kb          4Kb    GC task thread#2 (ParallelGC)
+  10774      2052Kb          4Kb    GC task thread#3 (ParallelGC)
+  10775     15812Kb          4Kb    VM Thread
+  10776       516Kb         12Kb    Reference Handler
+  10777     63556Kb         12Kb    Finalizer
+  10778       516Kb         12Kb    Signal Dispatcher
+  10779      3076Kb         12Kb    C2 CompilerThread0
+  10780      3076Kb         12Kb    C2 CompilerThread1
+  10781       516Kb         12Kb    Service Thread
+  10782      2052Kb          4Kb    VM Periodic Task Thread
+  10783       516Kb         12Kb    Thread-0
+  10784       516Kb         12Kb    Thread-1
+  10785       516Kb         12Kb    Thread-2
+  10786       516Kb         12Kb    Thread-3
+  10787       516Kb         12Kb    Thread-4
+  11203       516Kb         12Kb    Attach Listener
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> -Xssと-XX:ThreadStackSizeの違い</h2>
+<div class="outline-text-2" id="text-7">
+<p>
+<code>-Xss</code> と <code>-XX:ThreadStackSize</code> 両方ともJavaスレッドのスタックを指定するパラメータで
+ある。 ただし、JVMランチャーから起動されたイニシャルスレッドのスタックサイズの制御は
+<code>-Xss</code> パラメータのみできる。
+</p>
+
+<p>
+以下はJVMランチャーからイニシャルスレッド起動するまでの流れ
+</p>
+<pre class="example">
+行
+ | ★ランチャーの実行
+1| openjdk/jdk/src/share/bin/main.c:93           ==&gt; int main(int, char **);
+2| openjdk/jdk/src/share/bin/java.c:170            ==&gt; int JLI_Launch(int, char **, int, const char **, int, const char **, const char *, const char *, const char *, const char *, jboolean, jboolean, jboolean, jint);
+3| openjdk/jdk/src/share/bin/java.c:1835             ==&gt; int ContinueInNewThread(InvocationFunctions *, jlong, int, char **, int, char *, int);
+ | ★イニシャルスレッド起動
+4| openjdk/jdk/src/solaris/bin/java_md_solinux.c:1021  ==&gt; int ContinueInNewThread0(int (JNICALL *continuation)(void *), jlong stack_size, void * args)
+5| openjdk/jdk/src/share/bin/java.c:337                  ==&gt; int JavaMain(void *);
+ | openjdk/jdk/src/share/bin/java.c:1097                 ==&gt; jboolean InitializeJVM(JavaVM **pvm, JNIEnv **penv, InvocationFunctions *ifn)
+6| openjdk/hotspot/src/share/vm/prims/jni.cpp            ==&gt; jint JNI_CreateJavaVM(JavaVM**, void**, void*);
+7| openjdk/hotspot/src/share/vm/runtime/thread.cpp:3271    ==&gt; jint Threads::create_vm(JavaVMInitArgs*, bool*);
+8| openjdk/hotspot/src/os/linux/vm/os_linux.cpp:4898         ==&gt; jint os::init_2(void)
+9| openjdk/hotspot/src/os/linux/vm/os_linux.cpp:1205           ==&gt; void os::Linux::capture_initial_stack(size_t max_size)
+</pre>
+
+<ul class="org-ul">
+<li>行1: JVMランチャーのmain関数
+</li>
+<li>行2: <code>JLI_Launch</code> 関数にてコマンドラインパラメータのパーシング処理が実行される。
+</li>
+<li>行3: <code>-Xss</code> パラメータが指定されていない場合、デフォルト値(1024Kb)を取得し(4)に渡す。
+</li>
+<li>行4: glibcの <code>pthread_create</code> 関数を用いてイニシャルスレッドを起動する。 <code>-Xss</code> の
+値がスタックサイズに適用される。
+</li>
+</ul>
+
+<p>
+<code>-Xss</code> と <code>-XX:ThreadStackSize</code> 片方指定する場合、と両方指定する場合効果が違うので要注意です。
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">&#xa0;</th>
+<th scope="col" class="left">イニシャルスレッド</th>
+<th scope="col" class="left">ワーカスレッド</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">-Xss2048K</td>
+<td class="left">2048K</td>
+<td class="left">2048K</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">-XX:ThreadStackSize=2048</td>
+<td class="left">1024K</td>
+<td class="left">2048K</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">-Xss2048K</td>
+<td class="left">2048K</td>
+<td class="left">512K</td>
+</tr>
+
+<tr>
+<td class="left">-XX:ThreadStackSize=512</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+<div id="outline-container-sec-8" class="outline-2">
+<h2 id="sec-8"><span class="section-number-2">8</span> 参考</h2>
+<div class="outline-text-2" id="text-8">
+<p>
+本記事書く際に下記コンテンツを参考した。
+</p>
+<ul class="org-ul">
+<li><a href="http://mail.openjdk.java.net/pipermail/hotspot-dev/2011-June/004272.html">What the difference between -Xss and -XX:ThreadStackSize is?</a>
+</li>
+<li><a href="https://docs.oracle.com/javase/7/docs/webnotes/tsg/TSG-VM/html/toc.html">Troubleshooting Guide for HotSpot VM</a>
+</li>
+<li><a href="http://openjdk.java.net/groups/hotspot/docs/RuntimeOverview.html">HotSpot Runtime Overview</a>
+</li>
+<li><a href="http://xmlandmore.blogspot.jp/2014/09/jdk-8-thread-stack-size-tuning.html?m=1">JDK 8: Thread Stack Size Tuning </a>
+</li>
+<li><a href="http://www.slideshare.net/m0nstermind/java-runtime-jvm">Java Runtime: повседневные обязанности</a>
+</li>
+<li><a href="http://brakkee.org/site/2012/10/13/java-from-the-trenches-crash-free-and-responsive-servers/">Java from the trenches: improving reliability</a>
+</li>
+<li><a href="https://help.blackboard.com/en-us/Learn/9.1_SP_12_and_SP_13/Administrator/010_Release_Notes/020_SP_12_Release_Notes/Performance_and_Scalability/Recommended_JVM_Tuning_Set">Recommended JVM Tuning Set</a>
+</li>
+<li><a href="http://stackoverflow.com/questions/11025459/where-is-the-java-stack-allocated">where is the Java stack allocated?</a>
+</li>
+<li><a href="http://unix.stackexchange.com/questions/145557/how-does-stack-allocation-work-in-linux">How does stack allocation work in Linux?</a>
+</li>
+<li><a href="http://www.oracle.com/technetwork/articles/servers-storage-dev/mem-alloc-1557798.html">How Memory Allocation Affects Performance in Multithreaded Programs</a>
+</li>
+<li><a href="http://stackoverflow.com/questions/15251250/what-do-the-different-hotspot-jvm-thread-types-do">What do the different (HotSpot) JVM thread types do?</a>
+</li>
+<li><a href="http://stackoverflow.com/questions/25309748/what-is-thread-stack-size-option-xss-given-to-jvm-why-does-it-have-a-limit-of">What is thread stack size option(-Xss) given to jvm? Why does it have a limit of atleast 68k in a windows pc?</a>
+</li>
+<li><a href="http://j2eedebug.blogspot.jp/2008/12/mapping-java-thread-to-pstack-and-pmap.html?m=1">Mapping java thread to pstack and pmap</a>
+</li>
+<li><a href="http://msugai.fc2web.com/java/perform/storage.html">JVM のメモリ構造</a>
+</li>
+<li><a href="http://codezine.jp/article/detail/1970?p=2">pthreadについて（スタックサイズ）</a>
+</li>
+<li><a href="http://www.megadriver.info/~fumi/2010/11/linux-%25E3%2581%25AE-pthread-%25E3%2581%25AE%25E3%2583%2587%25E3%2583%2595%25E3%2582%25A9%25E3%2583%25AB%25E3%2583%2588%25E3%2582%25B9%25E3%2582%25BF%25E3%2583%2583%25E3%2582%25AF%25E3%2582%25B5%25E3%2582%25A4%25E3%2582%25BA%25E3%2581%25AB%25E3%2581%25A4%25E3%2581%2584%25E3%2581%25A6/">Linux の pthread のデフォルトスタックサイズについて</a>
+</li>
+<li><a href="http://linuxjm.sourceforge.jp/html/LDP_man-pages/man3/pthread_attr_setstacksize.3.html">PTHREAD_ATTR_SETSTACKSIZE</a>
+</li>
+<li><a href="http://docs.oracle.com/cd/E19455-01/806-2732/6jbu8v6ol/index.html#attrib-33670">マルチスレッドのプログラミング - スタックについて</a>
+</li>
+<li><a href="http://th0x4c.github.io/blog/2012/10/10/os-virtual-memory-map/">{OS} 仮想メモリ空間のメモリマップを調べる</a>
+</li>
+<li><a href="http://gntm-mdk.hatenadiary.com/entry/2015/01/21/231258">VSS RSS PSS USS の説明</a>
+</li>
+<li><a href="http://hllvm.group.iteye.com/group/topic/37717">咨询各位大神，使用jni，当栈内空间使用为1M时，会触发core</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

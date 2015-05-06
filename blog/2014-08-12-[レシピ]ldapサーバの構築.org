@@ -426,7 +426,6 @@ indexing id=0000000c
 #+end_example
 
 * 環境構成
-
 * OpenLDAPのインストール
 =sudo pacman -S openldap= でインストールを行うと、openldapパッケージが以下の形でシス
 テムに展開される。

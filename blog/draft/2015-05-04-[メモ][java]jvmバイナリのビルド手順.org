@@ -1,0 +1,15 @@
+#+TITLE: [メモ][Java]JVMバイナリのビルド手順
+#+DATE: 2015-05-04
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: 
+#+JEKYLL_TAGS: 
+#+JEKYLL_COMMENTS: true 
+#+JEKYLL_PUBLISHED: true
+
+* 
+
+{{{more}}}
+
+- [[JavaLand%20Session:%20How%20is%20Java/JVM%20built?][JavaLand Session: How is Java/JVM built?]]
+- [[http://hllvm.group.iteye.com/group/topic/41271][在Windows中构建OpenJDK8u已经很简单了]]

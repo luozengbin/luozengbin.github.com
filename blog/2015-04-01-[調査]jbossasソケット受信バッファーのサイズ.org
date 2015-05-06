@@ -1,0 +1,399 @@
+#+TITLE: [調査]JBossASソケット受信バッファーのサイズ
+#+DATE: 2015-04-01
+#+SETUPFILE: ~/.emacs.d/blogs/octopress/setupfile.org
+#+JEKYLL_LAYOUT: post
+#+JEKYLL_CATEGORIES: java
+#+JEKYLL_TAGS: tcp JBossAS
+#+JEKYLL_COMMENTS: true
+#+JEKYLL_PUBLISHED: true
+
+以下LinuxプラットフォームでJBossASアプリケーションサーバの話です。
+
+次のケースに置いて、Acceptorスレッドやワーカスレッドの働き状態が悪くなるため、クライ
+アントから送信されてデータがサーバ側のTCPソケット受信バッファーに溜まる。バッファーが
+一杯になるとパケット受信ができなくなる、TCPレーヤでパケット再送が起きる。
+
+- サーバが過負荷状態でCPU時間がAcceptorスレッドやワーカスレッドに回らない場合
+- FullGCによるJBossASサーバの一時停止
+
+この記事はTCP受信バッファーのサイズの実測値を調査致します。
+
+{{{more}}}
+
+* 実験シナリオ
+- テスト信用のサーブレットを準備する
+- サーバソケットの受信バッファーサイズを確認する
+- Acceptorスレッドを意図的ストールさせる
+- TCPソケット受信バッファサイズを監視する
+- パケット通信を監視する
+- telnetからデータを順次に送りつける
+
+* テスト信用のサーブレットを準備する
+受信したHTTPリクエストパラメータを出力するシンプルなサーブレットをJBossASにデプロイす
+る。
+#+begin_src java
+package jp.co.jizai.sample.jbossas7.tcp;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Enumeration;
+import java.util.Map;
+
+public class ShowParameterServlet extends HttpServlet {
+
+    private static final String CONTENT_TYPE = "text/html; charset=UTF-8";
+
+    public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
+        process(req, resp);
+    }
+
+
+    public void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        process(req, resp);
+    }
+
+    public void process(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.setContentType(CONTENT_TYPE);
+        PrintWriter out = resp.getWriter();
+        System.out.println("=== http parameter ===");
+        Map<String, Object> paramMap = (Map<String, Object>) req.getParameterMap();
+        for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
+            out.write(String.format("%s = %s", entry.getKey(), entry.getValue()) + "<br/>");
+        }
+
+        System.out.println("=== http attribute ===");
+        Enumeration<String> attrNames = (Enumeration<String>) req.getAttributeNames();
+        while (attrNames.hasMoreElements()) {
+            String attrName = attrNames.nextElement();
+            out.write(String.format("%s = %s", attrName, req.getAttribute(attrName)) + "<br/>");
+        }
+        out.close();
+    }
+}
+#+end_src
+
+* サーバソケットの受信バッファーサイズを確認する
+新規接続のサーバソケットのgetReceiveBufferSize()メソッドをコールする =Byteman= スクリ
+プトを実行中のJBassASにアタッチメントする。
+#+begin_src sh
+RULE trace http ReceiveBufferSize
+CLASS org.apache.tomcat.util.net.JIoEndpoint
+METHOD processSocket
+AT ENTRY
+BIND socket = $1
+IF TRUE
+DO
+  traceln("socket.getReceiveBufferSize() = " + socket.getReceiveBufferSize()), traceStack()
+ENDRULE
+#+end_src
+
+クライアントブラウザからテスト用サーブレットをアクセスすると、サーバログに以下の内容
+が出力される。
+
+#+begin_example
+15:46:11,002 INFO  [stdout] (http-/0.0.0.0:8080-Acceptor-0) socket.getReceiveBufferSize() = 43690
+15:46:11,004 INFO  [stdout] (http-/0.0.0.0:8080-Acceptor-0) Stack trace for thread http-/0.0.0.0:8080-Acceptor-0
+15:46:11,004 INFO  [stdout] (http-/0.0.0.0:8080-Acceptor-0) org.apache.tomcat.util.net.JIoEndpoint.processSocket(JIoEndpoint.java:-1)
+15:46:11,004 INFO  [stdout] (http-/0.0.0.0:8080-Acceptor-0) org.apache.tomcat.util.net.JIoEndpoint$Acceptor.run(JIoEndpoint.java:315)
+15:46:11,005 INFO  [stdout] (http-/0.0.0.0:8080-Acceptor-0) java.lang.Thread.run(Thread.java:745)
+#+end_example
+
+=[[https://docs.oracle.com/javase/jp/6/api/java/net/Socket.html#setReceiveBufferSize%2528int%2529][java.net.Socket.getReceiveBufferSize]]()= で取れた値→ =43690= 単位がよくわからないの
+でJavaDocを引いてみた。
+
+#+begin_example
+public int getReceiveBufferSize()
+                         throws SocketException
+
+    この Socket で使われる SO_RCVBUF オプションの値を取得します。これは、この Socket で入力用としてプラットフォームが使うバッファーのサイズです。
+
+    戻り値:
+        この Socket の SO_RCVBUF オプションの値 
+    例外:
+        SocketException - 使用しているプロトコルでエラー (TCP エラーなど) が発生した場合
+    導入されたバージョン:
+        1.2
+    関連項目:
+        setReceiveBufferSize(int)
+#+end_example
+
+やはり、分からないので =SO_RCVBUF= オプションの単位を探って見る。
+
+#+begin_example
+SO_RCVBUF
+    ソケットの受信バッファーの最大サイズを設定・取得する (バイト単位)。 setsockopt(2)
+    を使って値が設定されたときに (管理オーバヘッド用の領域を確保するために) カーネルは
+    この値を 2倍し、 getsockopt(2) はこの 2倍された値を返す。 デフォルトの値は
+    /proc/sys/net/core/rmem_default ファイルで設定され、許容される最大の値は
+    /proc/sys/net/core/rmem_max ファイルで設定される。 このオプションの最小値は (2倍し
+    た値で) 256 である
+#+end_example
+
+僕の日本語理解力が低いので、正確な意味が掴めないままだが。一先ず受信バッファーサイズの
+単位がバイトだそうです。 =43690= バイトは約42KB、またTCP受信バッファーカーネルパラメー
+タ =net.ipv4.tcp_rmem= の値は下記の通りとなります。 =43690= は丁度 =net.ipv4.tcp_rmem=
+のデフォルト値の 1/2 であることが分かりました。
+
+#+begin_example
+# sysctl -a | grep net.ipv4.tcp_rmem
+net.ipv4.tcp_rmem = 4096	87380	4194304
+#+end_example
+
+* Acceptorスレッドを意図的ストールさせる
+新規接続を受け付ける処理 =org.apache.tomcat.util.net.JIoEndpoint.processSocket(Socket
+socket)= でスレッドを30秒間Sleepされる =Byteman= スクリプトを実行中のJBossASにアタッチ
+メントする。
+#+begin_src sh
+RULE pause acceptor thread
+CLASS org.apache.tomcat.util.net.JIoEndpoint
+METHOD processSocket
+AT ENTRY
+BIND socket = $1
+IF TRUE
+DO
+  Thread.sleep(300000)
+ENDRULE
+#+end_src
+
+* TCPソケット受信バッファサイズを監視する
+以下のコマンドでTCPソケット受信バッファサイズを監視する
+#+begin_example
+$ watch -n 2 'netstat -an | grep ESTABLISHED | grep 8080'
+#+end_example
+
+* パケット通信を監視する
+クライアント側にて以下のコマンドでパケット通信の監視を行う
+#+begin_example
+$sudo tcpdump -n -i virbr0 port 8080
+#+end_example
+
+* telnetからデータを順次に送りつける
+=net.ipv4.tcp_rmem= パラメータデフォルト値 =87380= より大きい電文を送るようにHTTPヘッ
+ダーに =Content-Length: 120100= を指定する。
+
+#+begin_example
+$ telnet jbossas-lab02 8080
+POST /jbossas7-tcp-basic/ShowParameterServlet HTTP/1.1
+Host: jbossas-lab02:8080
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: ja,en-US;q=0.7,en;q=0.3
+Accept-Encoding: gzip, deflate
+Referer: http://jbossas-lab002:8080/jbossas7-tcp-basic/
+Connection: Close
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 120100
+
+★まず100バイト分を送る(エンターは2バイト分になります)
+param1=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ★エンターを押す
+
+★以下4000バイト文字を30回繰り返しサーバに送る
+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+#+end_example
+
+* 監視結果解析
+以下TCPソケット受信バッファサイズの監視結果、文中の★マークは結果の解析コメントとなり
+ます。
+#+begin_example
+# while [ true ]; do netstat -an | grep ESTABLISHED | grep 8080; sleep  2; done
+★1 TCP3WHS 接続確立
+tcp        0      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+
+★2 HTTPヘッダー受信
+tcp      447      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+
+★3 リクエストデータの受信
+tcp      547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp     4547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp     8547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    12547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    16547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    20547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    24547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    28547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    32547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    36547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    40547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+
+★4 アプリ予約バッファサイズに達した、以降は管理領域を食い始めた
+★  このタイミングからサーバ受信ウィンドウサイズが徐々に縮める
+tcp    44547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    48547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    52547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    56547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    60547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    64547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    68547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+
+★5 以降TCPバッファが満タン
+tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
+#+end_example
+
+
+パケット監視結果は以下の通りです。
+#+begin_example
+★1 TCP3WHS 接続確立
+16:45:01.262499 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [S], seq 3028524293, win 29200, options [mss 1460,sackOK,TS val 50120659 ecr 0,nop,wscale 7], length 0
+16:45:01.262697 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [S.], seq 1682372075, ack 3028524294, win 14480, options [mss 1460,sackOK,TS val 3798305 ecr 50120659,nop,wscale 7], length 0
+16:45:01.262773 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50120659 ecr 3798305], length 0
+
+
+★2 HTTPヘッダー送信
+16:45:09.935452 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 1:57, ack 1, win 229, options [nop,nop,TS val 50123261 ecr 3798305], length 56: HTTP: POST /jbossas7-tcp-basic/ShowParameterServlet HTTP/1.1
+16:45:09.935789 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 57, win 114, options [nop,nop,TS val 3806979 ecr 50123261], length 0
+16:45:09.935850 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 57:422, ack 1, win 229, options [nop,nop,TS val 50123261 ecr 3806979], length 365: HTTP
+16:45:09.935905 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 422, win 122, options [nop,nop,TS val 3806979 ecr 50123261], length 0
+16:45:10.330264 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 422:446, ack 1, win 229, options [nop,nop,TS val 50123379 ecr 3806979], length 24: HTTP
+16:45:10.330448 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 446, win 122, options [nop,nop,TS val 3807373 ecr 50123379], length 0
+16:45:10.897750 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 446:448, ack 1, win 229, options [nop,nop,TS val 50123550 ecr 3807373], length 2: HTTP
+16:45:10.897911 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 448, win 122, options [nop,nop,TS val 3807941 ecr 50123550], length 0
+
+★3 リクエストデータの送信
+16:45:19.464509 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 448:548, ack 1, win 229, options [nop,nop,TS val 50126120 ecr 3807941], length 100: HTTP
+16:45:19.464668 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 548, win 122, options [nop,nop,TS val 3816507 ecr 50126120], length 0
+16:45:26.602423 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 548:4548, ack 1, win 229, options [nop,nop,TS val 50128261 ecr 3816507], length 4000: HTTP
+16:45:26.602602 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 4548, win 145, options [nop,nop,TS val 3823645 ecr 50128261], length 0
+16:45:32.436162 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 4548:8548, ack 1, win 229, options [nop,nop,TS val 50130011 ecr 3823645], length 4000: HTTP
+16:45:32.436338 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 8548, win 167, options [nop,nop,TS val 3829479 ecr 50130011], length 0
+16:45:35.452590 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 8548:12548, ack 1, win 229, options [nop,nop,TS val 50130916 ecr 3829479], length 4000: HTTP
+16:45:35.452721 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 12548, win 190, options [nop,nop,TS val 3832495 ecr 50130916], length 0
+16:45:38.082228 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 12548:16548, ack 1, win 229, options [nop,nop,TS val 50131705 ecr 3832495], length 4000: HTTP
+16:45:38.082396 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 16548, win 212, options [nop,nop,TS val 3835125 ecr 50131705], length 0
+16:45:40.743705 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 16548:20548, ack 1, win 229, options [nop,nop,TS val 50132504 ecr 3835125], length 4000: HTTP
+16:45:40.743848 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 20548, win 235, options [nop,nop,TS val 3837787 ecr 50132504], length 0
+16:45:43.016683 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 20548:24548, ack 1, win 229, options [nop,nop,TS val 50133185 ecr 3837787], length 4000: HTTP
+16:45:43.016863 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 24548, win 258, options [nop,nop,TS val 3840060 ecr 50133185], length 0
+16:45:45.721066 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 24548:28548, ack 1, win 229, options [nop,nop,TS val 50133997 ecr 3840060], length 4000: HTTP
+16:45:45.721253 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 28548, win 280, options [nop,nop,TS val 3842764 ecr 50133997], length 0
+16:45:49.227814 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 28548:32548, ack 1, win 229, options [nop,nop,TS val 50135049 ecr 3842764], length 4000: HTTP
+16:45:49.227964 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 32548, win 253, options [nop,nop,TS val 3846271 ecr 50135049], length 0
+16:45:51.671841 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 32548:36548, ack 1, win 229, options [nop,nop,TS val 50135782 ecr 3846271], length 4000: HTTP
+
+★4 ここから再送が発生する
+16:45:51.680266 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 35444:36548, ack 1, win 229, options [nop,nop,TS val 50135785 ecr 3846271], length 1104: HTTP
+16:45:51.711839 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 36548, win 225, options [nop,nop,TS val 3848755 ecr 50135782,nop,nop,sack 1 {35444:36548}], length 0
+16:45:55.390996 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 36548:40548, ack 1, win 229, options [nop,nop,TS val 50136898 ecr 3848755], length 4000: HTTP
+16:45:55.430802 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 40548, win 197, options [nop,nop,TS val 3852474 ecr 50136898], length 0
+16:45:59.291140 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], seq 40548:43444, ack 1, win 229, options [nop,nop,TS val 50138068 ecr 3852474], length 2896: HTTP
+16:45:59.291169 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 43444:44548, ack 1, win 229, options [nop,nop,TS val 50138068 ecr 3852474], length 1104: HTTP
+16:45:59.310296 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 43444:44548, ack 1, win 229, options [nop,nop,TS val 50138074 ecr 3852474], length 1104: HTTP
+16:45:59.330773 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 44548, win 166, options [nop,nop,TS val 3856374 ecr 50138068,nop,nop,sack 1 {43444:44548}], length 0
+16:46:01.367501 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], seq 44548:47444, ack 1, win 229, options [nop,nop,TS val 50138691 ecr 3856374], length 2896: HTTP
+16:46:01.367533 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 47444:48548, ack 1, win 229, options [nop,nop,TS val 50138691 ecr 3856374], length 1104: HTTP
+16:46:01.406803 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 48548, win 135, options [nop,nop,TS val 3858450 ecr 50138691], length 0
+16:46:03.523326 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], seq 48548:51444, ack 1, win 229, options [nop,nop,TS val 50139337 ecr 3858450], length 2896: HTTP
+16:46:03.523356 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 51444:52548, ack 1, win 229, options [nop,nop,TS val 50139337 ecr 3858450], length 1104: HTTP
+16:46:03.553582 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 51444:52548, ack 1, win 229, options [nop,nop,TS val 50139347 ecr 3858450], length 1104: HTTP
+16:46:03.553716 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 52548, win 104, options [nop,nop,TS val 3860596 ecr 50139337,nop,nop,sack 1 {51444:52548}], length 0
+16:46:06.322183 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], seq 52548:55444, ack 1, win 229, options [nop,nop,TS val 50140177 ecr 3860596], length 2896: HTTP
+16:46:06.322212 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 55444:56548, ack 1, win 229, options [nop,nop,TS val 50140177 ecr 3860596], length 1104: HTTP
+16:46:06.361777 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 56548, win 73, options [nop,nop,TS val 3863405 ecr 50140177], length 0
+16:46:08.944983 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], seq 56548:57996, ack 1, win 229, options [nop,nop,TS val 50140964 ecr 3863405], length 1448: HTTP
+16:46:08.945017 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], seq 57996:59444, ack 1, win 229, options [nop,nop,TS val 50140964 ecr 3863405], length 1448: HTTP
+16:46:08.945027 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 59444:60548, ack 1, win 229, options [nop,nop,TS val 50140964 ecr 3863405], length 1104: HTTP
+16:46:08.945188 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 57996, win 62, options [nop,nop,TS val 3865988 ecr 50140964], length 0
+16:46:08.983605 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 59444:60548, ack 1, win 229, options [nop,nop,TS val 50140976 ecr 3865988], length 1104: HTTP
+16:46:08.983765 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 60548, win 43, options [nop,nop,TS val 3866027 ecr 50140964,nop,nop,sack 1 {59444:60548}], length 0
+16:46:10.874178 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], seq 60548:63444, ack 1, win 229, options [nop,nop,TS val 50141543 ecr 3866027], length 2896: HTTP
+16:46:10.874209 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 63444:64548, ack 1, win 229, options [nop,nop,TS val 50141543 ecr 3866027], length 1104: HTTP
+16:46:10.913789 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 64548, win 12, options [nop,nop,TS val 3867957 ecr 50141543], length 0
+16:46:13.263314 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], seq 64548:65996, ack 1, win 229, options [nop,nop,TS val 50142259 ecr 3867957], length 1448: HTTP
+16:46:13.263477 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 65996, win 1, options [nop,nop,TS val 3870306 ecr 50142259], length 0
+16:46:13.483589 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 65996:66124, ack 1, win 229, options [nop,nop,TS val 50142326 ecr 3870306], length 128: HTTP
+16:46:13.483812 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 66124, win 46, options [nop,nop,TS val 3870527 ecr 50142326], length 0
+16:46:13.483865 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], seq 66124:67572, ack 1, win 229, options [nop,nop,TS val 50142326 ecr 3870527], length 1448: HTTP
+16:46:13.483885 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 67572:68548, ack 1, win 229, options [nop,nop,TS val 50142326 ecr 3870527], length 976: HTTP
+16:46:13.523583 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 67572:68548, ack 1, win 229, options [nop,nop,TS val 50142338 ecr 3870527], length 976: HTTP
+16:46:13.523752 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 68548, win 28, options [nop,nop,TS val 3870567 ecr 50142326,nop,nop,sack 1 {67572:68548}], length 0
+16:46:15.144825 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], seq 68548:69996, ack 1, win 229, options [nop,nop,TS val 50142824 ecr 3870567], length 1448: HTTP
+16:46:15.144860 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], seq 69996:71444, ack 1, win 229, options [nop,nop,TS val 50142824 ecr 3870567], length 1448: HTTP
+16:46:15.145025 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 69996, win 17, options [nop,nop,TS val 3872188 ecr 50142824], length 0
+16:46:15.184796 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 71444, win 6, options [nop,nop,TS val 3872228 ecr 50142824], length 0
+16:46:15.406939 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [P.], seq 71444:72212, ack 1, win 229, options [nop,nop,TS val 50142903 ecr 3872228], length 768: HTTP
+
+
+★5 ここからサーバから受信可能なTCPウィンドウサイズが0の応答パケットが出始めた
+16:46:15.407110 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3872450 ecr 50142903], length 0
+16:46:15.626933 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50142969 ecr 3872450], length 0
+16:46:15.627096 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3872670 ecr 50142903], length 0
+16:46:16.066943 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50143101 ecr 3872670], length 0
+16:46:16.067143 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3873110 ecr 50142903], length 0
+16:46:16.950253 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50143366 ecr 3873110], length 0
+16:46:16.950401 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3873993 ecr 50142903], length 0
+16:46:18.716950 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50143896 ecr 3873993], length 0
+16:46:18.717129 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3875760 ecr 50142903], length 0
+16:46:22.250259 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50144956 ecr 3875760], length 0
+16:46:22.250438 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3879293 ecr 50142903], length 0
+16:46:29.303610 IP 192.168.122.1.40976 > 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50147072 ecr 3879293], length 0
+16:46:29.303785 IP 192.168.122.66.8080 > 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3886347 ecr 50142903], length 0
+#+end_example
+
+* TCPソケット受信バッファーサイズの設定について
+
+JavaDocから引用
+
+- [[https://docs.oracle.com/javase/jp/6/api/java/net/Socket.html#setReceiveBufferSize%2528int%2529][java.net.Socket.setReceiveBufferSize]]
+  この Socket の SO_RCVBUF オプションを指定された値に設定します。SO_RCVBUF オプション
+  は、使用するネットワーク入出力バッファーに設定するサイズのヒントとして、プラットフォー
+  ムのネットワークコードが使います。
+
+  受信バッファーのサイズを増やすと、大規模な接続でのネットワーク入出力のパフォーマンス
+  を上げることができます。一方、サイズを減らすと、受信データのバックログを減らすことが
+  できます。
+
+  SO_RCVBUF は =ヒント= なので、アプリケーションでバッファーのサイズ設定を調べる必要が
+  ある場合は、getReceiveBufferSize() を呼び出してください。
+
+  SO_RCVBUF の値は、リモートピアに通知される TCP 受信ウィンドウの設定にも使用されます。
+  一般に、ソケットが接続されているかぎり、このウィンドウサイズはいつでも変更できます。
+  ただし、64K を超える受信ウィンドウを要求する場合は、ソケットをリモートピアに接続する
+  前に変更を要求する必要があります。次の 2 つの場合に注意してください。
+
+  ServerSocket から受け入れたソケットの場合、ServerSocket をローカルアドレスにバインド
+  する前に、ServerSocket.setReceiveBufferSize(int) を呼び出してこれを実行する必要があ
+  ります。
+
+  クライアントソケットの場合、ソケットをそのリモートピアに接続する前に、
+  setReceiveBufferSize() を呼び出す必要があります。
+- [[https://docs.oracle.com/javase/jp/6/api/java/net/ServerSocket.html#setReceiveBufferSize%2528int%2529][java.net.ServerSocket.setReceiveBufferSize]]
+    この ServerSocket から受け入れられたソケットの SO_RCVBUF オプションのデフォルト推
+  奨値を設定します。受け入れられたソケット内に実際に設定されている値を確認してください。
+  それには、accept() からソケットが返されたあとで Socket.getReceiveBufferSize() を呼び
+  出します。
+
+    SO_RCVBUF の値は、内部ソケット受信バッファーのサイズの設定と、リモートピアに通知さ
+  れる TCP 受信ウィンドウのサイズの設定の両方に使用されます。
+
+    その後、Socket.setReceiveBufferSize(int) を呼び出すことで値を変更できます。ただし、
+  アプリケーションが RFC1323 で定義されている 64K バイトを超える受信ウィンドウを使用可
+  能にする必要がある場合には、ローカルアドレスにバインドする前に 推奨値を
+  ServerSocket で設定する必要があります。つまり、引数なしコンストラクタを使って
+  ServerSocket を作成し、次に setReceiveBufferSize() を呼び出し、最後に bind() を呼び
+  出して ServerSocket をアドレスにバインドする必要があることを意味します。
+
+    これに失敗してもエラーは発生せず、バッファーサイズは要求された値に設定されます。た
+  だし、この ServerSocket から受け取るソケットの TCP 受信ウィンドウは 64K バイト以下に
+  なります。
+
+* まとめ
+- JBossASソケット受信バッファーのデフォルトサイズは =net.ipv4.tcp_rmem= の1/2が適用さ
+  れる(約42KB)。
+- リクエストデータサイズが42KBバイト以下の場合、パケット再送発生しない
+- 実際に受信できる最大サイズは =net.ipv4.tcp_rmem= 値の8割ぐらい
+
+* 参考
+- [[http://linuxjm.sourceforge.jp/html/LDP_man-pages/man7/socket.7.html][Section: Linux Programmer's Manual (7)]]
+- [[https://docs.oracle.com/javase/jp/6/api/java/net/Socket.html][Socket (Java Platform SE 6)]]
