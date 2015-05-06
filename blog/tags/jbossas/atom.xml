@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: JBossAS | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/jbossas/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-05-06T19:25:11+09:00</updated>
+  <updated>2015-05-06T19:49:10+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -110,45 +110,45 @@
 </p>
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #b4fa70;">package</span> jp.co.jizai.sample.jbossas7.<span style="color: #e6a8df;">tcp</span>;
+<pre class="src src-java"><span style="color: #ffad29; font-weight: bold;">package</span> jp.co.jizai.sample.jbossas7.<span style="color: #008b8b;">tcp</span>;
 
-<span style="color: #b4fa70;">import</span> <span style="color: #e6a8df;">javax</span>.<span style="color: #e6a8df;">servlet</span>.<span style="color: #8cc4ff;">ServletException</span>;
-<span style="color: #b4fa70;">import</span> <span style="color: #e6a8df;">javax</span>.<span style="color: #e6a8df;">servlet</span>.<span style="color: #e6a8df;">http</span>.<span style="color: #8cc4ff;">HttpServlet</span>;
-<span style="color: #b4fa70;">import</span> <span style="color: #e6a8df;">javax</span>.<span style="color: #e6a8df;">servlet</span>.<span style="color: #e6a8df;">http</span>.<span style="color: #8cc4ff;">HttpServletRequest</span>;
-<span style="color: #b4fa70;">import</span> <span style="color: #e6a8df;">javax</span>.<span style="color: #e6a8df;">servlet</span>.<span style="color: #e6a8df;">http</span>.<span style="color: #8cc4ff;">HttpServletResponse</span>;
-<span style="color: #b4fa70;">import</span> <span style="color: #e6a8df;">java</span>.<span style="color: #e6a8df;">io</span>.<span style="color: #8cc4ff;">IOException</span>;
-<span style="color: #b4fa70;">import</span> <span style="color: #e6a8df;">java</span>.<span style="color: #e6a8df;">io</span>.<span style="color: #8cc4ff;">PrintWriter</span>;
-<span style="color: #b4fa70;">import</span> <span style="color: #e6a8df;">java</span>.<span style="color: #e6a8df;">util</span>.<span style="color: #8cc4ff;">Enumeration</span>;
-<span style="color: #b4fa70;">import</span> <span style="color: #e6a8df;">java</span>.<span style="color: #e6a8df;">util</span>.<span style="color: #8cc4ff;">Map</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">servlet</span>.<span style="color: #34cae2;">ServletException</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">servlet</span>.<span style="color: #008b8b;">http</span>.<span style="color: #34cae2;">HttpServlet</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">servlet</span>.<span style="color: #008b8b;">http</span>.<span style="color: #34cae2;">HttpServletRequest</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">servlet</span>.<span style="color: #008b8b;">http</span>.<span style="color: #34cae2;">HttpServletResponse</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">java</span>.<span style="color: #008b8b;">io</span>.<span style="color: #34cae2;">IOException</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">java</span>.<span style="color: #008b8b;">io</span>.<span style="color: #34cae2;">PrintWriter</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">java</span>.<span style="color: #008b8b;">util</span>.<span style="color: #34cae2;">Enumeration</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">java</span>.<span style="color: #008b8b;">util</span>.<span style="color: #34cae2;">Map</span>;
 
-<span style="color: #b4fa70;">public</span> <span style="color: #b4fa70;">class</span> <span style="color: #8cc4ff;">ShowParameterServlet</span> <span style="color: #b4fa70;">extends</span> <span style="color: #8cc4ff;">HttpServlet</span> {
+<span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #ffad29; font-weight: bold;">class</span> <span style="color: #34cae2;">ShowParameterServlet</span> <span style="color: #ffad29; font-weight: bold;">extends</span> <span style="color: #34cae2;">HttpServlet</span> {
 
-    <span style="color: #b4fa70;">private</span> <span style="color: #b4fa70;">static</span> <span style="color: #b4fa70;">final</span> <span style="color: #8cc4ff;">String</span> <span style="color: #fcaf3e;">CONTENT_TYPE</span> = <span style="color: #e9b96e;">"text/html; charset=UTF-8"</span>;
+    <span style="color: #ffad29; font-weight: bold;">private</span> <span style="color: #ffad29; font-weight: bold;">static</span> <span style="color: #ffad29; font-weight: bold;">final</span> <span style="color: #34cae2;">String</span> <span style="color: #dbdb95;">CONTENT_TYPE</span> = <span style="color: #e67128;">"text/html; charset=UTF-8"</span>;
 
-    <span style="color: #b4fa70;">public</span> <span style="color: #8cc4ff;">void</span> <span style="color: #fce94f;">doGet</span>(<span style="color: #8cc4ff;">HttpServletRequest</span> <span style="color: #fcaf3e;">req</span>, <span style="color: #8cc4ff;">HttpServletResponse</span> <span style="color: #fcaf3e;">resp</span>) <span style="color: #b4fa70;">throws</span> <span style="color: #8cc4ff;">ServletException</span>, <span style="color: #8cc4ff;">IOException</span> {
+    <span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">doGet</span>(<span style="color: #34cae2;">HttpServletRequest</span> <span style="color: #dbdb95;">req</span>, <span style="color: #34cae2;">HttpServletResponse</span> <span style="color: #dbdb95;">resp</span>) <span style="color: #ffad29; font-weight: bold;">throws</span> <span style="color: #34cae2;">ServletException</span>, <span style="color: #34cae2;">IOException</span> {
 
         process(req, resp);
     }
 
 
-    <span style="color: #b4fa70;">public</span> <span style="color: #8cc4ff;">void</span> <span style="color: #fce94f;">doPost</span>(<span style="color: #8cc4ff;">HttpServletRequest</span> <span style="color: #fcaf3e;">req</span>, <span style="color: #8cc4ff;">HttpServletResponse</span> <span style="color: #fcaf3e;">resp</span>) <span style="color: #b4fa70;">throws</span> <span style="color: #8cc4ff;">ServletException</span>, <span style="color: #8cc4ff;">IOException</span> {
+    <span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">doPost</span>(<span style="color: #34cae2;">HttpServletRequest</span> <span style="color: #dbdb95;">req</span>, <span style="color: #34cae2;">HttpServletResponse</span> <span style="color: #dbdb95;">resp</span>) <span style="color: #ffad29; font-weight: bold;">throws</span> <span style="color: #34cae2;">ServletException</span>, <span style="color: #34cae2;">IOException</span> {
         process(req, resp);
     }
 
-    <span style="color: #b4fa70;">public</span> <span style="color: #8cc4ff;">void</span> <span style="color: #fce94f;">process</span>(<span style="color: #8cc4ff;">HttpServletRequest</span> <span style="color: #fcaf3e;">req</span>, <span style="color: #8cc4ff;">HttpServletResponse</span> <span style="color: #fcaf3e;">resp</span>) <span style="color: #b4fa70;">throws</span> <span style="color: #8cc4ff;">ServletException</span>, <span style="color: #8cc4ff;">IOException</span> {
+    <span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">process</span>(<span style="color: #34cae2;">HttpServletRequest</span> <span style="color: #dbdb95;">req</span>, <span style="color: #34cae2;">HttpServletResponse</span> <span style="color: #dbdb95;">resp</span>) <span style="color: #ffad29; font-weight: bold;">throws</span> <span style="color: #34cae2;">ServletException</span>, <span style="color: #34cae2;">IOException</span> {
         resp.setContentType(CONTENT_TYPE);
-        <span style="color: #8cc4ff;">PrintWriter</span> <span style="color: #fcaf3e;">out</span> = resp.getWriter();
-        System.out.println(<span style="color: #e9b96e;">"=== http parameter ==="</span>);
-        <span style="color: #8cc4ff;">Map</span>&lt;<span style="color: #8cc4ff;">String</span>, <span style="color: #8cc4ff;">Object</span>&gt; <span style="color: #fcaf3e;">paramMap</span> = (Map&lt;<span style="color: #8cc4ff;">String</span>, Object&gt;) req.getParameterMap();
-        <span style="color: #b4fa70;">for</span> (<span style="color: #e6a8df;">Map</span>.<span style="color: #8cc4ff;">Entry</span>&lt;<span style="color: #8cc4ff;">String</span>, <span style="color: #8cc4ff;">Object</span>&gt; entry : paramMap.entrySet()) {
-            out.write(String.format(<span style="color: #e9b96e;">"%s = %s"</span>, entry.getKey(), entry.getValue()) + <span style="color: #e9b96e;">"&lt;br/&gt;"</span>);
+        <span style="color: #34cae2;">PrintWriter</span> <span style="color: #dbdb95;">out</span> = resp.getWriter();
+        System.out.println(<span style="color: #e67128;">"=== http parameter ==="</span>);
+        <span style="color: #34cae2;">Map</span>&lt;<span style="color: #34cae2;">String</span>, <span style="color: #34cae2;">Object</span>&gt; <span style="color: #dbdb95;">paramMap</span> = (Map&lt;<span style="color: #34cae2;">String</span>, Object&gt;) req.getParameterMap();
+        <span style="color: #ffad29; font-weight: bold;">for</span> (<span style="color: #008b8b;">Map</span>.<span style="color: #34cae2;">Entry</span>&lt;<span style="color: #34cae2;">String</span>, <span style="color: #34cae2;">Object</span>&gt; entry : paramMap.entrySet()) {
+            out.write(String.format(<span style="color: #e67128;">"%s = %s"</span>, entry.getKey(), entry.getValue()) + <span style="color: #e67128;">"&lt;br/&gt;"</span>);
         }
 
-        System.out.println(<span style="color: #e9b96e;">"=== http attribute ==="</span>);
-        <span style="color: #8cc4ff;">Enumeration</span>&lt;<span style="color: #8cc4ff;">String</span>&gt; <span style="color: #fcaf3e;">attrNames</span> = (<span style="color: #8cc4ff;">Enumeration</span>&lt;<span style="color: #8cc4ff;">String</span>&gt;) req.getAttributeNames();
-        <span style="color: #b4fa70;">while</span> (attrNames.hasMoreElements()) {
-            <span style="color: #8cc4ff;">String</span> <span style="color: #fcaf3e;">attrName</span> = attrNames.nextElement();
-            out.write(String.format(<span style="color: #e9b96e;">"%s = %s"</span>, attrName, req.getAttribute(attrName)) + <span style="color: #e9b96e;">"&lt;br/&gt;"</span>);
+        System.out.println(<span style="color: #e67128;">"=== http attribute ==="</span>);
+        <span style="color: #34cae2;">Enumeration</span>&lt;<span style="color: #34cae2;">String</span>&gt; <span style="color: #dbdb95;">attrNames</span> = (<span style="color: #34cae2;">Enumeration</span>&lt;<span style="color: #34cae2;">String</span>&gt;) req.getAttributeNames();
+        <span style="color: #ffad29; font-weight: bold;">while</span> (attrNames.hasMoreElements()) {
+            <span style="color: #34cae2;">String</span> <span style="color: #dbdb95;">attrName</span> = attrNames.nextElement();
+            out.write(String.format(<span style="color: #e67128;">"%s = %s"</span>, attrName, req.getAttribute(attrName)) + <span style="color: #e67128;">"&lt;br/&gt;"</span>);
         }
         out.close();
     }
@@ -174,10 +174,10 @@
 CLASS org.apache.tomcat.util.net.JIoEndpoint
 METHOD processSocket
 AT ENTRY
-BIND socket = $<span style="color: #fcaf3e;">1</span>
+BIND socket = $<span style="color: #dbdb95;">1</span>
 IF TRUE
 DO
-  traceln(<span style="color: #e9b96e;">"socket.getReceiveBufferSize() = "</span> + socket.getReceiveBufferSize()), traceStack()
+  traceln(<span style="color: #e67128;">"socket.getReceiveBufferSize() = "</span> + socket.getReceiveBufferSize()), traceStack()
 ENDRULE
 </pre>
 </div>
@@ -261,7 +261,7 @@ socket)</code> でスレッドを30秒間Sleepされる <code>Byteman</code> ス
 CLASS org.apache.tomcat.util.net.JIoEndpoint
 METHOD processSocket
 AT ENTRY
-BIND socket = $<span style="color: #fcaf3e;">1</span>
+BIND socket = $<span style="color: #dbdb95;">1</span>
 IF TRUE
 DO
   Thread.sleep(300000)
@@ -732,9 +732,9 @@ $ ${BYTEMAN_HOME}/bin/bmsubmit.sh trace_socket_receive_buffer_size.btm
   
   <entry>
     <title type="html"><![CDATA[[まとめ]JBoss as 7過負荷時TCPコネクションの振る舞い]]></title>
-    <link href="http://luozengbin.github.io/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Deap6%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html"/>
+    <link href="http://luozengbin.github.io/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html"/>
     <updated>2015-04-01T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[まとめ]eap6過負荷時tcpコネクションの振る舞い</id>
+    <id>http://luozengbin.github.io/blog/[まとめ]jbossas過負荷時tcpコネクションの振る舞い</id>
     <content type="html"><![CDATA[<div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
@@ -750,7 +750,6 @@ $ ${BYTEMAN_HOME}/bin/bmsubmit.sh trace_socket_receive_buffer_size.btm
 </ul>
 </li>
 <li><a href="#sec-5">5. 過負荷の対策</a></li>
-<li><a href="#sec-6">6. 参考</a></li>
 </ul>
 </div>
 </div>
@@ -852,7 +851,12 @@ backlogキューが溢れる可能性もあります。
 </p>
 
 <p>
-※上記に関して、Threadサブシステム利用時も同様です。
+上記に関して、Threadサブシステム利用時も同様です。
+</p>
+
+<p>
+TCPバッファーがについて、TCP接続単位にTCPバッファーが持っている、デフォルト値は
+<a href="https://github.com/torvalds/linux/blob/master/net/ipv4/tcp.c#L3076">net.ipv4.tcp_rmem</a> カーネルパラメータ値の1/2になります、約42KB。
 </p>
 </div>
 </div>
@@ -912,15 +916,6 @@ TCP SYNの再送間隔は以下の通り、約64秒でタイムアウトにな�
 した上でワーカースレッドのbusy数とCPUの使用率を監視し、閉塞運用、スペアインスタンスの
 運用などを設計することが大事だと思います。
 </p>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6"><span class="section-number-2">6</span> 参考</h2>
-<div class="outline-text-2" id="text-6">
 </div>
 </div>
 

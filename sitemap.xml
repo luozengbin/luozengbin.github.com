@@ -21,7 +21,7 @@
   </url>
   
   <url>
-    <loc>http://luozengbin.github.io/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Deap6%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html</loc>
+    <loc>http://luozengbin.github.io/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html</loc>
     <lastmod>2015-04-01T00:00:00+09:00</lastmod>
     <priority>0.8</priority>
   </url>
@@ -203,14 +203,14 @@
   
   <url>
     <loc>http://luozengbin.github.io/blog/archives/</loc>
-    <lastmod>2015-05-06T19:25:11+09:00</lastmod>
+    <lastmod>2015-05-06T19:49:10+09:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://luozengbin.github.io/</loc>
-    <lastmod>2015-05-06T19:25:11+09:00</lastmod>
+    <lastmod>2015-05-06T19:49:10+09:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

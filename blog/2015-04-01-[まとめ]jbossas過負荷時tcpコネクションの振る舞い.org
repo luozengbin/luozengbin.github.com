@@ -34,8 +34,8 @@ INFO [JIoEndpoint] Maximum number of threads (xxx) created for connector with ad
 防止の対策を講じることをおすすめします。
 
 ** A.クライアントからPSHパケット再送が発生するパターン
-以下の状況に置いて、クライアントからのリクエスデータ[1]がサーバ側のTCPバッファーに詰ま
-る。TCPバッファー[2]が一杯になると、パケットがdropされるのでクライアントからのデータ再
+以下の状況に置いて、クライアントからのリクエスデータがサーバ側のTCPバッファーに詰ま
+る。TCPバッファーが一杯になると、パケットがdropされるのでクライアントからのデータ再
 送が発生する。
 
   - CPU高負荷時、Acceptorスレッドが回らない状況
@@ -46,7 +46,10 @@ INFO [JIoEndpoint] Maximum number of threads (xxx) created for connector with ad
 また、Acceptorスレッドが止まる場合新規接続(3WHS完了)がbacklogキューに溜まるので
 backlogキューが溢れる可能性もあります。
 
-※上記に関して、Threadサブシステム利用時も同様です。
+上記に関して、Threadサブシステム利用時も同様です。
+
+TCPバッファーがについて、TCP接続単位にTCPバッファーが持っている、デフォルト値は
+[[https://github.com/torvalds/linux/blob/master/net/ipv4/tcp.c#L3076][net.ipv4.tcp_rmem]] カーネルパラメータ値の1/2になります、約42KB。
 
 ** B.TCP3WHSパケット再送が発生するパターン
 CPU高負荷でAcceptorスレッドが止まってかつbacklogキューが溢れた場合、コネクションの確立
@@ -77,11 +80,3 @@ TCP SYNの再送間隔は以下の通り、約64秒でタイムアウトにな�
 実際の運用上はどちらも発生しりえる。それぞれのパターンに置いてLBがどう振る舞うかを明確
 した上でワーカースレッドのbusy数とCPUの使用率を監視し、閉塞運用、スペアインスタンスの
 運用などを設計することが大事だと思います。
-
-* 参考
-[1] HTTPリクエスト電文のヘッダ部やボディ部の内容
-[2] TCP接続単位にTCPバッファーが持っている、デフォルト値は
-    net.ipv4.tcp_rmemのdefaultパラメータ値の1/2になります、約42KB。
-    https://github.com/torvalds/linux/blob/master/net/ipv4/tcp.c#L3072
-
-
