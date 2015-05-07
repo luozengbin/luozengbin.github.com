@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-05-07T09:21:11+09:00</updated>
+  <updated>2015-05-07T14:36:29+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -67,15 +67,15 @@
 結論を先に、
 </p>
 <ul class="org-ul">
-<li><code>ulimit -s</code> の値は親プロセスであるJVMランチャーのみスタックサイズ制限を受ける。
+<li><code>ulimit -s</code> のスタック最大サイズ制限値は親プロセスであるJVMランチャーのみ適用される。
 </li>
-<li>JVMランチャー、JavaAPIから起動されたJavaスレッドのスタックサイズは
+<li>JVMランチャーやJavaAPIから起動されたJavaスレッドのスタックサイズは  <code>-Xss</code> もしくは
 <code>-XX:ThreadStackSize</code> パラメータ値が適用される。
 </li>
 <li>JVMランチャーから起動されたイニシャルスレッドのスタックサイズは <code>-Xss</code> パラメータの
 み制御できる。
 </li>
-<li>JNI経由で外部からJVMにアタッチしたスレッドのスタックサイズはJVMの管理対象外です。
+<li>JNI経由で外部からJVMにアタッチしたスレッドのスタックサイズはJVMの管理対象外である。
 </li>
 </ul>
 
@@ -84,12 +84,12 @@
 </p>
 
 <p>
-JVMスタックに関して、公式のJVMスペックドキュメントは以下のように記載されたいます。
+JVMスタックに関して、公式のJVMスペックドキュメント (<a href="https://docs.oracle.com/javase/specs/jvms/se7/html/">Java SE 7 Virtual Machine
+Specification</a>) は次のように記載されています。
 </p>
 
-<p>
-Java SE 7 Virtual Machine Specification の <a href="http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-2.html#jvms-2.5.2">2.5.2. Java Virtual Machine Stacks</a> より
-</p>
+<ul class="org-ul">
+<li><a href="http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-2.html#jvms-2.5.2">2.5.2. Java Virtual Machine Stacks</a>
 <pre class="example">
 Each Java Virtual Machine thread has a private Java Virtual Machine stack, created at
 the same time as the thread. A Java Virtual Machine stack stores frames (§2.6). A
@@ -102,10 +102,8 @@ a Java Virtual Machine stack does not need to be contiguous.
 <p>
 ※メモ： VMスタック内のFrameはヒープ上に配置されるかも知れない。
 </p>
-
-<p>
-Java SE 7 Virtual Machine Specification の <a href="http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-2.html#jvms-2.5.6">2.5.6. Native Method Stacks</a> より
-</p>
+</li>
+<li><a href="http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-2.html#jvms-2.5.6">2.5.6. Native Method Stacks</a>
 <pre class="example">
 An implementation of the Java Virtual Machine may use conventional stacks,
 colloquially called "C stacks," to support native methods (methods written in a
@@ -116,6 +114,8 @@ cannot load native methods and that do not themselves rely on conventional stack
 need not supply native method stacks. If supplied, native method stacks are typically
 allocated per thread when each thread is created.
 </pre>
+</li>
+</ul>
 
 <p>
 仕様上ではJVMに <code>Java Stack</code> と <code>Native Stack</code> ２種類のスタックメモリが定義されています。
@@ -134,7 +134,7 @@ allocated per thread when each thread is created.
 <pre class="example">
 +----------------+--------------+-------------+------------------------------------------------------+
 |                |              |             |  +-----------------+  +----------+  +-------------+  |
-|     Heap       |  NonHeap     | Code Cache  |  | Program Counter |  |JavaStack |  |Native Stack |  |
+|     Heap       |   PermGen    | Code Cache  |  | Program Counter |  |JavaStack |  |Native Stack |  |
 |                |              |             |  +-----------------+  |          |  |             |  |
 +----------------+--------------+-------------+                       +----------+  +-------------+  |
                                               |                       | Frame #2 |  |             |  |
@@ -148,16 +148,20 @@ allocated per thread when each thread is created.
 </p>
 
 <p>
-<code>Java Stack</code> と <code>Native Stack</code> がスレッド毎に領域が確保されいます。
+理論上は <code>Java Stack</code> と <code>Native Stack</code> がスレッド毎に領域が確保されいます。ただし、
+実際のメモリページ構成はJDKの実装に依存するものです。
 </p>
 
 <p>
-Troubleshooting Guide for HotSpot VM の <a href="https://docs.oracle.com/javase/7/docs/webnotes/tsg/TSG-VM/html/crashes.html#gbyzz">4.1.3 Crash due to Stack Overflow</a> 記述によ
-るとHotSpotの実装上 <code>Java Stack</code> と <code>Native Stack</code> が同じスタック領域を共有するのようだ。
+次の情報によると、HotSpotの実装は <code>Java Stack</code> と <code>Native Stack</code> が同じメモリ領域を共
+有してる。
 </p>
 
+<ul class="org-ul">
+<li><a href="http://docs.oracle.com/javase/7/docs/webnotes/tsg/TSG-VM/html/toc.html">Troubleshooting Guide for HotSpot VM</a> の <a href="https://docs.oracle.com/javase/7/docs/webnotes/tsg/TSG-VM/html/crashes.html#gbyzz">4.1.3 Crash due to Stack Overflow</a>
 <pre class="example">
 In the HotSpot implementation, Java methods share stack frames with C/C++ native
+★~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 code, namely user native code and the virtual machine itself. Java methods generate
 code that checks that stack space is available a fixed distance towards the end of
 the stack so that the native code can be called without exceeding the stack
@@ -168,6 +172,20 @@ default distance can increase the shadow page size. The option to increase shado
 pages is -XX:StackShadowPages=n, where n is greater than the default stack shadow
 pages for the platform.
 </pre>
+</li>
+
+<li>OpenJDKの開発メーリングリストから拾った内容
+<pre class="example">
+The stock HotSpot VM (the one in Oracle's Java SE JDK and OpenJDK) uses the
+same stack for Java and native methods for a Java thread; Java frames and
+native frames can be mixed together in such a stack.
+-Xss/-XX:ThreadStackSize controls the whole stack's size for Java threads.
+</pre>
+<p>
+情報源： <a href="http://mail.openjdk.java.net/pipermail/hotspot-dev/2011-June/004272.html">What the difference between -Xss and -XX:ThreadStackSize is?</a>
+</p>
+</li>
+</ul>
 </div>
 </div>
 
@@ -258,7 +276,7 @@ HotSpotの実装から見るとJVMから起動されたJavaスレッドのスタ
 </p>
 
 <p>
-図の内容によるとJavaスレッドと非Javaスレッドのスタックページ構成が若干異なる。
+図の内容によるとJavaスレッドと非Javaスレッドのスタックページ構成が異なる。
 以下はJVMの非Javaスレッドのリストです。
 </p>
 
@@ -303,6 +321,10 @@ HotSpotの実装から見るとJVMから起動されたJavaスレッドのスタ
 </tr>
 </tbody>
 </table>
+
+<p>
+図3の各領域についてソースコードを見ながら解説していきます。
+</p>
 </div>
 
 <div id="outline-container-sec-4-1" class="outline-3">
@@ -311,29 +333,48 @@ HotSpotの実装から見るとJVMから起動されたJavaスレッドのスタ
 <p>
 <code>glibc guard page</code> はスタックポインタのオーバーフローを防ぐための－ガードページ。Java
 スレッドには <code>HotSpot Guard Pages</code> が別途用意されているため、この領域のサイズが0であ
-る。非Javaスレッドのスタック頂上位置には1ページ分が割り当てられる。以下はその実装内容
-です。
+る。非Javaスレッドはスタック頂上位置に1ページ分のガードページが割り当てられる。以下は
+その実装内容です。
 </p>
 
 <ul class="org-ul">
-<li><a href="http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/os/linux/vm/os_linux.cpp#l923">pthread_attr_setguardsize(&amp;attr, os::Linux::default_guard_size(thr_type));</a>
-</li>
-<li><a href="http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/os_cpu/linux_x86/vm/os_linux_x86.cpp#l662">os::Linux::default_guard_size(thr_type)</a>
-</li>
-</ul>
+<li>スレッド作成時にglibcの <a href="http://linuxjm.sourceforge.jp/html/LDP_man-pages/man3/pthread_attr_setguardsize.3.html">pthread_attr_setguardsize</a> 関数にてガードページを作成してい
+る
 
+<p>
+<a href="http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/os/linux/vm/os_linux.cpp#l923">jdk7/hotspot/src/os/linux/vm/os_linux.cpp#l923</a>
+</p>
 <div class="org-src-container">
 
-<pre class="src src-c++"><span style="color: #66d9ef; font-weight: bold;">size_t</span> <span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::<span style="color: #a6e22e;">default_guard_size</span>(<span style="color: #ae81ff;">os</span>::<span style="color: #66d9ef; font-weight: bold;">ThreadType</span> <span style="color: #fd971f;">thr_type</span>) {
-  <span style="color: #465457;">// </span><span style="color: #465457;">Creating guard page is very expensive. Java thread has HotSpot</span>
-  <span style="color: #465457;">// </span><span style="color: #465457;">guard page, only enable glibc guard page for non-Java threads.</span>
-  <span style="color: #f92672; font-weight: bold;">return</span> (thr_type == java_thread ? 0 : page_size());
+<pre class="src src-c++"><span style="color: #00cd66;">// </span><span style="color: #00cd66;">Thread start routine for all newly created threads</span>
+<span style="color: #ffffff;">static</span> <span style="color: #7fffd4;">void</span> *<span style="color: #98fb98;">java_start</span>(<span style="color: #7fffd4;">Thread</span> *<span style="color: #9acd32;">thread</span>) {
+    ..............
+    <span style="color: #00cd66;">// </span><span style="color: #00cd66;">glibc guard page</span>
+    pthread_attr_setguardsize(&amp;attr, <span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::default_guard_size(thr_type));
+    ..............
 }
 </pre>
 </div>
+</li>
+<li>スレッド種別によってガードページのサイズを決める
 
 <p>
-<code>glibc guard page</code> に関して以下の情報が参考になると思います。
+<a href="http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/os_cpu/linux_x86/vm/os_linux_x86.cpp#l662">jdk7/hotspot/src/os_cpu/linux_x86/vm/os_linux_x86.cpp#l662</a>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span style="color: #7fffd4;">size_t</span> <span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::<span style="color: #98fb98;">default_guard_size</span>(<span style="color: #40e0d0;">os</span>::<span style="color: #7fffd4;">ThreadType</span> <span style="color: #9acd32;">thr_type</span>) {
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">Creating guard page is very expensive. Java thread has HotSpot</span>
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">guard page, only enable glibc guard page for non-Java threads.</span>
+  <span style="color: #ffffff;">return</span> (thr_type == java_thread ? 0 : page_size());
+}
+</pre>
+</div>
+</li>
+</ul>
+
+<p>
+<code>glibc guard page</code> の詳細について以下の情報が参考になると思います。
 </p>
 <ul class="org-ul">
 <li><a href="http://docs.oracle.com/cd/E19455-01/806-2732/attrib-22/index.html">スタックガードの大きさの設定</a>
@@ -353,17 +394,17 @@ HotSpotの実装から見るとJVMから起動されたJavaスレッドのスタ
 <div class="outline-text-3" id="text-4-2">
 <p>
 Javaスレッドスタックオーバーフローを検出するために書き込み不可の <code>HotSpot Guard
-Pages</code> ページがスタック領域のトップ位置に設けている。また <code>HotSpot Guard Pages</code> は
+Pages</code> 領域がスタック領域のトップ位置に設けている。また <code>HotSpot Guard Pages</code> は
 <code>StackYellowPages</code> と <code>StackRedPages</code> から構成されている。
 </p>
 
 <p>
-<code>StackYellowPages</code> はスタックポインタのスタックオーバーフローの緩衝域として、余分のメ
-モリーを割り当てます。 <code>StackRedPages</code> まで行くとStackOverflowErrorが起きる。
+<code>StackYellowPages</code> はスタックオーバーフローの緩衝域として、余分のメモリーを割り当てま
+す。 スタックポインターが <code>StackRedPages</code> まで行くとStackOverflowErrorが起きる。
 </p>
 
 <p>
-以下は構成イメージです。
+以下はページの構成イメージです。
 </p>
 <pre class="example">
           +------------------------+
@@ -386,84 +427,91 @@ Pages     +------------------------+
 
 <p>
 Linux/x86_64環境に置いて、 <code>StackYellowPages</code> と <code>StackRedPages</code> の初期値が2と1である。
-<code>-XX:StackYellowPages</code> と <code>-XX:StackRedPages</code> パラメータで変更することが可能である。
+それぞれの値は <code>-XX:StackYellowPages</code> と <code>-XX:StackRedPages</code> パラメータにて変更するこ
+とが可能です。
 </p>
 
 <p>
 下記は <code>HotSpot Guard Pages</code> の割当処理ロジックです。
 </p>
 
+<ul class="org-ul">
+<li>Javaスレッド起動時のガードページ割当位置やサイズの計算処理
+
 <p>
 <a href="http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/share/vm/runtime/thread.cpp#l2257">jdk7:openjdk/hotspot/src/share/vm/runtime/thread.cpp</a>
 </p>
 <div class="org-src-container">
 
-<pre class="src src-c++"><span style="color: #465457;">// </span><span style="color: #465457;">&#9733;Java&#12473;&#12524;&#12483;&#12489;&#36215;&#21205;&#26178;&#12398;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#20301;&#32622;&#12420;&#12469;&#12452;&#12474;&#12398;&#35336;&#31639;&#20966;&#29702;</span>
-<span style="color: #66d9ef; font-weight: bold;">void</span> <span style="color: #ae81ff;">JavaThread</span>::<span style="color: #a6e22e;">create_stack_guard_pages</span>() {
-  <span style="color: #f92672; font-weight: bold;">if</span> (<span style="color: #960050;">!</span> <span style="color: #ae81ff;">os</span>::uses_stack_guard_pages() || _stack_guard_state != stack_guard_unused) <span style="color: #f92672; font-weight: bold;">return</span>;
+<pre class="src src-c++"><span style="color: #7fffd4;">void</span> <span style="color: #40e0d0;">JavaThread</span>::<span style="color: #98fb98;">create_stack_guard_pages</span>() {
+  <span style="color: #ffffff;">if</span> (! <span style="color: #40e0d0;">os</span>::uses_stack_guard_pages() || _stack_guard_state != stack_guard_unused) <span style="color: #ffffff;">return</span>;
 
-  <span style="color: #465457;">// </span><span style="color: #465457;">&#9733; &#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12398;&#20301;&#32622;&#12392;&#12469;&#12452;&#12474;&#12398;&#35336;&#31639;</span>
-  <span style="color: #66d9ef; font-weight: bold;">address</span> <span style="color: #fd971f;">low_addr</span> = stack_base() - stack_size();
-  <span style="color: #66d9ef; font-weight: bold;">size_t</span> <span style="color: #fd971f;">len</span> = (StackYellowPages + StackRedPages) * <span style="color: #ae81ff;">os</span>::vm_page_size();
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733; &#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12398;&#20301;&#32622;&#12392;&#12469;&#12452;&#12474;&#12398;&#35336;&#31639;</span>
+  <span style="color: #7fffd4;">address</span> <span style="color: #9acd32;">low_addr</span> = stack_base() - stack_size();
+  <span style="color: #7fffd4;">size_t</span> <span style="color: #9acd32;">len</span> = (StackYellowPages + StackRedPages) * <span style="color: #40e0d0;">os</span>::vm_page_size();
 
-  <span style="color: #465457;">// </span><span style="color: #465457;">&#9733; &#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#21106;&#24403;&#20966;&#29702;&#12399;&#12503;&#12521;&#12483;&#12488;&#12501;&#12457;&#12540;&#12512;&#20381;&#23384;&#12398;&#12383;&#12417;&#12289;&#21029;&#38306;&#25968;&#12434;&#12467;&#12540;&#12523;</span>
-  <span style="color: #66d9ef; font-weight: bold;">int</span> <span style="color: #fd971f;">allocate</span> = <span style="color: #ae81ff;">os</span>::allocate_stack_guard_pages();
-  <span style="color: #465457;">// </span><span style="color: #465457;">warning("Guarding at " PTR_FORMAT " for len " SIZE_FORMAT "\n", low_addr, len);</span>
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733; &#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#21106;&#24403;&#20966;&#29702;&#12399;&#12503;&#12521;&#12483;&#12488;&#12501;&#12457;&#12540;&#12512;&#20381;&#23384;&#12398;&#12383;&#12417;&#12289;&#21029;&#38306;&#25968;&#12434;&#12467;&#12540;&#12523;</span>
+  <span style="color: #7fffd4;">int</span> <span style="color: #9acd32;">allocate</span> = <span style="color: #40e0d0;">os</span>::allocate_stack_guard_pages();
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">warning("Guarding at " PTR_FORMAT " for len " SIZE_FORMAT "\n", low_addr, len);</span>
 
-  <span style="color: #f92672; font-weight: bold;">if</span> (allocate &amp;&amp; <span style="color: #960050;">!</span><span style="color: #ae81ff;">os</span>::create_stack_guard_pages((<span style="color: #66d9ef; font-weight: bold;">char</span> *) low_addr, len)) {
-    warning(<span style="color: #e6db74;">"Attempt to allocate stack guard pages failed."</span>);
-    <span style="color: #f92672; font-weight: bold;">return</span>;
+  <span style="color: #ffffff;">if</span> (allocate &amp;&amp; !<span style="color: #40e0d0;">os</span>::create_stack_guard_pages((<span style="color: #7fffd4;">char</span> *) low_addr, len)) {
+    warning(<span style="color: #bdb76b;">"Attempt to allocate stack guard pages failed."</span>);
+    <span style="color: #ffffff;">return</span>;
   }
 
-  <span style="color: #f92672; font-weight: bold;">if</span> (<span style="color: #ae81ff;">os</span>::guard_memory((<span style="color: #66d9ef; font-weight: bold;">char</span> *) low_addr, len)) {
+  <span style="color: #ffffff;">if</span> (<span style="color: #40e0d0;">os</span>::guard_memory((<span style="color: #7fffd4;">char</span> *) low_addr, len)) {
     _stack_guard_state = stack_guard_enabled;
-  } <span style="color: #f92672; font-weight: bold;">else</span> {
-    warning(<span style="color: #e6db74;">"Attempt to protect stack guard pages failed."</span>);
-    <span style="color: #f92672; font-weight: bold;">if</span> (<span style="color: #ae81ff;">os</span>::uncommit_memory((<span style="color: #66d9ef; font-weight: bold;">char</span> *) low_addr, len)) {
-      warning(<span style="color: #e6db74;">"Attempt to deallocate stack guard pages failed."</span>);
+  } <span style="color: #ffffff;">else</span> {
+    warning(<span style="color: #bdb76b;">"Attempt to protect stack guard pages failed."</span>);
+    <span style="color: #ffffff;">if</span> (<span style="color: #40e0d0;">os</span>::uncommit_memory((<span style="color: #7fffd4;">char</span> *) low_addr, len)) {
+      warning(<span style="color: #bdb76b;">"Attempt to deallocate stack guard pages failed."</span>);
     }
   }
 }
 </pre>
 </div>
+</li>
+
+<li>ガードページ割当処理
 
 <p>
 <a href="http://hg.openjdk.java.net/jdk7u/jdk7u60/hotspot/file/ba66650acf63/src/os/linux/vm/os_linux.cpp#l3062">jdk7u60:openjdk/hotspot/src/os/linux/vm/os_linux.cpp</a>
 </p>
 <div class="org-src-container">
 
-<pre class="src src-c++"><span style="color: #465457;">// </span><span style="color: #465457;">&#9733;Linuxu&#23554;&#29992;&#12398;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#21106;&#24403;&#20966;&#29702;</span>
-<span style="color: #66d9ef; font-weight: bold;">bool</span> <span style="color: #ae81ff;">os</span>::<span style="color: #a6e22e;">pd_create_stack_guard_pages</span>(<span style="color: #66d9ef; font-weight: bold;">char</span>* <span style="color: #fd971f;">addr</span>, <span style="color: #66d9ef; font-weight: bold;">size_t</span> <span style="color: #fd971f;">size</span>) {
+<pre class="src src-c++"><span style="color: #7fffd4;">bool</span> <span style="color: #40e0d0;">os</span>::<span style="color: #98fb98;">pd_create_stack_guard_pages</span>(<span style="color: #7fffd4;">char</span>* <span style="color: #9acd32;">addr</span>, <span style="color: #7fffd4;">size_t</span> <span style="color: #9acd32;">size</span>) {
 
-  <span style="color: #f92672; font-weight: bold;">if</span> (<span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::is_initial_thread()) {
-    <span style="color: #465457;">// </span><span style="color: #465457;">As we manually grow stack up to bottom inside create_attached_thread(),</span>
-    <span style="color: #465457;">// </span><span style="color: #465457;">it's likely that os::Linux::initial_thread_stack_bottom is mapped and</span>
-    <span style="color: #465457;">// </span><span style="color: #465457;">we don't need to do anything special.</span>
-    <span style="color: #465457;">// </span><span style="color: #465457;">Check it first, before calling heavy function.</span>
-    <span style="color: #66d9ef; font-weight: bold;">uintptr_t</span> <span style="color: #fd971f;">stack_extent</span> = (<span style="color: #66d9ef; font-weight: bold;">uintptr_t</span>) <span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::initial_thread_stack_bottom();
-    <span style="color: #66d9ef; font-weight: bold;">unsigned</span> <span style="color: #66d9ef; font-weight: bold;">char</span> <span style="color: #fd971f;">vec</span>[1];
+  <span style="color: #ffffff;">if</span> (<span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::is_initial_thread()) {
+    <span style="color: #00cd66;">// </span><span style="color: #00cd66;">As we manually grow stack up to bottom inside create_attached_thread(),</span>
+    <span style="color: #00cd66;">// </span><span style="color: #00cd66;">it's likely that os::Linux::initial_thread_stack_bottom is mapped and</span>
+    <span style="color: #00cd66;">// </span><span style="color: #00cd66;">we don't need to do anything special.</span>
+    <span style="color: #00cd66;">// </span><span style="color: #00cd66;">Check it first, before calling heavy function.</span>
+    <span style="color: #7fffd4;">uintptr_t</span> <span style="color: #9acd32;">stack_extent</span> = (<span style="color: #7fffd4;">uintptr_t</span>) <span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::initial_thread_stack_bottom();
+    <span style="color: #7fffd4;">unsigned</span> <span style="color: #7fffd4;">char</span> <span style="color: #9acd32;">vec</span>[1];
 
-    <span style="color: #f92672; font-weight: bold;">if</span> (mincore((<span style="color: #66d9ef; font-weight: bold;">address</span>)stack_extent, <span style="color: #ae81ff;">os</span>::vm_page_size(), vec) == -1) {
-      <span style="color: #465457;">// </span><span style="color: #465457;">Fallback to slow path on all errors, including EAGAIN</span>
-      stack_extent = (<span style="color: #66d9ef; font-weight: bold;">uintptr_t</span>) get_stack_commited_bottom(
-                                    <span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::initial_thread_stack_bottom(),
-                                    (<span style="color: #66d9ef; font-weight: bold;">size_t</span>)addr - stack_extent);
+    <span style="color: #ffffff;">if</span> (mincore((<span style="color: #7fffd4;">address</span>)stack_extent, <span style="color: #40e0d0;">os</span>::vm_page_size(), vec) == -1) {
+      <span style="color: #00cd66;">// </span><span style="color: #00cd66;">Fallback to slow path on all errors, including EAGAIN</span>
+      stack_extent = (<span style="color: #7fffd4;">uintptr_t</span>) get_stack_commited_bottom(
+                                    <span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::initial_thread_stack_bottom(),
+                                    (<span style="color: #7fffd4;">size_t</span>)addr - stack_extent);
     }
 
-    <span style="color: #f92672; font-weight: bold;">if</span> (stack_extent &lt; (<span style="color: #66d9ef; font-weight: bold;">uintptr_t</span>)addr) {
-      ::munmap((<span style="color: #66d9ef; font-weight: bold;">void</span>*)stack_extent, (<span style="color: #66d9ef; font-weight: bold;">uintptr_t</span>)(addr - stack_extent));
+    <span style="color: #ffffff;">if</span> (stack_extent &lt; (<span style="color: #7fffd4;">uintptr_t</span>)addr) {
+      ::munmap((<span style="color: #7fffd4;">void</span>*)stack_extent, (<span style="color: #7fffd4;">uintptr_t</span>)(addr - stack_extent));
     }
   }
 
-  <span style="color: #465457;">// </span><span style="color: #465457;">&#9733;&#12371;&#12371;&#12363;&#12425; mmap&#12471;&#12473;&#12486;&#12512;&#12467;&#12540;&#12523;&#12364;&#30330;&#34892;&#12373;&#12428;&#12427;&#12290;</span>
-  <span style="color: #465457;">//  </span><span style="color: #465457;">&#26368;&#24460;&#12398;&#24341;&#25968;&#12395;&#26360;&#12365;&#36796;&#12415;&#19981;&#21487;&#12398;&#12501;&#12521;&#12464;&#12364;&#20184;&#19982;&#12373;&#12428;&#12383;</span>
-  <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #ae81ff;">os</span>::commit_memory(addr, size, <span style="color: #960050;">!</span>ExecMem);
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;&#12371;&#12371;&#12363;&#12425; mmap&#12471;&#12473;&#12486;&#12512;&#12467;&#12540;&#12523;&#12364;&#30330;&#34892;&#12373;&#12428;&#12427;&#12290;</span>
+  <span style="color: #00cd66;">//  </span><span style="color: #00cd66;">&#26368;&#24460;&#12398;&#24341;&#25968;&#12395;&#26360;&#12365;&#36796;&#12415;&#19981;&#21487;&#12398;&#12501;&#12521;&#12464;&#12364;&#20184;&#19982;&#12373;&#12428;&#12383;</span>
+  <span style="color: #ffffff;">return</span> <span style="color: #40e0d0;">os</span>::commit_memory(addr, size, !ExecMem);
 }
 </pre>
 </div>
+</li>
+</ul>
 
 <p>
-以下は <code>JBoss AS7</code> アプリケーションサーバ実行時、ワーカスレッドのスタック仮想メモリ割
+以下は <code>JBoss AS7</code> アプリケーションサーバ実行時にワーカスレッドのスタック仮想メモリ割
 当状況です。
 </p>
 
@@ -544,7 +592,7 @@ probe process("/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.75-2.5.4.7.el7_1.x86_64/jre
   | 0x7f1d0463fca7 : JNI_CreateJavaVM+0x67/0x2a0 [...1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/server/libjvm.so]
   | 0x7f1d0562aa68 : 0x7f1d0562aa68 [...dk-1.7.0.75-2.5.4.7.el7_1.x86_64/jre/lib/amd64/jli/libjli.so+0x2a68/0x20e000]
   |--------------------------------------------------------------------------------------------------------------
-  |★以降は省略★
+  |★以降省略★
 </pre>
 
 <p>
@@ -590,15 +638,15 @@ Linux/x86_64環境に置いて <code>StackShadowPages</code> の初期値が20�
             / |    StackShadowPages    | -XX:StackShadowPages=20(80Kb)
            /  |                        |/ ★Native Stackはここです!
           /   +------------------------+
-         /    |                        |
-        /     |   +----------------+   |  ★Java Stackはここです！
-Normal Stack  |   |     Frame      |   |
-        \     |   +----------------+   |
-         \    |   |     Frame      |   |
-          \   |   +----------------+   |
-           \  |   |     Frame      |   |
-            \ |   +----------------+   |
-             \|                        |
+         /    |                        |\
+        /     |   +----------------+   | \ 
+Normal Stack  |   |     Frame      |   |  \
+        \     |   +----------------+   |   \
+         \    |   |     Frame      |   |    - ★Java Stackはここです！
+          \   |   +----------------+   |   /
+           \  |   |     Frame      |   |  /
+            \ |   +----------------+   | /
+             \|                        |/
               +------------------------+
 </pre>
 <p>
@@ -614,13 +662,13 @@ Normal Stack  |   |     Frame      |   |
 </p>
 <div class="org-src-container">
 
-<pre class="src src-c++"><span style="color: #a6e22e;">#ifdef</span> AMD64
-<span style="color: #465457;">// </span><span style="color: #465457;">Very large C++ stack frames using solaris-amd64 optimized builds</span>
-<span style="color: #465457;">// </span><span style="color: #465457;">due to lack of optimization caused by C++ compiler bugs</span>
+<pre class="src src-c++"><span style="color: #b0c4de;">#ifdef</span> AMD64
+<span style="color: #00cd66;">// </span><span style="color: #00cd66;">Very large C++ stack frames using solaris-amd64 optimized builds</span>
+<span style="color: #00cd66;">// </span><span style="color: #00cd66;">due to lack of optimization caused by C++ compiler bugs</span>
 define_pd_global(intx, StackShadowPages, NOT_WIN64(20) WIN64_ONLY(6) DEBUG_ONLY(+2));
-<span style="color: #a6e22e;">#else</span>
+<span style="color: #b0c4de;">#else</span>
 define_pd_global(intx, StackShadowPages, 6 DEBUG_ONLY(+5));
-<span style="color: #a6e22e;">#endif</span> <span style="color: #465457;">// </span><span style="color: #465457;">AMD64</span>
+<span style="color: #b0c4de;">#endif</span> <span style="color: #00cd66;">// </span><span style="color: #00cd66;">AMD64</span>
 </pre>
 </div>
 
@@ -683,55 +731,55 @@ Java Satck Size = Thread::stack_size() - ((StackRedPages + StackYellowPages + St
 用いて設定される。以下はHotSpotの実装です。
 </p>
 
-<ol class="org-ol">
+<ul class="org-ul">
 <li>JVM起動時に実行される処理
 <a href="http://hg.openjdk.java.net/jdk7u/jdk7u60/hotspot/file/ba66650acf63/src/os/linux/vm/os_linux.cpp#l4820">jdk7/hotspot/src/os/linux/vm/os_linux.cpp#4820</a>
 <div class="org-src-container">
 
-<pre class="src src-c++"><span style="color: #465457;">// </span><span style="color: #465457;">this is called _after_ the global arguments have been parsed</span>
-<span style="color: #66d9ef; font-weight: bold;">jint</span> <span style="color: #ae81ff;">os</span>::<span style="color: #a6e22e;">init_2</span>(<span style="color: #66d9ef; font-weight: bold;">void</span>)
+<pre class="src src-c++"><span style="color: #00cd66;">// </span><span style="color: #00cd66;">this is called _after_ the global arguments have been parsed</span>
+<span style="color: #7fffd4;">jint</span> <span style="color: #40e0d0;">os</span>::<span style="color: #98fb98;">init_2</span>(<span style="color: #7fffd4;">void</span>)
 {
-  &#9733;&#19968;&#37096;&#30465;&#30053;&#9733;
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;&#19968;&#37096;&#30465;&#30053;&#9733;</span>
 
 
-  &#9733;&#12473;&#12524;&#12483;&#12489;&#12395;&#21106;&#24403;&#12427;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12398;&#26368;&#23567;&#35377;&#23481;&#20516;&#12398;&#35336;&#31639;
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;&#12473;&#12524;&#12483;&#12489;&#12395;&#21106;&#24403;&#12427;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12398;&#26368;&#23567;&#35377;&#23481;&#20516;&#12398;&#35336;&#31639;</span>
 
-  <span style="color: #465457;">// </span><span style="color: #465457;">Check minimum allowable stack size for thread creation and to initialize</span>
-  <span style="color: #465457;">// </span><span style="color: #465457;">the java system classes, including StackOverflowError - depends on page</span>
-  <span style="color: #465457;">// </span><span style="color: #465457;">size.  Add a page for compiler2 recursion in main thread.</span>
-  <span style="color: #465457;">// </span><span style="color: #465457;">Add in 2*BytesPerWord times page size to account for VM stack during</span>
-  <span style="color: #465457;">// </span><span style="color: #465457;">class initialization depending on 32 or 64 bit VM.</span>
-  <span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::min_stack_allowed = MAX2(<span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::min_stack_allowed,
-            (<span style="color: #66d9ef; font-weight: bold;">size_t</span>)(StackYellowPages+StackRedPages+StackShadowPages) * <span style="color: #ae81ff;">Linux</span>::page_size() +
-                    (2*BytesPerWord COMPILER2_PRESENT(+1)) * <span style="color: #ae81ff;">Linux</span>::vm_default_page_size());
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">Check minimum allowable stack size for thread creation and to initialize</span>
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">the java system classes, including StackOverflowError - depends on page</span>
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">size.  Add a page for compiler2 recursion in main thread.</span>
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">Add in 2*BytesPerWord times page size to account for VM stack during</span>
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">class initialization depending on 32 or 64 bit VM.</span>
+  <span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::min_stack_allowed = MAX2(<span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::min_stack_allowed,
+            (<span style="color: #7fffd4;">size_t</span>)(StackYellowPages+StackRedPages+StackShadowPages) * <span style="color: #40e0d0;">Linux</span>::page_size() +
+                    (2*BytesPerWord COMPILER2_PRESENT(+1)) * <span style="color: #40e0d0;">Linux</span>::vm_default_page_size());
 
-<span style="color: #a6e22e;">#ifdef</span> ZERO
-  <span style="color: #465457;">// </span><span style="color: #465457;">If this is Zero, allow at the very minimum one page each for the</span>
-  <span style="color: #465457;">// </span><span style="color: #465457;">Zero stack and the native stack.  This won't make any difference</span>
-  <span style="color: #465457;">// </span><span style="color: #465457;">for 4k pages, but is significant for large pages.</span>
-  <span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::min_stack_allowed = MAX2(<span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::min_stack_allowed,
-             (<span style="color: #66d9ef; font-weight: bold;">size_t</span>)(StackYellowPages+StackRedPages+StackShadowPages+2) * <span style="color: #ae81ff;">Linux</span>::page_size());
-<span style="color: #a6e22e;">#endif</span>
+<span style="color: #b0c4de;">#ifdef</span> ZERO
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">If this is Zero, allow at the very minimum one page each for the</span>
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">Zero stack and the native stack.  This won't make any difference</span>
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">for 4k pages, but is significant for large pages.</span>
+  <span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::min_stack_allowed = MAX2(<span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::min_stack_allowed,
+             (<span style="color: #7fffd4;">size_t</span>)(StackYellowPages+StackRedPages+StackShadowPages+2) * <span style="color: #40e0d0;">Linux</span>::page_size());
+<span style="color: #b0c4de;">#endif</span>
 
-  <span style="color: #66d9ef; font-weight: bold;">size_t</span> <span style="color: #fd971f;">threadStackSizeInBytes</span> = ThreadStackSize * K;
-  <span style="color: #f92672; font-weight: bold;">if</span> (threadStackSizeInBytes != 0 &amp;&amp;
-      threadStackSizeInBytes &lt; <span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::min_stack_allowed) {
-        tty-&gt;print_cr(<span style="color: #e6db74;">"\nThe stack size specified is too small, "</span>
-                      <span style="color: #e6db74;">"Specify at least %dk"</span>,
-                      <span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::min_stack_allowed/ K);
-        <span style="color: #f92672; font-weight: bold;">return</span> JNI_ERR;
+  <span style="color: #7fffd4;">size_t</span> <span style="color: #9acd32;">threadStackSizeInBytes</span> = ThreadStackSize * K;
+  <span style="color: #ffffff;">if</span> (threadStackSizeInBytes != 0 &amp;&amp;
+      threadStackSizeInBytes &lt; <span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::min_stack_allowed) {
+        tty-&gt;print_cr(<span style="color: #bdb76b;">"\nThe stack size specified is too small, "</span>
+                      <span style="color: #bdb76b;">"Specify at least %dk"</span>,
+                      <span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::min_stack_allowed/ K);
+        <span style="color: #ffffff;">return</span> JNI_ERR;
   }
 
-  &#9733;-XX:ThreadStackSize&#12398;&#20516;&#12434;&#38745;&#30340;_stack_size_at_create&#22793;&#25968;&#12395;&#20195;&#20837;&#12377;&#12427;
-  <span style="color: #465457;">// </span><span style="color: #465457;">Make the stack size a multiple of the page size so that</span>
-  <span style="color: #465457;">// </span><span style="color: #465457;">the yellow/red zones can be guarded.</span>
-  <span style="color: #ae81ff;">JavaThread</span>::set_stack_size_at_create(round_to(threadStackSizeInBytes,
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;-XX:ThreadStackSize&#12398;&#20516;&#12434;&#38745;&#30340;_stack_size_at_create&#22793;&#25968;&#12395;&#20195;&#20837;&#12377;&#12427;</span>
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">Make the stack size a multiple of the page size so that</span>
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">the yellow/red zones can be guarded.</span>
+  <span style="color: #40e0d0;">JavaThread</span>::set_stack_size_at_create(round_to(threadStackSizeInBytes,
         vm_page_size()));
 
-  &#9733;&#12452;&#12491;&#12471;&#12515;&#12523;&#12473;&#12524;&#12483;&#12489;&#12398;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#35373;&#23450;&#20966;&#29702;&#65288;&#9733;TODO: &#21029;&#36884;&#35519;&#26619;&#12377;&#12427;&#65289;
-  <span style="color: #ae81ff;">Linux</span>::capture_initial_stack(<span style="color: #ae81ff;">JavaThread</span>::stack_size_at_create());
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;&#12452;&#12491;&#12471;&#12515;&#12523;&#12473;&#12524;&#12483;&#12489;&#12398;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#35373;&#23450;&#20966;&#29702;&#65288;&#9733;TODO: &#21029;&#36884;&#35519;&#26619;&#12377;&#12427;&#65289;</span>
+  <span style="color: #40e0d0;">Linux</span>::capture_initial_stack(<span style="color: #40e0d0;">JavaThread</span>::stack_size_at_create());
 
-  &#9733;&#20197;&#19979;&#12399;&#30465;&#30053;&#9733;
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;&#20197;&#38477;&#30465;&#30053;&#9733;</span>
 </pre>
 </div>
 </li>
@@ -739,53 +787,53 @@ Java Satck Size = Thread::stack_size() - ((StackRedPages + StackYellowPages + St
 <a href="http://hg.openjdk.java.net/jdk7u/jdk7u60/hotspot/file/ba66650acf63/src/os/linux/vm/os_linux.cpp#l901">jdk7:hotspot/src/os/linux/vm/os_linux.cpp#901</a>
 <div class="org-src-container">
 
-<pre class="src src-c++"><span style="color: #66d9ef; font-weight: bold;">bool</span> <span style="color: #ae81ff;">os</span>::<span style="color: #a6e22e;">create_thread</span>(<span style="color: #66d9ef; font-weight: bold;">Thread</span>* <span style="color: #fd971f;">thread</span>, <span style="color: #66d9ef; font-weight: bold;">ThreadType</span> <span style="color: #fd971f;">thr_type</span>, <span style="color: #66d9ef; font-weight: bold;">size_t</span> <span style="color: #fd971f;">stack_size</span>) {
+<pre class="src src-c++"><span style="color: #7fffd4;">bool</span> <span style="color: #40e0d0;">os</span>::<span style="color: #98fb98;">create_thread</span>(<span style="color: #7fffd4;">Thread</span>* <span style="color: #9acd32;">thread</span>, <span style="color: #7fffd4;">ThreadType</span> <span style="color: #9acd32;">thr_type</span>, <span style="color: #7fffd4;">size_t</span> <span style="color: #9acd32;">stack_size</span>) {
 
-  &#9733;&#19968;&#37096;&#30465;&#30053;&#9733;
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;&#19968;&#37096;&#30465;&#30053;&#9733;</span>
 
-  <span style="color: #465457;">// </span><span style="color: #465457;">&#9733;&#12473;&#12524;&#12483;&#12489;&#31278;&#21029;&#27598;&#12395;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12434;&#27770;&#12417;&#12427;</span>
-  <span style="color: #f92672; font-weight: bold;">if</span> (<span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::supports_variable_stack_size()) {
-    <span style="color: #465457;">// </span><span style="color: #465457;">calculate stack size if it's not specified by caller</span>
-    <span style="color: #f92672; font-weight: bold;">if</span> (stack_size == 0) {
-      stack_size = <span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::default_stack_size(thr_type);
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;&#12473;&#12524;&#12483;&#12489;&#31278;&#21029;&#27598;&#12395;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12434;&#27770;&#12417;&#12427;</span>
+  <span style="color: #ffffff;">if</span> (<span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::supports_variable_stack_size()) {
+    <span style="color: #00cd66;">// </span><span style="color: #00cd66;">calculate stack size if it's not specified by caller</span>
+    <span style="color: #ffffff;">if</span> (stack_size == 0) {
+      stack_size = <span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::default_stack_size(thr_type);
 
-      <span style="color: #f92672; font-weight: bold;">switch</span> (thr_type) {
+      <span style="color: #ffffff;">switch</span> (thr_type) {
 
-      <span style="color: #465457;">//</span><span style="color: #465457;">&#9733;Java&#12527;&#12540;&#12459;&#12473;&#12524;&#12483;&#12489;&#12398;&#22580;&#21512;</span>
-      <span style="color: #f92672; font-weight: bold;">case</span> <span style="color: #ae81ff;">os</span>::java_thread:
-        <span style="color: #465457;">// </span><span style="color: #465457;">Java threads use ThreadStackSize which default value can be</span>
-        <span style="color: #465457;">// </span><span style="color: #465457;">changed with the flag -Xss</span>
-        assert (<span style="color: #ae81ff;">JavaThread</span>::stack_size_at_create() &gt; 0, <span style="color: #e6db74;">"this should be set"</span>);
-        stack_size = <span style="color: #ae81ff;">JavaThread</span>::stack_size_at_create();
-        <span style="color: #f92672; font-weight: bold;">break</span>;
+      <span style="color: #00cd66;">//</span><span style="color: #00cd66;">&#9733;Java&#12527;&#12540;&#12459;&#12473;&#12524;&#12483;&#12489;&#12398;&#22580;&#21512;</span>
+      <span style="color: #ffffff;">case</span> <span style="color: #40e0d0;">os</span>::java_thread:
+        <span style="color: #00cd66;">// </span><span style="color: #00cd66;">Java threads use ThreadStackSize which default value can be</span>
+        <span style="color: #00cd66;">// </span><span style="color: #00cd66;">changed with the flag -Xss</span>
+        assert (<span style="color: #40e0d0;">JavaThread</span>::stack_size_at_create() &gt; 0, <span style="color: #bdb76b;">"this should be set"</span>);
+        stack_size = <span style="color: #40e0d0;">JavaThread</span>::stack_size_at_create();
+        <span style="color: #ffffff;">break</span>;
 
-      <span style="color: #465457;">//</span><span style="color: #465457;">&#9733;JIT&#12467;&#12531;&#12497;&#12452;&#12521;&#12473;&#12524;&#12483;&#12489;&#12398;&#22580;&#21512;</span>
-      <span style="color: #f92672; font-weight: bold;">case</span> <span style="color: #ae81ff;">os</span>::compiler_thread:
-        <span style="color: #f92672; font-weight: bold;">if</span> (CompilerThreadStackSize &gt; 0) {
-          stack_size = (<span style="color: #66d9ef; font-weight: bold;">size_t</span>)(CompilerThreadStackSize * K);
-          <span style="color: #f92672; font-weight: bold;">break</span>;
-        } <span style="color: #465457;">// </span><span style="color: #465457;">else fall through:</span>
-          <span style="color: #465457;">// </span><span style="color: #465457;">use VMThreadStackSize if CompilerThreadStackSize is not defined</span>
+      <span style="color: #00cd66;">//</span><span style="color: #00cd66;">&#9733;JIT&#12467;&#12531;&#12497;&#12452;&#12521;&#12473;&#12524;&#12483;&#12489;&#12398;&#22580;&#21512;</span>
+      <span style="color: #ffffff;">case</span> <span style="color: #40e0d0;">os</span>::compiler_thread:
+        <span style="color: #ffffff;">if</span> (CompilerThreadStackSize &gt; 0) {
+          stack_size = (<span style="color: #7fffd4;">size_t</span>)(CompilerThreadStackSize * K);
+          <span style="color: #ffffff;">break</span>;
+        } <span style="color: #00cd66;">// </span><span style="color: #00cd66;">else fall through:</span>
+          <span style="color: #00cd66;">// </span><span style="color: #00cd66;">use VMThreadStackSize if CompilerThreadStackSize is not defined</span>
 
-      <span style="color: #465457;">//</span><span style="color: #465457;">&#9733;VM&#12473;&#12524;&#12483;&#12489;&#12289;GC&#12473;&#12524;&#12483;&#12489;&#12289;&#12454;&#12457;&#12483;&#12481;&#12515;&#12540;&#12473;&#12524;&#12483;&#12489;&#12398;&#22580;&#21512;</span>
-      <span style="color: #f92672; font-weight: bold;">case</span> <span style="color: #ae81ff;">os</span>::vm_thread:
-      <span style="color: #f92672; font-weight: bold;">case</span> <span style="color: #ae81ff;">os</span>::pgc_thread:
-      <span style="color: #f92672; font-weight: bold;">case</span> <span style="color: #ae81ff;">os</span>::cgc_thread:
-      <span style="color: #f92672; font-weight: bold;">case</span> <span style="color: #ae81ff;">os</span>::watcher_thread:
-        <span style="color: #f92672; font-weight: bold;">if</span> (VMThreadStackSize &gt; 0) stack_size = (<span style="color: #66d9ef; font-weight: bold;">size_t</span>)(VMThreadStackSize * K);
-        <span style="color: #f92672; font-weight: bold;">break</span>;
+      <span style="color: #00cd66;">//</span><span style="color: #00cd66;">&#9733;VM&#12473;&#12524;&#12483;&#12489;&#12289;GC&#12473;&#12524;&#12483;&#12489;&#12289;&#12454;&#12457;&#12483;&#12481;&#12515;&#12540;&#12473;&#12524;&#12483;&#12489;&#12398;&#22580;&#21512;</span>
+      <span style="color: #ffffff;">case</span> <span style="color: #40e0d0;">os</span>::vm_thread:
+      <span style="color: #ffffff;">case</span> <span style="color: #40e0d0;">os</span>::pgc_thread:
+      <span style="color: #ffffff;">case</span> <span style="color: #40e0d0;">os</span>::cgc_thread:
+      <span style="color: #ffffff;">case</span> <span style="color: #40e0d0;">os</span>::watcher_thread:
+        <span style="color: #ffffff;">if</span> (VMThreadStackSize &gt; 0) stack_size = (<span style="color: #7fffd4;">size_t</span>)(VMThreadStackSize * K);
+        <span style="color: #ffffff;">break</span>;
       }
     }
 
-    stack_size = MAX2(stack_size, <span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::min_stack_allowed);
-    <span style="color: #465457;">// </span><span style="color: #465457;">&#9733;glic&#38306;&#25968;&#29992;&#12356;&#12390;stack&#38936;&#22495;&#12434;&#30906;&#20445;&#12377;&#12427;</span>
+    stack_size = MAX2(stack_size, <span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::min_stack_allowed);
+    <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;glic&#38306;&#25968;&#29992;&#12356;&#12390;stack&#38936;&#22495;&#12434;&#30906;&#20445;&#12377;&#12427;</span>
     pthread_attr_setstacksize(&amp;attr, stack_size);
 
-   &#9733;&#20197;&#19979;&#12399;&#30465;&#30053;&#9733;
+    <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;&#20197;&#38477;&#30465;&#30053;&#9733;</span>
 </pre>
 </div>
 </li>
-</ol>
+</ul>
 
 <p>
 以上コードの通り、JVMから起動されたスレッドの種別毎のスタックサイズが下記XXパラメータ値が適用されてい
@@ -852,15 +900,15 @@ OpenJDK 64-Bit Server VM (build 24.75-b04, mixed mode)
 </p>
 <div class="org-src-container">
 
-<pre class="src src-c++"><span style="color: #465457;">// </span><span style="color: #465457;">return default stack size for thr_type</span>
-<span style="color: #66d9ef; font-weight: bold;">size_t</span> <span style="color: #ae81ff;">os</span>::<span style="color: #ae81ff;">Linux</span>::<span style="color: #a6e22e;">default_stack_size</span>(<span style="color: #ae81ff;">os</span>::<span style="color: #66d9ef; font-weight: bold;">ThreadType</span> <span style="color: #fd971f;">thr_type</span>) {
-  <span style="color: #465457;">// </span><span style="color: #465457;">default stack size (compiler thread needs larger stack)</span>
-<span style="color: #a6e22e;">#ifdef</span> AMD64
-  <span style="color: #66d9ef; font-weight: bold;">size_t</span> <span style="color: #fd971f;">s</span> = (thr_type == <span style="color: #ae81ff;">os</span>::compiler_thread ? 4 * M : 1 * M);
-<span style="color: #a6e22e;">#else</span>
-  <span style="color: #66d9ef; font-weight: bold;">size_t</span> <span style="color: #fd971f;">s</span> = (thr_type == <span style="color: #ae81ff;">os</span>::compiler_thread ? 2 * M : 512 * K);
-<span style="color: #a6e22e;">#endif</span> <span style="color: #465457;">// </span><span style="color: #465457;">AMD64</span>
-  <span style="color: #f92672; font-weight: bold;">return</span> s;
+<pre class="src src-c++"><span style="color: #00cd66;">// </span><span style="color: #00cd66;">return default stack size for thr_type</span>
+<span style="color: #7fffd4;">size_t</span> <span style="color: #40e0d0;">os</span>::<span style="color: #40e0d0;">Linux</span>::<span style="color: #98fb98;">default_stack_size</span>(<span style="color: #40e0d0;">os</span>::<span style="color: #7fffd4;">ThreadType</span> <span style="color: #9acd32;">thr_type</span>) {
+  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">default stack size (compiler thread needs larger stack)</span>
+<span style="color: #b0c4de;">#ifdef</span> AMD64
+  <span style="color: #7fffd4;">size_t</span> <span style="color: #9acd32;">s</span> = (thr_type == <span style="color: #40e0d0;">os</span>::compiler_thread ? 4 * M : 1 * M);
+<span style="color: #b0c4de;">#else</span>
+  <span style="color: #7fffd4;">size_t</span> <span style="color: #9acd32;">s</span> = (thr_type == <span style="color: #40e0d0;">os</span>::compiler_thread ? 2 * M : 512 * K);
+<span style="color: #b0c4de;">#endif</span> <span style="color: #00cd66;">// </span><span style="color: #00cd66;">AMD64</span>
+  <span style="color: #ffffff;">return</span> s;
 }
 </pre>
 </div>
@@ -874,25 +922,25 @@ OpenJDK 64-Bit Server VM (build 24.75-b04, mixed mode)
 </p>
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #f92672; font-weight: bold;">public</span> <span style="color: #f92672; font-weight: bold;">class</span> <span style="color: #66d9ef; font-weight: bold;">HelloWorld</span> <span style="color: #f92672; font-weight: bold;">implements</span> <span style="color: #66d9ef; font-weight: bold;">Runnable</span> {
+<pre class="src src-java"><span style="color: #ffffff;">public</span> <span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">HelloWorld</span> <span style="color: #ffffff;">implements</span> <span style="color: #7fffd4;">Runnable</span> {
 
-    <span style="color: #f92672; font-weight: bold;">public</span> <span style="color: #66d9ef; font-weight: bold;">void</span> <span style="color: #a6e22e;">run</span>(){
-        <span style="color: #f92672; font-weight: bold;">while</span>(<span style="color: #ae81ff;">true</span>) {
-            <span style="color: #f92672; font-weight: bold;">try</span> {
+    <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">run</span>(){
+        <span style="color: #ffffff;">while</span>(<span style="color: #40e0d0;">true</span>) {
+            <span style="color: #ffffff;">try</span> {
                 Thread.sleep(1 * 1000L);
-                System.out.println(Thread.currentThread().toString() + <span style="color: #e6db74;">": Hello World"</span>);
-            } <span style="color: #f92672; font-weight: bold;">catch</span> (<span style="color: #66d9ef; font-weight: bold;">Exception</span> <span style="color: #fd971f;">e</span>) {
+                System.out.println(Thread.currentThread().toString() + <span style="color: #bdb76b;">": Hello World"</span>);
+            } <span style="color: #ffffff;">catch</span> (<span style="color: #7fffd4;">Exception</span> <span style="color: #9acd32;">e</span>) {
             }
         }
     }
 
-    <span style="color: #f92672; font-weight: bold;">public</span> <span style="color: #f92672; font-weight: bold;">static</span> <span style="color: #66d9ef; font-weight: bold;">void</span> <span style="color: #a6e22e;">main</span>(<span style="color: #66d9ef; font-weight: bold;">String</span>[] <span style="color: #fd971f;">args</span>) <span style="color: #f92672; font-weight: bold;">throws</span> <span style="color: #66d9ef; font-weight: bold;">Exception</span> {
-        <span style="color: #66d9ef; font-weight: bold;">Thread</span>[] <span style="color: #fd971f;">t_arry</span> =  <span style="color: #f92672; font-weight: bold;">new</span> <span style="color: #66d9ef; font-weight: bold;">Thread</span>[5];
-        <span style="color: #f92672; font-weight: bold;">for</span> (<span style="color: #66d9ef; font-weight: bold;">int</span> <span style="color: #fd971f;">i</span> = 0; i &lt; t_arry.<span style="color: #66d9ef; font-weight: bold;">length</span>; i++) {
-            t_arry[i]  =  <span style="color: #f92672; font-weight: bold;">new</span> <span style="color: #66d9ef; font-weight: bold;">Thread</span>(<span style="color: #f92672; font-weight: bold;">new</span> <span style="color: #66d9ef; font-weight: bold;">HelloWorld</span>());
+    <span style="color: #ffffff;">public</span> <span style="color: #ffffff;">static</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">main</span>(<span style="color: #7fffd4;">String</span>[] <span style="color: #9acd32;">args</span>) <span style="color: #ffffff;">throws</span> <span style="color: #7fffd4;">Exception</span> {
+        <span style="color: #7fffd4;">Thread</span>[] <span style="color: #9acd32;">t_arry</span> =  <span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">Thread</span>[5];
+        <span style="color: #ffffff;">for</span> (<span style="color: #7fffd4;">int</span> <span style="color: #9acd32;">i</span> = 0; i &lt; t_arry.<span style="color: #7fffd4;">length</span>; i++) {
+            t_arry[i]  =  <span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">Thread</span>(<span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">HelloWorld</span>());
             t_arry[i].start();
         }
-        <span style="color: #f92672; font-weight: bold;">for</span> (<span style="color: #66d9ef; font-weight: bold;">int</span> <span style="color: #fd971f;">i</span> = 0; i &lt; t_arry.<span style="color: #66d9ef; font-weight: bold;">length</span>; i++) {
+        <span style="color: #ffffff;">for</span> (<span style="color: #7fffd4;">int</span> <span style="color: #9acd32;">i</span> = 0; i &lt; t_arry.<span style="color: #7fffd4;">length</span>; i++) {
             t_arry[i].join();
         }
 
@@ -910,33 +958,33 @@ OpenJDK 64-Bit Server VM (build 24.75-b04, mixed mode)
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #465457;">#</span><span style="color: #465457;">!/bin/</span><span style="color: #f92672; font-weight: bold;">sh</span>
+<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
 
-<span style="color: #f92672; font-weight: bold;">if</span> [ <span style="color: #960050;">!</span> $<span style="color: #fd971f;">#</span> -eq 1 ]; <span style="color: #f92672; font-weight: bold;">then</span>
-    <span style="color: #a6e22e;">echo</span> <span style="color: #e6db74;">"Usage ${0} &lt;JVM PID&gt;"</span>
-    <span style="color: #f92672; font-weight: bold;">exit</span> 1
-<span style="color: #f92672; font-weight: bold;">fi</span>
+<span style="color: #ffffff;">if</span> [ ! $<span style="color: #9acd32;">#</span> -eq 1 ]; <span style="color: #ffffff;">then</span>
+    <span style="color: #b0c4de;">echo</span> <span style="color: #bdb76b;">"Usage ${0} &lt;JVM PID&gt;"</span>
+    <span style="color: #ffffff;">exit</span> 1
+<span style="color: #ffffff;">fi</span>
 
-<span style="color: #a6e22e;">printf</span> <span style="color: #e6db74;">"[ PID ]\t[StackSize]\t[GuardPages]\t[Thread Name]\n"</span>
+<span style="color: #b0c4de;">printf</span> <span style="color: #bdb76b;">"[ PID ]\t[StackSize]\t[GuardPages]\t[Thread Name]\n"</span>
 
-<span style="color: #465457;"># </span><span style="color: #465457;">jstack&#12398;&#20986;&#21147;&#32080;&#26524;&#12363;&#12425;&#12473;&#12524;&#12483;&#12489;ID&#12392;&#21517;&#21069;&#12434;&#25277;&#20986;&#12377;&#12427;</span>
-jstack $<span style="color: #fd971f;">1</span> | grep nid | sed -e <span style="color: #e6db74;">"s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"</span> | sort | <span style="color: #f92672; font-weight: bold;">while </span><span style="color: #a6e22e;">read</span> line
-<span style="color: #f92672; font-weight: bold;">do</span>
-    <span style="color: #465457;"># </span><span style="color: #465457;">&#12473;&#12524;&#12483;&#12489;ID&#12434;&#20999;&#12426;&#20986;&#12377;</span>
-    <span style="color: #fd971f;">pid_hex</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $1}'`</span>
+<span style="color: #00cd66;"># </span><span style="color: #00cd66;">jstack&#12398;&#20986;&#21147;&#32080;&#26524;&#12363;&#12425;&#12473;&#12524;&#12483;&#12489;ID&#12392;&#21517;&#21069;&#12434;&#25277;&#20986;&#12377;&#12427;</span>
+jstack $<span style="color: #9acd32;">1</span> | grep nid | sed -e <span style="color: #bdb76b;">"s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"</span> | sort | <span style="color: #ffffff;">while </span><span style="color: #b0c4de;">read</span> line
+<span style="color: #ffffff;">do</span>
+    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">&#12473;&#12524;&#12483;&#12489;ID&#12434;&#20999;&#12426;&#20986;&#12377;</span>
+    <span style="color: #9acd32;">pid_hex</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $1}'`</span>
 
-    <span style="color: #465457;"># </span><span style="color: #465457;">&#12473;&#12524;&#12483;&#12489;&#21517;&#12434;&#20999;&#12426;&#20986;&#12377;</span>
-    <span style="color: #fd971f;">thread_name</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $2}'`</span>
+    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">&#12473;&#12524;&#12483;&#12489;&#21517;&#12434;&#20999;&#12426;&#20986;&#12377;</span>
+    <span style="color: #9acd32;">thread_name</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $2}'`</span>
 
-    <span style="color: #465457;"># </span><span style="color: #465457;">&#12473;&#12524;&#12483;&#12489;ID&#12434;10&#36914;&#25968;&#12395;&#22793;&#25563;</span>
-    <span style="color: #fd971f;">pid</span>=<span style="color: #fa8072;">`printf '%d\n' ${pid_hex}`</span>
+    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">&#12473;&#12524;&#12483;&#12489;ID&#12434;10&#36914;&#25968;&#12395;&#22793;&#25563;</span>
+    <span style="color: #9acd32;">pid</span>=<span style="color: #fa8072;">`printf '%d\n' ${pid_hex}`</span>
 
-    <span style="color: #465457;"># </span><span style="color: #465457;">/proc/&lt;pid&gt;/smaps &#12501;&#12449;&#12452;&#12523;&#12363;&#12425;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12289;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#12434;&#21462;&#24471;&#12377;&#12427;</span>
-    <span style="color: #fd971f;">guard_page</span>=<span style="color: #fa8072;">`cat /proc/$1/smaps | grep -B15 "stack:${pid}"| head -1 | awk '{print $2}'`</span>
-    <span style="color: #fd971f;">stack_page</span>=<span style="color: #fa8072;">`cat /proc/$1/smaps | grep -A1 "stack:${pid}" | tail -1 | awk '{print $2}'`</span>
-    <span style="color: #fd971f;">stack_size</span>=<span style="color: #fa8072;">`expr ${guard_page} + ${stack_page}`</span>
-    <span style="color: #a6e22e;">printf</span> <span style="color: #e6db74;">"%7d\t%11s\t%12s\t%s\n"</span> <span style="color: #e6db74;">"${pid}"</span> <span style="color: #e6db74;">"${stack_size}Kb"</span> <span style="color: #e6db74;">"${guard_page}Kb"</span> <span style="color: #e6db74;">"${thread_name}"</span>
-<span style="color: #f92672; font-weight: bold;">done</span>
+    <span style="color: #00cd66;"># </span><span style="color: #00cd66;">/proc/&lt;pid&gt;/smaps &#12501;&#12449;&#12452;&#12523;&#12363;&#12425;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12289;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#12434;&#21462;&#24471;&#12377;&#12427;</span>
+    <span style="color: #9acd32;">guard_page</span>=<span style="color: #fa8072;">`cat /proc/$1/smaps | grep -B15 "stack:${pid}"| head -1 | awk '{print $2}'`</span>
+    <span style="color: #9acd32;">stack_page</span>=<span style="color: #fa8072;">`cat /proc/$1/smaps | grep -A1 "stack:${pid}" | tail -1 | awk '{print $2}'`</span>
+    <span style="color: #9acd32;">stack_size</span>=<span style="color: #fa8072;">`expr ${guard_page} + ${stack_page}`</span>
+    <span style="color: #b0c4de;">printf</span> <span style="color: #bdb76b;">"%7d\t%11s\t%12s\t%s\n"</span> <span style="color: #bdb76b;">"${pid}"</span> <span style="color: #bdb76b;">"${stack_size}Kb"</span> <span style="color: #bdb76b;">"${guard_page}Kb"</span> <span style="color: #bdb76b;">"${thread_name}"</span>
+<span style="color: #ffffff;">done</span>
 </pre>
 </div>
 

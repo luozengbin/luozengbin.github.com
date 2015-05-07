@@ -148,15 +148,15 @@
 結論を先に、
 </p>
 <ul class="org-ul">
-<li><code>ulimit -s</code> の値は親プロセスであるJVMランチャーのみスタックサイズ制限を受ける。
+<li><code>ulimit -s</code> のスタック最大サイズ制限値は親プロセスであるJVMランチャーのみ適用される。
 </li>
-<li>JVMランチャー、JavaAPIから起動されたJavaスレッドのスタックサイズは
+<li>JVMランチャーやJavaAPIから起動されたJavaスレッドのスタックサイズは  <code>-Xss</code> もしくは
 <code>-XX:ThreadStackSize</code> パラメータ値が適用される。
 </li>
 <li>JVMランチャーから起動されたイニシャルスレッドのスタックサイズは <code>-Xss</code> パラメータの
 み制御できる。
 </li>
-<li>JNI経由で外部からJVMにアタッチしたスレッドのスタックサイズはJVMの管理対象外です。
+<li>JNI経由で外部からJVMにアタッチしたスレッドのスタックサイズはJVMの管理対象外である。
 </li>
 </ul>
 
