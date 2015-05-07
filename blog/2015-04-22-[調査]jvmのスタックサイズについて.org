@@ -104,9 +104,9 @@ HotSpotの実装から見るとJVMから起動されたJavaスレッドのスタ
      |                          \|                        |/
      |                           +------------------------+
      |                          /|                        |\ ★Native Stackはここです★
--XX:ThreadStackSize            / |    StackShadowPages    | -XX:StackShadowPages=20(80Kb)
--XX:CompilerThreadStackSize   /  |                        |/
--XX:VMThreadStackSize        /   +------------------------+
+     |                         / |    StackShadowPages    | -XX:StackShadowPages=20(80Kb)
+-XX:ThreadStackSize           /  |                        |/
+     |                       /   +------------------------+
      |                      /    |                        |
      |                     /     |   +----------------+   |
      |       Normal Stack--      |   |     Frame      |   | ★Java Stackはここです★
@@ -162,6 +162,9 @@ HotSpotの実装から見るとJVMから起動されたJavaスレッドのスタ
 
 図の内容によるとJavaスレッドと非Javaスレッドのスタックページ構成が若干異なる。
 以下はJVMの非Javaスレッドのリストです。
+
+|--------------------------+---------------------------------------------------------------------|
+| スレッド名               | 説明                                                                |
 |--------------------------+---------------------------------------------------------------------|
 | VM thread                | JVM自身のコアスレッド                                               |
 | Periodic task thread     | WatcherThreadのシングルトンインスタンス、定義的なVMタスクを実行する |
@@ -171,9 +174,10 @@ HotSpotの実装から見るとJVMから起動されたJavaスレッドのスタ
 |--------------------------+---------------------------------------------------------------------|
 
 ** glibc guard page
-=glibc guard page= はスタックポインタのオーバーフローを防ぐためのものです。Javaスレッ
-ドには =HotSpot Guard Pages= が別途用意されているため、この領域のサイズが0である。非
-Javaスレッドのスタック頂上位置には1ページ分が割り当てられる。以下はその実装内容です。
+=glibc guard page= はスタックポインタのオーバーフローを防ぐための－ガードページ。Java
+スレッドには =HotSpot Guard Pages= が別途用意されているため、この領域のサイズが0であ
+る。非Javaスレッドのスタック頂上位置には1ページ分が割り当てられる。以下はその実装内容
+です。
 
 - [[http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/os/linux/vm/os_linux.cpp#l923][pthread_attr_setguardsize(&attr, os::Linux::default_guard_size(thr_type));]]
 - [[http://hg.openjdk.java.net/jdk7/jdk7/hotspot/file/9b0ca45cd756/src/os_cpu/linux_x86/vm/os_linux_x86.cpp#l662][os::Linux::default_guard_size(thr_type)]]
@@ -187,7 +191,7 @@ size_t os::Linux::default_guard_size(os::ThreadType thr_type) {
 #+end_src
 
 =glibc guard page= に関して以下の情報が参考になると思います。
-- スタックガードの大きさの設定
+- [[http://docs.oracle.com/cd/E19455-01/806-2732/attrib-22/index.html][スタックガードの大きさの設定]]
 - [[http://linuxjm.sourceforge.jp/html/LDP_man-pages/man3/pthread_attr_setguardsize.3.html][PTHREAD_ATTR_SETGUARDSIZE]]
 - [[http://codezine.jp/article/detail/1970][pthreadについて（スタックサイズ）]]
 - [[http://www.nminoru.jp/~nminoru/programming/stackoverflow_handling.html#get-stack-region][スタックオーバーフローのハンドリング (Stack Overflow Handling)]]
