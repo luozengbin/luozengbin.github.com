@@ -300,7 +300,7 @@ $ sudo pacman -S kdesdk-kcachegrind
 
 file:img/20150510125343_callgrind.png
 
-バッチリです！
+バッチリですね！
 
 * 参考
 - [[https://sourceware.org/gdb/onlinedocs/gdb/Variables.html][Variables - Debugging with GDB]]
