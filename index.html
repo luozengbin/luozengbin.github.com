@@ -12,9 +12,8 @@
   <meta name="description" content="Table of Contents 1. 環境
 2. ビルド手順
 3. gdbでデバッグしてみる
-4. valgrindでコールグラフの確認
-5. 参考 今まで、JVM中身の調査は SystemTap + java-1.x.x-openjdk-debuginfo.x86_64 利用してい
-たが。 &hellip;">
+4. valgrindでコールグラフ出してみる
+5. 参考 今まで、JVM中身の調査は SystemTap + java-1.x.x-openjdk-debuginfo.x86_64 利用してい &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -107,14 +106,14 @@
 <li><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html#sec-1">1. 環境</a></li>
 <li><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html#sec-2">2. ビルド手順</a></li>
 <li><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html#sec-3">3. gdbでデバッグしてみる</a></li>
-<li><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html#sec-4">4. valgrindでコールグラフの確認</a></li>
+<li><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html#sec-4">4. valgrindでコールグラフ出してみる</a></li>
 <li><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html#sec-5">5. 参考</a></li>
 </ul>
 </div>
 </div>
 <p>
 今まで、JVM中身の調査は <code>SystemTap + java-1.x.x-openjdk-debuginfo.x86_64</code> 利用してい
-たが。最近もう少しJVMの中身を踏み込みたいのでデバッグ版JVMをビルドしてみました。
+たが。もう少しJVMの中身を踏み込みたいのでデバッグ版JVMをビルドしてみました。
 </p>
 
 <p>

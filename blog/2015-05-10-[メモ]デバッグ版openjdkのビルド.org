@@ -8,7 +8,7 @@
 #+JEKYLL_PUBLISHED: true
 
 今まで、JVM中身の調査は =SystemTap + java-1.x.x-openjdk-debuginfo.x86_64= 利用してい
-たが。最近もう少しJVMの中身を踏み込みたいのでデバッグ版JVMをビルドしてみました。
+たが。もう少しJVMの中身を踏み込みたいのでデバッグ版JVMをビルドしてみました。
 
 http://hg.openjdk.java.net/jdk7/jdk7/raw-file/tip/README-builds.html の手順でビルドし
 てもいいのですが、トライ・アンド・エラーで時間が取られそうなので、自分が使っている
@@ -261,7 +261,7 @@ End   2015-05-10 12:41:39
   $
 #+end_example
 
-* valgrindでコールグラフの確認
+* valgrindでコールグラフ出してみる
 valgrindでコールグラフを出してみました。
 
 必要なパッケージを入れておく。
