@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-05-10T13:23:33+09:00</updated>
+  <updated>2015-05-10T13:28:59+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -630,15 +630,15 @@ HotSpotの実装から見るとJVMから起動されたJavaスレッドのスタ
      |                         / |    StackShadowPages    | -XX:StackShadowPages=20(80Kb)
 -XX:ThreadStackSize           /  |                        |/
      |                       /   +------------------------+
-     |                      /    |                        |
-     |                     /     |   +----------------+   |
-     |       Normal Stack--      |   |     Frame      |   | ★Java Stackはここです★
-     |                     \     |   +----------------+   |
-     |                      \    |   |     Frame      |   |
-     |                       \   |   +----------------+   |
-     |                        \  |   |     Frame      |   |
-     |                         \ |   +----------------+   |
-     |                          \|                        |
+     |                      /    |                        |\
+     |                     /     |   +----------------+   | \
+     |       Normal Stack--      |   |     Frame      |   |  \
+     |                     \     |   +----------------+   |   \
+     |                      \    |   |     Frame      |   |    ★Java Stackはここです★
+     |                       \   |   +----------------+   |   /
+     |                        \  |   |     Frame      |   |  /
+     |                         \ |   +----------------+   | /
+     |                          \|                        |/
    --+--                         +------------------------+
 </pre>
 <p>
