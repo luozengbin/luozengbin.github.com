@@ -291,8 +291,8 @@ $ sudo lvmdiskscan
 | PV        | VG     | LV               | Format | Mount Point | Size  |
 |-----------+--------+------------------+--------+-------------+-------|
 | /dev/sda3 | centos | /dev/centos/swap | swap   |             | 7.27G |
-|           |        | /dev/centos/home | xfs    | /           | 180G  |
-|           |        | /dev/centos/root | xfs    | /home       | 50G   |
+|           |        | /dev/centos/home | xfs    | /home       | 180G  |
+|           |        | /dev/centos/root | xfs    | /           | 50G   |
 |-----------+--------+------------------+--------+-------------+-------|
 
 * 増設後のパーティション構成

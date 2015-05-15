@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-05-10T13:28:59+09:00</updated>
+  <updated>2015-05-16T00:22:09+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -3082,7 +3082,7 @@ $ sudo lvmdiskscan
 <td class="left">&#xa0;</td>
 <td class="left">/dev/centos/home</td>
 <td class="left">xfs</td>
-<td class="left">/</td>
+<td class="left">/home</td>
 <td class="left">180G</td>
 </tr>
 
@@ -3091,7 +3091,7 @@ $ sudo lvmdiskscan
 <td class="left">&#xa0;</td>
 <td class="left">/dev/centos/root</td>
 <td class="left">xfs</td>
-<td class="left">/home</td>
+<td class="left">/</td>
 <td class="left">50G</td>
 </tr>
 </tbody>
