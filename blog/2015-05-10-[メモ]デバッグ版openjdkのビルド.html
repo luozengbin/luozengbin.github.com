@@ -128,7 +128,7 @@
 <p>
 <a href="http://hg.openjdk.java.net/jdk7/jdk7/raw-file/tip/README-builds.html">http://hg.openjdk.java.net/jdk7/jdk7/raw-file/tip/README-builds.html</a> の手順でビルドし
 てもいいのですが、トライ・アンド・エラーで時間が取られそうなので、自分が使っている
-<code>Arch Linx</code> 環境で一番手取りの早い手順で行いました。
+<code>Arch Linux</code> 環境で一番手取りの早い手順で行いました。
 </p>
 
 <p>
@@ -198,44 +198,44 @@ drwxr-xr-x 21 akira users  4096  5月 10 11:23 ..
 
 <pre class="src src-sh">  ..........&#30465;&#30053;.........
   |build() {
-  |  <span style="color: #b0c4de;">cd</span> <span style="color: #bdb76b;">"${srcdir}/icedtea-${_icedtea_ver}"</span>
+  |  <span style="color: #63b8ff;">cd</span> <span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea-${_icedtea_ver}"</span>
   | 
-  |  <span style="color: #b0c4de;">export</span> <span style="color: #9acd32;">ALT_PARALLEL_COMPILE_JOBS</span>=<span style="color: #bdb76b;">"${MAKEFLAGS/-j}"</span>
-  |  <span style="color: #b0c4de;">export</span> <span style="color: #9acd32;">HOTSPOT_BUILD_JOBS</span>=<span style="color: #bdb76b;">"${ALT_PARALLEL_COMPILE_JOBS}"</span>
+  |  <span style="color: #63b8ff;">export</span> <span style="color: #ff6347;">ALT_PARALLEL_COMPILE_JOBS</span>=<span style="color: #bcee68; font-style: italic;">"${MAKEFLAGS/-j}"</span>
+  |  <span style="color: #63b8ff;">export</span> <span style="color: #ff6347;">HOTSPOT_BUILD_JOBS</span>=<span style="color: #bcee68; font-style: italic;">"${ALT_PARALLEL_COMPILE_JOBS}"</span>
   | 
-  |  <span style="color: #b0c4de;">.</span> /etc/profile.d/apache-ant.sh
+  |  <span style="color: #63b8ff;">.</span> /etc/profile.d/apache-ant.sh
   | 
-  |  cp <span style="color: #bdb76b;">"${srcdir}"</span>/*.diff <span style="color: #bdb76b;">"${srcdir}"</span>/icedtea-${<span style="color: #9acd32;">_icedtea_ver</span>}/patches
-  |  <span style="color: #b0c4de;">export</span> <span style="color: #9acd32;">DISTRIBUTION_PATCHES</span>=<span style="color: #bdb76b;">"patches/fontconfig-paths.diff \</span>
-<span style="color: #bdb76b;">  |                               patches/openjdk7_nonreparenting-wm.diff"</span>
+  |  cp <span style="color: #bcee68; font-style: italic;">"${srcdir}"</span>/*.diff <span style="color: #bcee68; font-style: italic;">"${srcdir}"</span>/icedtea-${<span style="color: #ff6347;">_icedtea_ver</span>}/patches
+  |  <span style="color: #63b8ff;">export</span> <span style="color: #ff6347;">DISTRIBUTION_PATCHES</span>=<span style="color: #bcee68; font-style: italic;">"patches/fontconfig-paths.diff \</span>
+<span style="color: #bcee68; font-style: italic;">  |                               patches/openjdk7_nonreparenting-wm.diff"</span>
   | 
-  |  <span style="color: #ffffff;">if</span> [ <span style="color: #bdb76b;">"$_bootstrap"</span> = <span style="color: #bdb76b;">"1"</span> ]; <span style="color: #ffffff;">then</span>
-  |     <span style="color: #9acd32;">BOOTSTRAPOPT</span>=<span style="color: #bdb76b;">"--enable-bootstrap --with-ecj-jar=/usr/share/java/ecj.jar"</span>
-  |   <span style="color: #ffffff;">else</span>
-  |     <span style="color: #9acd32;">BOOTSTRAPOPT</span>=<span style="color: #bdb76b;">"--disable-bootstrap"</span>
-  |  <span style="color: #ffffff;">fi</span>
+  |  <span style="color: #00bfff; font-weight: bold;">if</span> [ <span style="color: #bcee68; font-style: italic;">"$_bootstrap"</span> = <span style="color: #bcee68; font-style: italic;">"1"</span> ]; <span style="color: #00bfff; font-weight: bold;">then</span>
+  |     <span style="color: #ff6347;">BOOTSTRAPOPT</span>=<span style="color: #bcee68; font-style: italic;">"--enable-bootstrap --with-ecj-jar=/usr/share/java/ecj.jar"</span>
+  |   <span style="color: #00bfff; font-weight: bold;">else</span>
+  |     <span style="color: #ff6347;">BOOTSTRAPOPT</span>=<span style="color: #bcee68; font-style: italic;">"--disable-bootstrap"</span>
+  |  <span style="color: #00bfff; font-weight: bold;">fi</span>
   | 
-  |  ./configure <span style="color: #bdb76b;">\</span>
-  |        ${<span style="color: #9acd32;">BOOTSTRAPOPT</span>} <span style="color: #bdb76b;">\</span>
-  |        --with-parallel-jobs=<span style="color: #bdb76b;">"${MAKEFLAGS/-j}"</span> <span style="color: #bdb76b;">\</span>
-  |        --disable-tests <span style="color: #bdb76b;">\</span>
-  |        --disable-downloading --disable-Werror <span style="color: #bdb76b;">\</span>
-  |        --with-pkgversion=<span style="color: #bdb76b;">"Arch Linux build ${pkgver}-${pkgrel}-${CARCH}"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-jdk-home=${<span style="color: #9acd32;">JAVA_HOME</span>} <span style="color: #bdb76b;">\</span>
-  |        --with-openjdk-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_openjdk.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-hotspot-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_hotspot.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-corba-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_corba.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-jaxp-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_jaxp.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-jaxws-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_jaxws.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-jdk-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_jdk.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-langtools-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_langtools.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --enable-nss <span style="color: #bdb76b;">\</span>
-  |        --with-rhino <span style="color: #bdb76b;">\</span>
-  |        --with-abs-install-dir=${<span style="color: #9acd32;">_jvmdir</span>} <span style="color: #bdb76b;">\</span>
-1.|        --enable-native-debuginfo=yes <span style="color: #bdb76b;">\</span>
-2.|        --enable-java-debuginfo=yes <span style="color: #bdb76b;">\</span>
+  |  ./configure <span style="color: #bcee68; font-style: italic;">\</span>
+  |        ${<span style="color: #ff6347;">BOOTSTRAPOPT</span>} <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-parallel-jobs=<span style="color: #bcee68; font-style: italic;">"${MAKEFLAGS/-j}"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --disable-tests <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --disable-downloading --disable-Werror <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-pkgversion=<span style="color: #bcee68; font-style: italic;">"Arch Linux build ${pkgver}-${pkgrel}-${CARCH}"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-jdk-home=${<span style="color: #ff6347;">JAVA_HOME</span>} <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-openjdk-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_openjdk.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-hotspot-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_hotspot.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-corba-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_corba.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-jaxp-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_jaxp.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-jaxws-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_jaxws.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-jdk-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_jdk.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-langtools-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_langtools.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --enable-nss <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-rhino <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-abs-install-dir=${<span style="color: #ff6347;">_jvmdir</span>} <span style="color: #bcee68; font-style: italic;">\</span>
+1.|        --enable-native-debuginfo=yes <span style="color: #bcee68; font-style: italic;">\</span>
+2.|        --enable-java-debuginfo=yes <span style="color: #bcee68; font-style: italic;">\</span>
   |        --enable-infinality=no
-  |        <span style="color: #00cd66;"># </span><span style="color: #00cd66;">TODO latest version of openjdk will disable infinality by default</span>
+  |        <span style="color: #888a85;"># </span><span style="color: #888a85;">TODO latest version of openjdk will disable infinality by default</span>
   |
 3.|    make icedtea-debug
   |}
@@ -656,11 +656,11 @@ $ sudo pacman -S kdesdk-kcachegrind
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (13)</a></li><li><a href='/blog/categories/linux/'>linux (17)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (14)</a></li><li><a href='/blog/categories/linux/'>linux (17)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/byteman' style='font-size: 120.0%'>Byteman(1)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/jvm' style='font-size: 120.0%'>jvm(1)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 120.0%'>stack(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 120.0%'>weblogic(1)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/byteman' style='font-size: 120.0%'>byteman(1)</a> <a href='/blog/tags/byteman' style='font-size: 120.0%'>Byteman(1)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/jvm' style='font-size: 120.0%'>jvm(1)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 120.0%'>stack(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
 </section>
 
 <section>

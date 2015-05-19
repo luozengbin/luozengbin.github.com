@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-05-16T01:28:08+09:00</updated>
+  <updated>2015-05-19T23:39:09+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -43,7 +43,7 @@
 <p>
 <a href="http://hg.openjdk.java.net/jdk7/jdk7/raw-file/tip/README-builds.html">http://hg.openjdk.java.net/jdk7/jdk7/raw-file/tip/README-builds.html</a> の手順でビルドし
 てもいいのですが、トライ・アンド・エラーで時間が取られそうなので、自分が使っている
-<code>Arch Linx</code> 環境で一番手取りの早い手順で行いました。
+<code>Arch Linux</code> 環境で一番手取りの早い手順で行いました。
 </p>
 
 
@@ -122,44 +122,44 @@ drwxr-xr-x 21 akira users  4096  5月 10 11:23 ..
 
 <pre class="src src-sh">  ..........&#30465;&#30053;.........
   |build() {
-  |  <span style="color: #b0c4de;">cd</span> <span style="color: #bdb76b;">"${srcdir}/icedtea-${_icedtea_ver}"</span>
+  |  <span style="color: #63b8ff;">cd</span> <span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea-${_icedtea_ver}"</span>
   | 
-  |  <span style="color: #b0c4de;">export</span> <span style="color: #9acd32;">ALT_PARALLEL_COMPILE_JOBS</span>=<span style="color: #bdb76b;">"${MAKEFLAGS/-j}"</span>
-  |  <span style="color: #b0c4de;">export</span> <span style="color: #9acd32;">HOTSPOT_BUILD_JOBS</span>=<span style="color: #bdb76b;">"${ALT_PARALLEL_COMPILE_JOBS}"</span>
+  |  <span style="color: #63b8ff;">export</span> <span style="color: #ff6347;">ALT_PARALLEL_COMPILE_JOBS</span>=<span style="color: #bcee68; font-style: italic;">"${MAKEFLAGS/-j}"</span>
+  |  <span style="color: #63b8ff;">export</span> <span style="color: #ff6347;">HOTSPOT_BUILD_JOBS</span>=<span style="color: #bcee68; font-style: italic;">"${ALT_PARALLEL_COMPILE_JOBS}"</span>
   | 
-  |  <span style="color: #b0c4de;">.</span> /etc/profile.d/apache-ant.sh
+  |  <span style="color: #63b8ff;">.</span> /etc/profile.d/apache-ant.sh
   | 
-  |  cp <span style="color: #bdb76b;">"${srcdir}"</span>/*.diff <span style="color: #bdb76b;">"${srcdir}"</span>/icedtea-${<span style="color: #9acd32;">_icedtea_ver</span>}/patches
-  |  <span style="color: #b0c4de;">export</span> <span style="color: #9acd32;">DISTRIBUTION_PATCHES</span>=<span style="color: #bdb76b;">"patches/fontconfig-paths.diff \</span>
-<span style="color: #bdb76b;">  |                               patches/openjdk7_nonreparenting-wm.diff"</span>
+  |  cp <span style="color: #bcee68; font-style: italic;">"${srcdir}"</span>/*.diff <span style="color: #bcee68; font-style: italic;">"${srcdir}"</span>/icedtea-${<span style="color: #ff6347;">_icedtea_ver</span>}/patches
+  |  <span style="color: #63b8ff;">export</span> <span style="color: #ff6347;">DISTRIBUTION_PATCHES</span>=<span style="color: #bcee68; font-style: italic;">"patches/fontconfig-paths.diff \</span>
+<span style="color: #bcee68; font-style: italic;">  |                               patches/openjdk7_nonreparenting-wm.diff"</span>
   | 
-  |  <span style="color: #ffffff;">if</span> [ <span style="color: #bdb76b;">"$_bootstrap"</span> = <span style="color: #bdb76b;">"1"</span> ]; <span style="color: #ffffff;">then</span>
-  |     <span style="color: #9acd32;">BOOTSTRAPOPT</span>=<span style="color: #bdb76b;">"--enable-bootstrap --with-ecj-jar=/usr/share/java/ecj.jar"</span>
-  |   <span style="color: #ffffff;">else</span>
-  |     <span style="color: #9acd32;">BOOTSTRAPOPT</span>=<span style="color: #bdb76b;">"--disable-bootstrap"</span>
-  |  <span style="color: #ffffff;">fi</span>
+  |  <span style="color: #00bfff; font-weight: bold;">if</span> [ <span style="color: #bcee68; font-style: italic;">"$_bootstrap"</span> = <span style="color: #bcee68; font-style: italic;">"1"</span> ]; <span style="color: #00bfff; font-weight: bold;">then</span>
+  |     <span style="color: #ff6347;">BOOTSTRAPOPT</span>=<span style="color: #bcee68; font-style: italic;">"--enable-bootstrap --with-ecj-jar=/usr/share/java/ecj.jar"</span>
+  |   <span style="color: #00bfff; font-weight: bold;">else</span>
+  |     <span style="color: #ff6347;">BOOTSTRAPOPT</span>=<span style="color: #bcee68; font-style: italic;">"--disable-bootstrap"</span>
+  |  <span style="color: #00bfff; font-weight: bold;">fi</span>
   | 
-  |  ./configure <span style="color: #bdb76b;">\</span>
-  |        ${<span style="color: #9acd32;">BOOTSTRAPOPT</span>} <span style="color: #bdb76b;">\</span>
-  |        --with-parallel-jobs=<span style="color: #bdb76b;">"${MAKEFLAGS/-j}"</span> <span style="color: #bdb76b;">\</span>
-  |        --disable-tests <span style="color: #bdb76b;">\</span>
-  |        --disable-downloading --disable-Werror <span style="color: #bdb76b;">\</span>
-  |        --with-pkgversion=<span style="color: #bdb76b;">"Arch Linux build ${pkgver}-${pkgrel}-${CARCH}"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-jdk-home=${<span style="color: #9acd32;">JAVA_HOME</span>} <span style="color: #bdb76b;">\</span>
-  |        --with-openjdk-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_openjdk.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-hotspot-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_hotspot.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-corba-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_corba.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-jaxp-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_jaxp.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-jaxws-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_jaxws.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-jdk-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_jdk.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --with-langtools-src-zip=<span style="color: #bdb76b;">"${srcdir}/icedtea_${_icedtea_ver}_langtools.tar.bz2"</span> <span style="color: #bdb76b;">\</span>
-  |        --enable-nss <span style="color: #bdb76b;">\</span>
-  |        --with-rhino <span style="color: #bdb76b;">\</span>
-  |        --with-abs-install-dir=${<span style="color: #9acd32;">_jvmdir</span>} <span style="color: #bdb76b;">\</span>
-1.|        --enable-native-debuginfo=yes <span style="color: #bdb76b;">\</span>
-2.|        --enable-java-debuginfo=yes <span style="color: #bdb76b;">\</span>
+  |  ./configure <span style="color: #bcee68; font-style: italic;">\</span>
+  |        ${<span style="color: #ff6347;">BOOTSTRAPOPT</span>} <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-parallel-jobs=<span style="color: #bcee68; font-style: italic;">"${MAKEFLAGS/-j}"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --disable-tests <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --disable-downloading --disable-Werror <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-pkgversion=<span style="color: #bcee68; font-style: italic;">"Arch Linux build ${pkgver}-${pkgrel}-${CARCH}"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-jdk-home=${<span style="color: #ff6347;">JAVA_HOME</span>} <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-openjdk-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_openjdk.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-hotspot-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_hotspot.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-corba-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_corba.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-jaxp-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_jaxp.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-jaxws-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_jaxws.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-jdk-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_jdk.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-langtools-src-zip=<span style="color: #bcee68; font-style: italic;">"${srcdir}/icedtea_${_icedtea_ver}_langtools.tar.bz2"</span> <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --enable-nss <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-rhino <span style="color: #bcee68; font-style: italic;">\</span>
+  |        --with-abs-install-dir=${<span style="color: #ff6347;">_jvmdir</span>} <span style="color: #bcee68; font-style: italic;">\</span>
+1.|        --enable-native-debuginfo=yes <span style="color: #bcee68; font-style: italic;">\</span>
+2.|        --enable-java-debuginfo=yes <span style="color: #bcee68; font-style: italic;">\</span>
   |        --enable-infinality=no
-  |        <span style="color: #00cd66;"># </span><span style="color: #00cd66;">TODO latest version of openjdk will disable infinality by default</span>
+  |        <span style="color: #888a85;"># </span><span style="color: #888a85;">TODO latest version of openjdk will disable infinality by default</span>
   |
 3.|    make icedtea-debug
   |}

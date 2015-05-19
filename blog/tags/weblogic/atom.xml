@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: Weblogic | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/weblogic/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-05-16T01:28:08+09:00</updated>
+  <updated>2015-05-19T23:39:09+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,290 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[検証]BytemanでWeblogicのアプリをトレースする]]></title>
+    <link href="http://luozengbin.github.io/blog/2014-07-23-%5B%E6%A4%9C%E8%A8%BC%5Dbyteman%E3%81%A7weblogic%E3%81%AE%E3%82%A2%E3%83%97%E3%83%AA%E3%82%92%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E3%81%99%E3%82%8B.html"/>
+    <updated>2014-07-23T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[検証]bytemanでweblogicのアプリをトレースする</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. インストール</a></li>
+<li><a href="#sec-3">3. WLS起動オプションの変更</a></li>
+<li><a href="#sec-4">4. テスト用サーブレット</a></li>
+<li><a href="#sec-5">5. トレースして見る</a></li>
+<li><a href="#sec-6">6. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+Weblogicのインスツルメンテーション機能に対して以下の課題が抱えていたため、Bytemanを使
+うことにしました。
+</p>
+
+
+
+
+<ul class="org-ul">
+<li><code>DisplayArgumentsAction</code> でメソッドの引数と戻り値が取れない
+</li>
+<li>採集結果がバイナリのため、利用不便(テキスト形式が望ましい)
+</li>
+<li>アプリ再デプロイするとインスツルメンテーション定義が消える
+</li>
+</ul>
+
+
+
+
+<p>
+<code>Byteman</code> はRed HatがリードするJBoss Communityプロジェクトのひつとであるため
+<code>Weblogic</code> でちゃんと動くが不安でした。検証したところ問題なく動いたので手順を残してお
+きます。
+</p>
+
+
+
+
+<p>
+<!-- more -->
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 環境</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>Red Hat Enterprise Linux Server release 5.8 (Tikanga)
+</li>
+<li>WebLogic Server 10.3.6.0
+</li>
+<li>Byteman 2.2.2
+</li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> インストール</h2>
+<div class="outline-text-2" id="text-2">
+<pre class="example">
+$ cd /tmp
+$ wget http://downloads.jboss.org/byteman/2.2.2/byteman-download-2.2.2-bin.zip
+$ unzip byteman-download-2.2.2-bin.zip
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> WLS起動オプションの変更</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+<code>$DOMAIN_HOME/bin/startWebLogic.sh</code> に <code>-javaagent</code> オプションにてBytemanを取り込む。
+</p>
+<div class="org-src-container">
+
+<pre class="src src-sh">167|  <span style="color: #888a85;"># </span><span style="color: #888a85;">START WEBLOGIC</span>
+168|
+169|  <span style="color: #63b8ff;">echo</span> <span style="color: #bcee68; font-style: italic;">"starting weblogic with Java version:"</span>
+170|
+171|  ${<span style="color: #ff6347;">JAVA_HOME</span>}/bin/java ${<span style="color: #ff6347;">JAVA_VM</span>} -version
+  +|
+  +|<span style="color: #888a85;">## </span><span style="color: #888a85;">add byteman agent</span>
+  +|<span style="color: #888a85;">## </span><span style="color: #888a85;">&#24517;&#35201;&#12395;&#24540;&#12376;&#12390;SERVER_NAME&#22793;&#25968;&#12434;&#21033;&#29992;&#12375;&#12289;&#29305;&#23450;&#12398;&#31649;&#29702;&#23550;&#35937;&#12469;&#12540;&#12496;&#12398;&#12415;&#12395;&#36969;&#29992;&#12377;&#12427;</span>
+  +|<span style="color: #888a85;">## </span><span style="color: #888a85;">if [ "${SERVER_NAME}" = "xxx_server" ]; then</span>
+  +|<span style="color: #ff6347;">BYTEMAN_HOME</span>=/tmp/byteman-download-2.2.2
+  +|<span style="color: #ff6347;">JAVA_OPTIONS</span>=<span style="color: #bcee68; font-style: italic;">"-javaagent:${BYTEMAN_HOME}/lib/byteman.jar=listener:true,boot:${BYTEMAN_HOME}/lib/byteman.jar -Dorg.jboss.byteman.transform.all ${JAVA_OPTIONS}"</span>
+  +|
+172|
+173|  <span style="color: #00bfff; font-weight: bold;">if</span> [ <span style="color: #bcee68; font-style: italic;">"${WLS_REDIRECT_LOG}"</span> = <span style="color: #bcee68; font-style: italic;">""</span> ] ; <span style="color: #00bfff; font-weight: bold;">then</span>
+174|     <span style="color: #63b8ff;">echo</span> <span style="color: #bcee68; font-style: italic;">"Starting WLS with line:"</span>
+175|     <span style="color: #63b8ff;">echo</span> <span style="color: #bcee68; font-style: italic;">"${JAVA_HOME}/bin/java ${JAVA_VM} ${MEM_ARGS} -Dweblogic.Name=${SERVER_NAME} -Djava.security.policy=${WL_HOME}/server/lib/weblogic.policy ${JAVA_OPTIONS} ${PROXY_SETTINGS} ${SERVER_CLASS}"</span>
+176|     ${<span style="color: #ff6347;">JAVA_HOME</span>}/bin/java ${<span style="color: #ff6347;">JAVA_VM</span>} ${<span style="color: #ff6347;">MEM_ARGS</span>} -Dweblogic.Name=${<span style="color: #ff6347;">SERVER_NAME</span>} -Djava.security.policy=${<span style="color: #ff6347;">WL_HOME</span>}/server/lib/weblogic.policy ${<span style="color: #ff6347;">JAVA_OPTIONS</span>} ${<span style="color: #ff6347;">PROXY_SETTINGS</span>} ${<span style="color: #ff6347;">SERVER_CLASS</span>}
+177|  <span style="color: #00bfff; font-weight: bold;">else</span>
+178|     <span style="color: #63b8ff;">echo</span> <span style="color: #bcee68; font-style: italic;">"Redirecting output from WLS window to ${WLS_REDIRECT_LOG}"</span>
+179|     ${<span style="color: #ff6347;">JAVA_HOME</span>}/bin/java ${<span style="color: #ff6347;">JAVA_VM</span>} ${<span style="color: #ff6347;">MEM_ARGS</span>} -Dweblogic.Name=${<span style="color: #ff6347;">SERVER_NAME</span>} -Djava.security.policy=${<span style="color: #ff6347;">WL_HOME</span>}/server/lib/weblogic.policy ${<span style="color: #ff6347;">JAVA_OPTIONS</span>} ${<span style="color: #ff6347;">PROXY_SETTINGS</span>} ${<span style="color: #ff6347;">SERVER_CLASS</span>}  &gt;<span style="color: #bcee68; font-style: italic;">"${WLS_REDIRECT_LOG}"</span> 2&gt;&amp;1 
+180|  <span style="color: #00bfff; font-weight: bold;">fi</span>
+</pre>
+</div>
+<p>
+<code>+</code> が追加内容となります。
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> テスト用サーブレット</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+URLパラメータを画面に返す単純なサーブレットをWLSにデプロイする。
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"> 1| <span style="color: #00bfff; font-weight: bold;">package</span> <span style="color: #8ae234;">testwebapp</span>;
+ 2|  
+ 3| <span style="color: #00bfff; font-weight: bold;">import</span> <span style="color: #8ae234;">java</span>.<span style="color: #8ae234;">io</span>.<span style="color: #8ae234; font-weight: bold;">IOException</span>;
+ 4| <span style="color: #00bfff; font-weight: bold;">import</span> <span style="color: #8ae234;">java</span>.<span style="color: #8ae234;">io</span>.<span style="color: #8ae234; font-weight: bold;">PrintWriter</span>;
+ 5|  
+ 6| <span style="color: #00bfff; font-weight: bold;">import</span> <span style="color: #8ae234;">javax</span>.<span style="color: #8ae234;">servlet</span>.*;
+ 7| <span style="color: #00bfff; font-weight: bold;">import</span> <span style="color: #8ae234;">javax</span>.<span style="color: #8ae234;">servlet</span>.<span style="color: #8ae234;">http</span>.*;
+ 8|  
+ 9| <span style="color: #00bfff; font-weight: bold;">public</span> <span style="color: #00bfff; font-weight: bold;">class</span> HelloWorldServlet <span style="color: #00bfff; font-weight: bold;">extends</span> <span style="color: #8ae234; font-weight: bold;">HttpServlet</span> {
+10|     <span style="color: #00bfff; font-weight: bold;">private</span> <span style="color: #00bfff; font-weight: bold;">static</span> <span style="color: #00bfff; font-weight: bold;">final</span> String CONTENT_TYPE = <span style="color: #bcee68; font-style: italic;">"text/html; charset=UTF-8"</span>;
+11|  
+12|     <span style="color: #00bfff; font-weight: bold;">public</span> <span style="color: #8ae234; font-weight: bold;">void</span> init(<span style="color: #8ae234; font-weight: bold;">ServletConfig</span> <span style="color: #ff6347;">config</span>) <span style="color: #00bfff; font-weight: bold;">throws</span> <span style="color: #8ae234; font-weight: bold;">ServletException</span> {
+13|         <span style="color: #00bfff; font-weight: bold;">super</span>.init(config);
+14|     }
+15|  
+16|     <span style="color: #00bfff; font-weight: bold;">public</span> <span style="color: #8ae234; font-weight: bold;">void</span> doGet(<span style="color: #8ae234; font-weight: bold;">HttpServletRequest</span> <span style="color: #ff6347;">request</span>, <span style="color: #8ae234; font-weight: bold;">HttpServletResponse</span> <span style="color: #ff6347;">response</span>) <span style="color: #00bfff; font-weight: bold;">throws</span> <span style="color: #8ae234; font-weight: bold;">ServletException</span>, <span style="color: #8ae234; font-weight: bold;">IOException</span> {
+17|         
+18|         System.out.println(<span style="color: #bcee68; font-style: italic;">"--doGet--"</span>);
+19|         
+20|         request.setCharacterEncoding(<span style="color: #bcee68; font-style: italic;">"UTF-8"</span>);
+21|         
+22|         response.setContentType(CONTENT_TYPE);
+23|         PrintWriter out = response.getWriter();
+24|         out.println(<span style="color: #bcee68; font-style: italic;">"&lt;html&gt;"</span>);
+25|         out.println(<span style="color: #bcee68; font-style: italic;">"&lt;head&gt;&lt;title&gt;HelloWorldServlet&lt;/title&gt;&lt;/head&gt;"</span>);
+26|         out.println(<span style="color: #bcee68; font-style: italic;">"&lt;body&gt;"</span>);
+27|         out.println(String.format(<span style="color: #bcee68; font-style: italic;">"&lt;p&gt;Hello %s&lt;/p&gt;"</span>, request.getParameter(<span style="color: #bcee68; font-style: italic;">"Name"</span>)));
+28|         out.println(<span style="color: #bcee68; font-style: italic;">"&lt;/body&gt;&lt;/html&gt;"</span>);
+29|         out.close();
+30|     }
+31| }
+</pre>
+</div>
+
+<p>
+20行目、マルチバイト文字化けを防ぐために <code>setCharacterEncoding("UTF-8")</code> にてデコード用の文字コー
+ドを指定しています。
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> トレースして見る</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+下記Bytemanスクリプトで <code>setCharacterEncoding("UTF-8")</code> 前後で <code>request.getParameter("Name")</code>
+の値を出力する。
+</p>
+
+<p>
+<code>/tmp/trace_HelloWorldServlet.btm</code> 4行目と13行目はトレース対象Javaソースコードの行数
+を指定しています。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-java"> 1| RULE trace before setCharacterEncoding
+ 2| CLASS <span style="color: #8ae234;">testwebapp</span>.HelloWorldServlet
+ 3| METHOD doGet
+ 4| AT LINE 18
+ 5| IF TRUE
+ 6|     DO traceln(<span style="color: #bcee68; font-style: italic;">"request.getParameter(\"Name\") = "</span> + $request.getParameter(<span style="color: #bcee68; font-style: italic;">"Name"</span>))
+ 7| ENDRULE
+ 8|  
+ 9|  
+10| RULE trace after setCharacterEncoding
+11| CLASS <span style="color: #8ae234;">testwebapp</span>.HelloWorldServlet
+12| METHOD doGet
+13| AT LINE 24
+14| IF TRUE
+15|     DO traceln(<span style="color: #bcee68; font-style: italic;">"request.getParameter(\"Name\") = "</span> + $request.getParameter(<span style="color: #bcee68; font-style: italic;">"Name"</span>))
+16| ENDRULE
+</pre>
+</div>
+
+<p>
+スクリプトをByteman Agentにロードする、この時点でバイトコードのインジェクションが実施
+される。
+</p>
+<pre class="example">
+$ export BYTEMAN_HOME=`pwd`
+$ export JAVA_HOME=/u01/jdk1.7.0_75/
+$ export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64
+$ ${BYTEMAN_HOME}/bin/bmsubmit.sh /tmp/trace_HelloWorldServlet.btm
+install rule trace before setCharacterEncoding
+install rule trace after setCharacterEncoding
+</pre>
+
+<p>
+<code>curl</code> でテスト用サーブレットをキックする。
+</p>
+<pre class="example">
+$ curl http://10.185.136.15:8001/TestWebApp/HelloWorldServlet?Name=あきら
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;HelloWorldServlet&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+&lt;p&gt;Hello あきら&lt;/p&gt;
+&lt;/body&gt;&lt;/html&gt;
+</pre>
+
+<p>
+WLSサーバの標準出力を確認する。
+</p>
+<pre class="example">
+request.getParameter("Name") = ããã
+--doGet--
+request.getParameter("Name") = あきら
+</pre>
+
+<p>
+バッチリですね！
+</p>
+
+<p>
+最後に、登録したトレーススクリプトをアンロードし、バイトコードを元に戻す。
+</p>
+
+<pre class="example">
+$ export BYTEMAN_HOME=`pwd`
+$ export JAVA_HOME=/u01/jdk1.7.0_75/
+$ export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64
+$ ${BYTEMAN_HOME}/bin/bmsubmit.sh -u /tmp/trace_HelloWorldServlet.btm
+uninstall RULE trace before setCharacterEncoding
+uninstall RULE trace after setCharacterEncoding
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> 参考</h2>
+<div class="outline-text-2" id="text-6">
+<ul class="org-ul">
+<li><a href="http://nekop.hatenablog.com/entry/20111226/1324885926">Bytemanクイックリファレンス</a>
+</li>
+<li><a href="http://byteman.jboss.org/documentation">http://byteman.jboss.org/documentation</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[検証]Weblogicのインスツルメンテーション機能]]></title>
