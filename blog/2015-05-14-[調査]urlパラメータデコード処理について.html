@@ -1,0 +1,1021 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="ja"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>[調査]URLパラメータデコード処理について - Akira's Tech Notes</title>
+  <meta name="author" content="luozengbin">
+
+  
+  <meta name="description" content="Table of Contents 1. URLパラメータのエンコーディング仕様
+2. 文字化けの原因
+3. Tomcat7の実装 3.1. URIEncoding属性値
+3.2. useBodyEncodingForURI属性値
+3.3. 設定と挙動のまとめ 4. Weblogic &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://luozengbin.github.io/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Akira's Tech Notes" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-34369831-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Akira's Tech Notes</a></h1>
+  
+    <h2>Java, Linux, Emacs</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:luozengbin.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/blog/about.html">About</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">[調査]URLパラメータデコード処理について</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-05-14T00:00:00+09:00" pubdate data-updated="true">2015-05-14 (Thu)</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. URLパラメータのエンコーディング仕様</a></li>
+<li><a href="#sec-2">2. 文字化けの原因</a></li>
+<li><a href="#sec-3">3. Tomcat7の実装</a>
+<ul>
+<li><a href="#sec-3-1">3.1. URIEncoding属性値</a></li>
+<li><a href="#sec-3-2">3.2. useBodyEncodingForURI属性値</a></li>
+<li><a href="#sec-3-3">3.3. 設定と挙動のまとめ</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. Weblogic 11gの設定</a>
+<ul>
+<li><a href="#sec-4-1">4.1. 起動パラメータで指定する</a></li>
+<li><a href="#sec-4-2">4.2. weblogic.xmlにて指定する</a></li>
+<li><a href="#sec-4-3">4.3. ServletRequest.setCharacterEncoding(String env) APIで指定する</a></li>
+<li><a href="#sec-4-4">4.4. ADFフレームワーク利用時の注意事項</a></li>
+</ul>
+</li>
+<li><a href="#sec-5">5. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+URLパラメータの日本語文字が化けたので、APサーバのURLパラメータデコード処理について
+調べました。
+</p>
+
+<p>
+<!-- more -->
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> URLパラメータのエンコーディング仕様</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+HTTPプロトコルのGETメソッドで通信する場合、URLパラメータをエンコーディングしなければ
+いけません。その仕様は <a href="http://tools.ietf.org/html/rfc3986#section-2.1">rfc3986:Uniform Resource Identifier (URI): Generic Syntax</a> にて
+定義されている。
+</p>
+
+<p>
+例えばブラウザに下記URLを入力して送信する。
+</p>
+<pre class="example">
+http://www.yahoo.co.jp/?param1=あきら
+</pre>
+
+<p>
+パケットレベルで実際に送信された内容を確認するとURLに日本語パラメータ部分が<a href="http://ja.wikipedia.org/wiki/%25E3%2583%2591%25E3%2583%25BC%25E3%2582%25BB%25E3%2583%25B3%25E3%2583%2588%25E3%2582%25A8%25E3%2583%25B3%25E3%2582%25B3%25E3%2583%25BC%25E3%2583%2587%25E3%2582%25A3%25E3%2583%25B3%25E3%2582%25B0">パーセン
+トエンコーディング</a>されていることが分かります。
+</p>
+
+<pre class="example">
+GET http://www.yahoo.co.jp/?param1=%E3%81%82%E3%81%8D%E3%82%89 HTTP/1.1
+Host: www.yahoo.co.jp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: ja,en-US;q=0.7,en;q=0.3
+Accept-Encoding: gzip, deflate
+</pre>
+
+<p>
+<code>param1=あきら</code> にマルチバイト部分が下記のイメージでエンコードされる。
+</p>
+<pre class="example">
++-------------------+-------------------+-------------------+
+|       あ          |         き        |         ら        |
++-----+------+------+-----+------+------+-----+------+------+
+| -29 | -127 | -126 | -29 | -127 | -155 | -29 | -126 | -119 | ← ステップ1
++-----+------+------+-----+------+------+-----+------+------+
+| 0xe3| 0x81 | 0x82 | 0xe3| 0x81 | 0x8d | 0xe3| 0x82 | 0x89 | ← ステップ2
++-----+------+------+-----+------+------+-----+------+------+
+| %E3 | %81  | %82  | %E3 | %81  | %8D  | %E3 | %82  | %89  | ← ステップ3
++-----+------+------+-----+------+------+-----+------+------+
+</pre>
+<p>
+<code>表1</code>
+</p>
+
+<ul class="org-ul">
+<li>ステップ1: &#8220;あきら&#8221;文字列をUTF-8符号化バイト表現に変換する
+</li>
+<li>ステップ2: 16進数に見直す。1オクテットは、2桁の十六進表記で表現することができる。
+</li>
+<li>ステップ3: 2桁の十六進表現を大文字にして、先頭に&#8221;%&#8221;を追加する
+</li>
+</ul>
+
+<p>
+ステップ1の文字コード(UTF-8)はブラウザの実装／設定に依存する。一般にUTF-8を採用するこ
+とが多いい。
+</p>
+
+<p>
+Javaに下記URLエンコード／デコード用の標準APIが用意されている。
+</p>
+<ul class="org-ul">
+<li><a href="https://docs.oracle.com/javase/jp/6/api/java/net/URLEncoder.html#encode%2528java.lang.String,%2520java.lang.String%2529">java.net.URLEncoder.encode(String s, String enc)</a>
+</li>
+<li><a href="https://docs.oracle.com/javase/jp/6/api/java/net/URLDecoder.html">java.net.URLDecoder.decode(String s, String enc)</a>
+</li>
+</ul>
+
+<p>
+<code>表1</code> にエンコードの流れについて下記サンプルプログラムで確認することができる。
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #ffffff;">import</span> <span style="color: #40e0d0;">java</span>.<span style="color: #40e0d0;">io</span>.<span style="color: #7fffd4;">UnsupportedEncodingException</span>;
+<span style="color: #ffffff;">import</span> <span style="color: #40e0d0;">java</span>.<span style="color: #40e0d0;">net</span>.<span style="color: #7fffd4;">URLEncoder</span>;
+
+<span style="color: #ffffff;">public</span> <span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">URLEncoderTest</span> {
+    <span style="color: #ffffff;">public</span> <span style="color: #ffffff;">static</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">main</span>(<span style="color: #7fffd4;">String</span>[] <span style="color: #9acd32;">args</span>) <span style="color: #ffffff;">throws</span> <span style="color: #7fffd4;">UnsupportedEncodingException</span> {
+
+        System.out.println(URLEncoder1.encode(<span style="color: #bdb76b;">"&#12354;&#12365;&#12425;"</span>, <span style="color: #bdb76b;">"UTF-8"</span>));
+
+        <span style="color: #00cd66;">// </span><span style="color: #00cd66;">UTF-8&#12496;&#12452;&#12488;&#34920;&#29694;&#12434;&#20986;&#21147;&#12377;&#12427;</span>
+        <span style="color: #7fffd4;">byte</span>[] <span style="color: #9acd32;">bs</span> = <span style="color: #bdb76b;">"&#12354;&#12365;&#12425;"</span>.getBytes(<span style="color: #bdb76b;">"UTF-8"</span>);
+        <span style="color: #ffffff;">for</span> (<span style="color: #7fffd4;">byte</span> <span style="color: #9acd32;">b</span> : bs) {
+            System.out.print(b);
+            System.out.print(<span style="color: #bdb76b;">" | "</span>);
+        }
+        System.out.print(<span style="color: #bdb76b;">"\n"</span>);
+
+        <span style="color: #00cd66;">// </span><span style="color: #00cd66;">16&#36914;&#25968;&#34920;&#29694;&#12434;&#20986;&#21147;&#12377;&#12427;</span>
+        <span style="color: #ffffff;">for</span> (<span style="color: #7fffd4;">byte</span> <span style="color: #9acd32;">b</span> : bs) {
+            System.out.println(Integer.toHexString(b));
+        }
+    }
+}
+</pre>
+</div>
+
+<p>
+出力結果
+</p>
+<pre class="example">
+%E3%81%82%E3%81%8D%E3%82%89
+-29 | -127 | -126 | -29 | -127 | -115 | -29 | -126 | -119 |
+ffffffe3
+ffffff81
+ffffff82
+ffffffe3
+ffffff81
+ffffff8d
+ffffffe3
+ffffff82
+ffffff89
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 文字化けの原因</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+HTTPリクエストを受ける側(Web/APサーバ)、上記 <code>表1</code> と逆順でURLパラメータをデコードし
+なければいけません。URLパラメータのデコード処理はAPサーバを隠蔽してくれるので業務AP側
+あんまり意識しないかもしれないですが。ステップ1でクライアントとAPサーバが異なる文字
+コードを使用すると文字化けが起こりえるので要注意です。
+</p>
+
+<p>
+URLパラメータの文字コードについて、クライアントとAPサーバ間のネゴシエーション仕様は
+HTTPプロトコル上明確に定義されていないため、ベンダによって実装が変わる。主に以下のよ
+うな処理パターンが存在するでしょう。
+</p>
+
+<ol class="org-ol">
+<li>HTTPヘッダにContent-Type値に基づく、URLパラメータの文字コードを決める
+</li>
+<li>APサーバの設定パラメータに基づく、URLパラメータの文字コードを決める
+</li>
+<li><a href="http://docs.oracle.com/javaee/6/api/javax/servlet/ServletRequest.html#setCharacterEncoding%2528java.lang.String%2529">javax.servlet.ServletRequest.setCharacterEncoding(String env)</a> APIで設定された値に
+基づく、URLパラメータの文字コードを決める
+</li>
+</ol>
+
+<p>
+HTTPヘッダのContent-Type値はPOSTリクエストにHTTPボディ部分の文字コードを示す項目です
+が、GETリクエストにContent-Type値を含めることは稀に見ないでしょう。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> Tomcat7の実装</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+環境: apache-tomcat-7.0.47
+</p>
+
+<p>
+検証用サンプルプログラム <code>profiler.MainServlet.java</code>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #ffffff;">package</span> <span style="color: #40e0d0;">profiler</span>;
+
+<span style="color: #ffffff;">import</span> <span style="color: #40e0d0;">java</span>.<span style="color: #40e0d0;">io</span>.<span style="color: #7fffd4;">IOException</span>;
+
+<span style="color: #ffffff;">import</span> <span style="color: #40e0d0;">javax</span>.<span style="color: #40e0d0;">servlet</span>.<span style="color: #7fffd4;">ServletException</span>;
+<span style="color: #ffffff;">import</span> <span style="color: #40e0d0;">javax</span>.<span style="color: #40e0d0;">servlet</span>.<span style="color: #40e0d0;">annotation</span>.<span style="color: #7fffd4;">WebServlet</span>;
+<span style="color: #ffffff;">import</span> <span style="color: #40e0d0;">javax</span>.<span style="color: #40e0d0;">servlet</span>.<span style="color: #40e0d0;">http</span>.<span style="color: #7fffd4;">HttpServlet</span>;
+<span style="color: #ffffff;">import</span> <span style="color: #40e0d0;">javax</span>.<span style="color: #40e0d0;">servlet</span>.<span style="color: #40e0d0;">http</span>.<span style="color: #7fffd4;">HttpServletRequest</span>;
+<span style="color: #ffffff;">import</span> <span style="color: #40e0d0;">javax</span>.<span style="color: #40e0d0;">servlet</span>.<span style="color: #40e0d0;">http</span>.<span style="color: #7fffd4;">HttpServletResponse</span>;
+
+<span style="color: #bdb76b;">/**</span>
+<span style="color: #bdb76b;"> * Servlet implementation class MainServlet</span>
+<span style="color: #bdb76b;"> */</span>
+<span style="color: #40e0d0;">@WebServlet</span>(<span style="color: #bdb76b;">"/MainServlet"</span>)
+<span style="color: #ffffff;">public</span> <span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">MainServlet</span> <span style="color: #ffffff;">extends</span> <span style="color: #7fffd4;">HttpServlet</span> {
+    <span style="color: #ffffff;">private</span> <span style="color: #ffffff;">static</span> <span style="color: #ffffff;">final</span> <span style="color: #7fffd4;">long</span> <span style="color: #9acd32;">serialVersionUID</span> = 1L;
+
+    <span style="color: #ffffff;">public</span> <span style="color: #98fb98;">MainServlet</span>() {
+        <span style="color: #ffffff;">super</span>();
+    }
+
+    <span style="color: #ffffff;">protected</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">doGet</span>(<span style="color: #7fffd4;">HttpServletRequest</span> <span style="color: #9acd32;">request</span>, <span style="color: #7fffd4;">HttpServletResponse</span> <span style="color: #9acd32;">response</span>) <span style="color: #ffffff;">throws</span> <span style="color: #7fffd4;">ServletException</span>, <span style="color: #7fffd4;">IOException</span> {
+      <span style="color: #00cd66;">// </span><span style="color: #00cd66;">URL&#12497;&#12521;&#12513;&#12540;&#12479;&#12434;&#20986;&#21147;&#12377;&#12427;</span>
+        System.out.println(request.getParameter(<span style="color: #bdb76b;">"param1"</span>));
+    }
+
+    <span style="color: #ffffff;">protected</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">doPost</span>(<span style="color: #7fffd4;">HttpServletRequest</span> <span style="color: #9acd32;">request</span>, <span style="color: #7fffd4;">HttpServletResponse</span> <span style="color: #9acd32;">response</span>) <span style="color: #ffffff;">throws</span> <span style="color: #7fffd4;">ServletException</span>, <span style="color: #7fffd4;">IOException</span> {
+    }
+}
+</pre>
+</div>
+
+<p>
+Debugモードで上記サンプルをトレースしてみると、URLパラメータデコード処理時の実行スタッ
+クは以下となります。
+</p>
+<pre class="example">
+at org.apache.tomcat.util.buf.UDecoder.convert(UDecoder.java:100)
+at org.apache.tomcat.util.http.Parameters.urlDecode(Parameters.java:489)
+at org.apache.tomcat.util.http.Parameters.processParameters(Parameters.java:396)
+at org.apache.tomcat.util.http.Parameters.processParameters(Parameters.java:501)
+at org.apache.tomcat.util.http.Parameters.handleQueryParameters(Parameters.java:194)
+at org.apache.catalina.connector.Request.parseParameters(Request.java:3059)
+at org.apache.catalina.connector.Request.getParameter(Request.java:1151)
+at org.apache.catalina.connector.RequestFacade.getParameter(RequestFacade.java:384)
+at profiler.MainServlet.doGet(MainServlet.java:32)
+</pre>
+
+<p>
+実行スタックから見ると <a href="http://docs.oracle.com/javaee/6/api/javax/servlet/ServletRequest.html#getParameter%2528java.lang.String%2529">javax.servlet.ServletRequest.getParameter(String name)</a> が初回
+呼ばれた時に次のJavaクラスが実行され、URLパラメータのデコード処理が行われることが分か
+ります。
+</p>
+
+<ul class="org-ul">
+<li><a href="https://github.com/apache/tomcat70/blob/trunk/java/org/apache/catalina/connector/Request.java">org.apache.catalina.connector.Request.java</a>
+</li>
+<li><a href="https://github.com/apache/tomcat70/blob/trunk/java/org/apache/tomcat/util/http/Parameters.java">org.apache.tomcat.util.http.Parameters.java</a>
+</li>
+</ul>
+
+<p>
+※記述が冗長のため、以降はRequestとParametersで記述する。
+</p>
+
+<p>
+以下はParameters.javaにURLパラメータの文字コード決める部分の抜粋です。
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"> 1 |<span style="color: #ffffff;">package</span> org.apache.tomcat.util.<span style="color: #40e0d0;">http</span>;
+ 2 |(<span style="color: #7fffd4;">&#20013;&#30053;</span>)
+ 3 |<span style="color: #ffffff;">public</span> <span style="color: #ffffff;">final</span> <span style="color: #ffffff;">class</span> Parameters {
+ 4 | 
+ 5 |    (<span style="color: #7fffd4;">&#20013;&#30053;</span>)
+ 6 | 
+ 7 |    <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> handleQueryParameters() {
+ 8 |        (<span style="color: #7fffd4;">&#20013;&#30053;</span>) 14&#34892;&#30446;&#12434;&#21628;&#12403;&#20986;&#12375;
+ 9 |        processParameters( decodedQuery, queryStringEncoding );
+10 |    }
+11 | 
+12 |    (<span style="color: #7fffd4;">&#20013;&#30053;</span>)
+13 | 
+14 |    <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> processParameters( <span style="color: #7fffd4;">MessageBytes</span> <span style="color: #9acd32;">data</span>, <span style="color: #7fffd4;">String</span> <span style="color: #9acd32;">encoding</span> ) {
+15 |        (<span style="color: #7fffd4;">&#20013;&#30053;</span>) 22&#34892;&#30446;&#12434;&#21628;&#12403;&#20986;&#12375;&#12390;&#12363;&#12425;34&#34892;&#30446;&#12434;&#23455;&#34892;&#12377;&#12427;
+16 |        processParameters( bc.getBytes(), bc.getOffset(),
+17 |                           bc.getLength(), getCharset(encoding));
+18 |    }
+19 | 
+20 |    (<span style="color: #7fffd4;">&#20013;&#30053;</span>)
+21 | 
+22 |    <span style="color: #ffffff;">private</span> Charset getCharset(<span style="color: #7fffd4;">String</span> <span style="color: #9acd32;">encoding</span>) {
+23 |        <span style="color: #ffffff;">if</span> (encoding == <span style="color: #40e0d0;">null</span>) {
+24 |            <span style="color: #ffffff;">return</span> DEFAULT_CHARSET;  <span style="color: #00cd66;">// </span><span style="color: #00cd66;">ISO-8859-1</span>
+25 |        }
+26 |        <span style="color: #ffffff;">try</span> {
+27 |            <span style="color: #ffffff;">return</span> B2CConverter.getCharset(encoding);
+28 |        } <span style="color: #ffffff;">catch</span> (<span style="color: #7fffd4;">UnsupportedEncodingException</span> <span style="color: #9acd32;">e</span>) {
+29 |            <span style="color: #ffffff;">return</span> DEFAULT_CHARSET;
+30 |        }
+31 |    }
+32 | 
+33 |    (<span style="color: #7fffd4;">&#20013;&#30053;</span>)
+34 |    <span style="color: #ffffff;">private</span> <span style="color: #7fffd4;">void</span> processParameters(<span style="color: #7fffd4;">byte</span> <span style="color: #9acd32;">bytes</span>[], <span style="color: #7fffd4;">int</span> <span style="color: #9acd32;">start</span>, <span style="color: #7fffd4;">int</span> <span style="color: #9acd32;">len</span>,
+35 |                                  Charset charset) {
+36 | 
+37 |        <span style="color: #ffffff;">if</span>(log.isDebugEnabled()) {
+38 |            log.debug(sm.getString(<span style="color: #bdb76b;">"parameters.bytes"</span>,
+39 |                    <span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">String</span>(bytes, start, len, DEFAULT_CHARSET)));
+40 |        }
+41 | 
+42 |        (<span style="color: #7fffd4;">&#20013;&#30053;</span>)
+43 |                String name;
+44 |                String value;
+45 | 
+46 |                <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;1 &#12497;&#12521;&#12513;&#12540;&#12479;&#21517;&#12398;&#12487;&#12467;&#12540;&#12489;</span>
+47 | 
+48 |                <span style="color: #ffffff;">if</span> (decodeName) {
+49 |                    urlDecode(tmpName);
+50 |                }
+51 | 
+52 |                tmpName.setCharset(charset);
+53 |                name = tmpName.toString();
+54 | 
+55 |                <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;2 &#12497;&#12521;&#12513;&#12540;&#12479;&#20516;&#12398;&#12487;&#12467;&#12540;&#12489;</span>
+56 | 
+57 |                <span style="color: #ffffff;">if</span> (valueStart &gt;= 0) {
+58 |                    <span style="color: #ffffff;">if</span> (decodeValue) {
+59 |                        urlDecode(tmpValue);
+60 |                    }
+61 | 
+62 |                    tmpValue.setCharset(charset);
+63 |                    value = tmpValue.toString();
+64 |                } <span style="color: #ffffff;">else</span> {
+65 |                    value = <span style="color: #bdb76b;">""</span>;
+66 |                }
+67 | 
+68 |        (<span style="color: #7fffd4;">&#20013;&#30053;</span>)
+69 |    }
+70 |}
+</pre>
+</div>
+
+<p>
+<code>62</code> 行目でURLパラメータ値パーセントデコード後バイト表現の文字コードを指定しています。
+ここのcharset値は次のメカニズムで決められる。
+</p>
+
+<p>
+Parameters.javaのqueryStringEncodingフィールド値が設定された場合その値が適用される。
+そうでない場合、デフォルト値 <code>ISO-8859-1</code> が適用される。
+</p>
+
+<p>
+Tomcat7にqueryStringEncodingフィールドの値を設定しているところは以下4箇所です。
+</p>
+<pre class="example">
+1| org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:386)
+2| org.apache.catalina.connector.Request.parseParameters(Request.java:3048)
+3| org.apache.catalina.connector.Request.parseParameters(Request.java:3054)
+4| org.apache.catalina.authenticator.FormAuthenticator.restoreRequest(FormAuthenticator.jaba:586)
+</pre>
+
+<ol class="org-ol">
+<li>HTTPリクエスト受けった時に Request オブジェクトを初期化するところで
+<code>conf/server.xml</code> にConnectorのURIEncoding属性値をRequestオブジェクトの
+queryStringEncodingに設定する。実行時スタックは下記の通りです。
+<pre class="example">
+"http-bio-8080-exec-1" - Thread t@23
+   java.lang.Thread.State: RUNNABLE
+    at org.apache.tomcat.util.http.Parameters.setQueryStringEncoding(Parameters.java:98)
+    at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:386)
+    at org.apache.coyote.http11.AbstractHttp11Processor.process(AbstractHttp11Processor.java:1041)
+    at org.apache.coyote.AbstractProtocol$AbstractConnectionHandler.process(AbstractProtocol.java:603)
+    at org.apache.tomcat.util.net.JIoEndpoint$SocketProcessor.run(JIoEndpoint.java:310)
+    - locked &lt;63f701a0&gt; (a org.apache.tomcat.util.net.SocketWrapper)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+    at java.lang.Thread.run(Thread.java:745)
+</pre>
+</li>
+
+<li>ServletRequest.getParameter(String name)初回実行時にURLパラメータの解析処理、以下
+は中身の詳細です。
+<div class="org-src-container">
+
+<pre class="src src-java"> 1 |<span style="color: #ffffff;">package</span> org.apache.catalina.<span style="color: #40e0d0;">connector</span>;
+ 2 |(<span style="color: #7fffd4;">&#20013;&#30053;</span>)
+ 3 |<span style="color: #ffffff;">public</span> <span style="color: #ffffff;">class</span> Request
+ 4 |     <span style="color: #ffffff;">implements</span> <span style="color: #7fffd4;">HttpServletRequest</span> {
+ 5 | 
+ 6 |     (<span style="color: #7fffd4;">&#20013;&#30053;</span>)
+ 7 | 
+ 8 |     <span style="color: #bdb76b;">/**</span>
+<span style="color: #bdb76b;"> 9 |      * Parse request parameters.</span>
+<span style="color: #bdb76b;">10 |      */</span>
+11 |     <span style="color: #ffffff;">protected</span> <span style="color: #7fffd4;">void</span> parseParameters() {
+12 | 
+13 |       parametersParsed = <span style="color: #40e0d0;">true</span>;
+14 | 
+15 |       Parameters parameters = coyoteRequest.getParameters();
+16 |       <span style="color: #7fffd4;">boolean</span> success = <span style="color: #40e0d0;">false</span>;
+17 |       <span style="color: #ffffff;">try</span> {
+18 |           <span style="color: #00cd66;">// </span><span style="color: #00cd66;">Set this every time in case limit has been changed via JMX</span>
+19 |           parameters.setLimit(getConnector().getMaxParameterCount());
+20 | 
+21 |           <span style="color: #00cd66;">// </span><span style="color: #00cd66;">getCharacterEncoding() may have been overridden to search for</span>
+22 |           <span style="color: #00cd66;">// </span><span style="color: #00cd66;">hidden form field containing request encoding</span>
+23 | 
+24 |           <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;1</span>
+25 |           <span style="color: #00cd66;">// </span><span style="color: #00cd66;">org.apache.coyote.Request.java&#12398;charEncoding&#12501;&#12451;&#12540;&#12523;&#12489;&#20516;&#12289;</span>
+26 |           <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#12418;&#12375;&#12367;&#12399;HTTP&#12504;&#12483;&#12480;&#12398;Content-Type&#20516;&#12363;&#12425;&#25991;&#23383;&#12467;&#12540;&#12489;&#24773;&#22577;&#12398;&#21462;&#24471;</span>
+27 |           String enc = getCharacterEncoding();
+28 | 
+29 |           <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;2</span>
+30 |           <span style="color: #00cd66;">// </span><span style="color: #00cd66;">server.xml&#12395;Connector&#12398;useBodyEncodingForURI&#23646;&#24615;&#20516;&#12398;&#21462;&#24471;</span>
+31 |           <span style="color: #7fffd4;">boolean</span> useBodyEncodingForURI = connector.getUseBodyEncodingForURI();
+32 | 
+33 | 
+34 |           <span style="color: #ffffff;">if</span> (enc != <span style="color: #40e0d0;">null</span>) {
+35 |               <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;3</span>
+36 |               <span style="color: #00cd66;">// </span><span style="color: #00cd66;">HTTP&#12504;&#12483;&#12480;&#12398;Content-Type&#20516;&#12364;&#25351;&#23450;&#12373;&#12428;&#12383;&#22580;&#21512;&#12289;&#36969;&#29992;&#12377;&#12427;</span>
+37 |               parameters.setEncoding(enc);
+38 |
+39 |               <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;4</span>
+40 |               <span style="color: #00cd66;">// </span><span style="color: #00cd66;">useBodyEncodingForURI&#23646;&#24615;&#20516;&#12364;true&#12398;&#22580;&#21512;&#12289;</span>
+41 |               <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#12300;&#9733;1&#12301;&#12391;&#21462;&#12428;&#12383;&#20516;&#12434;org.apache.tomcat.util.http.Parameters.java&#12398;</span>
+42 |               <span style="color: #00cd66;">// </span><span style="color: #00cd66;">queryStringEncoding&#12501;&#12451;&#12540;&#12523;&#12489;&#12395;&#36969;&#29992;&#12377;&#12427;</span>
+43 |               <span style="color: #ffffff;">if</span> (useBodyEncodingForURI) {
+44 |                   parameters.setQueryStringEncoding(enc);
+45 |               }
+46 |           } <span style="color: #ffffff;">else</span> {
+47 | 
+48 |               <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#9733;5</span>
+49 |               <span style="color: #00cd66;">// </span><span style="color: #00cd66;">&#12300;&#9733;1&#12301;&#20516;&#12364;&#21462;&#12428;&#12394;&#12356;&#22580;&#21512;&#12289;&#12487;&#12501;&#12457;&#12523;&#12488;&#20516;(ISO-8859-1)&#12434;&#36969;&#29992;&#12377;&#12427;</span>
+50 |
+51 |               parameters.setEncoding
+52 |                   (<span style="color: #40e0d0;">org</span>.<span style="color: #40e0d0;">apache</span>.<span style="color: #40e0d0;">coyote</span>.<span style="color: #40e0d0;">Constants</span>.DEFAULT_CHARACTER_ENCODING);
+53 |               <span style="color: #ffffff;">if</span> (useBodyEncodingForURI) {
+54 |                   parameters.setQueryStringEncoding
+55 |                       (<span style="color: #40e0d0;">org</span>.<span style="color: #40e0d0;">apache</span>.<span style="color: #40e0d0;">coyote</span>.<span style="color: #40e0d0;">Constants</span>.DEFAULT_CHARACTER_ENCODING);
+56 |               }
+57 |           }
+58 |             <span style="color: #00cd66;">// </span><span style="color: #00cd66;">org.apache.tomcat.util.http.Parameters.java&#12398;&#35299;&#26512;&#20966;&#29702;&#12434;&#12467;&#12540;&#12523;</span>
+59 |           parameters.handleQueryParameters();
+60 | 
+61 |     (&#20013;&#30053;)
+</pre>
+</div>
+<p>
+<code>リスト1</code>
+</p>
+
+<p>
+<code>profiler.MainServlet.java</code> サンプルプログラムに置いて、上記 <code>27</code> 行目実行時のスタッ
+クトレースを以下に示す。
+</p>
+
+<pre class="example">
+"http-bio-8080-exec-1" - Thread t@29
+   java.lang.Thread.State: RUNNABLE
+    at org.apache.tomcat.util.http.ContentType.getCharsetFromContentType(ContentType.java:41)
+    at org.apache.coyote.Request.getCharacterEncoding(Request.java:264)
+    at org.apache.catalina.connector.Request.getCharacterEncoding(Request.java:1048)
+    at org.apache.catalina.connector.Request.parseParameters(Request.java:3042)
+    at org.apache.catalina.connector.Request.getParameter(Request.java:1151)
+    at org.apache.catalina.connector.RequestFacade.getParameter(RequestFacade.java:384)
+    at profiler.MainServlet.doGet(MainServlet.java:32)
+</pre>
+</li>
+
+<li>上記2の説明に含まている
+</li>
+
+<li>今回の調査範囲外のため、別途&#x2026;
+</li>
+</ol>
+</div>
+
+<div id="outline-container-sec-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> URIEncoding属性値</h3>
+<div class="outline-text-3" id="text-3-1">
+<p>
+<code>conf/server.xml</code> にConnectorのURIEncoding属性値にてURLパラメータの文字コードのデフォ
+ルト値を指定することができる。ほどんどんのブラウザはUTF-8を採用しているため、この値を
+<code>UTF-8</code> に見直すべきでしょう。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-3-2" class="outline-3">
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> useBodyEncodingForURI属性値</h3>
+<div class="outline-text-3" id="text-3-2">
+<p>
+<code>conf/server.xml</code> にConnectorのuseBodyEncodingForURI属性値がtrueの場合、 <code>リスト1</code> の
+<code>44</code> と <code>55</code> 行目が実行され、URLパラメータの文字コードとHTTPボディの文字コードが統一
+される。
+</p>
+
+<p>
+Content-Type HTTPヘッダを含めないGETリクエストの場合 <code>27</code> 行目の値が null のため、URL
+パラメータにマルチバイト文字が化けでしょう。
+</p>
+
+<p>
+ServletRequest.getParameter(String name)を評価する前に
+<code>ServletRequest.setCharacterEncoding(String enc)</code> で予め
+org.apache.coyote.Request.javaのcharEncodingフィールド値を初期化すれば、文字化け問題
+を回避することが出来ます。
+</p>
+
+<p>
+と言うわけで <code>useBodyEncodingForURI</code> 属性値をtrueに指定する場合、業務APでURLパラメー
+タを参照する前に <code>ServletRequest.setCharacterEncoding(String enc)</code> を実行して文字コー
+ド明示した方がよいでしょう。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-3-3" class="outline-3">
+<h3 id="sec-3-3"><span class="section-number-3">3.3</span> 設定と挙動のまとめ</h3>
+<div class="outline-text-3" id="text-3-3">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="right" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="right">No</th>
+<th scope="col" class="left">URIEncoding</th>
+<th scope="col" class="left">useBodyEncodingForURI</th>
+<th scope="col" class="left">Content-Type</th>
+<th scope="col" class="left">結果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="right">1</td>
+<td class="left">-</td>
+<td class="left">false</td>
+<td class="left">有り／無し</td>
+<td class="left">文字化け</td>
+</tr>
+
+<tr>
+<td class="right">4</td>
+<td class="left">UTF-8</td>
+<td class="left">false</td>
+<td class="left">有り／無し</td>
+<td class="left">OK</td>
+</tr>
+
+<tr>
+<td class="right">3</td>
+<td class="left">任意</td>
+<td class="left">true</td>
+<td class="left">なし</td>
+<td class="left">文字化け</td>
+</tr>
+
+<tr>
+<td class="right">2</td>
+<td class="left">任意</td>
+<td class="left">true</td>
+<td class="left">有り</td>
+<td class="left">OK</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Tomcat6の場合、この２つパラメータは次のシステムプロパティとして指定することになります。
+</p>
+<ul class="org-ul">
+<li>org.apache.catalina.connector.URI_ENCODING
+</li>
+<li>org.apache.catalina.connector.USE_BODY_ENCODING_FOR_QUERY_STRING
+</li>
+</ul>
+
+<p>
+JBossAS7/EAP6もTomcat6と同じ方法です。
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Weblogic 11gの設定</h2>
+<div class="outline-text-2" id="text-4">
+</div><div id="outline-container-sec-4-1" class="outline-3">
+<h3 id="sec-4-1"><span class="section-number-3">4.1</span> 起動パラメータで指定する</h3>
+<div class="outline-text-3" id="text-4-1">
+<p>
+<a href="http://otndnld.oracle.co.jp/document/products/wls/docs90/ja/relnotes_ja.html">URL デコードする際の文字エンコーディングを指定する方法</a>
+</p>
+
+<pre class="example">
+-Dweblogic.http.URIDecodeEncoding=UTF-8
+</pre>
+
+<p>
+ただし、この設定は1つのサーバインスタンスで1つのみ可能です。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-4-2" class="outline-3">
+<h3 id="sec-4-2"><span class="section-number-3">4.2</span> weblogic.xmlにて指定する</h3>
+<div class="outline-text-3" id="text-4-2">
+<p>
+<a href="https://docs.oracle.com/middleware/1212/wls/WBAPP/configurejsp.htm#WBAPP187">Mapping IANA Character Sets to Java Character Sets</a>
+</p>
+<pre class="example">
+&lt;input-charset&gt;
+  &lt;resource-path&gt;/foo/*&lt;/resource-path&gt;
+  &lt;java-charset-name&gt;UTF-8&lt;/java-charset-name&gt;
+&lt;/input-charset&gt;
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-4-3" class="outline-3">
+<h3 id="sec-4-3"><span class="section-number-3">4.3</span> ServletRequest.setCharacterEncoding(String env) APIで指定する</h3>
+<div class="outline-text-3" id="text-4-3">
+<p>
+文字コード制御用のFilterにて実装することが多いい。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-4-4" class="outline-3">
+<h3 id="sec-4-4"><span class="section-number-3">4.4</span> ADFフレームワーク利用時の注意事項</h3>
+<div class="outline-text-3" id="text-4-4">
+<p>
+ADFフレームワーク内でHTTP Requestオブジェクトをラッピング時にFilterで指定した文字コー
+ド情報をロストしてしまうケースがあります。ADFフレームワーク利用時にJSFフェースリスナー
+のRESTORE_VIEWフェーズにて行うのが適切です。
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> 参考</h2>
+<div class="outline-text-2" id="text-5">
+<ul class="org-ul">
+<li><a href="https://tomcat.apache.org/tomcat-7.0-doc/config/http.html">Apache Tomcat 7 - The HTTP Connector</a>
+</li>
+<li><a href="http://tools.ietf.org/html/rfc3986#section-2">rfc3986#section-2</a>
+</li>
+<li><a href="http://ja.wikipedia.org/wiki/%25E3%2583%2591%25E3%2583%25BC%25E3%2582%25BB%25E3%2583%25B3%25E3%2583%2588%25E3%2582%25A8%25E3%2583%25B3%25E3%2582%25B3%25E3%2583%25BC%25E3%2583%2587%25E3%2582%25A3%25E3%2583%25B3%25E3%2582%25B0">パーセントエンコーディング</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">luozengbin</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-05-14T00:00:00+09:00" pubdate data-updated="true">2015-05-14 (Thu)</time>
+      
+
+<span class="categories">
+  Posted in
+  
+    <a class='category' href='/blog/categories/java/'>java</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://luozengbin.github.io/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html" data-via="" data-counturl="http://luozengbin.github.io/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html" title="Previous Post: [メモ]デバッグ版OpenJDKのビルド">&laquo; [メモ]デバッグ版OpenJDKのビルド</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <!-- create at 2017/07/01 
+       Google Chart Tools: Infographics
+       https://developers.google.com/chart/infographics/docs/qr_codes?csw=1
+  -->
+
+  <div style="position: relative; text-align: center">
+
+    <!-- Google Chart API でQRコード取得 -->
+    <img src="http://chart.apis.google.com/chart?chs=180x180&amp;cht=qr&amp;choe=UTF-8&amp;chl=http://luozengbin.github.io/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html" alt="post-qrcode" height="180" width="180" />
+
+    <!-- サイトのfaviconを重ねて表示する -->
+    <div style="position: absolute; top: 75px; width: 100%; margin: 0 auto; text-align: center">
+      <img style="border: 0.2em solid #FFF;" src="/favicon.png" alt="post-qrcode" height="30" width="30" />
+    </div>
+  </div>
+
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]URLパラメータデコード処理について</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html">[メモ]デバッグ版OpenJDKのビルド</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]JVMのスタックサイズについて</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html">[調査]JBossASソケット受信バッファーのサイズ</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-01-%5B%E3%83%A1%E3%83%A2%5Djbossas%E3%81%A7byteman%E3%82%92%E4%BD%BF%E3%81%86.html">[メモ]JBoss ASでBytemanを使う</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html">[まとめ]JBoss as 7過負荷時TCPコネクションの振る舞い</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html">[メモ]VirtualBox HostOnly on Linux</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html">[メモ]自宅サーバディスク増設記録</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html">[メモ]CMS GCログの見方</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">[メモ]ApacheでbackendとのKeepAliveをOFFにする</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+<section>
+  <h1>Categories</h1>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (15)</a></li><li><a href='/blog/categories/linux/'>linux (17)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+</section>
+<section>
+  <h1>Tag Cloud</h1>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/jvm' style='font-size: 120.0%'>jvm(1)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 120.0%'>stack(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/luozengbin">@luozengbin</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'luozengbin',
+            count: 1,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">
+  <img alt="クリエイティブ・コモンズ・ライセンス" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a>
+  この作品は
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">クリエイティブ・コモンズ 表示 - 非営利 4.0 国際 ライセンスの下に提供されています。</a>
+    <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'luozengbin';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://luozengbin.github.io/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html';
+        var disqus_url = 'http://luozengbin.github.io/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

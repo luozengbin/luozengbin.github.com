@@ -1,0 +1,48 @@
+org.glassfish.jersey.message.internal.MessageBodyFactory
+
+org.glassfish.jersey.moxy.json.internal.ConfigurableMoxyJsonProvider@3f91b517
+} else if(JAXBElement.class.isAssignableFrom(type)) {
+
+org.eclipse.persistence.jaxb.rs.MOXyJsonProvider
+protected JAXBContext getJAXBContext(Class<?> domainClass, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, ?> httpHeaders) throws JAXBException {
+
+
+
+Reader entityReader = new InputStreamReader(entityStream, charSet);
+                jsonSource = new StreamSource(entityReader);
+
+
+-- Parse
+org.eclipse.persistence.jaxb.JAXBUnmarshaller.unmarshal
+org.eclipse.persistence.oxm.XMLUnmarshaller.unmarshal
+ --> org.eclipse.persistence.internal.oxm.record.SAXUnmarshaller.unmarshal
+   --> org.eclipse.persistence.internal.oxm.record.SAXUnmarshaller.getNewXMLReader
+      --> create org.eclipse.persistence.internal.oxm.record.json.JSONReader
+
+org.eclipse.persistence.internal.oxm.record.json.JSONReader.parseRoot(commonTree)
+でjson文字列からPOJOへ変換される。
+
+   class org.eclipse.persistence.internal.oxm.record.UnmarshalRecordImpl.setAttributeValue
+   org.eclipse.persistence.oxm.mappings.XMLDirectMapping[name-->name/text()]
+   org.eclipse.persistence.internal.descriptors.MethodAttributeAccessor.setAttributeValueInObject
+   java.lang.reflect.Method.invoke
+   にてリフレクションでPOJOの初期化が行われる
+
+org.eclipse.persistence.jaxb.JAXBUnmarshalListener@2c95ac9e
+
+org.eclipse.persistence.internal.oxm.record.XMLReaderAdapter
+   contentHandler
+   lexicalHandler
+   
+
+
+createUnmarshalRecord
+
+org.eclipse.persistence.oxm.XMLDescriptor.wrapObjectInXMLRoot
+ --> org.eclipse.persistence.oxm.XMLRoot
+
+
+-- Binding
+org.eclipse.persistence.jaxb.JAXBUnmarshaller.buildJAXBElementFromObject
+
+-vmargs -javaagent:lombok.jar

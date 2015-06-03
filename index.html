@@ -9,11 +9,11 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="Table of Contents 1. 環境
-2. ビルド手順
-3. gdbでデバッグしてみる
-4. valgrindでコールグラフ出してみる
-5. 参考 今まで、JVM中身の調査は SystemTap + java-1.x.x-openjdk-debuginfo.x86_64 利用してい &hellip;">
+  <meta name="description" content="Table of Contents 1. URLパラメータのエンコーディング仕様
+2. 文字化けの原因
+3. Tomcat7の実装 3.1. URIEncoding属性値
+3.2. useBodyEncodingForURI属性値
+3.3. 設定と挙動のまとめ 4. Weblogic &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -88,6 +88,76 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]URLパラメータデコード処理について</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-05-14T00:00:00+09:00" pubdate data-updated="true">2015-05-14 (Thu)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. URLパラメータのエンコーディング仕様</a></li>
+<li><a href="#sec-2">2. 文字化けの原因</a></li>
+<li><a href="#sec-3">3. Tomcat7の実装</a>
+<ul>
+<li><a href="#sec-3-1">3.1. URIEncoding属性値</a></li>
+<li><a href="#sec-3-2">3.2. useBodyEncodingForURI属性値</a></li>
+<li><a href="#sec-3-3">3.3. 設定と挙動のまとめ</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. Weblogic 11gの設定</a>
+<ul>
+<li><a href="#sec-4-1">4.1. 起動パラメータで指定する</a></li>
+<li><a href="#sec-4-2">4.2. weblogic.xmlにて指定する</a></li>
+<li><a href="#sec-4-3">4.3. ServletRequest.setCharacterEncoding(String env) APIで指定する</a></li>
+<li><a href="#sec-4-4">4.4. ADFフレームワーク利用時の注意事項</a></li>
+</ul>
+</li>
+<li><a href="#sec-5">5. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+URLパラメータの日本語文字が化けたので、APサーバのURLパラメータデコード処理について
+調べました。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html">[メモ]デバッグ版OpenJDKのビルド</a></h1>
     
     
@@ -115,11 +185,11 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html#sec-1">1. 環境</a></li>
-<li><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html#sec-2">2. ビルド手順</a></li>
-<li><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html#sec-3">3. gdbでデバッグしてみる</a></li>
-<li><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html#sec-4">4. valgrindでコールグラフ出してみる</a></li>
-<li><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html#sec-5">5. 参考</a></li>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. ビルド手順</a></li>
+<li><a href="#sec-3">3. gdbでデバッグしてみる</a></li>
+<li><a href="#sec-4">4. valgrindでコールグラフ出してみる</a></li>
+<li><a href="#sec-5">5. 参考</a></li>
 </ul>
 </div>
 </div>
@@ -178,20 +248,20 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-1">1. 環境</a></li>
-<li><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-2">2. JVMのスタック領域について</a></li>
-<li><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-3">3. Javaスレッドのスタックページ構成</a></li>
-<li><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-4">4. HotSpotの実装</a>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. JVMのスタック領域について</a></li>
+<li><a href="#sec-3">3. Javaスレッドのスタックページ構成</a></li>
+<li><a href="#sec-4">4. HotSpotの実装</a>
 <ul>
-<li><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-4-1">4.1. glibc guard page</a></li>
-<li><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-4-2">4.2. HotSpot Guard Pages</a></li>
-<li><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-4-3">4.3. Normal Stack</a></li>
+<li><a href="#sec-4-1">4.1. glibc guard page</a></li>
+<li><a href="#sec-4-2">4.2. HotSpot Guard Pages</a></li>
+<li><a href="#sec-4-3">4.3. Normal Stack</a></li>
 </ul>
 </li>
-<li><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-5">5. スタックサイズの制御</a></li>
-<li><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-6">6. ulimit -sの影響範囲</a></li>
-<li><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-7">7. -Xssと-XX:ThreadStackSizeの違い</a></li>
-<li><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-8">8. 参考</a></li>
+<li><a href="#sec-5">5. スタックサイズの制御</a></li>
+<li><a href="#sec-6">6. ulimit -sの影響範囲</a></li>
+<li><a href="#sec-7">7. -Xssと-XX:ThreadStackSizeの違い</a></li>
+<li><a href="#sec-8">8. 参考</a></li>
 </ul>
 </div>
 </div>
@@ -279,17 +349,17 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html#sec-1">1. 実験シナリオ</a></li>
-<li><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html#sec-2">2. テスト信用のサーブレットを準備する</a></li>
-<li><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html#sec-3">3. サーバソケットの受信バッファーサイズを確認する</a></li>
-<li><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html#sec-4">4. Acceptorスレッドを意図的ストールさせる</a></li>
-<li><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html#sec-5">5. TCPソケット受信バッファサイズを監視する</a></li>
-<li><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html#sec-6">6. パケット通信を監視する</a></li>
-<li><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html#sec-7">7. telnetからデータを順次に送りつける</a></li>
-<li><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html#sec-8">8. 監視結果解析</a></li>
-<li><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html#sec-9">9. TCPソケット受信バッファーサイズの設定について</a></li>
-<li><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html#sec-10">10. まとめ</a></li>
-<li><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html#sec-11">11. 参考</a></li>
+<li><a href="#sec-1">1. 実験シナリオ</a></li>
+<li><a href="#sec-2">2. テスト信用のサーブレットを準備する</a></li>
+<li><a href="#sec-3">3. サーバソケットの受信バッファーサイズを確認する</a></li>
+<li><a href="#sec-4">4. Acceptorスレッドを意図的ストールさせる</a></li>
+<li><a href="#sec-5">5. TCPソケット受信バッファサイズを監視する</a></li>
+<li><a href="#sec-6">6. パケット通信を監視する</a></li>
+<li><a href="#sec-7">7. telnetからデータを順次に送りつける</a></li>
+<li><a href="#sec-8">8. 監視結果解析</a></li>
+<li><a href="#sec-9">9. TCPソケット受信バッファーサイズの設定について</a></li>
+<li><a href="#sec-10">10. まとめ</a></li>
+<li><a href="#sec-11">11. 参考</a></li>
 </ul>
 </div>
 </div>
@@ -358,12 +428,12 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="/blog/2015-04-01-%5B%E3%83%A1%E3%83%A2%5Djbossas%E3%81%A7byteman%E3%82%92%E4%BD%BF%E3%81%86.html#sec-1">1. 前提</a></li>
-<li><a href="/blog/2015-04-01-%5B%E3%83%A1%E3%83%A2%5Djbossas%E3%81%A7byteman%E3%82%92%E4%BD%BF%E3%81%86.html#sec-2">2. インストール</a></li>
-<li><a href="/blog/2015-04-01-%5B%E3%83%A1%E3%83%A2%5Djbossas%E3%81%A7byteman%E3%82%92%E4%BD%BF%E3%81%86.html#sec-3">3. JBossASプロセスへのアタッチ</a></li>
-<li><a href="/blog/2015-04-01-%5B%E3%83%A1%E3%83%A2%5Djbossas%E3%81%A7byteman%E3%82%92%E4%BD%BF%E3%81%86.html#sec-4">4. トレース用スクリプトの作成</a></li>
-<li><a href="/blog/2015-04-01-%5B%E3%83%A1%E3%83%A2%5Djbossas%E3%81%A7byteman%E3%82%92%E4%BD%BF%E3%81%86.html#sec-5">5. スクリプトの実行</a></li>
-<li><a href="/blog/2015-04-01-%5B%E3%83%A1%E3%83%A2%5Djbossas%E3%81%A7byteman%E3%82%92%E4%BD%BF%E3%81%86.html#sec-6">6. 参考</a></li>
+<li><a href="#sec-1">1. 前提</a></li>
+<li><a href="#sec-2">2. インストール</a></li>
+<li><a href="#sec-3">3. JBossASプロセスへのアタッチ</a></li>
+<li><a href="#sec-4">4. トレース用スクリプトの作成</a></li>
+<li><a href="#sec-5">5. スクリプトの実行</a></li>
+<li><a href="#sec-6">6. 参考</a></li>
 </ul>
 </div>
 </div>
@@ -415,17 +485,17 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html#sec-1">1. 前提事項</a></li>
-<li><a href="/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html#sec-2">2. 最大ワーカスレッド数の設定方法</a></li>
-<li><a href="/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html#sec-3">3. スレッド起動のタイミング</a></li>
-<li><a href="/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html#sec-4">4. 過負荷時の挙動</a>
+<li><a href="#sec-1">1. 前提事項</a></li>
+<li><a href="#sec-2">2. 最大ワーカスレッド数の設定方法</a></li>
+<li><a href="#sec-3">3. スレッド起動のタイミング</a></li>
+<li><a href="#sec-4">4. 過負荷時の挙動</a>
 <ul>
-<li><a href="/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html#sec-4-1">4.1. A.クライアントからPSHパケット再送が発生するパターン</a></li>
-<li><a href="/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html#sec-4-2">4.2. B.TCP3WHSパケット再送が発生するパターン</a></li>
-<li><a href="/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html#sec-4-3">4.3. C.新規接続が拒否されるパターン</a></li>
+<li><a href="#sec-4-1">4.1. A.クライアントからPSHパケット再送が発生するパターン</a></li>
+<li><a href="#sec-4-2">4.2. B.TCP3WHSパケット再送が発生するパターン</a></li>
+<li><a href="#sec-4-3">4.3. C.新規接続が拒否されるパターン</a></li>
 </ul>
 </li>
-<li><a href="/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html#sec-5">5. 過負荷の対策</a></li>
+<li><a href="#sec-5">5. 過負荷の対策</a></li>
 </ul>
 </div>
 </div>
@@ -488,16 +558,16 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html#sec-1">1. VirtualBox使用出来るネットワークアダプタ</a></li>
-<li><a href="/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html#sec-2">2. 複数アダプターユースケース</a></li>
-<li><a href="/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html#sec-3">3. ホストオンリーネットワークの追加手順</a>
+<li><a href="#sec-1">1. VirtualBox使用出来るネットワークアダプタ</a></li>
+<li><a href="#sec-2">2. 複数アダプターユースケース</a></li>
+<li><a href="#sec-3">3. ホストオンリーネットワークの追加手順</a>
 <ul>
-<li><a href="/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html#sec-3-1">3.1. カーネルモジュールのロード</a></li>
-<li><a href="/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html#sec-3-2">3.2. ホストオンリーネットワークの追加</a></li>
-<li><a href="/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html#sec-3-3">3.3. アダプターと紐付ける</a></li>
+<li><a href="#sec-3-1">3.1. カーネルモジュールのロード</a></li>
+<li><a href="#sec-3-2">3.2. ホストオンリーネットワークの追加</a></li>
+<li><a href="#sec-3-3">3.3. アダプターと紐付ける</a></li>
 </ul>
 </li>
-<li><a href="/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html#sec-4">4. 参考</a></li>
+<li><a href="#sec-4">4. 参考</a></li>
 </ul>
 </div>
 </div>
@@ -552,19 +622,19 @@ VirtualBox上で動く仮想マシンにデフォルトではNATネットワー�
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html#sec-1">1. 環境</a></li>
-<li><a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html#sec-2">2. ツールの整備</a></li>
-<li><a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html#sec-3">3. ディスク情報確認</a></li>
-<li><a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html#sec-4">4. 現在のパーティション構成</a></li>
-<li><a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html#sec-5">5. 増設後のパーティション構成</a></li>
-<li><a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html#sec-6">6. 増設手順</a>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. ツールの整備</a></li>
+<li><a href="#sec-3">3. ディスク情報確認</a></li>
+<li><a href="#sec-4">4. 現在のパーティション構成</a></li>
+<li><a href="#sec-5">5. 増設後のパーティション構成</a></li>
+<li><a href="#sec-6">6. 増設手順</a>
 <ul>
-<li><a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html#sec-6-1">6.1. gdiskでパーティションを初期化する</a></li>
-<li><a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html#sec-6-2">6.2. LVMパーティション再構成</a></li>
-<li><a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html#sec-6-3">6.3. 増設結果を確認する</a></li>
+<li><a href="#sec-6-1">6.1. gdiskでパーティションを初期化する</a></li>
+<li><a href="#sec-6-2">6.2. LVMパーティション再構成</a></li>
+<li><a href="#sec-6-3">6.3. 増設結果を確認する</a></li>
 </ul>
 </li>
-<li><a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html#sec-7">7. 参考情報</a></li>
+<li><a href="#sec-7">7. 参考情報</a></li>
 </ul>
 </div>
 </div>
@@ -619,17 +689,17 @@ VirtualBox上で動く仮想マシンにデフォルトではNATネットワー�
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html#sec-1">1. 基本おさらい</a></li>
-<li><a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html#sec-2">2. 実験するためのプログラム</a></li>
-<li><a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html#sec-3">3. CMSログの見方</a>
+<li><a href="#sec-1">1. 基本おさらい</a></li>
+<li><a href="#sec-2">2. 実験するためのプログラム</a></li>
+<li><a href="#sec-3">3. CMSログの見方</a>
 <ul>
-<li><a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html#sec-3-1">3.1. New領域GCログ</a></li>
-<li><a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html#sec-3-2">3.2. Old領域GCログ</a></li>
-<li><a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html#sec-3-3">3.3. concurrent mode failure</a></li>
-<li><a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html#sec-3-4">3.4. 手動FullGC時のログ</a></li>
+<li><a href="#sec-3-1">3.1. New領域GCログ</a></li>
+<li><a href="#sec-3-2">3.2. Old領域GCログ</a></li>
+<li><a href="#sec-3-3">3.3. concurrent mode failure</a></li>
+<li><a href="#sec-3-4">3.4. 手動FullGC時のログ</a></li>
 </ul>
 </li>
-<li><a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html#sec-4">4. 参考</a></li>
+<li><a href="#sec-4">4. 参考</a></li>
 </ul>
 </div>
 </div>
@@ -767,9 +837,9 @@ CMSはアプリケーションを停止する時間を削減することが出�
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html#sec-1">1. Apache側でKeepAliveを制御する</a></li>
-<li><a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html#sec-2">2. APサーバ側にてKeepAliveを制御する</a></li>
-<li><a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html#sec-3">3. 参考</a></li>
+<li><a href="#sec-1">1. Apache側でKeepAliveを制御する</a></li>
+<li><a href="#sec-2">2. APサーバ側にてKeepAliveを制御する</a></li>
+<li><a href="#sec-3">3. 参考</a></li>
 </ul>
 </div>
 </div>
@@ -802,64 +872,6 @@ CMSはアプリケーションを停止する時間を削減することが出�
   
     <footer>
       <a rel="full-article" href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html">[メモ]Zabbix導入記録</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-10-16T00:00:00+09:00" pubdate data-updated="true">2014-10-16 (Thu)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html#sec-1">1. 構成</a></li>
-<li><a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html#sec-2">2. インストール</a></li>
-<li><a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html#sec-3">3. zabbixの起動</a></li>
-<li><a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html#sec-4">4. Zabbix フロントエンドのインストール</a></li>
-<li><a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html#sec-5">5. Zabbix エージェントのインストール</a></li>
-<li><a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html#sec-6">6. Zabbixのアンインストール</a></li>
-<li><a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html#sec-7">7. 参考</a></li>
-</ul>
-</div>
-</div>
-<p>
-Zabbix2.4、CentOS7用のrpmが見つからなかったので手動ビルドすることにした。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html">Read on &rarr;</a>
     </footer>
   
 
@@ -899,6 +911,10 @@ Zabbix2.4、CentOS7用のrpmが見つからなかったので手動ビルドす�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]URLパラメータデコード処理について</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html">[メモ]デバッグ版OpenJDKのビルド</a>
       </li>
     
@@ -934,10 +950,6 @@ Zabbix2.4、CentOS7用のrpmが見つからなかったので手動ビルドす�
         <a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">[メモ]ApacheでbackendとのKeepAliveをOFFにする</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html">[メモ]Zabbix導入記録</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -945,11 +957,11 @@ Zabbix2.4、CentOS7用のrpmが見つからなかったので手動ビルドす�
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (14)</a></li><li><a href='/blog/categories/linux/'>linux (17)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (15)</a></li><li><a href='/blog/categories/linux/'>linux (17)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/jvm' style='font-size: 120.0%'>jvm(1)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 120.0%'>stack(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/jvm' style='font-size: 120.0%'>jvm(1)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 120.0%'>stack(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
 </section>
 
 <section>

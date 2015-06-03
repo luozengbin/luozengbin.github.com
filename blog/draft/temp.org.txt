@@ -22,3 +22,33 @@ Dropwatchのご紹介
 http://research.sakura.ad.jp/2013/12/16/dropwatch/comment-page-1/
 
 * EXT4について
+
+
+* URLエンコードとデコード
+tomcat
+ --> org.apache.catalina.connector.URI_ENCODING    --> URL部
+ --> org.apache.catalina.connector.USE_BODY_ENCODING_FOR_QUERY_STRING  --> パラメータ部
+
+weblogic
+  -Dweblogic.http.URIDecodeEncoding=charset-name
+  http://otndnld.oracle.co.jp/document/products/wls/docs90/ja/relnotes_ja.html
+  webapp.encoding.default
+
+weblogic.xml
+  https://docs.oracle.com/middleware/1212/wls/WBAPP/configurejsp.htm#WBAPP187
+  <input-charset>
+    <resource-path>/foo/*</resource-path>
+    <java-charset-name>SJIS</java-charset-name>
+  </input-charset>
+
+* AsynchronousFileChannelの実装を調べる
+
+  1. sun.nio.ch.SimpleAsynchronousFileChannelImpl --> implRead
+  2. sun.nio.ch.IOUtil.java  --> read --> readIntoNativeBuffer
+  3. sun.nio.ch.FileDispatcherImpl.java --> pread --> pread0
+  4. ./src/solaris/native/sun/nio/ch/FileDispatcherImpl.c:82:Java_sun_nio_ch_FileDispatcherImpl_pread0(JNIEnv *env, jclass clazz, jobject fdo,
+
+  1のreadImplが呼ばれる度にタスクを起こしてスレッドプールを持つexecutorに渡す
+  4でpreadシステムコールで指定したオフセットでファイルディスクリプターを読み書きする
+
+  =pread= についてはこちら http://linuxjm.osdn.jp/html/LDP_man-pages/man2/pread.2.html
