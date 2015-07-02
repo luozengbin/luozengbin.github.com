@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: Jvm | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/jvm/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-07-03T00:01:42+09:00</updated>
+  <updated>2015-07-03T00:08:14+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -152,10 +152,13 @@ jstack ${<span style="color: #fcaf3e;">PID</span>} | grep nid | sed -e <span sty
         } <span style="color: #b4fa70;">catch</span> (<span style="color: #8cc4ff;">InterruptedException</span> <span style="color: #fcaf3e;">e</span>) {
             e.printStackTrace();
         }
+
         <span style="color: #b4fa70;">return</span> add2(a++);
     }
 
     <span style="color: #b4fa70;">private</span> <span style="color: #8cc4ff;">int</span> <span style="color: #fce94f;">add2</span>(<span style="color: #8cc4ff;">int</span> <span style="color: #fcaf3e;">a</span>) {
+        <span style="color: #73d216;">//</span><span style="color: #73d216;">add1 -&gt; add2 --&gt; add1 &#28961;&#38480;&#12523;&#12540;&#12503;&#12398;&#29366;&#24907;&#12391;</span>
+        <span style="color: #73d216;">//</span><span style="color: #73d216;">&#12473;&#12479;&#12483;&#12463;&#12434;&#39135;&#12356;&#28528;&#12377;</span>
         <span style="color: #b4fa70;">return</span> add1(a--);
     }
 
