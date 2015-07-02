@@ -9,13 +9,11 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="Table of Contents 1. 構成
-2. インストール
-3. zabbixの起動
-4. Zabbix フロントエンドのインストール
-5. Zabbix エージェントのインストール
-6. Zabbixのアンインストール
-7. 参考 Zabbix2.4、 &hellip;">
+  <meta name="description" content="Table of Contents 1. VirtualBox使用出来るネットワークアダプタ
+2. 複数アダプターユースケース
+3. ホストオンリーネットワークの追加手順 3.1. カーネルモジュールのロード
+3.2. ホストオンリーネットワークの追加
+3.3. アダプターと紐付ける 4. 参考 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -56,7 +54,7 @@
   <header role="banner"><hgroup>
   <h1><a href="/">Akira's Tech Notes</a></h1>
   
-    <h2>Java, Linux, Emacs</h2>
+    <h2>Java, Linux, Emacs,知的好奇心駆動</h2>
   
 </hgroup>
 
@@ -84,6 +82,358 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html">[メモ]VirtualBox HostOnly on Linux</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-02-06T00:00:00+09:00" pubdate data-updated="true">2015-02-06 (Fri)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. VirtualBox使用出来るネットワークアダプタ</a></li>
+<li><a href="#sec-2">2. 複数アダプターユースケース</a></li>
+<li><a href="#sec-3">3. ホストオンリーネットワークの追加手順</a>
+<ul>
+<li><a href="#sec-3-1">3.1. カーネルモジュールのロード</a></li>
+<li><a href="#sec-3-2">3.2. ホストオンリーネットワークの追加</a></li>
+<li><a href="#sec-3-3">3.3. アダプターと紐付ける</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+VirtualBox上で動く仮想マシンにデフォルトではNATネットワークアダプタが割り当てられてい
+るため、Host OSとの通信ができないです。これを回避するために <code>ホストオンリーネットワー
+ク</code> アダプターを使えば回避できる。最近のバージョン追加手順が変わったため、メモしてお
+きます。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html">[メモ]自宅サーバディスク増設記録</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-11-16T00:00:00+09:00" pubdate data-updated="true">2014-11-16 (Sun)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. ツールの整備</a></li>
+<li><a href="#sec-3">3. ディスク情報確認</a></li>
+<li><a href="#sec-4">4. 現在のパーティション構成</a></li>
+<li><a href="#sec-5">5. 増設後のパーティション構成</a></li>
+<li><a href="#sec-6">6. 増設手順</a>
+<ul>
+<li><a href="#sec-6-1">6.1. gdiskでパーティションを初期化する</a></li>
+<li><a href="#sec-6-2">6.2. LVMパーティション再構成</a></li>
+<li><a href="#sec-6-3">6.3. 増設結果を確認する</a></li>
+</ul>
+</li>
+<li><a href="#sec-7">7. 参考情報</a></li>
+</ul>
+</div>
+</div>
+<p>
+半年前、約1年ちょっと使った <a href="http://www.wdc.com/global/products/specs/?driveID=1092&language=6">WD Blue(WD10EZEX)</a> ディスクが壊れた (I/Oスピードが激遅い現
+象が起きた)ため、RMA保証手続きで交換しました。交換で約1ヶ月かかる、かつサーバがRAID0構
+成のため、代用品を購入し、復旧を実施した。RAM交換で届いたディスクがずっと置いたまま、
+今日もう一台のNASサーバに増設を実施します。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html">[メモ]CMS GCログの見方</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-11-05T00:00:00+09:00" pubdate data-updated="true">2014-11-05 (Wed)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 基本おさらい</a></li>
+<li><a href="#sec-2">2. 実験するためのプログラム</a></li>
+<li><a href="#sec-3">3. CMSログの見方</a>
+<ul>
+<li><a href="#sec-3-1">3.1. New領域GCログ</a></li>
+<li><a href="#sec-3-2">3.2. Old領域GCログ</a></li>
+<li><a href="#sec-3-3">3.3. concurrent mode failure</a></li>
+<li><a href="#sec-3-4">3.4. 手動FullGC時のログ</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. 参考</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 基本おさらい</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+CMSとは <code>Concurrent Mark &amp; Sweep</code> 、JVM OLD領域GC処理アルゴリズムの一種です。
+CMSはアプリケーションを停止する時間を削減することが出来ます。処理の流れは下図に示す。
+</p>
+
+<p>
+※Concurrentは同時という意味です。
+</p>
+
+<pre class="example">
+       ①        ②          ③    ④
+---&gt; | ==&gt; | ============&gt; | ==&gt; | ==========&gt; -----&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+---&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
+       STW                   STW
+
+凡例
++--------------------+
+| ==&gt; GCスレッド     |
+| --&gt; アプリスレッド |
++--------------------+
+</pre>
+
+<p>
+図上示している通り、①と③の処理だけアプリケーションが停止する。
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">①</td>
+<td class="left">Initial Mark</td>
+<td class="left">STW</td>
+<td class="left">Rootを起点に利用されてるオブジェクトをマークする</td>
+</tr>
+
+<tr>
+<td class="left">②-1</td>
+<td class="left">Concurrent Mark</td>
+<td class="left">&#xa0;</td>
+<td class="left">①でマークされたオブジェクトを起点に使用中のオブジェクトをマークする</td>
+</tr>
+
+<tr>
+<td class="left">②-2</td>
+<td class="left">Concurrent precleaning</td>
+<td class="left">&#xa0;</td>
+<td class="left">②-1処理中アプリによる生じた変化部分をマークする、③の処理時間を短縮するため</td>
+</tr>
+
+<tr>
+<td class="left">③</td>
+<td class="left">Parallel Remark</td>
+<td class="left">STW</td>
+<td class="left">②処理中アプリによる生じた変化部分をマークする</td>
+</tr>
+
+<tr>
+<td class="left">④-1</td>
+<td class="left">Concurrent Sweeping</td>
+<td class="left">&#xa0;</td>
+<td class="left">マーク処理によって判明した使用済みオブジェクトを削除する</td>
+</tr>
+
+<tr>
+<td class="left">④-2</td>
+<td class="left">Concurrent Reset</td>
+<td class="left">&#xa0;</td>
+<td class="left">CMS処理自体のリセット</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">[メモ]ApacheでbackendとのKeepAliveをOFFにする</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-10-29T00:00:00+09:00" pubdate data-updated="true">2014-10-29 (Wed)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. Apache側でKeepAliveを制御する</a></li>
+<li><a href="#sec-2">2. APサーバ側にてKeepAliveを制御する</a></li>
+<li><a href="#sec-3">3. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+次のような構成でApacheとAPサーバ間のHTTP KeepAliveが有効にすると
+</p>
+<ol class="org-ol">
+<li>LBの振り分けが偏る可能性がある
+</li>
+<li>LBの無振り分け先の切り替えに影響が生じる可能性がある、詳細は こちらの記事 を参照してください。
+</li>
+</ol>
+<p>
+のような不都合があります。
+</p>
+
+<pre class="example">
++----------+         +------------+        +-----------+     +-------------+
+| Client   +---------&gt; Apache     +--------&gt;   LB      +-----&gt; AP Server   |
++----------+         +------------+        +-----------+     +-------------+
+</pre>
+
+<p>
+とい言うわけでApacheとAPサーバ間KeepAliveをOFFにする方法を調査した。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -539,344 +889,6 @@ step3のところで60秒後、サーバからfinパケットが送出されて�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5D%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%81%AEuid%E3%81%AE%E6%8A%BD%E5%87%BA.html">[レシピ]ローカルシステムのUIDの抽出</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-08-12T00:00:00+09:00" pubdate data-updated="true">2014-08-12 (Tue)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>
-LDAPにユーザID定義時にローカルシステムのUIDと被らないように、ローカルシステムのUIDと
-GIDを抽出してみた。
-</p>
-
-<p>
-ユーザID、1000番代以下はシステム予約番号のことがすぐわかる。
-</p>
-<pre class="example">
-$ cat /etc/passwd | awk -F: '{print $3 "\t" $1}' | sort -n
-0	root
-1	bin
-2	daemon
-8	mail
-14	ftp
-32	rpc
-33	http
-40	named
-68	uuidd
-74	dovenull
-76	dovecot
-81	dbus
-84	avahi
-87	ntp
-89	mysql
-99	nobody
-102	polkitd
-124	colord
-169	transmission
-191	systemd-journal-gateway
-192	systemd-timesync
-193	systemd-network
-194	systemd-bus-proxy
-195	systemd-resolve
-241	mediatomb
-439	ldap
-998	dnsmasq
-999	git
-1000	akira
-1002	amule
-</pre>
-
-<p>
-グループID一覧
-</p>
-<pre class="example">
-$ cat /etc/group | awk -F: '{print $3 "\t" $1}' | sort -n
-0	root
-1	bin
-2	daemon
-3	sys
-4	adm
-5	tty
-6	disk
-7	lp
-8	mem
-9	kmem
-10	wheel
-11	ftp
-12	mail
-14	uucp
-19	log
-20	utmp
-21	locate
-24	rfkill
-25	smmsp
-32	rpc
-33	http
-40	named
-50	games
-54	lock
-68	uuidd
-74	dovenull
-76	dovecot
-81	dbus
-84	avahi
-87	ntp
-89	mysql
-90	network
-91	video
-92	audio
-93	optical
-94	floppy
-95	storage
-96	scanner
-97	input
-98	power
-99	nobody
-100	users
-102	polkitd
-124	colord
-169	transmission
-190	systemd-journal
-191	systemd-journal-gateway
-192	systemd-timesync
-193	systemd-network
-194	systemd-bus-proxy
-195	systemd-resolve
-241	mediatomb
-439	ldap
-998	dnsmasq
-999	git
-1002	g001
-1003	g002
-1004	g003
-1005	amule
-</pre>
-
-<p>
-<code>sort</code> コマンドで数字順でソートするためのオプションが <code>-n</code> であることを復習致しました。
-</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dldap%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E6%A7%8B%E7%AF%89.html">[レシピ]LDAPサーバの構築</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-08-12T00:00:00+09:00" pubdate data-updated="true">2014-08-12 (Tue)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 知識のおさらい</a>
-<ul>
-<li><a href="#sec-1-1">1.1. 用語</a></li>
-<li><a href="#sec-1-2">1.2. LDAPの役割</a></li>
-<li><a href="#sec-1-3">1.3. LDAPへ接続時（バインド）の認証方式</a></li>
-<li><a href="#sec-1-4">1.4. LDAPによるLinuxのログイン認証</a></li>
-<li><a href="#sec-1-5">1.5. LDAPによるSambaサーバのユーザ認証</a></li>
-<li><a href="#sec-1-6">1.6. LDAPデータ構造サンプル</a></li>
-<li><a href="#sec-1-7">1.7. よく使用するObjectClass</a></li>
-<li><a href="#sec-1-8">1.8. ldapsearchの使い方</a></li>
-<li><a href="#sec-1-9">1.9. ldapaddの使い方</a></li>
-<li><a href="#sec-1-10">1.10. ldapdeleteの使い方</a></li>
-<li><a href="#sec-1-11">1.11. ldapmodifyの使い方</a></li>
-<li><a href="#sec-1-12">1.12. slapindexの使い方</a></li>
-</ul>
-</li>
-<li><a href="#sec-2">2. 環境構成</a></li>
-<li><a href="#sec-3">3. OpenLDAPのインストール</a></li>
-<li><a href="#sec-4">4. OpenLDAPサーバ設定と起動</a></li>
-<li><a href="#sec-5">5. OpenLDAPログ出力設定</a></li>
-<li><a href="#sec-6">6. LDAPクライアントの設定</a></li>
-<li><a href="#sec-7">7. LDAPクライアントとサーバ間の通信内容</a></li>
-<li><a href="#sec-8">8. LDAPによるLinuxのログイン認証設定</a>
-<ul>
-<li><a href="#sec-8-1">8.1. LDAP連携用ライブラリの導入</a></li>
-<li><a href="#sec-8-2">8.2. LDAP認証PAMモジュールの設定</a></li>
-<li><a href="#sec-8-3">8.3. パスワード変更時の挙動</a></li>
-<li><a href="#sec-8-4">8.4. ログイン時の挙動</a></li>
-</ul>
-</li>
-<li><a href="#sec-9">9. 宿題</a></li>
-<li><a href="#sec-10">10. 参考情報</a></li>
-</ul>
-</div>
-</div>
-<p>
-夏休み中にOpenLDAPの構築復習を行いました。ここでメモしておきます。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-08-12-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dldap%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E6%A7%8B%E7%AF%89.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-08-12-%5B%E3%83%A1%E3%83%A2%5Dsyslog-ng%E3%81%AE%E3%83%AD%E3%82%B0%E5%87%BA%E5%8A%9B%E5%BD%A2%E5%BC%8F%E3%81%AE%E5%A4%89%E6%9B%B4.html">[メモ]syslog-ngのログ出力形式の変更</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-08-12T00:00:00+09:00" pubdate data-updated="true">2014-08-12 (Tue)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. デフォルトの出力形式</a></li>
-<li><a href="#sec-2">2. 出力形式変更手順</a></li>
-<li><a href="#sec-3">3. 参考情報</a></li>
-</ul>
-</div>
-</div>
-<p>
-Archlinuxでsyslog-ngのデフォルト出力形式は以下のようなイメージになります。ちょっと物
-足りない気がして、形式の変更方法を調べてみました。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-08-12-%5B%E3%83%A1%E3%83%A2%5Dsyslog-ng%E3%81%AE%E3%83%AD%E3%82%B0%E5%87%BA%E5%8A%9B%E5%BD%A2%E5%BC%8F%E3%81%AE%E5%A4%89%E6%9B%B4.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-08-07-%5B%E3%83%A1%E3%83%A2%5Dfind%E3%81%A7%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%9B%B4%E6%96%B0%E6%97%A5%E4%BB%98%E9%A0%86%E3%81%A7%E8%A1%A8%E7%A4%BA%E3%81%99%E3%82%8B.html">[メモ]findでファイル更新日付順で表示する</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-08-07T00:00:00+09:00" pubdate data-updated="true">2014-08-07 (Thu)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>
-PJではメンバたち日々の作業成果物がどこかの共有ディレクトリに格納されているでしょう。
-共有ディレクトリに最近更新や追加されたファイルを見たい時がよくあることです。
-いちいち作業担当者に聞くのもうざいので。 <code>find</code> 、 <code>xargs</code> コマンドを駆使して実現して
-みた。
-</p>
-
-<pre class="example">
-$ find . -type f -print0 | xargs -0 ls -alt
-</pre>
-
-<ul class="org-ul">
-<li><code>find -type f</code> はファイルのみを対象とする
-</li>
-<li><code>find -print0</code> は検出されたファイルのフルパスをNULLキャラクターで分割して出力する
-</li>
-<li><code>xargs -0</code> もしくは <code>xargs --null</code> 入力ストリームの分割はNULLキャラクターを用いる
-</li>
-</ul>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -912,6 +924,22 @@ $ find . -type f -print0 | xargs -0 ls -alt
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015-06-29-%5Btips%5D%5Bjava%5D%E3%83%A1%E3%83%A2%E3%83%AAswap%E3%81%AB%E3%82%88%E3%82%8B%E7%84%A1%E5%BF%9C%E7%AD%94.html">[tips][Java]メモリswapによる無応答</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-28-%5Btips%5D%5Blinux%5Djournald%E3%82%A8%E3%83%A9%E3%83%BC%E3%83%AD%E3%82%B0%E3%82%92%E3%83%A1%E3%83%BC%E3%83%AB%E3%81%A7%E9%80%9A%E7%9F%A5%E3%81%99%E3%82%8B.html">[tips][Linux]journaldエラーログをメールで通知する</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[まとめ]Linuxシステム時刻について</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html">[メモ]JavaBeans仕様を再認識する</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]URLパラメータデコード処理について</a>
       </li>
     
@@ -935,22 +963,6 @@ $ find . -type f -print0 | xargs -0 ls -alt
         <a href="/blog/2015-04-01-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Djbossas%E9%81%8E%E8%B2%A0%E8%8D%B7%E6%99%82tcp%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E6%8C%AF%E3%82%8B%E8%88%9E%E3%81%84.html">[まとめ]JBoss as 7過負荷時TCPコネクションの振る舞い</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html">[メモ]VirtualBox HostOnly on Linux</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html">[メモ]自宅サーバディスク増設記録</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html">[メモ]CMS GCログの見方</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html">[メモ]ApacheでbackendとのKeepAliveをOFFにする</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -958,11 +970,11 @@ $ find . -type f -print0 | xargs -0 ls -alt
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (15)</a></li><li><a href='/blog/categories/linux/'>linux (17)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (2)</a></li><li><a href='/blog/categories/java/'>java (17)</a></li><li><a href='/blog/categories/linux/'>linux (19)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/jvm' style='font-size: 120.0%'>jvm(1)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 120.0%'>stack(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/javabeans' style='font-size: 120.0%'>JavaBeans(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/journald' style='font-size: 120.0%'>journald(1)</a> <a href='/blog/tags/jvm' style='font-size: 120.0%'>jvm(1)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/misc' style='font-size: 120.0%'>misc(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 120.0%'>stack(1)</a> <a href='/blog/tags/swap' style='font-size: 120.0%'>swap(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
 </section>
 
 <section>

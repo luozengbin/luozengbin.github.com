@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-06-03T18:30:19+09:00</updated>
+  <updated>2015-07-02T19:17:14+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,644 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Java]メモリswapによる無応答]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-06-29-%5Btips%5D%5Bjava%5D%E3%83%A1%E3%83%A2%E3%83%AAswap%E3%81%AB%E3%82%88%E3%82%8B%E7%84%A1%E5%BF%9C%E7%AD%94.html"/>
+    <updated>2015-06-29T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][java]メモリswapによる無応答</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. 現象</a></li>
+<li><a href="#sec-3">3. 分析するためのデータを取る</a></li>
+<li><a href="#sec-4">4. 原因／考察</a></li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 環境</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+業務用の開発サーバ
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">項目</th>
+<th scope="col" class="left">スペック</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">CPU</td>
+<td class="left">Intel(R) Core(TM)2 Duo CPU E8400 3.00GHz</td>
+</tr>
+
+<tr>
+<td class="left">Core数</td>
+<td class="left">2</td>
+</tr>
+
+<tr>
+<td class="left">Memory</td>
+<td class="left">7G弱</td>
+</tr>
+
+<tr>
+<td class="left">OS</td>
+<td class="left">Red Hat Enterprise Linux Server release 5.8 (Tikanga)</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">Middleware</td>
+<td class="left">java 1.7.0_75</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">Weblogic 10.3.5.0</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">Oracle BPM Suite 11g (メモリを多めに割り当てた：6Gぐらい)</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">※他にものもの結構乗っている</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 現象</h2>
+<div class="outline-text-2" id="text-2">
+<ul class="org-ul">
+<li>特定のWeblogic管理対象サーバから応答が時々遅い(数秒程度)
+</li>
+<li>Full GCが起きると状況が悪化し、FullGCが終わらない
+</li>
+</ul>
+
+<p>
+<!-- more -->
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 分析するためのデータを取る</h2>
+<div class="outline-text-2" id="text-3">
+<ul class="org-ul">
+<li>GCログからParNew処理が5秒以上のレコードを時間を抽出する。
+</li>
+</ul>
+<pre class="example">
+2015-06-24T18:08:32.220+0900:  5.2666840
+2015-06-25T01:50:56.578+0900:  5.6046080
+2015-06-25T04:50:52.234+0900:  6.0052120
+2015-06-25T12:05:52.068+0900:  9.2609380
+2015-06-25T13:20:37.953+0900:  5.0946760
+2015-06-25T13:20:58.403+0900:  5.6533820
+2015-06-25T20:24:49.357+0900:  7.3204730
+2015-06-25T21:16:10.126+0900:  6.7909460
+2015-06-25T22:50:58.756+0900:  5.8355060
+2015-06-26T01:50:50.893+0900:  9.3892250
+2015-06-26T04:50:53.219+0900:  13.1395190
+2015-06-26T07:50:54.425+0900:  11.7807430
+2015-06-26T07:51:07.269+0900:  5.2793300
+2015-06-26T10:50:51.114+0900:  9.3924480
+2015-06-26T13:17:06.286+0900:  6.2010290
+2015-06-26T13:17:54.396+0900:  7.3440480
+2015-06-26T13:34:05.326+0900:  7.6791300
+2015-06-26T13:51:04.590+0900:  10.2367630
+2015-06-26T14:00:00.516+0900:  5.7046080
+2015-06-26T14:00:13.463+0900:  6.6349530
+2015-06-26T14:23:00.180+0900:  5.6609030
+2015-06-26T14:26:28.796+0900:  7.6549640
+2015-06-26T14:27:00.169+0900:  11.8500770
+2015-06-26T14:29:39.363+0900:  7.1499710
+2015-06-26T14:30:24.067+0900:  5.6382340
+2015-06-26T14:31:45.304+0900:  10.1924060
+2015-06-26T14:32:00.774+0900:  9.6242400
+2015-06-26T16:51:18.422+0900:  9.6966490
+2015-06-26T16:51:45.363+0900:  6.2090530
+2015-06-26T18:30:49.993+0900:  6.2954670
+2015-06-26T18:38:00.437+0900:  8.8749850
+2015-06-26T18:50:00.391+0900:  7.4192490
+2015-06-26T18:54:00.271+0900:  6.4426840
+2015-06-26T18:54:08.234+0900:  5.7452440
+2015-06-27T01:50:50.387+0900:  5.8063930
+2015-06-27T01:51:05.004+0900:  5.2115420
+2015-06-27T04:50:58.781+0900:  12.9891770
+2015-06-27T04:51:35.039+0900:  5.7282510
+2015-06-27T07:50:51.112+0900:  13.1250670
+2015-06-27T07:51:06.604+0900:  6.5727200
+2015-06-27T07:51:29.483+0900:  5.3706130
+2015-06-27T07:51:36.469+0900:  7.0014700
+2015-06-27T07:51:49.055+0900:  7.4964390
+2015-06-27T07:52:01.446+0900:  5.2537540
+2015-06-27T08:01:04.920+0900:  21.8820470
+2015-06-27T09:53:02.648+0900:  7.4830120
+2015-06-27T10:50:52.478+0900:  12.4821770
+2015-06-27T10:51:07.595+0900:  6.6430700
+2015-06-27T10:51:34.192+0900:  5.4682220
+2015-06-27T10:51:59.431+0900:  5.8981600
+2015-06-27T13:50:54.701+0900:  13.1269190
+2015-06-27T13:52:23.353+0900:  6.3293780
+2015-06-27T16:46:06.634+0900:  7.5433970
+2015-06-28T04:51:06.881+0900:  5.2944910
+2015-06-28T13:50:55.136+0900:  7.2090390
+2015-06-28T16:50:52.379+0900:  6.3410470
+2015-06-28T17:01:07.773+0900:  6.1038880
+2015-06-28T19:50:50.750+0900:  7.1304960
+2015-06-28T19:50:59.538+0900:  14.1206920
+2015-06-28T19:51:39.786+0900:  7.8585130
+2015-06-28T20:10:05.988+0900:  5.1535220
+2015-06-28T22:46:07.996+0900:  6.3876340
+2015-06-28T22:50:56.687+0900:  5.4313050
+2015-06-29T01:51:06.697+0900:  7.4033850
+2015-06-29T05:24:56.775+0900:  6.1023960
+2015-06-29T06:01:13.724+0900:  6.7346550
+2015-06-29T07:16:11.399+0900:  21.2494760
+2015-06-29T07:50:59.386+0900:  5.9733680
+2015-06-29T10:11:13.076+0900:  10.1998490
+2015-06-29T10:51:20.998+0900:  10.4616600
+2015-06-29T11:02:06.230+0900:  6.6641290
+</pre>
+
+<p>
+図形にPlotしてみたら、ParNewが高いGCの時間帯があんまり規則がないので、定期イベントに
+よるものではないと判断した。
+</p>
+
+
+<div class="figure">
+<p><img src="img/2015-06-29-ParNewGC_TimeChart.png" alt="2015-06-29-ParNewGC_TimeChart.png" />
+</p>
+</div>
+
+<ul class="org-ul">
+<li>FullGC時システムリソースの変化状況
+</li>
+</ul>
+<pre class="example">
+$ vmstat 5 60
+ 1|procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu------
+ 2| r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 3| 0  0 3379376 115268   9804 467464   12    9   107    34    1    1  8  2 89  1  0
+ 4| 0  0 3379376 113584   9808 468660    0    0   237    41  512  719  4  1 93  1  0
+ 5| 0  1 3377744  95484   9828 469060  749    0   825    15  567  793  5  1 78 16  0
+ 6| 0  1 3369436  80108   9836 469092 3175    0  3175    44  471  759  1  1 50 49  0
+ 7| 0  1 3360436  60896   9836 469072 3807    0  3807     3  451  776  0  1 49 49  0
+ 8| 0  1 3352216  48620   9844 465784 3375  155  3375   158  450  744  0  1 50 49  0
+ 9| 0  1 3347272  51844   9804 450912 2879  874  2879   878  568  739  1  2 49 49  0
+10| 0  1 3339972  49380   9652 444336 2601  541  2601   558  551  697  0  1 47 52  0
+11| 1  1 3336692  50752   9560 434856 2364  768  2364   768  605  692  1  1 49 49  0
+12| 1  1 3332740  52108   9416 425016 2293  761  2293   791  604  682  1  1 49 49  0
+13| 0  1 3325100  52224   9400 412236 3399  662  3399   675  564  730  0  1 50 49  0
+14| 0  1 3320168  48248   9336 405168 2868  530  2868   533  513  717  0  1 49 49  0
+</pre>
+<p>
+5行目はFullGC実施のタイミングです。5行目以降si/so/si/boの数値が上がる。
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> 原因／考察</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+swpd列の値を見れば原因は明白ですね、物理メモリが足らずJavaプロセスのメモリが大半スワー
+プアウトされた、FullGCを掛けるとオブジェクトの参照を検査するためにヒープ全体を舐める。
+メモリから追い出されたヒープメモリをディスクから読み戻し、また読み戻した分の領域を確
+報するため、相対的に使っていないメモリをディスクに追い出す処理が激しく繰り返した。
+</p>
+
+<ul class="org-ul">
+<li>Javaプロセスのヒープ／Permに物理メモリの容量以上を割り当てしては行けない
+</li>
+<li>Swapと共にFullGCが起きると、 <code>kill -9</code> で強制停止する
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]JavaBeans仕様を再認識する]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html"/>
+    <updated>2015-06-13T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]javabeans仕様を再認識する</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 仕様のゴール</a></li>
+<li><a href="#sec-2">2. JavaBeansとは</a></li>
+<li><a href="#sec-3">3. JavaBeansの出番</a></li>
+<li><a href="#sec-4">4. APIパッケージの概要</a></li>
+<li><a href="#sec-5">5. よく出てくるクラス</a></li>
+<li><a href="#sec-6">6. サードパーティライブラリ</a></li>
+<li><a href="#sec-7">7. 参考情報</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+勉強メモ
+</p>
+
+
+
+
+<p>
+<!-- more -->
+</p>
+
+
+
+
+<p>
+JCPサイト <code>JavaBeans</code> で検索したら <a href="https://jcp.org/en/jsr/summary?id=javabeans">;-(</a> EJBの仕様しかなかったで、JavaBeans APIで検索
+するとヒットしました。
+</p>
+
+
+
+
+<p>
+これがが一番わかり易いと思います。→ <a href="http://otndnld.oracle.co.jp/tech/java/htdocs/java_roadmap/javabean/listing.htm">Oracle Javaロードマップ:JavaBeans</a>
+</p>
+
+
+
+
+<p>
+公式の仕様はここ → <a href="http://download.oracle.com/otndocs/jcp/7224-javabeans-1.01-fr-spec-oth-JSpec/">JavaBeans Spec</a>
+</p>
+
+
+
+
+<p>
+仕様変更履歴
+</p>
+
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="right" />
+
+<col  class="right" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="right">&#xa0;</th>
+<th scope="col" class="right">仕様のバージョン</th>
+<th scope="col" class="left">JDKバージョン</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="right">1996</td>
+<td class="right">1.0.0</td>
+<td class="left">JDK1.1</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="right">1997</td>
+<td class="right">1.0.1</td>
+<td class="left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>
+<a href="http://ja.wikipedia.org/wiki/Java_Community_Process">JCP設立</a> されるまで策定された仕様なのでJSR番号が付いていないですね。
+1997以降仕様更新あり？なし？分からない、掲示がないので恐らく大きな更新がないでしょう。
+</p>
+
+
+
+
+<p>
+PDF版は114ページで結構のボリュームです。
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 仕様のゴール</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+JavaBeans Specより
+</p>
+<pre class="example">
+The goal of the JavaBeans APIs is to define a software component model for Java, so
+that thirdparty ISVs can create and ship Java components that can be composed
+together into applica-tions by end users.
+</pre>
+
+<p>
+<a href="http://otndnld.oracle.co.jp/tech/java/htdocs/java_roadmap/glossary.htm#434709">オラクルの用語集より</a>
+</p>
+<pre class="example">
+Javaで作成された移植可能なプラットフォームに依存しないコンポーネント・モデルで、
+JavaBean仕様に従う。 再使用可能なコンポーネントを作成できる。
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> JavaBeansとは</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+JavaBeans Specの2.1 What is a Bean?より
+</p>
+<pre class="example">
+Let's start with an initial definition and then refine it:
+“A Java Bean is a reusable software component that can be manipulated visually in a builder tool.”
+This covers a wide range of different possibilities.
+The builder tools may include web page builders, visual application builders, GUI layout build-
+ers, or even server application builders. Sometimes the “builder tool” may simply be a docu-
+ment editor that is including some beans as part of a compound document.
+Some Java Beans may be simple GUI elements such as buttons and sliders. Other Java Beans
+may be sophisticated visual software components such as database viewers, or data feeds.
+Some Java Beans may have no GUI appearance of their own, but may still be composed togeth-
+er visually using an application builder.
+Some builder tools may operate entirely visually, allowing the direct plugging together of Java
+Beans. Other builders may enable users to conveniently write Java classes that interact with and
+control a set of beans. Other builders may provide a simple scripting language to allow easy
+high-level scripting of a set of beans.
+Individual Java Beans will vary in the functionality they support, but the typical unifying fea-
+tures that distinguish a Java Bean are:
+•  Support for "introspection" so that a builder tool can analyze how a bean works
+•  Support for "customization" so that when using an application builder a user can
+   customize the appearance and behaviour of a bean.
+•  Support for "events"  as a simple communication metaphor than can be used to connectup beans.
+•  Support for "properties", both for customization and for programmatic use.
+•  Support for persistence, so that a bean can be customized in an application builder and
+   then have its customized state saved away and reloaded later.
+
+A bean is not required to inherit from any particular base class or interface. Visible beans must
+inherit from java.awt.Component so that they can be added to visual containers, but invisible
+beans (see 2.7 below) aren’t required to do this.
+Note that while beans are primarily targeted at builder tools they are also entirely usable by hu-
+man programmers. All the key APIs such as events, properties, and persistence, have been de-
+signed to work well both for human programmers and for builder tools.
+Many beans will have a strong visual aspect, in both the application builder and in the final con-
+structed application, but while this is common it is not required
+</pre>
+<p>
+なんとなくAWT/SwingのGUI系コンポネント向けの仕様ですね。
+</p>
+
+<p>
+現在はAWT/Swing/JSFなどMVCアーキテクチャのモデルとして利用することが多いいでしょう。
+</p>
+
+<ul class="org-ul">
+<li>JSFからJavaBeansの利用例
+<pre class="example">
+&lt;tr:inputText valueChangeListener="#{myBean.valueChangeHandler}" value="#{myBean.value}"/&gt;
+</pre>
+</li>
+
+<li>Swing/AWT
+<ul class="org-ul">
+<li>Swing/AWTにJButtonからはじめ多くのGUIコンポネントがJavaBeansの仕様に基づいている。
+</li>
+<li><a href="http://www.wakhok.ac.jp/~tatsuo/JavaWorld/11th/bean.html">2-2 JavaBeansとしての Swingコンポーネント</a>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> JavaBeansの出番</h2>
+<div class="outline-text-2" id="text-3">
+<ol class="org-ol">
+<li>JavaBeansのインスタンス化 (constructor)
+</li>
+<li>JavaBeansプロパティの設定 (setter/getter)
+</li>
+<li>メソッドの起動 (normal method)
+</li>
+<li>イベントのイベント・ハンドラの登録
+</li>
+</ol>
+
+<p>
+※Oracle JDeveloperを使うとJavaBeans作成用の専用ウィザードが提供されている
+</p>
+
+<p>
+4がピンとこないですね。下記の例で理解できると思います。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #ffffff;">public</span> <span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">MyBean</span> {
+
+     <span style="color: #ffffff;">private</span> <span style="color: #ffffff;">final</span> <span style="color: #7fffd4;">PropertyChangeSupport</span> <span style="color: #9acd32;">pcs</span> = <span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">PropertyChangeSupport</span>(<span style="color: #ffffff;">this</span>);
+
+     <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">addPropertyChangeListener</span>(<span style="color: #7fffd4;">PropertyChangeListener</span> <span style="color: #9acd32;">listener</span>) {
+         <span style="color: #ffffff;">this</span>.pcs.addPropertyChangeListener(listener);
+     }
+
+     <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">removePropertyChangeListener</span>(<span style="color: #7fffd4;">PropertyChangeListener</span> <span style="color: #9acd32;">listener</span>) {
+         <span style="color: #ffffff;">this</span>.pcs.removePropertyChangeListener(listener);
+     }
+
+     <span style="color: #ffffff;">private</span> <span style="color: #7fffd4;">String</span> <span style="color: #9acd32;">value</span>;
+
+     <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">String</span> <span style="color: #98fb98;">getValue</span>() {
+         <span style="color: #ffffff;">return</span> <span style="color: #ffffff;">this</span>.value;
+     }
+
+     <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">setValue</span>(<span style="color: #7fffd4;">String</span> <span style="color: #9acd32;">newValue</span>) {
+         <span style="color: #7fffd4;">String</span> <span style="color: #9acd32;">oldValue</span> = <span style="color: #ffffff;">this</span>.value;
+         <span style="color: #ffffff;">this</span>.value = newValue;
+         <span style="color: #ffffff;">this</span>.pcs.firePropertyChange(<span style="color: #bdb76b;">"value"</span>, oldValue, newValue);
+     }
+}
+
+<span style="color: #ffffff;">public</span> <span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">MyBeanTest</span> {
+    <span style="color: #ffffff;">static</span> <span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">MyBeanPropertyListener</span> <span style="color: #ffffff;">implements</span> <span style="color: #7fffd4;">PropertyChangeListener</span> {
+
+        <span style="color: #40e0d0;">@Override</span>
+        <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">propertyChange</span>(<span style="color: #7fffd4;">PropertyChangeEvent</span> <span style="color: #9acd32;">evt</span>) {
+            System.out.println(<span style="color: #bdb76b;">"evt.getPropertyName() = "</span> +  evt.getPropertyName());
+            System.out.println(<span style="color: #bdb76b;">"evt.getSource()       = "</span> + evt.getSource());
+            System.out.println(<span style="color: #bdb76b;">"evt.getOldValue()     = "</span> + evt.getOldValue());
+            System.out.println(<span style="color: #bdb76b;">"evt.getNewValue()     = "</span> + evt.getNewValue());
+        }
+    }
+    <span style="color: #ffffff;">public</span> <span style="color: #ffffff;">static</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">main</span>(<span style="color: #7fffd4;">String</span>[] <span style="color: #9acd32;">args</span>) {
+        <span style="color: #7fffd4;">MyBean</span> <span style="color: #9acd32;">myBean</span> = <span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">MyBean</span>();
+        myBean.addPropertyChangeListener(<span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">MyBeanPropertyListener</span>());
+        myBean.setValue(<span style="color: #bdb76b;">"hello"</span>);
+    }
+}
+</pre>
+</div>
+
+<p>
+<code>MyBean</code> のvalue属性変更時にPropertyChangeEventを発火させ、MyBeanPropertyListenerでイ
+ベントをハンドリングする。Web開発用MVCフレームワークでもよく利用されている。
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> APIパッケージの概要</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+<a href="http://docs.oracle.com/javase/jp/7/api/java/beans/package-summary.html">JavaDoc</a> より
+</p>
+<pre class="example">
+パッケージ java.beans の説明
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+JavaBeans™ アーキテクチャーに基づいたコンポーネントである Bean の開発に関連したクラス
+が含まれています。一部のクラスは、アプリケーションの実行中に Bean によって使用されま
+す。たとえば、イベントクラスは、プロパティーと拒否可能な変更イベントをトリガーする
+Bean によって使用されます (PropertyChangeEvent を参照)。しかし、このパッケージに含ま
+れるほとんどのクラスは、Bean エディタ (アプリケーションを作成するために Bean のカスタ
+マイズおよび組み合わせを行う開発環境) 用です。こうしたクラスを使用すれば、Bean エディ
+タで Bean のカスタマイズ用ユーザーインタフェースを簡単に作成できます。たとえば、Bean
+エディタでは処理できない特殊な型のプロパティーを持つ Bean があるとします。この場合、
+Bean 開発者は PropertyEditor インタフェースを使って、この特殊な型のエディタを提供でき
+ます。
+
+Bean による消費リソースを最小限に抑えるため、Bean エディタによって使用されるクラスが
+読み込まれるのは、Bean の編集時だけとなります。アプリケーションで Bean が実行されてい
+るときは必要ないため、読み込まれません。この情報は、Bean 情報 (BeanInfo を参照) に保
+管されます。
+
+明示しない限り、null 値または空の文字列は、このパッケージのメソッドで有効なパラメータ
+ではありません。そのようなパラメータが使用されると、例外が発生する可能性があります。
+</pre>
+
+<p>
+イマイチですね、わかりづらい
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> よく出てくるクラス</h2>
+<div class="outline-text-2" id="text-5">
+<ul class="org-ul">
+<li>java.beans.PropertyDescriptor
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #7fffd4;">PropertyDescriptor</span> <span style="color: #9acd32;">nameProp</span> = <span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">PropertyDescriptor</span>(<span style="color: #bdb76b;">"value"</span>, MyBean.<span style="color: #ffffff;">class</span>);
+System.out.println(nameProp.getReadMethod().invoke(myBean));
+System.out.println(nameProp.getWriteMethod().invoke(myBean, <span style="color: #bdb76b;">"goodbye"</span>));
+System.out.println(nameProp.getReadMethod().invoke(myBean));
+</pre>
+</div>
+</li>
+<li>java.beans.PropertyChangeListener
+PropertyChange イベントは、Bean が「バウンド」プロパティーを変更するたびにトリガーされます。
+</li>
+<li>java.beans.PropertyChangeEvent
+Bean が「バウンド」プロパティーまたは「制約」プロパティーを変更するたびに送信されます。
+</li>
+
+<li>PropertyChangeSupport
+バウンドプロパティーをサポートする Bean で使用できるユーティリティークラスです。
+PropertyChangeSupport インスタンスはスレッドセーフです。このクラスは直列化可能です。
+直列化した場合、直列化可能なリスナーが保存および復元されます。直列化の際、直列化可能
+でないリスナーはスキップされます。
+</li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> サードパーティライブラリ</h2>
+<div class="outline-text-2" id="text-6">
+<ul class="org-ul">
+<li><a href="http://commons.apache.org/proper/commons-beanutils/">Apache Commons BeanUtils</a>
+</li>
+</ul>
+</div>
+</div>
+
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> 参考情報</h2>
+<div class="outline-text-2" id="text-7">
+<ul class="org-ul">
+<li><a href="http://java.sun.com/docs/books/tutorial/javabeans/">『Java Tutorial』の続編</a>
+</li>
+<li><a href="http://docstore.mik.ua/orelly/java-ent/jnut/ch06_01.htm">Java™ in a Nutshell: A Deskop Quick Referenceの6章</a>
+</li>
+<li><a href="http://otndnld.oracle.co.jp/tech/java/htdocs/java_roadmap/javabean/listing.htm">Oracle Javaロードマップ:JavaBeans</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[調査]URLパラメータデコード処理について]]></title>
@@ -2420,723 +3058,6 @@ JVM内の各スレッドのスタックサイズは下記の通りです、 <cod
 <li><a href="http://gntm-mdk.hatenadiary.com/entry/2015/01/21/231258">VSS RSS PSS USS の説明</a>
 </li>
 <li><a href="http://hllvm.group.iteye.com/group/topic/37717">咨询各位大神，使用jni，当栈内空间使用为1M时，会触发core</a>
-</li>
-</ul>
-</div>
-</div>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[調査]JBossASソケット受信バッファーのサイズ]]></title>
-    <link href="http://luozengbin.github.io/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html"/>
-    <updated>2015-04-01T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[調査]jbossasソケット受信バッファーのサイズ</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 実験シナリオ</a></li>
-<li><a href="#sec-2">2. テスト信用のサーブレットを準備する</a></li>
-<li><a href="#sec-3">3. サーバソケットの受信バッファーサイズを確認する</a></li>
-<li><a href="#sec-4">4. Acceptorスレッドを意図的ストールさせる</a></li>
-<li><a href="#sec-5">5. TCPソケット受信バッファサイズを監視する</a></li>
-<li><a href="#sec-6">6. パケット通信を監視する</a></li>
-<li><a href="#sec-7">7. telnetからデータを順次に送りつける</a></li>
-<li><a href="#sec-8">8. 監視結果解析</a></li>
-<li><a href="#sec-9">9. TCPソケット受信バッファーサイズの設定について</a></li>
-<li><a href="#sec-10">10. まとめ</a></li>
-<li><a href="#sec-11">11. 参考</a></li>
-</ul>
-</div>
-</div>
-
-
-<p>
-以下LinuxプラットフォームでJBossASアプリケーションサーバの話です。
-</p>
-
-
-
-
-<p>
-次のケースに置いて、Acceptorスレッドやワーカスレッドの働き状態が悪くなるため、クライ
-アントから送信されてデータがサーバ側のTCPソケット受信バッファーに溜まる。バッファーが
-一杯になるとパケット受信ができなくなる、TCPレーヤでパケット再送が起きる。
-</p>
-
-
-
-
-<ul class="org-ul">
-<li>サーバが過負荷状態でCPU時間がAcceptorスレッドやワーカスレッドに回らない場合
-</li>
-<li>FullGCによるJBossASサーバの一時停止
-</li>
-</ul>
-
-
-
-
-<p>
-この記事はTCP受信バッファーのサイズの実測値を調査致します。
-</p>
-
-
-
-
-<p>
-<!-- more -->
-</p>
-
-
-
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 実験シナリオ</h2>
-<div class="outline-text-2" id="text-1">
-<ul class="org-ul">
-<li>テスト信用のサーブレットを準備する
-</li>
-<li>サーバソケットの受信バッファーサイズを確認する
-</li>
-<li>Acceptorスレッドを意図的ストールさせる
-</li>
-<li>TCPソケット受信バッファサイズを監視する
-</li>
-<li>パケット通信を監視する
-</li>
-<li>telnetからデータを順次に送りつける
-</li>
-</ul>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> テスト信用のサーブレットを準備する</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-受信したHTTPリクエストパラメータを出力するシンプルなサーブレットをJBossASにデプロイす
-る。
-</p>
-<div class="org-src-container">
-
-<pre class="src src-java"><span style="color: #ffad29; font-weight: bold;">package</span> jp.co.jizai.sample.jbossas7.<span style="color: #008b8b;">tcp</span>;
-
-<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">servlet</span>.<span style="color: #34cae2;">ServletException</span>;
-<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">servlet</span>.<span style="color: #008b8b;">http</span>.<span style="color: #34cae2;">HttpServlet</span>;
-<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">servlet</span>.<span style="color: #008b8b;">http</span>.<span style="color: #34cae2;">HttpServletRequest</span>;
-<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">servlet</span>.<span style="color: #008b8b;">http</span>.<span style="color: #34cae2;">HttpServletResponse</span>;
-<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">java</span>.<span style="color: #008b8b;">io</span>.<span style="color: #34cae2;">IOException</span>;
-<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">java</span>.<span style="color: #008b8b;">io</span>.<span style="color: #34cae2;">PrintWriter</span>;
-<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">java</span>.<span style="color: #008b8b;">util</span>.<span style="color: #34cae2;">Enumeration</span>;
-<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">java</span>.<span style="color: #008b8b;">util</span>.<span style="color: #34cae2;">Map</span>;
-
-<span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #ffad29; font-weight: bold;">class</span> <span style="color: #34cae2;">ShowParameterServlet</span> <span style="color: #ffad29; font-weight: bold;">extends</span> <span style="color: #34cae2;">HttpServlet</span> {
-
-    <span style="color: #ffad29; font-weight: bold;">private</span> <span style="color: #ffad29; font-weight: bold;">static</span> <span style="color: #ffad29; font-weight: bold;">final</span> <span style="color: #34cae2;">String</span> <span style="color: #dbdb95;">CONTENT_TYPE</span> = <span style="color: #e67128;">"text/html; charset=UTF-8"</span>;
-
-    <span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">doGet</span>(<span style="color: #34cae2;">HttpServletRequest</span> <span style="color: #dbdb95;">req</span>, <span style="color: #34cae2;">HttpServletResponse</span> <span style="color: #dbdb95;">resp</span>) <span style="color: #ffad29; font-weight: bold;">throws</span> <span style="color: #34cae2;">ServletException</span>, <span style="color: #34cae2;">IOException</span> {
-
-        process(req, resp);
-    }
-
-
-    <span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">doPost</span>(<span style="color: #34cae2;">HttpServletRequest</span> <span style="color: #dbdb95;">req</span>, <span style="color: #34cae2;">HttpServletResponse</span> <span style="color: #dbdb95;">resp</span>) <span style="color: #ffad29; font-weight: bold;">throws</span> <span style="color: #34cae2;">ServletException</span>, <span style="color: #34cae2;">IOException</span> {
-        process(req, resp);
-    }
-
-    <span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">process</span>(<span style="color: #34cae2;">HttpServletRequest</span> <span style="color: #dbdb95;">req</span>, <span style="color: #34cae2;">HttpServletResponse</span> <span style="color: #dbdb95;">resp</span>) <span style="color: #ffad29; font-weight: bold;">throws</span> <span style="color: #34cae2;">ServletException</span>, <span style="color: #34cae2;">IOException</span> {
-        resp.setContentType(CONTENT_TYPE);
-        <span style="color: #34cae2;">PrintWriter</span> <span style="color: #dbdb95;">out</span> = resp.getWriter();
-        System.out.println(<span style="color: #e67128;">"=== http parameter ==="</span>);
-        <span style="color: #34cae2;">Map</span>&lt;<span style="color: #34cae2;">String</span>, <span style="color: #34cae2;">Object</span>&gt; <span style="color: #dbdb95;">paramMap</span> = (Map&lt;<span style="color: #34cae2;">String</span>, Object&gt;) req.getParameterMap();
-        <span style="color: #ffad29; font-weight: bold;">for</span> (<span style="color: #008b8b;">Map</span>.<span style="color: #34cae2;">Entry</span>&lt;<span style="color: #34cae2;">String</span>, <span style="color: #34cae2;">Object</span>&gt; entry : paramMap.entrySet()) {
-            out.write(String.format(<span style="color: #e67128;">"%s = %s"</span>, entry.getKey(), entry.getValue()) + <span style="color: #e67128;">"&lt;br/&gt;"</span>);
-        }
-
-        System.out.println(<span style="color: #e67128;">"=== http attribute ==="</span>);
-        <span style="color: #34cae2;">Enumeration</span>&lt;<span style="color: #34cae2;">String</span>&gt; <span style="color: #dbdb95;">attrNames</span> = (<span style="color: #34cae2;">Enumeration</span>&lt;<span style="color: #34cae2;">String</span>&gt;) req.getAttributeNames();
-        <span style="color: #ffad29; font-weight: bold;">while</span> (attrNames.hasMoreElements()) {
-            <span style="color: #34cae2;">String</span> <span style="color: #dbdb95;">attrName</span> = attrNames.nextElement();
-            out.write(String.format(<span style="color: #e67128;">"%s = %s"</span>, attrName, req.getAttribute(attrName)) + <span style="color: #e67128;">"&lt;br/&gt;"</span>);
-        }
-        out.close();
-    }
-}
-</pre>
-</div>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> サーバソケットの受信バッファーサイズを確認する</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-新規接続のサーバソケットのgetReceiveBufferSize()メソッドをコールする <code>Byteman</code> スクリ
-プトを実行中のJBassASにアタッチメントする。
-</p>
-<div class="org-src-container">
-
-<pre class="src src-sh">RULE trace http ReceiveBufferSize
-CLASS org.apache.tomcat.util.net.JIoEndpoint
-METHOD processSocket
-AT ENTRY
-BIND socket = $<span style="color: #dbdb95;">1</span>
-IF TRUE
-DO
-  traceln(<span style="color: #e67128;">"socket.getReceiveBufferSize() = "</span> + socket.getReceiveBufferSize()), traceStack()
-ENDRULE
-</pre>
-</div>
-
-<p>
-クライアントブラウザからテスト用サーブレットをアクセスすると、サーバログに以下の内容
-が出力される。
-</p>
-
-<pre class="example">
-15:46:11,002 INFO  [stdout] (http-/0.0.0.0:8080-Acceptor-0) socket.getReceiveBufferSize() = 43690
-15:46:11,004 INFO  [stdout] (http-/0.0.0.0:8080-Acceptor-0) Stack trace for thread http-/0.0.0.0:8080-Acceptor-0
-15:46:11,004 INFO  [stdout] (http-/0.0.0.0:8080-Acceptor-0) org.apache.tomcat.util.net.JIoEndpoint.processSocket(JIoEndpoint.java:-1)
-15:46:11,004 INFO  [stdout] (http-/0.0.0.0:8080-Acceptor-0) org.apache.tomcat.util.net.JIoEndpoint$Acceptor.run(JIoEndpoint.java:315)
-15:46:11,005 INFO  [stdout] (http-/0.0.0.0:8080-Acceptor-0) java.lang.Thread.run(Thread.java:745)
-</pre>
-
-<p>
-<code>[[https://docs.oracle.com/javase/jp/6/api/java/net/Socket.html#setReceiveBufferSize%2528int%2529][java.net.Socket.getReceiveBufferSize]]()</code> で取れた値→ <code>43690</code> 単位がよくわからないの
-でJavaDocを引いてみた。
-</p>
-
-<pre class="example">
-public int getReceiveBufferSize()
-                         throws SocketException
-
-    この Socket で使われる SO_RCVBUF オプションの値を取得します。これは、この Socket で入力用としてプラットフォームが使うバッファーのサイズです。
-
-    戻り値:
-        この Socket の SO_RCVBUF オプションの値 
-    例外:
-        SocketException - 使用しているプロトコルでエラー (TCP エラーなど) が発生した場合
-    導入されたバージョン:
-        1.2
-    関連項目:
-        setReceiveBufferSize(int)
-</pre>
-
-<p>
-やはり、分からないので <code>SO_RCVBUF</code> オプションの単位を探って見る。
-</p>
-
-<pre class="example">
-SO_RCVBUF
-    ソケットの受信バッファーの最大サイズを設定・取得する (バイト単位)。 setsockopt(2)
-    を使って値が設定されたときに (管理オーバヘッド用の領域を確保するために) カーネルは
-    この値を 2倍し、 getsockopt(2) はこの 2倍された値を返す。 デフォルトの値は
-    /proc/sys/net/core/rmem_default ファイルで設定され、許容される最大の値は
-    /proc/sys/net/core/rmem_max ファイルで設定される。 このオプションの最小値は (2倍し
-    た値で) 256 である
-</pre>
-
-<p>
-僕の日本語理解力が低いので、正確な意味が掴めないままだが。一先ず受信バッファーサイズの
-単位がバイトだそうです。 <code>43690</code> バイトは約42KB、またTCP受信バッファーカーネルパラメー
-タ <code>net.ipv4.tcp_rmem</code> の値は下記の通りとなります。 <code>43690</code> は丁度 <code>net.ipv4.tcp_rmem</code>
-のデフォルト値の 1/2 であることが分かりました。
-</p>
-
-<pre class="example">
-# sysctl -a | grep net.ipv4.tcp_rmem
-net.ipv4.tcp_rmem = 4096    87380   4194304
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> Acceptorスレッドを意図的ストールさせる</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-新規接続を受け付ける処理 <code>org.apache.tomcat.util.net.JIoEndpoint.processSocket(Socket
-socket)</code> でスレッドを30秒間Sleepされる <code>Byteman</code> スクリプトを実行中のJBossASにアタッチ
-メントする。
-</p>
-<div class="org-src-container">
-
-<pre class="src src-sh">RULE pause acceptor thread
-CLASS org.apache.tomcat.util.net.JIoEndpoint
-METHOD processSocket
-AT ENTRY
-BIND socket = $<span style="color: #dbdb95;">1</span>
-IF TRUE
-DO
-  Thread.sleep(300000)
-ENDRULE
-</pre>
-</div>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> TCPソケット受信バッファサイズを監視する</h2>
-<div class="outline-text-2" id="text-5">
-<p>
-以下のコマンドでTCPソケット受信バッファサイズを監視する
-</p>
-<pre class="example">
-$ watch -n 2 'netstat -an | grep ESTABLISHED | grep 8080'
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6"><span class="section-number-2">6</span> パケット通信を監視する</h2>
-<div class="outline-text-2" id="text-6">
-<p>
-クライアント側にて以下のコマンドでパケット通信の監視を行う
-</p>
-<pre class="example">
-$sudo tcpdump -n -i virbr0 port 8080
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-7" class="outline-2">
-<h2 id="sec-7"><span class="section-number-2">7</span> telnetからデータを順次に送りつける</h2>
-<div class="outline-text-2" id="text-7">
-<p>
-<code>net.ipv4.tcp_rmem</code> パラメータデフォルト値 <code>87380</code> より大きい電文を送るようにHTTPヘッ
-ダーに <code>Content-Length: 120100</code> を指定する。
-</p>
-
-<pre class="example">
-$ telnet jbossas-lab02 8080
-POST /jbossas7-tcp-basic/ShowParameterServlet HTTP/1.1
-Host: jbossas-lab02:8080
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: ja,en-US;q=0.7,en;q=0.3
-Accept-Encoding: gzip, deflate
-Referer: http://jbossas-lab002:8080/jbossas7-tcp-basic/
-Connection: Close
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 120100
-
-★まず100バイト分を送る(エンターは2バイト分になります)
-param1=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ★エンターを押す
-
-★以下4000バイト文字を30回繰り返しサーバに送る
-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-8" class="outline-2">
-<h2 id="sec-8"><span class="section-number-2">8</span> 監視結果解析</h2>
-<div class="outline-text-2" id="text-8">
-<p>
-以下TCPソケット受信バッファサイズの監視結果、文中の★マークは結果の解析コメントとなり
-ます。
-</p>
-<pre class="example">
-# while [ true ]; do netstat -an | grep ESTABLISHED | grep 8080; sleep  2; done
-★1 TCP3WHS 接続確立
-tcp        0      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-
-★2 HTTPヘッダー受信
-tcp      447      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-
-★3 リクエストデータの受信
-tcp      547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp     4547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp     8547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    12547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    16547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    20547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    24547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    28547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    32547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    36547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    40547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-
-★4 アプリ予約バッファサイズに達した、以降は管理領域を食い始めた
-★  このタイミングからサーバ受信ウィンドウサイズが徐々に縮める
-tcp    44547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    48547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    52547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    56547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    60547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    64547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    68547      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-
-★5 以降TCPバッファが満タン
-tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED 
-tcp    72211      0 192.168.122.66:8080         192.168.122.1:40976         ESTABLISHED
-</pre>
-
-
-<p>
-パケット監視結果は以下の通りです。
-</p>
-<pre class="example">
-★1 TCP3WHS 接続確立
-16:45:01.262499 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [S], seq 3028524293, win 29200, options [mss 1460,sackOK,TS val 50120659 ecr 0,nop,wscale 7], length 0
-16:45:01.262697 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [S.], seq 1682372075, ack 3028524294, win 14480, options [mss 1460,sackOK,TS val 3798305 ecr 50120659,nop,wscale 7], length 0
-16:45:01.262773 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50120659 ecr 3798305], length 0
-
-
-★2 HTTPヘッダー送信
-16:45:09.935452 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 1:57, ack 1, win 229, options [nop,nop,TS val 50123261 ecr 3798305], length 56: HTTP: POST /jbossas7-tcp-basic/ShowParameterServlet HTTP/1.1
-16:45:09.935789 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 57, win 114, options [nop,nop,TS val 3806979 ecr 50123261], length 0
-16:45:09.935850 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 57:422, ack 1, win 229, options [nop,nop,TS val 50123261 ecr 3806979], length 365: HTTP
-16:45:09.935905 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 422, win 122, options [nop,nop,TS val 3806979 ecr 50123261], length 0
-16:45:10.330264 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 422:446, ack 1, win 229, options [nop,nop,TS val 50123379 ecr 3806979], length 24: HTTP
-16:45:10.330448 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 446, win 122, options [nop,nop,TS val 3807373 ecr 50123379], length 0
-16:45:10.897750 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 446:448, ack 1, win 229, options [nop,nop,TS val 50123550 ecr 3807373], length 2: HTTP
-16:45:10.897911 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 448, win 122, options [nop,nop,TS val 3807941 ecr 50123550], length 0
-
-★3 リクエストデータの送信
-16:45:19.464509 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 448:548, ack 1, win 229, options [nop,nop,TS val 50126120 ecr 3807941], length 100: HTTP
-16:45:19.464668 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 548, win 122, options [nop,nop,TS val 3816507 ecr 50126120], length 0
-16:45:26.602423 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 548:4548, ack 1, win 229, options [nop,nop,TS val 50128261 ecr 3816507], length 4000: HTTP
-16:45:26.602602 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 4548, win 145, options [nop,nop,TS val 3823645 ecr 50128261], length 0
-16:45:32.436162 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 4548:8548, ack 1, win 229, options [nop,nop,TS val 50130011 ecr 3823645], length 4000: HTTP
-16:45:32.436338 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 8548, win 167, options [nop,nop,TS val 3829479 ecr 50130011], length 0
-16:45:35.452590 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 8548:12548, ack 1, win 229, options [nop,nop,TS val 50130916 ecr 3829479], length 4000: HTTP
-16:45:35.452721 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 12548, win 190, options [nop,nop,TS val 3832495 ecr 50130916], length 0
-16:45:38.082228 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 12548:16548, ack 1, win 229, options [nop,nop,TS val 50131705 ecr 3832495], length 4000: HTTP
-16:45:38.082396 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 16548, win 212, options [nop,nop,TS val 3835125 ecr 50131705], length 0
-16:45:40.743705 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 16548:20548, ack 1, win 229, options [nop,nop,TS val 50132504 ecr 3835125], length 4000: HTTP
-16:45:40.743848 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 20548, win 235, options [nop,nop,TS val 3837787 ecr 50132504], length 0
-16:45:43.016683 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 20548:24548, ack 1, win 229, options [nop,nop,TS val 50133185 ecr 3837787], length 4000: HTTP
-16:45:43.016863 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 24548, win 258, options [nop,nop,TS val 3840060 ecr 50133185], length 0
-16:45:45.721066 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 24548:28548, ack 1, win 229, options [nop,nop,TS val 50133997 ecr 3840060], length 4000: HTTP
-16:45:45.721253 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 28548, win 280, options [nop,nop,TS val 3842764 ecr 50133997], length 0
-16:45:49.227814 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 28548:32548, ack 1, win 229, options [nop,nop,TS val 50135049 ecr 3842764], length 4000: HTTP
-16:45:49.227964 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 32548, win 253, options [nop,nop,TS val 3846271 ecr 50135049], length 0
-16:45:51.671841 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 32548:36548, ack 1, win 229, options [nop,nop,TS val 50135782 ecr 3846271], length 4000: HTTP
-
-★4 ここから再送が発生する
-16:45:51.680266 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 35444:36548, ack 1, win 229, options [nop,nop,TS val 50135785 ecr 3846271], length 1104: HTTP
-16:45:51.711839 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 36548, win 225, options [nop,nop,TS val 3848755 ecr 50135782,nop,nop,sack 1 {35444:36548}], length 0
-16:45:55.390996 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 36548:40548, ack 1, win 229, options [nop,nop,TS val 50136898 ecr 3848755], length 4000: HTTP
-16:45:55.430802 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 40548, win 197, options [nop,nop,TS val 3852474 ecr 50136898], length 0
-16:45:59.291140 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], seq 40548:43444, ack 1, win 229, options [nop,nop,TS val 50138068 ecr 3852474], length 2896: HTTP
-16:45:59.291169 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 43444:44548, ack 1, win 229, options [nop,nop,TS val 50138068 ecr 3852474], length 1104: HTTP
-16:45:59.310296 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 43444:44548, ack 1, win 229, options [nop,nop,TS val 50138074 ecr 3852474], length 1104: HTTP
-16:45:59.330773 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 44548, win 166, options [nop,nop,TS val 3856374 ecr 50138068,nop,nop,sack 1 {43444:44548}], length 0
-16:46:01.367501 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], seq 44548:47444, ack 1, win 229, options [nop,nop,TS val 50138691 ecr 3856374], length 2896: HTTP
-16:46:01.367533 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 47444:48548, ack 1, win 229, options [nop,nop,TS val 50138691 ecr 3856374], length 1104: HTTP
-16:46:01.406803 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 48548, win 135, options [nop,nop,TS val 3858450 ecr 50138691], length 0
-16:46:03.523326 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], seq 48548:51444, ack 1, win 229, options [nop,nop,TS val 50139337 ecr 3858450], length 2896: HTTP
-16:46:03.523356 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 51444:52548, ack 1, win 229, options [nop,nop,TS val 50139337 ecr 3858450], length 1104: HTTP
-16:46:03.553582 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 51444:52548, ack 1, win 229, options [nop,nop,TS val 50139347 ecr 3858450], length 1104: HTTP
-16:46:03.553716 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 52548, win 104, options [nop,nop,TS val 3860596 ecr 50139337,nop,nop,sack 1 {51444:52548}], length 0
-16:46:06.322183 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], seq 52548:55444, ack 1, win 229, options [nop,nop,TS val 50140177 ecr 3860596], length 2896: HTTP
-16:46:06.322212 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 55444:56548, ack 1, win 229, options [nop,nop,TS val 50140177 ecr 3860596], length 1104: HTTP
-16:46:06.361777 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 56548, win 73, options [nop,nop,TS val 3863405 ecr 50140177], length 0
-16:46:08.944983 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], seq 56548:57996, ack 1, win 229, options [nop,nop,TS val 50140964 ecr 3863405], length 1448: HTTP
-16:46:08.945017 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], seq 57996:59444, ack 1, win 229, options [nop,nop,TS val 50140964 ecr 3863405], length 1448: HTTP
-16:46:08.945027 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 59444:60548, ack 1, win 229, options [nop,nop,TS val 50140964 ecr 3863405], length 1104: HTTP
-16:46:08.945188 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 57996, win 62, options [nop,nop,TS val 3865988 ecr 50140964], length 0
-16:46:08.983605 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 59444:60548, ack 1, win 229, options [nop,nop,TS val 50140976 ecr 3865988], length 1104: HTTP
-16:46:08.983765 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 60548, win 43, options [nop,nop,TS val 3866027 ecr 50140964,nop,nop,sack 1 {59444:60548}], length 0
-16:46:10.874178 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], seq 60548:63444, ack 1, win 229, options [nop,nop,TS val 50141543 ecr 3866027], length 2896: HTTP
-16:46:10.874209 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 63444:64548, ack 1, win 229, options [nop,nop,TS val 50141543 ecr 3866027], length 1104: HTTP
-16:46:10.913789 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 64548, win 12, options [nop,nop,TS val 3867957 ecr 50141543], length 0
-16:46:13.263314 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], seq 64548:65996, ack 1, win 229, options [nop,nop,TS val 50142259 ecr 3867957], length 1448: HTTP
-16:46:13.263477 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 65996, win 1, options [nop,nop,TS val 3870306 ecr 50142259], length 0
-16:46:13.483589 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 65996:66124, ack 1, win 229, options [nop,nop,TS val 50142326 ecr 3870306], length 128: HTTP
-16:46:13.483812 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 66124, win 46, options [nop,nop,TS val 3870527 ecr 50142326], length 0
-16:46:13.483865 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], seq 66124:67572, ack 1, win 229, options [nop,nop,TS val 50142326 ecr 3870527], length 1448: HTTP
-16:46:13.483885 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 67572:68548, ack 1, win 229, options [nop,nop,TS val 50142326 ecr 3870527], length 976: HTTP
-16:46:13.523583 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 67572:68548, ack 1, win 229, options [nop,nop,TS val 50142338 ecr 3870527], length 976: HTTP
-16:46:13.523752 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 68548, win 28, options [nop,nop,TS val 3870567 ecr 50142326,nop,nop,sack 1 {67572:68548}], length 0
-16:46:15.144825 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], seq 68548:69996, ack 1, win 229, options [nop,nop,TS val 50142824 ecr 3870567], length 1448: HTTP
-16:46:15.144860 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], seq 69996:71444, ack 1, win 229, options [nop,nop,TS val 50142824 ecr 3870567], length 1448: HTTP
-16:46:15.145025 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 69996, win 17, options [nop,nop,TS val 3872188 ecr 50142824], length 0
-16:46:15.184796 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 71444, win 6, options [nop,nop,TS val 3872228 ecr 50142824], length 0
-16:46:15.406939 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [P.], seq 71444:72212, ack 1, win 229, options [nop,nop,TS val 50142903 ecr 3872228], length 768: HTTP
-
-
-★5 ここからサーバから受信可能なTCPウィンドウサイズが0の応答パケットが出始めた
-16:46:15.407110 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3872450 ecr 50142903], length 0
-16:46:15.626933 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50142969 ecr 3872450], length 0
-16:46:15.627096 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3872670 ecr 50142903], length 0
-16:46:16.066943 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50143101 ecr 3872670], length 0
-16:46:16.067143 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3873110 ecr 50142903], length 0
-16:46:16.950253 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50143366 ecr 3873110], length 0
-16:46:16.950401 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3873993 ecr 50142903], length 0
-16:46:18.716950 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50143896 ecr 3873993], length 0
-16:46:18.717129 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3875760 ecr 50142903], length 0
-16:46:22.250259 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50144956 ecr 3875760], length 0
-16:46:22.250438 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3879293 ecr 50142903], length 0
-16:46:29.303610 IP 192.168.122.1.40976 &gt; 192.168.122.66.8080: Flags [.], ack 1, win 229, options [nop,nop,TS val 50147072 ecr 3879293], length 0
-16:46:29.303785 IP 192.168.122.66.8080 &gt; 192.168.122.1.40976: Flags [.], ack 72212, win 0, options [nop,nop,TS val 3886347 ecr 50142903], length 0
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-9" class="outline-2">
-<h2 id="sec-9"><span class="section-number-2">9</span> TCPソケット受信バッファーサイズの設定について</h2>
-<div class="outline-text-2" id="text-9">
-<p>
-JavaDocから引用
-</p>
-
-<ul class="org-ul">
-<li><a href="https://docs.oracle.com/javase/jp/6/api/java/net/Socket.html#setReceiveBufferSize%2528int%2529">java.net.Socket.setReceiveBufferSize</a>
-この Socket の SO_RCVBUF オプションを指定された値に設定します。SO_RCVBUF オプション
-は、使用するネットワーク入出力バッファーに設定するサイズのヒントとして、プラットフォー
-ムのネットワークコードが使います。
-
-<p>
-受信バッファーのサイズを増やすと、大規模な接続でのネットワーク入出力のパフォーマンス
-を上げることができます。一方、サイズを減らすと、受信データのバックログを減らすことが
-できます。
-</p>
-
-<p>
-SO_RCVBUF は <code>ヒント</code> なので、アプリケーションでバッファーのサイズ設定を調べる必要が
-ある場合は、getReceiveBufferSize() を呼び出してください。
-</p>
-
-<p>
-SO_RCVBUF の値は、リモートピアに通知される TCP 受信ウィンドウの設定にも使用されます。
-一般に、ソケットが接続されているかぎり、このウィンドウサイズはいつでも変更できます。
-ただし、64K を超える受信ウィンドウを要求する場合は、ソケットをリモートピアに接続する
-前に変更を要求する必要があります。次の 2 つの場合に注意してください。
-</p>
-
-<p>
-ServerSocket から受け入れたソケットの場合、ServerSocket をローカルアドレスにバインド
-する前に、ServerSocket.setReceiveBufferSize(int) を呼び出してこれを実行する必要があ
-ります。
-</p>
-
-<p>
-クライアントソケットの場合、ソケットをそのリモートピアに接続する前に、
-setReceiveBufferSize() を呼び出す必要があります。
-</p>
-</li>
-<li><a href="https://docs.oracle.com/javase/jp/6/api/java/net/ServerSocket.html#setReceiveBufferSize%2528int%2529">java.net.ServerSocket.setReceiveBufferSize</a>
-  この ServerSocket から受け入れられたソケットの SO_RCVBUF オプションのデフォルト推
-奨値を設定します。受け入れられたソケット内に実際に設定されている値を確認してください。
-それには、accept() からソケットが返されたあとで Socket.getReceiveBufferSize() を呼び
-出します。
-
-<p>
-  SO_RCVBUF の値は、内部ソケット受信バッファーのサイズの設定と、リモートピアに通知さ
-れる TCP 受信ウィンドウのサイズの設定の両方に使用されます。
-</p>
-
-<p>
-  その後、Socket.setReceiveBufferSize(int) を呼び出すことで値を変更できます。ただし、
-アプリケーションが RFC1323 で定義されている 64K バイトを超える受信ウィンドウを使用可
-能にする必要がある場合には、ローカルアドレスにバインドする前に 推奨値を
-ServerSocket で設定する必要があります。つまり、引数なしコンストラクタを使って
-ServerSocket を作成し、次に setReceiveBufferSize() を呼び出し、最後に bind() を呼び
-出して ServerSocket をアドレスにバインドする必要があることを意味します。
-</p>
-
-<p>
-  これに失敗してもエラーは発生せず、バッファーサイズは要求された値に設定されます。た
-だし、この ServerSocket から受け取るソケットの TCP 受信ウィンドウは 64K バイト以下に
-なります。
-</p>
-</li>
-</ul>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-10" class="outline-2">
-<h2 id="sec-10"><span class="section-number-2">10</span> まとめ</h2>
-<div class="outline-text-2" id="text-10">
-<ul class="org-ul">
-<li>JBossASソケット受信バッファーのデフォルトサイズは <code>net.ipv4.tcp_rmem</code> の1/2が適用さ
-れる(約42KB)。
-</li>
-<li>リクエストデータサイズが42KBバイト以下の場合、パケット再送発生しない
-</li>
-<li>実際に受信できる最大サイズは <code>net.ipv4.tcp_rmem</code> 値の8割ぐらい
-</li>
-</ul>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-11" class="outline-2">
-<h2 id="sec-11"><span class="section-number-2">11</span> 参考</h2>
-<div class="outline-text-2" id="text-11">
-<ul class="org-ul">
-<li><a href="http://linuxjm.sourceforge.jp/html/LDP_man-pages/man7/socket.7.html">Section: Linux Programmer&#8217;s Manual (7)</a>
-</li>
-<li><a href="https://docs.oracle.com/javase/jp/6/api/java/net/Socket.html">Socket (Java Platform SE 6)</a>
-</li>
-</ul>
-</div>
-</div>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[メモ]JBoss ASでBytemanを使う]]></title>
-    <link href="http://luozengbin.github.io/blog/2015-04-01-%5B%E3%83%A1%E3%83%A2%5Djbossas%E3%81%A7byteman%E3%82%92%E4%BD%BF%E3%81%86.html"/>
-    <updated>2015-04-01T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[メモ]jbossasでbytemanを使う</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 前提</a></li>
-<li><a href="#sec-2">2. インストール</a></li>
-<li><a href="#sec-3">3. JBossASプロセスへのアタッチ</a></li>
-<li><a href="#sec-4">4. トレース用スクリプトの作成</a></li>
-<li><a href="#sec-5">5. スクリプトの実行</a></li>
-<li><a href="#sec-6">6. 参考</a></li>
-</ul>
-</div>
-</div>
-
-
-<p>
-ミドルウェアの内部動作をトレースするためによく使うので手順を残しておきます。
-</p>
-
-
-
-
-<p>
-<!-- more -->
-</p>
-
-
-
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 前提</h2>
-<div class="outline-text-2" id="text-1">
-<ul class="org-ul">
-<li>JBossAS 7系
-</li>
-</ul>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> インストール</h2>
-<div class="outline-text-2" id="text-2">
-<pre class="example">
-$ wget http://downloads.jboss.org/byteman/2.2.1/byteman-download-2.2.1-bin.zip
-$ unzip byteman-download-2.2.1-bin.zip
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> JBossASプロセスへのアタッチ</h2>
-<div class="outline-text-2" id="text-3">
-<pre class="example">
-$ export BYTEMAN_HOME=`pwd`/byteman-download-2.2.1
-$ export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64
-$ JBOSS_PID=`ps -ef | grep [j]boss-modules.jar | awk '{print $2}'`
-$ ${BYTEMAN_HOME}/bin/bminstall.sh -b ${JBOSS_PID}
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> トレース用スクリプトの作成</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-JBossASサーバソケット受信バッファーサイズを調べるスクリプト
-<code>trace_socket_receive_buffer_size.btm</code> を作成する
-</p>
-
-<pre class="example">
-RULE trace http ReceiveBufferSize
-CLASS org.apache.tomcat.util.net.JIoEndpoint
-METHOD processSocket
-AT ENTRY
-BIND socket = $1
-IF TRUE
-DO
-  traceln("socket.getReceiveBufferSize() = " + socket.getReceiveBufferSize()), traceStack()
-ENDRULE
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> スクリプトの実行</h2>
-<div class="outline-text-2" id="text-5">
-<pre class="example">
-$ ${BYTEMAN_HOME}/bin/bmsubmit.sh trace_socket_receive_buffer_size.btm
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6"><span class="section-number-2">6</span> 参考</h2>
-<div class="outline-text-2" id="text-6">
-<ul class="org-ul">
-<li><a href="https://developer.jboss.org/wiki/ABytemanTutorial#how_do_i_run_jboss_as_with_byteman">A Byteman Tutorial</a>
-</li>
-<li><a href="http://nekop.hatenablog.com/entry/20101220/1292825812">BytemanによるJava黒魔術</a>
-</li>
-<li><a href="http://d.hatena.ne.jp/Kazuhira/20131022/1382455739">バイトコード操作ツール、Bytemanを試す</a>
 </li>
 </ul>
 </div>

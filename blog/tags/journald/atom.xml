@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Journald | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/journald/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2015-07-02T19:17:14+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Linux]journaldエラーログをメールで通知する]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-06-28-%5Btips%5D%5Blinux%5Djournald%E3%82%A8%E3%83%A9%E3%83%BC%E3%83%AD%E3%82%B0%E3%82%92%E3%83%A1%E3%83%BC%E3%83%AB%E3%81%A7%E9%80%9A%E7%9F%A5%E3%81%99%E3%82%8B.html"/>
+    <updated>2015-06-28T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][linux]journaldエラーログをメールで通知する</id>
+    <content type="html"><![CDATA[<p>
+systemdを採用しているdistroのシステムログがjournaldを一元管理してくれる。
+</p>
+
+
+
+
+<ul class="org-ul">
+<li><a href="http://enakai00.hatenablog.com/entry/20141130/1417310904">RHEL7/CentOS7のjournaldについてのもろもろ</a>
+</li>
+<li><a href="http://www.school.ctc-g.co.jp/columns/nakai/nakai56.html">第56回　RHEL7/CentOS7のjournaldでシステムログを一元管理 (中井悦司)</a>
+</li>
+</ul>
+
+
+
+
+<p>
+ただし、journaldにエラーログを通知する機能が持っていないため監視通知のし掛けが必要で
+す。
+</p>
+
+
+
+
+<ol class="org-ol">
+<li>journaldログをsyslogに転送し、従来のsyslog監視方法を適用する
+</li>
+<li>独自のスクリプトで実現する
+</li>
+</ol>
+
+
+
+
+<p>
+自宅のサーバは下記スクリプトでエラーログの通知機能を実現しています。
+</p>
+
+
+
+
+<p>
+<code>/etc/cron.hourly/journal_error</code>
+</p>
+
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
+
+<span style="color: #00cd66;"># </span><span style="color: #00cd66;">&#19968;&#26178;&#20197;&#20869;&#12398;&#12456;&#12521;&#12540;&#12525;&#12464;&#12434;&#27161;&#28310;&#20986;&#21147;&#12392;/var/log/journal_error&#12501;&#12449;&#12452;&#12523;&#12408;&#20986;&#21147;&#12377;&#12427;</span>
+journalctl -o short-iso -p err --since -1hours 2&gt;/dev/null | tail -n+2 | tee -a /var/log/journal_error
+</pre>
+</div>
+
+
+
+
+<p>
+journalctl コマンドを駆使して１時間以内のエラーログを標準出力に出力するスクリプト。
+これをcronの時間単位ジョブディレクトリ <code>/etc/cron.hourly</code> に登録する。
+あとはcronのメール通知機能を有効化するだけです。
+</p>
+
+
+
+
+<p>
+cronのメール通知先は <code>/etc/cron.d/0hourly</code> の <code>MAILTO</code> 項目にて指定する。
+</p>
+
+
+<div class="org-src-container">
+
+<pre class="src src-sh">$ cat /etc/cron.d/0hourly
+<span style="color: #00cd66;"># </span><span style="color: #00cd66;">Run the hourly jobs</span>
+<span style="color: #9acd32;">SHELL</span>=/bin/bash
+<span style="color: #9acd32;">PATH</span>=/sbin:/bin:/usr/sbin:/usr/bin
+<span style="color: #9acd32;">MAILTO</span>=&lt;&lt;&#12513;&#12540;&#12523;&#12398;&#36865;&#20449;&#20808;&#12434;&#12371;&#12371;&#12395;&#26360;&#12367;&gt;&gt;
+<span style="color: #ffff00; font-weight: bold;">1 * * * * root run-parts /etc/cron.hourly</span>
+</pre>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

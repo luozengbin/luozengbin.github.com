@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Linux | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-06-03T18:30:19+09:00</updated>
+  <updated>2015-07-02T19:17:14+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,833 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Linux]journaldエラーログをメールで通知する]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-06-28-%5Btips%5D%5Blinux%5Djournald%E3%82%A8%E3%83%A9%E3%83%BC%E3%83%AD%E3%82%B0%E3%82%92%E3%83%A1%E3%83%BC%E3%83%AB%E3%81%A7%E9%80%9A%E7%9F%A5%E3%81%99%E3%82%8B.html"/>
+    <updated>2015-06-28T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][linux]journaldエラーログをメールで通知する</id>
+    <content type="html"><![CDATA[<p>
+systemdを採用しているdistroのシステムログがjournaldを一元管理してくれる。
+</p>
+
+
+
+
+<ul class="org-ul">
+<li><a href="http://enakai00.hatenablog.com/entry/20141130/1417310904">RHEL7/CentOS7のjournaldについてのもろもろ</a>
+</li>
+<li><a href="http://www.school.ctc-g.co.jp/columns/nakai/nakai56.html">第56回　RHEL7/CentOS7のjournaldでシステムログを一元管理 (中井悦司)</a>
+</li>
+</ul>
+
+
+
+
+<p>
+ただし、journaldにエラーログを通知する機能が持っていないため監視通知のし掛けが必要で
+す。
+</p>
+
+
+
+
+<ol class="org-ol">
+<li>journaldログをsyslogに転送し、従来のsyslog監視方法を適用する
+</li>
+<li>独自のスクリプトで実現する
+</li>
+</ol>
+
+
+
+
+<p>
+自宅のサーバは下記スクリプトでエラーログの通知機能を実現しています。
+</p>
+
+
+
+
+<p>
+<code>/etc/cron.hourly/journal_error</code>
+</p>
+
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
+
+<span style="color: #00cd66;"># </span><span style="color: #00cd66;">&#19968;&#26178;&#20197;&#20869;&#12398;&#12456;&#12521;&#12540;&#12525;&#12464;&#12434;&#27161;&#28310;&#20986;&#21147;&#12392;/var/log/journal_error&#12501;&#12449;&#12452;&#12523;&#12408;&#20986;&#21147;&#12377;&#12427;</span>
+journalctl -o short-iso -p err --since -1hours 2&gt;/dev/null | tail -n+2 | tee -a /var/log/journal_error
+</pre>
+</div>
+
+
+
+
+<p>
+journalctl コマンドを駆使して１時間以内のエラーログを標準出力に出力するスクリプト。
+これをcronの時間単位ジョブディレクトリ <code>/etc/cron.hourly</code> に登録する。
+あとはcronのメール通知機能を有効化するだけです。
+</p>
+
+
+
+
+<p>
+cronのメール通知先は <code>/etc/cron.d/0hourly</code> の <code>MAILTO</code> 項目にて指定する。
+</p>
+
+
+<div class="org-src-container">
+
+<pre class="src src-sh">$ cat /etc/cron.d/0hourly
+<span style="color: #00cd66;"># </span><span style="color: #00cd66;">Run the hourly jobs</span>
+<span style="color: #9acd32;">SHELL</span>=/bin/bash
+<span style="color: #9acd32;">PATH</span>=/sbin:/bin:/usr/sbin:/usr/bin
+<span style="color: #9acd32;">MAILTO</span>=&lt;&lt;&#12513;&#12540;&#12523;&#12398;&#36865;&#20449;&#20808;&#12434;&#12371;&#12371;&#12395;&#26360;&#12367;&gt;&gt;
+<span style="color: #ffff00; font-weight: bold;">1 * * * * root run-parts /etc/cron.hourly</span>
+</pre>
+</div>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[まとめ]Linuxシステム時刻について]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html"/>
+    <updated>2015-06-27T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[まとめ]linuxシステム時刻について</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. ハードウェアクロック／システムクロックの違い</a></li>
+<li><a href="#sec-2">2. 時刻の表示仕様</a></li>
+<li><a href="#sec-3">3. 時刻表示／調整関連コマンド</a>
+<ul>
+<li><a href="#sec-3-1">3.1. NTP時刻同期化を自動化する</a></li>
+<li><a href="#sec-3-2">3.2. タイムゾーンの変更</a></li>
+<li><a href="#sec-3-3">3.3. ハードウェアクロックとの同期化</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. 時刻関連ファイル</a></li>
+<li><a href="#sec-5">5. デュアルブートの注意点</a></li>
+<li><a href="#sec-6">6. NTPサーバの構築</a></li>
+<li><a href="#sec-7">7. システムコール</a></li>
+<li><a href="#sec-8">8. カーネルの実装について</a></li>
+<li><a href="#sec-9">9. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+Linuxシステム時刻に関わる知識やリソースのまとめです。
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> ハードウェアクロック／システムクロックの違い</h2>
+<div class="outline-text-2" id="text-1">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">クロック種別</th>
+<th scope="col" class="left">説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">ハードウェアクロック</td>
+<td class="left">* マザーボード上のICによって提供される時計です。</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">* 通常は電池でバックアップして駆動されるので、電源をお落としても時計が進みます。</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">* RTC（Real Time Clock）、BIOS、CMOSクロックとも呼ばれる。</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">システムクロック</td>
+<td class="left">* Linux カーネルの内部に存在している時計で、 タイマ割り込みによって駆動されている</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">* Linux システムは起動時に一度だけハードウェア・クロックを参照し、 システム・クロックを設定する。</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">* 精度の高いクロック、1GHz以上のCPUの場合1クロックは1ナノ秒のなります。</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">* 時刻は1970/01/01T00:00:00からの経過時間を秒単位／ナノ秒単位で保持される。</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+ハードウェアクロック持っていないボードも存在する。RaspberryPiボードはその一つです、
+RTCが必要な場合、別途RTCモジュールを導入しなければいけません。<a href="#fn2">2</a>
+</p>
+
+<p>
+RaspberryPiで <code>hwclock</code> コマンドでハードウェアクロックを参照すると <code>/dev/rtc</code> デバイ
+スがない旨のメッセージが表示された。
+</p>
+<pre class="example">
+$ sudo hwclock --debug
+hwclock from util-linux 2.26.2
+hwclock: cannot open /dev/rtc: No such file or directory
+No usable clock interface found.
+hwclock: Cannot access the Hardware Clock via any known method.
+</pre>
+
+<p>
+RaspberryPiはNTPサーバから時刻同期のし掛けが必要です。そしないとシステムクロックが
+POSIXにおける紀元時刻(Epoch; 1970-01-01 00:00:00 +0000 (UTC))に設定されてしまう。
+</p>
+
+<p>
+<!-- more -->
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 時刻の表示仕様</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+systemdに導入された <code>timdatectl</code> コマンドでシステム時刻の各種表示形式を確認する。
+</p>
+<pre class="example">
+$ timedatectl
+      Local time: 土 2015-06-27 23:55:12 JST
+  Universal time: 土 2015-06-27 14:55:12 UTC
+        RTC time: 土 2015-06-27 14:55:12
+       Time zone: Asia/Tokyo (JST, +0900)
+     NTP enabled: yes
+NTP synchronized: yes
+ RTC in local TZ: no
+      DST active: n/a
+</pre>
+
+<p>
+各時刻項目について
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">&#xa0;</th>
+<th scope="col" class="left">正式名称</th>
+<th scope="col" class="left">説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">Universal time</td>
+<td class="left"><a href="https://ja.wikipedia.org/wiki/%E5%8D%94%E5%AE%9A%E4%B8%96%E7%95%8C%E6%99%82">協定世界時</a> (UTC)</td>
+<td class="left">UTC は GMT (グリニッジ標準時, Greenwich Mean Time) とも言われます</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">協定世界時は、国際度量衡局 (BIPM) が維持する時刻系であり、</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">協定された標準周波数と報時信号発射の基礎になっている。</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">Local time</td>
+<td class="left"><a href="https://ja.wikipedia.org/wiki/%E6%A8%99%E6%BA%96%E6%99%82">標準時</a></td>
+<td class="left">ある国または広い地域が共通で使う地方時、</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">世界各地の標準時は協定世界時 (UTC) を基準として決めている。</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">例えば、日本標準時 (JST) は協定世界時より9時間進んでおり、</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">「+0900 (JST)」のように表示する。</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">DST</td>
+<td class="left"><a href="https://ja.wikipedia.org/wiki/%E5%A4%8F%E6%99%82%E9%96%93">夏時間</a></td>
+<td class="left">daylight saving time</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">1年のうち夏を中心とした期間に、太陽の出ている時間帯を有効に利用する目</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">的で、標準時を1時間進める制度、またはその進められた時刻のこと。</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">緯度が高く夏の日照時間が長い欧米諸国などで多く導入されている。<a href="#fn10">10</a></td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">Linuxシステムにタイムゾーンを指定すれば自動的にDST時間を表示してくれる。</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">RTC time</td>
+<td class="left">リアルタイムクロック</td>
+<td class="left">前述のハードウェアクロックです。</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> 時刻表示／調整関連コマンド</h2>
+<div class="outline-text-2" id="text-3">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">コマンド名</th>
+<th scope="col" class="left">概要</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">date</td>
+<td class="left">システムクロックの表示／変更</td>
+</tr>
+
+<tr>
+<td class="left">hwclock</td>
+<td class="left">ハードウェアクロックの表示／変更</td>
+</tr>
+
+<tr>
+<td class="left">ntpdate</td>
+<td class="left">NTPサーバから時刻を同期化するクライアントツール</td>
+</tr>
+
+<tr>
+<td class="left">timedatectl</td>
+<td class="left">上記機能全て統括的に行えるツール</td>
+</tr>
+
+<tr>
+<td class="left">adjtimex</td>
+<td class="left">Displays or sets the kernel time variable</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+時刻の表示／調整／同期化などは <code>timedatectl</code> で全て出来る。
+</p>
+</div>
+
+<div id="outline-container-sec-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> NTP時刻同期化を自動化する</h3>
+<div class="outline-text-3" id="text-3-1">
+<pre class="example">
+★set-ntpオプションで有効／無効を切り替える
+$ sudo timedatectl set-ntp true
+
+★状態確認
+$ sudo timedatectl status
+      Local time: 日 2015-06-28 00:19:26 JST
+  Universal time: 土 2015-06-27 15:19:26 UTC
+        RTC time: 土 2015-06-27 15:19:26
+       Time zone: Asia/Tokyo (JST, +0900)
+     NTP enabled: yes                      ★NTP時刻同期化有効の状態
+NTP synchronized: yes                      ★NTP時刻同期化済み
+ RTC in local TZ: no
+      DST active: n/a
+</pre>
+
+<p>
+上記コマンドより <code>systemd-timesyncd.service</code> が有効化される。
+<code>/usr/lib/systemd/systemd-timesyncd</code> デーモンプロセスがNTPクライアントとして動作し定
+期的にNTPサーバから時刻を同期化する。
+</p>
+<pre class="example">
+$ systemctl status systemd-timesyncd.service
+● systemd-timesyncd.service - Network Time Synchronization
+   Loaded: loaded (/usr/lib/systemd/system/systemd-timesyncd.service; enabled; vendor preset: enabled)
+   Active: active (running) since 土 2015-06-27 19:29:29 JST; 4h 57min ago
+     Docs: man:systemd-timesyncd.service(8)
+ Main PID: 8787 (systemd-timesyn)
+   Status: "Using Time Server 213.239.154.12:123 (0.arch.pool.ntp.org)."
+   CGroup: /system.slice/systemd-timesyncd.service
+           └─8787 /usr/lib/systemd/systemd-timesyncd
+
+ 6月 27 19:29:29 mimi systemd[1]: Starting Network Time Synchronization...
+ 6月 27 19:29:29 mimi systemd[1]: Started Network Time Synchronization.
+ 6月 27 20:45:20 mimi systemd-timesyncd[8787]: Timed out waiting for reply from 202.234.64.222:123 (0.arch.pool.ntp.org).
+ 6月 27 20:45:30 mimi systemd-timesyncd[8787]: Timed out waiting for reply from 157.7.153.56:123 (0.arch.pool.ntp.org).
+ 6月 27 20:45:40 mimi systemd-timesyncd[8787]: Timed out waiting for reply from 108.61.223.189:123 (0.arch.pool.ntp.org).
+ 6月 27 20:45:51 mimi systemd-timesyncd[8787]: Timed out waiting for reply from 133.100.11.8:123 (0.arch.pool.ntp.org).
+</pre>
+
+<p>
+NTPサーバは <code>/etc/systemd/timesyncd.conf</code> にて指定出来る。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-3-2" class="outline-3">
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> タイムゾーンの変更</h3>
+<div class="outline-text-3" id="text-3-2">
+<p>
+Asia/Tokyoタイムゾーンの指定
+</p>
+<pre class="example">
+★利用可能なゾーンの表示
+$ timedatectl list-timezones
+Africa/Abidjan
+Africa/Accra
+Africa/Addis_Ababa
+Africa/Algiers
+Africa/Asmara
+Africa/Bamako
+Africa/Bangui
+Africa/Banjul
+Africa/Bissau
+Africa/Blantyre
+（中略）
+
+★タイムゾーンの指定、/etc/localtimeのリンク先が変わる
+$ timedatectl set-timezone Asia/Tokyo
+
+★タイムゾーンの確認
+$ timedatectl status
+      Local time: 日 2015-06-28 17:57:04 JST
+  Universal time: 日 2015-06-28 08:57:04 UTC
+        RTC time: 日 2015-06-28 08:57:04
+       Time zone: Asia/Tokyo (JST, +0900)
+     NTP enabled: yes
+NTP synchronized: yes
+ RTC in local TZ: no
+      DST active: n/a
+</pre>
+
+<p>
+America/Los_Angelesタイムゾーンの指定、「＊」部分は夏時間です。
+</p>
+<pre class="example">
+  |$ timedatectl  set-timezone America/Los_Angeles
+  |[akira@mimi ~]$ timedatectl status
+  |      Local time: 日 2015-06-28 01:54:09 PDT
+  |  Universal time: 日 2015-06-28 08:54:09 UTC
+  |        RTC time: 日 2015-06-28 08:54:09
+  |       Time zone: America/Los_Angeles (PDT, -0700)
+  |     NTP enabled: yes
+  |NTP synchronized: yes
+  | RTC in local TZ: no
+＊|      DST active: yes
+＊| Last DST change: DST began at
+＊|                  日 2015-03-08 01:59:59 PST
+＊|                  日 2015-03-08 03:00:00 PDT
+＊| Next DST change: DST ends (the clock jumps one hour backwards) at
+＊|                  日 2015-11-01 01:59:59 PDT
+＊|                  日 2015-11-01 01:00:00 PST
+</pre>
+</div>
+</div>
+<div id="outline-container-sec-3-3" class="outline-3">
+<h3 id="sec-3-3"><span class="section-number-3">3.3</span> ハードウェアクロックとの同期化</h3>
+<div class="outline-text-3" id="text-3-3">
+<p>
+ハードウェアクロックの時刻をUTCとして扱うように <code>/etc/adjtime</code> ファイルを更新する。
+また、システムクロック時刻をハードウェアクロックに書き戻す。
+</p>
+<pre class="example">
+$ timedatectl set-local-rtc false
+</pre>
+
+
+<p>
+<code>/etc/adjtime</code> ファイルの３行目がUTCでマークされた。
+</p>
+<pre class="example">
+$ cat /etc/adjtime
+0.000000 0 0.000000
+0
+UTC                                ★ハードウェアクロックがUTC時刻として扱う
+</pre>
+
+<p>
+RTC が localtime だった場合予期せぬバグを引き起こす可能性があるため、最近のカーネルは
+<code>/etc/adjtime</code> ファイルに設定値がない場合 RTC を UTC としてみなします。 <code>hwclock</code> コ
+マンドに&#x2013;debugオプションを付けるとハードウェアクロックがどうのように扱われるかを確認
+することが出来ます。
+</p>
+
+<p>
+ハードウェアクロックの値をUTC時刻として扱い、表示時に <code>/etc/localtime</code> に持っている
+タイムゾーン情報を元にローカル時刻で表示する。
+</p>
+<pre class="example">
+$ hwclock --show --debug
+hwclock from util-linux 2.26.2
+クロックの /dev インターフェイス を使用中。
+ハードウェアの時刻が UTC に設定されているものと仮定します。
+クロックティックを待っています...
+...クロックティックを取得しました
+ハードウェアの時計から読み込んだ時刻: 2015/06/27 15:44:18
+ハードウェアの時刻値 : 2015/06/27 15:44:18 = 1969 年から 1435419858 秒経過
+Time since last adjustment is 1435419858 seconds
+Calculated Hardware Clock drift is 0.000000 seconds
+2015年06月28日 00時44分17秒  .665140 秒
+</pre>
+
+<p>
+以下 <code>/etc/adjtime=</code> の設定値を明示された場合 <code>hwclock</code> の出力です。「*」部分が差分で
+す。
+</p>
+<pre class="example">
+ |$ hwclock -r --debug
+ |hwclock from util-linux 2.26.2
+ |クロックの /dev インターフェイス を使用中。
+*|直前のズレの修正は、 1969 年から 0 秒経過した時点で行なわれました
+*|直前の調整は 1969 年から 0 秒経過した時点で行なわれました
+*|ハードウェアの時刻は UTC です
+ |ハードウェアの時刻が UTC に設定されているものと仮定します。
+ |クロックティックを待っています...
+ |...クロックティックを取得しました
+ |ハードウェアの時計から読み込んだ時刻: 2015/06/27 16:05:20
+ |ハードウェアの時刻値 : 2015/06/27 16:05:20 = 1969 年から 1435421120 秒経過
+ |Time since last adjustment is 1435421120 seconds
+ |Calculated Hardware Clock drift is 0.000000 seconds
+ |2015年06月28日 01時05分19秒  .432450 秒
+</pre>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> 時刻関連ファイル</h2>
+<div class="outline-text-2" id="text-4">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">ファイル</th>
+<th scope="col" class="left">役割</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">/etc/localtime</td>
+<td class="left">ローカル時刻（標準時）に適用するタイムゾーン情報</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">/etc/adjtime</td>
+<td class="left">ハードウェアクロック情報を保持するファイル、詳細について</td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">man hwclockのThe Adjust Functionセクションにて確認出来る</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">/dev/rtc</td>
+<td class="left">ハードウェアクロックデバイスファイル</td>
+</tr>
+
+<tr>
+<td class="left">/dev/rtc0</td>
+<td class="left">同上</td>
+</tr>
+
+<tr>
+<td class="left">/dev/misc/rtc</td>
+<td class="left">同上</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> デュアルブートの注意点</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+以下 からの抜粋
+</p>
+<pre class="example">
+windows はハードウェア クロックのタイムゾーンを、暗黙裡にローカル タイムであると認識
+します。 Linux のようにタイムゾーンを選択(UTC or ローカルタイム)できる機能はありませ
+ん。
+
+そのため windows を含むマルチ ブート環境では、ハードウェア クロックのタイムゾーンを
+UTCとすることは不可能(ローカルタイム固定)で、他のOSが windows の作法に合わせる必要が
+あります。
+</pre>
+
+<p>
+日本の場合、システムをWindowsモードで起動したとして、次回Linux起動した後のシステム時
+刻がローカル時刻より９時間早まる。
+</p>
+
+<p>
+回避方法: <a href="https://archlinuxjp.kusakata.com/wiki/%25E6%2599%2582%25E5%2588%25BB#Windows_.E3.81.A7_UTC_.E3.82.92.E4.BD.BF.E3.81.86">Windows で UTC を使う</a>
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> NTPサーバの構築</h2>
+<div class="outline-text-2" id="text-6">
+<ul class="org-ul">
+<li><a href="https://archlinuxjp.kusakata.com/wiki/Network_Time_Protocol_daemon">Network Time Protocol daemon</a>
+</li>
+<li><a href="http://qiita.com/yunano/items/7883cf295f91f4ef716b">新しいNTPクライアント＆サーバ、chrony</a>
+</li>
+<li><a href="http://jp.fujitsu.com/platform/server/sparc/manual/notes/pdf/ntpguide.pdf">NTP運用ガイド for Oracle Solaris</a>
+</li>
+<li><a href="http://nayamibito.hatenablog.com/entry/2013/12/31/161027">Linux学習記　その3　NTPについて学んでみる。</a>
+</li>
+<li><a href="http://d.hatena.ne.jp/incarose86/touch/20110505/1312522379">NTP設定</a>
+</li>
+</ul>
+</div>
+</div>
+
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> システムコール</h2>
+<div class="outline-text-2" id="text-7">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">関数名</th>
+<th scope="col" class="left">機能概要</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left"><a href="http://linuxjm.osdn.jp/html/LDP_man-pages/man2/gettimeofday.2.html">gettimeofday</a></td>
+<td class="left">システム時刻を取得する</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left"><a href="http://linuxjm.osdn.jp/html/LDP_man-pages/man2/gettimeofday.2.html">settimeofday</a></td>
+<td class="left">システム時刻を設定する</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">time</td>
+<td class="left">秒単位の時間を得る</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left"><a href="http://linuxjm.osdn.jp/html/LDP_man-pages/man3/strftime.3.html">strftime</a></td>
+<td class="left">日付および時刻の文字列への変換</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left"><a href="http://linuxjm.osdn.jp/html/LDP_man-pages/man2/adjtimex.2.html">adjtimex</a></td>
+<td class="left">カーネルの時計を調整する</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left"><a href="http://linuxjm.osdn.jp/html/LDP_man-pages/man3/clock.3.html">clock</a></td>
+<td class="left">プログラムの使用したプロセッサ時間の近似値を返す</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">asctime</td>
+<td class="left">日付と時刻を要素別の時刻や ASCII に変換する</td>
+</tr>
+
+<tr>
+<td class="left">ctime</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">gmtime</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">localtime</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">mktime</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">asctime_r</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">ctime_r</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">gmtime_r</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">localtime_r</td>
+<td class="left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-8" class="outline-2">
+<h2 id="sec-8"><span class="section-number-2">8</span> カーネルの実装について</h2>
+<div class="outline-text-2" id="text-8">
+<ul class="org-ul">
+<li><a href="http://enakai00.hatenablog.com/entry/20111117/1321508379">Ticklessカーネルとクロックソースに関するお話</a>
+</li>
+<li><a href="http://www.valinux.co.jp/technologylibrary/document/linuxkernel/timer0002/#n1">カーネルにおけるタイマー事情 ～第2回 カーネル内の時刻/時間関連サブシステム～</a>
+</li>
+<li><a href="https://www.ujiya.net/linux/067">jiffies更新を追いかける</a>
+</li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-9" class="outline-2">
+<h2 id="sec-9"><span class="section-number-2">9</span> 参考</h2>
+<div class="outline-text-2" id="text-9">
+</div><ol class="org-ol"><li><a id="fn1" name="fn1"></a><a id="sec-9-0-0-1" name="sec-9-0-0-1"></a><a href="http://www.atmarkit.co.jp/ait/articles/0812/26/news120.html">Linux時刻管理の仕組みと設定</a><br  /><div class="outline-text-5" id="text-fn1">
+</div>
+</li>
+<li><a id="fn2" name="fn2"></a><a id="sec-9-0-0-2" name="sec-9-0-0-2"></a><a href="http://qiita.com/key/items/06c2915de55d6155aa54">RaspberryPiにRTCモジュールを搭載して、ハードウェア起動時に時刻を合わせる</a><br  /><div class="outline-text-5" id="text-fn2">
+</div>
+</li>
+<li><a id="sec-9-0-0-3" name="sec-9-0-0-3"></a><a href="http://hs-it-notes.blogspot.jp/2014/01/raspberry-pi.html">Raspberry Piにリアルタイムクロックをインストールする</a><br  /></li>
+<li><a id="sec-9-0-0-4" name="sec-9-0-0-4"></a><a href="http://linuxjm.osdn.jp/html/util-linux/man8/hwclock.8.html">HWCLOCK 日本語MAN ページ</a><br  /></li>
+<li><a id="sec-9-0-0-5" name="sec-9-0-0-5"></a><a href="http://linuxjm.osdn.jp/html/LDP_man-pages/man4/rtc.4.html">RTC 日本語MAN ページ</a><br  /></li>
+<li><a id="sec-9-0-0-6" name="sec-9-0-0-6"></a><a href="https://www.kernel.org/doc/Documentation/rtc.txt">Kernel Document - rtx.txt</a><br  /></li>
+<li><a id="sec-9-0-0-7" name="sec-9-0-0-7"></a><a href="http://archive.linux.or.jp/JF/JFdocs/Clock/time-tracking.html">Linux はどのように時間を計っているのか</a><br  /></li>
+<li><a id="sec-9-0-0-8" name="sec-9-0-0-8"></a><a href="https://wiki.archlinux.org/index.php/Time">Archlinu - Time</a><br  /></li>
+<li><a id="sec-9-0-0-9" name="sec-9-0-0-9"></a><a href="http://park12.wakwak.com/~eslab/pcmemo/clock/clock3.html">パソコンの時計　ハードウェア クロックとシステム クロック</a><br  /></li>
+<li><a id="fn10" name="fn10"></a><a id="sec-9-0-0-10" name="sec-9-0-0-10"></a><a href="http://www.time-j.net/uc/dst/">世界の国のサマータイムの導入状況について</a><br  /><div class="outline-text-5" id="text-fn10">
+</div>
+</li></ol>
+</div>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[メモ]VirtualBox HostOnly on Linux]]></title>
@@ -1136,578 +1963,6 @@ Tomcat起動時に次のJavaオプションを付けるとHTTP KeepAliveがOFF�
 </ul>
 </div>
 </div>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[メモ]Zabbix導入記録]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html"/>
-    <updated>2014-10-16T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[メモ]zabbix導入記録</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 構成</a></li>
-<li><a href="#sec-2">2. インストール</a></li>
-<li><a href="#sec-3">3. zabbixの起動</a></li>
-<li><a href="#sec-4">4. Zabbix フロントエンドのインストール</a></li>
-<li><a href="#sec-5">5. Zabbix エージェントのインストール</a></li>
-<li><a href="#sec-6">6. Zabbixのアンインストール</a></li>
-<li><a href="#sec-7">7. 参考</a></li>
-</ul>
-</div>
-</div>
-
-
-<p>
-Zabbix2.4、CentOS7用のrpmが見つからなかったので手動ビルドすることにした。
-</p>
-
-
-
-
-<p>
-<!-- more -->
-</p>
-
-
-
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 構成</h2>
-<div class="outline-text-2" id="text-1">
-<pre class="example">
-                            +---------------+
-                            | Apache 2.4    +---+
-                            +---------------+   |         +---------------+
-                                                +---------+   Zabbix DB   |
-                                                |         +---------------+
-              10050       10051                 |         |   PostgreSQL  |
-+--------------+            +---------------+   |         +---------------+
-| Zabbix Agent +------------+ Zabbix Server +---+
-+--------------+            +---------------+
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> インストール</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-必要なパッケージのインストール。
-</p>
-<pre class="example">
-$ sudo yum install postgresql-devel
-$ sudo yum install libxml2 libxml2-devel
-$ sudo yum install net-snmp net-snmp-agent  net-snmp-libs net-snmp-devel
-$ sudo yum install libcurl libcurl-devel
-$ sudo yum install php-bcmath
-</pre>
-
-<p>
-ソースコードをダウンロードし、ビルドする。
-</p>
-<pre class="example">
-$ wget http://downloads.sourceforge.net/sourceforge/zabbix/zabbix-2.4.1.tar.gz
-$ tar xzvf zabbix-2.4.1.tar.gz
-$ cd zabbix-2.4.1/
-$ ./configure --enable-server --enable-agent  --with-postgresql --with-net-snmp --with-libcurl --with-libxml2 --enable-java --sysconfdir=/etc/zabbix
-$ sudo make install
-</pre>
-
-<p>
-Zabbix設定ファイル、DB初期化用SQLを格納用のディレクトリの作成とファイルのコピー。
-</p>
-<pre class="example">
-$ sudo mkdir -p /etc/zabbix/database/postgresql
-$ sudo mkdir -p /etc/zabbix/database/postgresql/upgrade/2.0
-
-$ sudo cp -v ./database/postgresql/*.sql /etc/zabbix/database/postgresql
-$ sudo cp -v ./upgrades/dbpatches/2.0/postgresql/patch.sql /etc/zabbix/database/postgresql/upgrade/2.0
-
-$ sudo chmod 0444 /etc/zabbix/database/postgresql/*.sql
-$ sudo chmod 0444 /etc/zabbix/database/postgresql/upgrade/2.0/*.sql
-</pre>
-
-<p>
-Zabbixログ格納用ディレクトリの作成。
-</p>
-<pre class="example">
-$ sudo mkdir -m 0750 /var/log/zabbix
-</pre>
-
-<p>
-Zabbixプロセス実行ユーザの登録、ディレクトリ権限の付与。
-</p>
-<pre class="example">
-$ sudo groupadd -r zabbix
-$ sudo useradd -r -g zabbix -d /dev/null zabbix -s /sbin/nologin
-$ sudo chown -R zabbix:zabbix /var/log/zabbix
-$ sudo chown -R zabbix:zabbix /etc/zabbix
-$ sudo chown -R zabbix:zabbix /usr/local/share/zabbix
-</pre>
-
-<p>
-Zabbixサーバ設定ファイルにPIDの格納場所を指定する。
-</p>
-<pre class="example">
-$ sudo chmod 0640 /etc/zabbix/zabbix_server.conf
-$ sudo sed -i 's:# PidFile=.*:PidFile=/run/zabbix/zabbix_server.pid:' /etc/zabbix/zabbix_server.conf
-</pre>
-
-<p>
-Zabbixサーバ設定ファイルにログの格納場所を指定する
-</p>
-<pre class="example">
-$ sudo sed -i 's:^LogFile=.*:LogFile=/var/log/zabbix/zabbix_server.log:' /etc/zabbix/zabbix_server.conf
-</pre>
-
-<p>
-監視結果データ及び監視項目設定データを格納するためのDBを作成する。
-</p>
-<pre class="example">
-# su - postgresql
--bash-4.2$ createuser --pwprompt zabbix      ★接続ユーザの作成
--bash-4.2$ createdb --owner=zabbix zabbix    ★データベース作成
-</pre>
-
-<p>
-作成したデータベースにスキーマを初期化する。
-</p>
-<pre class="example">
-$ cd /etc/zabbix/database/postgresql
-$ psql -U zabbix zabbix &lt; schema.sql
-$ psql -U zabbix zabbix &lt; images.sql
-$ psql -U zabbix zabbix &lt; data.sql
-</pre>
-
-<p>
-Zabbixサーバ設定ファイルにDB接続情報を変更する。
-</p>
-<pre class="example">
-DBHost=localhost
-DBName=zabbix
-DBUser=zabbix
-DBPassword=******
-DBPort=5432
-</pre>
-
-<p>
-PIDファイルの親ディレクトリをtmp領域に作成するため、 <code>systemd-tmpfiles</code> 機能でOS起
-動時に予め作成するようにする。
-</p>
-
-<p>
-<code>/usr/lib/tmpfiles.d/zabbix-server.conf</code>
-</p>
-<pre class="example">
-d /run/zabbix 0755 zabbix zabbix -
-</pre>
-
-<p>
-<code>systemd-tmpfiles</code> 手動実行で、ディレクトリを作成する。OS再起動する場合、この手順は不
-要です。
-</p>
-<pre class="example">
-$ sudo systemd-tmpfiles --create /usr/lib/tmpfiles.d/zabbix-server.conf
-</pre>
-
-<p>
-<code>systemd</code> から起動停止できるように <code>zabbix-server.service</code> を作成する。
-</p>
-
-<p>
-<code>/usr/lib/systemd/system/zabbix-server.service</code>
-</p>
-<pre class="example">
-[Unit]
-Description=Zabbix server
-After=syslog.target network.target postgresql.service
-
-[Service]
-Type=forking
-User=root
-ExecStart=/usr/local/sbin/zabbix_server
-PIDFile=/run/zabbix/zabbix_server.pid
-
-[Install]
-WantedBy=multi-user.target
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> zabbixの起動</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-<code>systemctl</code> コマンドで起動する。
-</p>
-<pre class="example">
-$ sudo systemctl enable zabbix-server.service
-$ sudo systemctl start zabbix-server.service
-</pre>
-
-<p>
-ポート確認
-</p>
-<pre class="example">
-$ sudo netstat -nutpl | grep zabbix
-tcp        0      0 0.0.0.0:10051           0.0.0.0:*               LISTEN      23765/zabbix_server
-</pre>
-
-<p>
-ログ確認
-</p>
-<pre class="example">
-# cat zabbix_server.log
- 23765:20141016:231838.117 Starting Zabbix Server. Zabbix 2.4.1 (revision 49643).
- 23765:20141016:231838.118 ****** Enabled features ******
- 23765:20141016:231838.118 SNMP monitoring:           YES
- 23765:20141016:231838.118 IPMI monitoring:            NO
- 23765:20141016:231838.118 WEB monitoring:            YES
- 23765:20141016:231838.118 VMware monitoring:         YES
- 23765:20141016:231838.118 Jabber notifications:       NO
- 23765:20141016:231838.118 Ez Texting notifications:  YES
- 23765:20141016:231838.118 ODBC:                       NO
- 23765:20141016:231838.118 SSH2 support:               NO
- 23765:20141016:231838.118 IPv6 support:               NO
- 23765:20141016:231838.118 ******************************
- 23765:20141016:231838.118 using configuration file: /etc/zabbix/zabbix_server.conf
- 23765:20141016:231838.157 current database version (mandatory/optional): 02040000/02040000
- 23765:20141016:231838.157 required mandatory version: 02040000
- 23765:20141016:231838.190 server #0 started [main process]
- 23775:20141016:231838.191 server #1 started [configuration syncer #1]
- 23776:20141016:231838.191 server #2 started [db watchdog #1]
- 23777:20141016:231838.191 server #3 started [poller #1]
- 23781:20141016:231838.193 server #5 started [poller #3]
- 23783:20141016:231838.195 server #7 started [poller #5]
- 23782:20141016:231838.201 server #6 started [poller #4]
- 23789:20141016:231838.201 server #12 started [trapper #4]
- 23786:20141016:231838.202 server #9 started [trapper #1]
- 23788:20141016:231838.203 server #11 started [trapper #3]
- 23790:20141016:231838.203 server #13 started [trapper #5]
- 23794:20141016:231838.204 server #17 started [timer #1]
- 23791:20141016:231838.204 server #14 started [icmp pinger #1]
- 23787:20141016:231838.204 server #10 started [trapper #2]
- 23792:20141016:231838.204 server #15 started [alerter #1]
- 23784:20141016:231838.207 server #8 started [unreachable poller #1]
- 23795:20141016:231838.208 server #18 started [http poller #1]
- 23799:20141016:231838.208 server #21 started [history syncer #2]
- 23806:20141016:231838.209 server #23 started [history syncer #4]
- 23809:20141016:231838.209 server #26 started [self-monitoring #1]
- 23780:20141016:231838.210 server #4 started [poller #2]
- 23801:20141016:231838.211 server #22 started [history syncer #3]
- 23793:20141016:231838.211 server #16 started [housekeeper #1]
- 23797:20141016:231838.211 server #20 started [history syncer #1]
- 23807:20141016:231838.214 server #24 started [escalator #1]
- 23808:20141016:231838.215 server #25 started [proxy poller #1]
- 23796:20141016:231838.309 server #19 started [discoverer #1]
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> Zabbix フロントエンドのインストール</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-phpコンテンツ格納するディレクトリの作成とコンテンツ実体の格納。
-</p>
-<pre class="example">
-$ sudo mkdir -p /var/www/zabbix
-$ sudo cp -r frontends/php/* /var/www/zabbix
-$ sudo chown -R apache:apache /var/www/zabbix
-$ sudo chmod -R u=rwX,g=rX,o= /var/www/zabbix
-</pre>
-
-<p>
-<code>/etc/php.ini</code> にてphp実行時パラメータを変更する。
-</p>
-<pre class="example">
-max_execution_time = 300     ★変更
-max_input_time = 300         ★変更
-post_max_size = 16M          ★変更
-memory_limit = 128M
-upload_max_filesize = 2M
-session.auto_start = 0
-date.timezone = "Asia/Tokyo" ★変更
-</pre>
-
-<p>
-フラフの日本語表示対応
-</p>
-<pre class="example">
-$ sudo yum install ipa-gothic-fonts ipa-pgothic-fonts vlgothic-fonts vlgothic-p-fonts
-$ sudo -u apache cp /usr/share/fonts/ipa-gothic/ipag.ttf /var/www/zabbix/fonts/
-</pre>
-
-<p>
-<code>/var/www/zabbix/include/defines.inc.php</code>
-</p>
-<pre class="example">
-変更前
-define('ZBX_GRAPH_FONT_NAME',           'DejaVuSans'); // font file name
-
-変更後
-define('ZBX_GRAPH_FONT_NAME',           'ipag'); // font file name
-</pre>
-
-<p>
-Apache設定内容 <code>/etc/httpd/conf.d/httpd-zabbix.conf</code>
-</p>
-<pre class="example">
-Alias /zabbix /var/www/zabbix
-&lt;Location /zabbix&gt;
-    # Apache 2.4
-    Require local
-    #Require host example.com
-&lt;/Location&gt;
-</pre>
-
-<p>
-<code>/etc/httpd/conf/httpd.conf</code>
-</p>
-<pre class="example">
-IncludeOptional conf.d/httpd-zabbix.conf
-</pre>
-
-<p>
-画面を起動する。
-</p>
-
-<video controls>
-   <source src="video/2014-10-17_zabbix_install_01.mp4">
-</video>
-
-<p>
-ウィザードで生成しれたファイルの内容 <code>/var/www/zabbix/conf/zabbix.conf.php</code>
-</p>
-<pre class="example">
-&lt;?php
-// Zabbix GUI configuration file
-global $DB;
-
-$DB['TYPE']     = 'POSTGRESQL';
-$DB['SERVER']   = 'localhost';
-$DB['PORT']     = '0';
-$DB['DATABASE'] = 'zabbix';
-$DB['USER']     = 'zabbix';
-$DB['PASSWORD'] = '**********';
-
-// SCHEMA is relevant only for IBM_DB2 database
-$DB['SCHEMA'] = '';
-
-$ZBX_SERVER      = 'localhost';
-$ZBX_SERVER_PORT = '10051';
-$ZBX_SERVER_NAME = '';
-
-$IMAGE_FORMAT_DEFAULT = IMAGE_FORMAT_PNG;
-?&gt;
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> Zabbix エージェントのインストール</h2>
-<div class="outline-text-2" id="text-5">
-<p>
-Zabbix AgentプロセスのPID格納用ディレクトリの初期化。
-<code>/usr/lib/tmpfiles.d/zabbix-agentd.conf</code>
-</p>
-<pre class="example">
-$ sudo touch /usr/lib/tmpfiles.d/zabbix-agentd.conf
-$ sudo nano /usr/lib/tmpfiles.d/zabbix-agentd.conf
-d /run/zabbix 0755 zabbix zabbix -
-</pre>
-
-<pre class="example">
-$ sudo systemd-tmpfiles --create /usr/lib/tmpfiles.d/zabbix-agentd.conf
-</pre>
-
-<p>
-Zabbix Agentサービス起動・停止用のファイル <code>/usr/lib/systemd/system/zabbix-agentd.service</code>
-</p>
-<pre class="example">
-[Unit]
-Description=Zabbix agent daemon
-After=network.target
-
-[Service]
-Type=forking
-User=root
-ExecStart=/usr/local/sbin/zabbix_agentd
-PIDFile=/run/zabbix/zabbix_agentd.pid
-
-[Install]
-WantedBy=multi-user.target
-</pre>
-
-<p>
-Zabbix Agent設定ファイルに、PID及びログ出力先を変更する。
-</p>
-<pre class="example">
-$ sudo -u zabbix sed -i 's:# PidFile=.*:PidFile=/run/zabbix/zabbix_agentd.pid:' /etc/zabbix/zabbix_agentd.conf
-$ sudo -u zabbix sed -i 's:^LogFile=.*:LogFile=/var/log/zabbix/zabbix_agentd.log:' /etc/zabbix/zabbix_agentd.conf
-</pre>
-
-<p>
-Zabbix Agent設定ファイルに、Zabbix Serverの情報と監視ホスト名を指定する。
-</p>
-<pre class="example">
-Server=127.0.0.1
-ServerActive=127.0.0.1
-Hostname=testhost
-</pre>
-
-<p>
-ポートの確認
-</p>
-<pre class="example">
-$ sudo netstat -nutpl | grep zabbix
-tcp        0      0 0.0.0.0:10050           0.0.0.0:*               LISTEN      17764/zabbix_agentd
-</pre>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6"><span class="section-number-2">6</span> Zabbixのアンインストール</h2>
-<div class="outline-text-2" id="text-6">
-<pre class="example">
-$ sudo userdel zabbix
-</pre>
-
-<p>
-※未完成
-</p>
-</div>
-</div>
-
-
-
-
-<div id="outline-container-sec-7" class="outline-2">
-<h2 id="sec-7"><span class="section-number-2">7</span> 参考</h2>
-<div class="outline-text-2" id="text-7">
-<ul class="org-ul">
-<li><a href="https://www.zabbix.com/documentation/2.2/jp/start">Zabbix documentation in Japanese</a>
-</li>
-<li><a href="http://www.sraoss.co.jp/technology/zabbix/introduction/01-firststep.php">第 1 回 Zabbix を動かしてみよう</a>
-</li>
-<li><a href="http://tech-sketch.jp/2011/11/osszabbix1.html">OSS統合監視ツール「Zabbix」を利用して大規模環境監視(1)</a>
-</li>
-</ul>
-</div>
-</div>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[レシピ]Kerbroseパスワード変更ためのPAM設定]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-08-16-%5B%E3%83%AC%E3%82%B7%E3%83%94%5Dkerbrose%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E5%A4%89%E6%9B%B4%E3%81%9F%E3%82%81%E3%81%AEpam%E8%A8%AD%E5%AE%9A.html"/>
-    <updated>2014-08-16T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[レシピ]kerbroseパスワード変更ためのpam設定</id>
-    <content type="html"><![CDATA[<p>
-前の記事で <code>pam_krb5</code> モジュールでKerbrose認証を実現しました。ここで <code>passwd</code> コマン
-ドラインでKDCに登録されたプリンシバル鍵のパスワードを変更する方法を紹介します。
-</p>
-
-
-
-
-<p>
-<!-- more -->
-</p>
-
-
-
-
-<p>
-<code>passwd</code> コマンド実行時に裏で動いているのはPAMモジュールですので、
-<code>/etc/pam.d./passwd</code> に <code>pam_kbr5</code> モジュールを適用するようにすれば、パスワード変更時
-に自動的にKDCのデータベースに反映されます。
-</p>
-
-
-
-
-<p>
-<code>/etc/pam.d./passwd</code>
-</p>
-
-
-<pre class="example">
-#%PAM-1.0
-password        requisite       pam_cracklib.so retry=3 difok=1 minlen=8 dcredit=-1
-password        sufficient      pam_unix.so sha512 shadow nullok use_authtok
-password        sufficient      pam_krb5.so   ★ここです
-password        required        pam_deny.so
-</pre>
-
-
-
-
-<p>
-パスワード変更を実行してみましょう。
-</p>
-
-
-<pre class="example">
-[kbr_u01@mimi ~]$ passwd
-Kerberos 5 パスワード:                     ★現在のパスワードが聞かれる
-新しいパスワード:
-新しいパスワードを再入力してください:
-passwd: パスワードは正しく更新されました
-[kbr_u01@mimi ~]$
-</pre>
-
-
-
-
-<p>
-パスワード変更時のシスログ
-</p>
-
-
-<pre class="example">
-Aug 16 19:01:38 mimi passwd[15359]: pam_unix(passwd:chauthtok): user "kbr_u01" does not exist in /etc/passwd
-Aug 16 19:01:38 mimi passwd[15359]: pam_krb5[15359]: password changed for kbr_u01@JIZAI-DOMAIN.JP
-Aug 16 19:01:38 mimi passwd[15359]: pam_krb5[15359]: TGT verified using key for 'host/mimi.jizai-domain.jp@JIZAI-DOMAIN.JP'
-</pre>
-
-
-
-
-<p>
-KDCサーバ側のログ
-</p>
-
-
-<pre class="example">
-2014-08-16T19:34:36+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185276, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for kadmin/changepw@JIZAI-DOMAIN.JP
-2014-08-16T19:34:36+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185276, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for kadmin/changepw@JIZAI-DOMAIN.JP
-
-2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for krbtgt/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP
-2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  AS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for krbtgt/JIZAI-DOMAIN.JP@JIZAI-DOMAIN.JP
-2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  TGS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for host/mimi.jizai-domain.jp@JIZAI-DOMAIN.JP
-2014-08-16T19:34:59+09:00 pipi local5 info krb5kdc[28554]:  TGS_REQ (6 etypes {18 17 16 23 25 26}) 192.168.100.10: ISSUE: authtime 1408185299, etypes {rep=18 tkt=18 ses=18}, kbr_u01@JIZAI-DOMAIN.JP for host/mimi.jizai-domain.jp@JIZAI-DOMAIN.JP
-</pre>
 
 ]]></content>
   </entry>

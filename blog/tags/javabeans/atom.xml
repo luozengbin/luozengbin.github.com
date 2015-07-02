@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: JavaBeans | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/javabeans/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2015-07-02T19:17:14+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[メモ]JavaBeans仕様を再認識する]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html"/>
+    <updated>2015-06-13T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[メモ]javabeans仕様を再認識する</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 仕様のゴール</a></li>
+<li><a href="#sec-2">2. JavaBeansとは</a></li>
+<li><a href="#sec-3">3. JavaBeansの出番</a></li>
+<li><a href="#sec-4">4. APIパッケージの概要</a></li>
+<li><a href="#sec-5">5. よく出てくるクラス</a></li>
+<li><a href="#sec-6">6. サードパーティライブラリ</a></li>
+<li><a href="#sec-7">7. 参考情報</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+勉強メモ
+</p>
+
+
+
+
+<p>
+<!-- more -->
+</p>
+
+
+
+
+<p>
+JCPサイト <code>JavaBeans</code> で検索したら <a href="https://jcp.org/en/jsr/summary?id=javabeans">;-(</a> EJBの仕様しかなかったで、JavaBeans APIで検索
+するとヒットしました。
+</p>
+
+
+
+
+<p>
+これがが一番わかり易いと思います。→ <a href="http://otndnld.oracle.co.jp/tech/java/htdocs/java_roadmap/javabean/listing.htm">Oracle Javaロードマップ:JavaBeans</a>
+</p>
+
+
+
+
+<p>
+公式の仕様はここ → <a href="http://download.oracle.com/otndocs/jcp/7224-javabeans-1.01-fr-spec-oth-JSpec/">JavaBeans Spec</a>
+</p>
+
+
+
+
+<p>
+仕様変更履歴
+</p>
+
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="right" />
+
+<col  class="right" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="right">&#xa0;</th>
+<th scope="col" class="right">仕様のバージョン</th>
+<th scope="col" class="left">JDKバージョン</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="right">1996</td>
+<td class="right">1.0.0</td>
+<td class="left">JDK1.1</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="right">1997</td>
+<td class="right">1.0.1</td>
+<td class="left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>
+<a href="http://ja.wikipedia.org/wiki/Java_Community_Process">JCP設立</a> されるまで策定された仕様なのでJSR番号が付いていないですね。
+1997以降仕様更新あり？なし？分からない、掲示がないので恐らく大きな更新がないでしょう。
+</p>
+
+
+
+
+<p>
+PDF版は114ページで結構のボリュームです。
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 仕様のゴール</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+JavaBeans Specより
+</p>
+<pre class="example">
+The goal of the JavaBeans APIs is to define a software component model for Java, so
+that thirdparty ISVs can create and ship Java components that can be composed
+together into applica-tions by end users.
+</pre>
+
+<p>
+<a href="http://otndnld.oracle.co.jp/tech/java/htdocs/java_roadmap/glossary.htm#434709">オラクルの用語集より</a>
+</p>
+<pre class="example">
+Javaで作成された移植可能なプラットフォームに依存しないコンポーネント・モデルで、
+JavaBean仕様に従う。 再使用可能なコンポーネントを作成できる。
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> JavaBeansとは</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+JavaBeans Specの2.1 What is a Bean?より
+</p>
+<pre class="example">
+Let's start with an initial definition and then refine it:
+“A Java Bean is a reusable software component that can be manipulated visually in a builder tool.”
+This covers a wide range of different possibilities.
+The builder tools may include web page builders, visual application builders, GUI layout build-
+ers, or even server application builders. Sometimes the “builder tool” may simply be a docu-
+ment editor that is including some beans as part of a compound document.
+Some Java Beans may be simple GUI elements such as buttons and sliders. Other Java Beans
+may be sophisticated visual software components such as database viewers, or data feeds.
+Some Java Beans may have no GUI appearance of their own, but may still be composed togeth-
+er visually using an application builder.
+Some builder tools may operate entirely visually, allowing the direct plugging together of Java
+Beans. Other builders may enable users to conveniently write Java classes that interact with and
+control a set of beans. Other builders may provide a simple scripting language to allow easy
+high-level scripting of a set of beans.
+Individual Java Beans will vary in the functionality they support, but the typical unifying fea-
+tures that distinguish a Java Bean are:
+•  Support for "introspection" so that a builder tool can analyze how a bean works
+•  Support for "customization" so that when using an application builder a user can
+   customize the appearance and behaviour of a bean.
+•  Support for "events"  as a simple communication metaphor than can be used to connectup beans.
+•  Support for "properties", both for customization and for programmatic use.
+•  Support for persistence, so that a bean can be customized in an application builder and
+   then have its customized state saved away and reloaded later.
+
+A bean is not required to inherit from any particular base class or interface. Visible beans must
+inherit from java.awt.Component so that they can be added to visual containers, but invisible
+beans (see 2.7 below) aren’t required to do this.
+Note that while beans are primarily targeted at builder tools they are also entirely usable by hu-
+man programmers. All the key APIs such as events, properties, and persistence, have been de-
+signed to work well both for human programmers and for builder tools.
+Many beans will have a strong visual aspect, in both the application builder and in the final con-
+structed application, but while this is common it is not required
+</pre>
+<p>
+なんとなくAWT/SwingのGUI系コンポネント向けの仕様ですね。
+</p>
+
+<p>
+現在はAWT/Swing/JSFなどMVCアーキテクチャのモデルとして利用することが多いいでしょう。
+</p>
+
+<ul class="org-ul">
+<li>JSFからJavaBeansの利用例
+<pre class="example">
+&lt;tr:inputText valueChangeListener="#{myBean.valueChangeHandler}" value="#{myBean.value}"/&gt;
+</pre>
+</li>
+
+<li>Swing/AWT
+<ul class="org-ul">
+<li>Swing/AWTにJButtonからはじめ多くのGUIコンポネントがJavaBeansの仕様に基づいている。
+</li>
+<li><a href="http://www.wakhok.ac.jp/~tatsuo/JavaWorld/11th/bean.html">2-2 JavaBeansとしての Swingコンポーネント</a>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> JavaBeansの出番</h2>
+<div class="outline-text-2" id="text-3">
+<ol class="org-ol">
+<li>JavaBeansのインスタンス化 (constructor)
+</li>
+<li>JavaBeansプロパティの設定 (setter/getter)
+</li>
+<li>メソッドの起動 (normal method)
+</li>
+<li>イベントのイベント・ハンドラの登録
+</li>
+</ol>
+
+<p>
+※Oracle JDeveloperを使うとJavaBeans作成用の専用ウィザードが提供されている
+</p>
+
+<p>
+4がピンとこないですね。下記の例で理解できると思います。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #ffffff;">public</span> <span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">MyBean</span> {
+
+     <span style="color: #ffffff;">private</span> <span style="color: #ffffff;">final</span> <span style="color: #7fffd4;">PropertyChangeSupport</span> <span style="color: #9acd32;">pcs</span> = <span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">PropertyChangeSupport</span>(<span style="color: #ffffff;">this</span>);
+
+     <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">addPropertyChangeListener</span>(<span style="color: #7fffd4;">PropertyChangeListener</span> <span style="color: #9acd32;">listener</span>) {
+         <span style="color: #ffffff;">this</span>.pcs.addPropertyChangeListener(listener);
+     }
+
+     <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">removePropertyChangeListener</span>(<span style="color: #7fffd4;">PropertyChangeListener</span> <span style="color: #9acd32;">listener</span>) {
+         <span style="color: #ffffff;">this</span>.pcs.removePropertyChangeListener(listener);
+     }
+
+     <span style="color: #ffffff;">private</span> <span style="color: #7fffd4;">String</span> <span style="color: #9acd32;">value</span>;
+
+     <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">String</span> <span style="color: #98fb98;">getValue</span>() {
+         <span style="color: #ffffff;">return</span> <span style="color: #ffffff;">this</span>.value;
+     }
+
+     <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">setValue</span>(<span style="color: #7fffd4;">String</span> <span style="color: #9acd32;">newValue</span>) {
+         <span style="color: #7fffd4;">String</span> <span style="color: #9acd32;">oldValue</span> = <span style="color: #ffffff;">this</span>.value;
+         <span style="color: #ffffff;">this</span>.value = newValue;
+         <span style="color: #ffffff;">this</span>.pcs.firePropertyChange(<span style="color: #bdb76b;">"value"</span>, oldValue, newValue);
+     }
+}
+
+<span style="color: #ffffff;">public</span> <span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">MyBeanTest</span> {
+    <span style="color: #ffffff;">static</span> <span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">MyBeanPropertyListener</span> <span style="color: #ffffff;">implements</span> <span style="color: #7fffd4;">PropertyChangeListener</span> {
+
+        <span style="color: #40e0d0;">@Override</span>
+        <span style="color: #ffffff;">public</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">propertyChange</span>(<span style="color: #7fffd4;">PropertyChangeEvent</span> <span style="color: #9acd32;">evt</span>) {
+            System.out.println(<span style="color: #bdb76b;">"evt.getPropertyName() = "</span> +  evt.getPropertyName());
+            System.out.println(<span style="color: #bdb76b;">"evt.getSource()       = "</span> + evt.getSource());
+            System.out.println(<span style="color: #bdb76b;">"evt.getOldValue()     = "</span> + evt.getOldValue());
+            System.out.println(<span style="color: #bdb76b;">"evt.getNewValue()     = "</span> + evt.getNewValue());
+        }
+    }
+    <span style="color: #ffffff;">public</span> <span style="color: #ffffff;">static</span> <span style="color: #7fffd4;">void</span> <span style="color: #98fb98;">main</span>(<span style="color: #7fffd4;">String</span>[] <span style="color: #9acd32;">args</span>) {
+        <span style="color: #7fffd4;">MyBean</span> <span style="color: #9acd32;">myBean</span> = <span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">MyBean</span>();
+        myBean.addPropertyChangeListener(<span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">MyBeanPropertyListener</span>());
+        myBean.setValue(<span style="color: #bdb76b;">"hello"</span>);
+    }
+}
+</pre>
+</div>
+
+<p>
+<code>MyBean</code> のvalue属性変更時にPropertyChangeEventを発火させ、MyBeanPropertyListenerでイ
+ベントをハンドリングする。Web開発用MVCフレームワークでもよく利用されている。
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> APIパッケージの概要</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+<a href="http://docs.oracle.com/javase/jp/7/api/java/beans/package-summary.html">JavaDoc</a> より
+</p>
+<pre class="example">
+パッケージ java.beans の説明
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+JavaBeans™ アーキテクチャーに基づいたコンポーネントである Bean の開発に関連したクラス
+が含まれています。一部のクラスは、アプリケーションの実行中に Bean によって使用されま
+す。たとえば、イベントクラスは、プロパティーと拒否可能な変更イベントをトリガーする
+Bean によって使用されます (PropertyChangeEvent を参照)。しかし、このパッケージに含ま
+れるほとんどのクラスは、Bean エディタ (アプリケーションを作成するために Bean のカスタ
+マイズおよび組み合わせを行う開発環境) 用です。こうしたクラスを使用すれば、Bean エディ
+タで Bean のカスタマイズ用ユーザーインタフェースを簡単に作成できます。たとえば、Bean
+エディタでは処理できない特殊な型のプロパティーを持つ Bean があるとします。この場合、
+Bean 開発者は PropertyEditor インタフェースを使って、この特殊な型のエディタを提供でき
+ます。
+
+Bean による消費リソースを最小限に抑えるため、Bean エディタによって使用されるクラスが
+読み込まれるのは、Bean の編集時だけとなります。アプリケーションで Bean が実行されてい
+るときは必要ないため、読み込まれません。この情報は、Bean 情報 (BeanInfo を参照) に保
+管されます。
+
+明示しない限り、null 値または空の文字列は、このパッケージのメソッドで有効なパラメータ
+ではありません。そのようなパラメータが使用されると、例外が発生する可能性があります。
+</pre>
+
+<p>
+イマイチですね、わかりづらい
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> よく出てくるクラス</h2>
+<div class="outline-text-2" id="text-5">
+<ul class="org-ul">
+<li>java.beans.PropertyDescriptor
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #7fffd4;">PropertyDescriptor</span> <span style="color: #9acd32;">nameProp</span> = <span style="color: #ffffff;">new</span> <span style="color: #7fffd4;">PropertyDescriptor</span>(<span style="color: #bdb76b;">"value"</span>, MyBean.<span style="color: #ffffff;">class</span>);
+System.out.println(nameProp.getReadMethod().invoke(myBean));
+System.out.println(nameProp.getWriteMethod().invoke(myBean, <span style="color: #bdb76b;">"goodbye"</span>));
+System.out.println(nameProp.getReadMethod().invoke(myBean));
+</pre>
+</div>
+</li>
+<li>java.beans.PropertyChangeListener
+PropertyChange イベントは、Bean が「バウンド」プロパティーを変更するたびにトリガーされます。
+</li>
+<li>java.beans.PropertyChangeEvent
+Bean が「バウンド」プロパティーまたは「制約」プロパティーを変更するたびに送信されます。
+</li>
+
+<li>PropertyChangeSupport
+バウンドプロパティーをサポートする Bean で使用できるユーティリティークラスです。
+PropertyChangeSupport インスタンスはスレッドセーフです。このクラスは直列化可能です。
+直列化した場合、直列化可能なリスナーが保存および復元されます。直列化の際、直列化可能
+でないリスナーはスキップされます。
+</li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> サードパーティライブラリ</h2>
+<div class="outline-text-2" id="text-6">
+<ul class="org-ul">
+<li><a href="http://commons.apache.org/proper/commons-beanutils/">Apache Commons BeanUtils</a>
+</li>
+</ul>
+</div>
+</div>
+
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> 参考情報</h2>
+<div class="outline-text-2" id="text-7">
+<ul class="org-ul">
+<li><a href="http://java.sun.com/docs/books/tutorial/javabeans/">『Java Tutorial』の続編</a>
+</li>
+<li><a href="http://docstore.mik.ua/orelly/java-ent/jnut/ch06_01.htm">Java™ in a Nutshell: A Deskop Quick Referenceの6章</a>
+</li>
+<li><a href="http://otndnld.oracle.co.jp/tech/java/htdocs/java_roadmap/javabean/listing.htm">Oracle Javaロードマップ:JavaBeans</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>
