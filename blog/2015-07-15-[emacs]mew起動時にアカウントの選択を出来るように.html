@@ -1,0 +1,473 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="ja"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>[Emacs]mew起動時にアカウントの選択を出来るように - Akira's Tech Notes</title>
+  <meta name="author" content="luozengbin">
+
+  
+  <meta name="description" content="久々のemacsネタです。 mewで複数メールアカウントで扱うときにSummary モードにおいて C で切り替えることが出
+来るので非常に便利です。ただし、起動時にdefaultアカウントの選択機能が持っていないので、
+mew-init-hookで拡張してみました。 ;; &#12450;&# &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://luozengbin.github.io/blog/2015-07-15-%5Bemacs%5Dmew%E8%B5%B7%E5%8B%95%E6%99%82%E3%81%AB%E3%82%A2%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%81%AE%E9%81%B8%E6%8A%9E%E3%82%92%E5%87%BA%E6%9D%A5%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB.html">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Akira's Tech Notes" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-34369831-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Akira's Tech Notes</a></h1>
+  
+    <h2>Java, Linux, Emacs,知的好奇心駆動</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:luozengbin.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/blog/about.html">About</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">[Emacs]mew起動時にアカウントの選択を出来るように</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-07-15T00:00:00+09:00" pubdate data-updated="true">2015-07-15 (Wed)</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>
+久々のemacsネタです。
+</p>
+
+<p>
+mewで複数メールアカウントで扱うときにSummary モードにおいて <code>C</code> で切り替えることが出
+来るので非常に便利です。ただし、起動時にdefaultアカウントの選択機能が持っていないので、
+mew-init-hookで拡張してみました。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">&#12450;&#12459;&#12454;&#12531;&#12488;1</span>
+(setq my-mew-config-1
+      (list
+       '(proto                          <span style="color: #ffa07a;">"+"</span>)
+       '(name                           <span style="color: #ffa07a;">"******"</span>)
+       '(user                           <span style="color: #ffa07a;">"******"</span>)   <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#12513;&#12540;&#12523;&#12450;&#12489;&#12524;&#12473;&#12398;@&#12363;&#12425;&#24038;&#37096;&#20998;</span>
+       '(mail-domain                    <span style="color: #ffa07a;">"******"</span>)   <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#12513;&#12540;&#12523;&#12450;&#12489;&#12524;&#12473;&#12398;@&#12363;&#12425;&#21491;&#37096;&#20998;</span>
+       '(smtp-server                    <span style="color: #ffa07a;">"******"</span>)   <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#36865;&#20449;&#29992;&#12469;&#12540;&#12496;&#12450;&#12489;&#12524;&#12473;</span>
+       '(smtp-port                      <span style="color: #ffa07a;">"1025"</span>)     <span style="color: #ff7f24;">;</span>
+       '(smtp-user                      <span style="color: #ffa07a;">"******"</span>)   <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#36865;&#20449;&#29992;&#12518;&#12540;&#12470;id</span>
+       '(pop-server                     <span style="color: #ffa07a;">"******"</span>)   <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#21463;&#20449;&#29992;&#12469;&#12540;&#12496;&#12450;&#12489;&#12524;&#12473;</span>
+       '(pop-port                       <span style="color: #ffa07a;">"1110"</span>)     <span style="color: #ff7f24;">;</span>
+       '(pop-user                       <span style="color: #ffa07a;">"******"</span>)   <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#21463;&#20449;&#29992;&#12518;&#12540;&#12470;id</span>
+       '(pop-delete                     t)          <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#12513;&#12540;&#12523;&#21463;&#20449;&#24460;&#12469;&#12540;&#12496;&#12540;&#20596;&#12398;&#12513;&#12483;&#12475;&#12540;&#12472;&#12434;&#65303;&#26085;&#12434;&#20445;&#25345;&#12377;&#12427;</span>
+       '(pop-auth                       pass)       <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">pop3 &#12391;&#21463;&#20449;&#26178;&#12398;&#35469;&#35388;&#26041;&#24335;&#12289;&#25351;&#23450;&#12375;&#12394;&#12356;&#22580;&#21512;&#12399;apop&#26041;&#24335;&#12364;&#20351;&#29992;&#12373;&#12428;&#12427;</span>
+       '(pop-size                       0)          <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#12513;&#12540;&#12523;&#12398;&#19978;&#38480;&#12469;&#12452;&#12474;&#12290;0 &#12398;&#22580;&#21512;&#12399;&#19978;&#38480;&#12394;&#12375;&#12290;</span>
+       '(pop-header-only                t)          <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">[c-u s]&#12391;&#12504;&#12483;&#12480;&#12398; &#12415;&#12398;&#12467;&#12500;&#12540;</span>
+       '(dcc                            <span style="color: #ffa07a;">"******"</span>)   <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#36820;&#20449;&#26178;&#12395;&#33258;&#20998;&#12398;&#12450;&#12489;&#12524;&#12473;&#12434;dcc&#12395;&#20837;&#12428;&#12427;&#12289;dcc&#12399;&#36865;&#20449;&#12375;&#12383;&#12513;&#12540;&#12523;&#12398;&#12504;&#12483;&#12480;&#12540;&#12395;&#34920;&#31034;&#12373;&#12428;&#12394;&#12356;</span>
+       '(fcc                            <span style="color: #ffa07a;">"+sent"</span>)    <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#36865;&#20449;&#12375;&#12383;&#12513;&#12540;&#12523;&#12398;&#20445;&#23384;&#20808;</span>
+       '(smime-signer                   <span style="color: #ffa07a;">"******"</span>)   <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#38651;&#23376;&#32626;&#21517;&#12391;&#20351;&#29992;&#12377;&#12427;&#35388;&#26126;&#26360;id</span>
+       '(protect-privacy-always         nil)
+       '(privacy-method                 smime)      <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">&#38651;&#23376;&#32626;&#21517;&#12479;&#12452;&#12503;&#12398;&#25351;&#23450;</span>
+       '(draft-privacy-method           smime)
+       '(protect-privacy-always-type  smime-signature)
+       ))
+
+<span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">&#12450;&#12459;&#12454;&#12531;&#12488;2</span>
+(setq my-mew-config-2
+      (list
+       '(proto                   <span style="color: #ffa07a;">"%"</span>)
+       '(name                    <span style="color: #ffa07a;">"******"</span>)
+       '(user                    <span style="color: #ffa07a;">"******"</span>)
+       '(mail-domain             <span style="color: #ffa07a;">"gmail.com"</span>)
+       '(dcc                     <span style="color: #ffa07a;">"*******@gmail.com"</span>)
+       '(protect-privacy-always  nil)
+       '(ssl-verify-level        0)
+       <span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">smtp&#12469;&#12540;&#12496;&#12540;</span>
+       '(smtp-user               <span style="color: #ffa07a;">"*******@gmail.com"</span>)
+       '(smtp-auth               t)
+       '(smtp-ssl                t)
+       '(smtp-server             <span style="color: #ffa07a;">"smtp.gmail.com"</span>)
+       '(smtp-ssl-port           <span style="color: #ffa07a;">"465"</span>)
+       <span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">imap&#12434;&#20351;&#29992;&#12377;&#12427;&#22580;&#21512;</span>
+       '(inbox-folder            <span style="color: #ffa07a;">"%gmail"</span>)
+       '(imap-user               <span style="color: #ffa07a;">"******@gmail.com"</span>)
+       '(imap-size               5242880) <span style="color: #ff7f24;">; </span><span style="color: #ff7f24;">5m&#20197;&#20869;&#21363;&#26178;&#21463;&#20449;&#12377;&#12427;</span>
+       '(imap-auth               t)
+       '(imap-ssl                t)
+       '(imap-ssl-port           <span style="color: #ffa07a;">"993"</span>)
+       '(imap-server             <span style="color: #ffa07a;">"imap.gmail.com"</span>)
+       ))
+
+<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#12450;&#12459;&#12454;&#12531;&#12488;3</span>
+(setq my-mew-config-3
+      (list
+       '(proto                   <span style="color: #ffa07a;">"+"</span>)
+       <span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">&#65288;&#20013;&#30053;&#65289;</span>
+))
+
+<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">&#12450;&#12459;&#12454;&#12531;&#12488;4</span>
+(setq my-mew-config-4
+      (list
+       '(proto                   <span style="color: #ffa07a;">"+"</span>)
+       <span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">&#65288;&#20013;&#30053;&#65289;</span>
+))
+
+(setq my-mew-account-list
+      (list (append (list 'account1) my-mew-config-1)
+            (append (list 'account2) my-mew-config-2)
+            (append (list 'account3) my-mew-config-3)
+            (append (list 'account4) my-mew-config-4)))
+
+<span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">&#12450;&#12459;&#12454;&#12531;&#12488;&#36984;&#25246;&#20966;&#29702;</span>
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">my-mew-select-account</span> ()
+  (<span style="color: #00ffff;">let*</span> ((account-name-list (mapcar (<span style="color: #00ffff;">lambda</span> (x) (pp-to-string (car x))) my-mew-account-list))
+         (selected-account (completing-read <span style="color: #ffa07a;">"mew account: "</span> account-name-list nil t)))
+    (message selected-account)
+    (setq mew-config-alist
+          (append
+           (list
+            (append (list 'default)
+                    (cdr
+                     (car (-filter (<span style="color: #00ffff;">lambda</span> (mew-config)
+                                     (string= selected-account
+                                              (pp-to-string (car mew-config))))
+                                   my-mew-account-list)))))
+           (-filter (<span style="color: #00ffff;">lambda</span> (mew-config)
+                      (not
+                       (string= selected-account
+                                (pp-to-string (car mew-config)))))
+                    my-mew-account-list)))))
+
+<span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">&#36215;&#21205;&#26178;&#12395;&#36208;&#12425;&#12379;&#12427;</span>
+(add-hook 'mew-init-hook 'my-mew-select-account)
+</pre>
+</div>
+
+<p>
+デモ
+</p>
+<video controls>
+   <source src="http://luozengbin.github.io/video/2015-07-15_mew_account_select.mp4">
+</video>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">luozengbin</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-07-15T00:00:00+09:00" pubdate data-updated="true">2015-07-15 (Wed)</time>
+      
+
+<span class="categories">
+  Posted in
+  
+    <a class='category' href='/blog/categories/emacs/'>emacs</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://luozengbin.github.io/blog/2015-07-15-%5Bemacs%5Dmew%E8%B5%B7%E5%8B%95%E6%99%82%E3%81%AB%E3%82%A2%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%81%AE%E9%81%B8%E6%8A%9E%E3%82%92%E5%87%BA%E6%9D%A5%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB.html" data-via="" data-counturl="http://luozengbin.github.io/blog/2015-07-15-%5Bemacs%5Dmew%E8%B5%B7%E5%8B%95%E6%99%82%E3%81%AB%E3%82%A2%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%81%AE%E9%81%B8%E6%8A%9E%E3%82%92%E5%87%BA%E6%9D%A5%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB.html" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015-07-02-%5B%E5%B0%8F%E9%81%93%E5%85%B7%5D%5Bjava%5D%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E7%9B%A3%E8%A6%96%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%97%E3%83%88.html" title="Previous Post: [小道具][Java]スタックサイズ監視スクリプト">&laquo; [小道具][Java]スタックサイズ監視スクリプト</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <!-- create at 2017/07/01 
+       Google Chart Tools: Infographics
+       https://developers.google.com/chart/infographics/docs/qr_codes?csw=1
+  -->
+
+  <div style="position: relative; text-align: center">
+
+    <!-- Google Chart API でQRコード取得 -->
+    <img src="http://chart.apis.google.com/chart?chs=180x180&amp;cht=qr&amp;choe=UTF-8&amp;chl=http://luozengbin.github.io/blog/2015-07-15-%5Bemacs%5Dmew%E8%B5%B7%E5%8B%95%E6%99%82%E3%81%AB%E3%82%A2%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%81%AE%E9%81%B8%E6%8A%9E%E3%82%92%E5%87%BA%E6%9D%A5%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB.html" alt="post-qrcode" height="180" width="180" />
+
+    <!-- サイトのfaviconを重ねて表示する -->
+    <div style="position: absolute; top: 75px; width: 100%; margin: 0 auto; text-align: center">
+      <img style="border: 0.2em solid #FFF;" src="/favicon.png" alt="post-qrcode" height="30" width="30" />
+    </div>
+  </div>
+
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-07-15-%5Bemacs%5Dmew%E8%B5%B7%E5%8B%95%E6%99%82%E3%81%AB%E3%82%A2%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%81%AE%E9%81%B8%E6%8A%9E%E3%82%92%E5%87%BA%E6%9D%A5%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB.html">[Emacs]mew起動時にアカウントの選択を出来るように</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-02-%5B%E5%B0%8F%E9%81%93%E5%85%B7%5D%5Bjava%5D%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E7%9B%A3%E8%A6%96%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%97%E3%83%88.html">[小道具][Java]スタックサイズ監視スクリプト</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-29-%5Btips%5D%5Bjava%5D%E3%83%A1%E3%83%A2%E3%83%AAswap%E3%81%AB%E3%82%88%E3%82%8B%E7%84%A1%E5%BF%9C%E7%AD%94.html">[tips][Java]メモリswapによる無応答</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-28-%5Btips%5D%5Blinux%5Djournald%E3%82%A8%E3%83%A9%E3%83%BC%E3%83%AD%E3%82%B0%E3%82%92%E3%83%A1%E3%83%BC%E3%83%AB%E3%81%A7%E9%80%9A%E7%9F%A5%E3%81%99%E3%82%8B.html">[tips][Linux]journaldエラーログをメールで通知する</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[まとめ]Linuxシステム時刻について</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html">[メモ]JavaBeans仕様を再認識する</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]URLパラメータデコード処理について</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html">[メモ]デバッグ版OpenJDKのビルド</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]JVMのスタックサイズについて</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html">[調査]JBossASソケット受信バッファーのサイズ</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+<section>
+  <h1>Categories</h1>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (3)</a></li><li><a href='/blog/categories/java/'>java (18)</a></li><li><a href='/blog/categories/linux/'>linux (19)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+</section>
+<section>
+  <h1>Tag Cloud</h1>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/javabeans' style='font-size: 120.0%'>JavaBeans(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/journald' style='font-size: 120.0%'>journald(1)</a> <a href='/blog/tags/jvm' style='font-size: 140.0%'>jvm(2)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/mew' style='font-size: 120.0%'>mew(1)</a> <a href='/blog/tags/misc' style='font-size: 120.0%'>misc(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 140.0%'>stack(2)</a> <a href='/blog/tags/swap' style='font-size: 120.0%'>swap(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/luozengbin">@luozengbin</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'luozengbin',
+            count: 1,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+  
+</aside>
+
+<script type="text/javascript">
+  $('body').toggleClass('collapse-sidebar');
+</script>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">
+  <img alt="クリエイティブ・コモンズ・ライセンス" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a>
+  この作品は
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">クリエイティブ・コモンズ 表示 - 非営利 4.0 国際 ライセンスの下に提供されています。</a>
+    <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'luozengbin';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://luozengbin.github.io/blog/2015-07-15-%5Bemacs%5Dmew%E8%B5%B7%E5%8B%95%E6%99%82%E3%81%AB%E3%82%A2%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%81%AE%E9%81%B8%E6%8A%9E%E3%82%92%E5%87%BA%E6%9D%A5%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB.html';
+        var disqus_url = 'http://luozengbin.github.io/blog/2015-07-15-%5Bemacs%5Dmew%E8%B5%B7%E5%8B%95%E6%99%82%E3%81%AB%E3%82%A2%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%81%AE%E9%81%B8%E6%8A%9E%E3%82%92%E5%87%BA%E6%9D%A5%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB.html';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
