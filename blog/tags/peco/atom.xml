@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Peco | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/peco/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2015-08-05T01:31:26+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[Memo][Linux]bash環境にpecoを導入しました]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-08-02-%5Bmemo%5D%5Blinux%5Dbash%E7%92%B0%E5%A2%83%E3%81%ABpeco%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%97%E3%81%BE%E3%81%97%E3%81%9F.html"/>
+    <updated>2015-08-02T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[memo][linux]bash環境にpecoを導入しました</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. peco で何か便利なのか</a></li>
+<li><a href="#sec-2">2. 導入手順</a></li>
+<li><a href="#sec-3">3. bash履歴の検索をpecoインタフェースにする</a></li>
+<li><a href="#sec-4">4. pecoインタフェースのキーバンディングをカスタマイズする</a></li>
+<li><a href="#sec-5">5. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+以前から <a href="https://github.com/mooz/percol">percol</a> の流行りに気になっていたが、python製のため導入が面倒さそうなので保留
+しました。最近、percolを元にgolangで書かれたpecoが出てきて導入しやすくなったと感じて
+手を入れました。
+</p>
+
+
+
+
+<p>
+<!-- more -->
+</p>
+
+
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> peco で何か便利なのか</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>コマンド出力結果のインクリメントサーチが出来る
+<ul class="org-ul">
+<li>Bashコマンド履歴のインクリメントサーチが出来る
+</li>
+<li>プロンプトでログファイルのインクリメントサーチが出来る
+</li>
+<li>パイプラインでたのコマンドとの連携で色々出来ると思います
+</li>
+</ul>
+</li>
+</ul>
+
+<p>
+具体なイメージはgithubの <a href="https://github.com/peco/peco/blob/master/README.md">README</a> が分かりやすい
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 導入手順</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+一番簡単なのは <code>peco</code> バイナリを <code>PATH</code> に通る。
+</p>
+<pre class="example">
+$ wget https://github.com/peco/peco/releases/download/v0.3.3/peco_linux_amd64.tar.gz
+$ tar xzvf peco_linux_amd64.tar.gz 
+$ tree peco_linux_amd64
+peco_linux_amd64
+├── Changes
+├── README.md
+└── peco
+
+0 directories, 3 files
+$ export PATH=`pwd`/peco_linux_amd64:$PATH
+$ peco --version
+peco: v0.3.3
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> bash履歴の検索をpecoインタフェースにする</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+下記内容を <code>~/.bashrc</code> に追加する
+</p>
+<pre class="example">
+# 重複履歴を無視
+export HISTCONTROL=ignoreboth:erasedups
+
+# 履歴保存対象から外す
+export HISTIGNORE="fg*:bg*:history*:wmctrl*:exit*:ls -al:cd ~"
+
+# コマンド履歴にコマンドを使ったの時刻を記録する
+export HISTTIMEFORMAT='%Y%m%d %T '
+
+export HISTSIZE=10000
+
+# settings for peco
+_replace_by_history() {
+    local l=$(HISTTIMEFORMAT= history | cut -d" " -f4- | tac | sed -e 's/^\s*[0-9]*    \+\s\+//' | peco --query "$READLINE_LINE")
+    READLINE_LINE="$l"
+    READLINE_POINT=${#l}
+}
+bind -x '"\C-r": _replace_by_history'
+bind    '"\C-xr": reverse-search-history'
+</pre>
+
+<p>
+これで、 <code>Ctrl-r</code> で起動されたBash履歴検索がpecoインタフェースに変わる。
+元の検索インタフェースは <code>Ctrl-x r</code> で起動することも出来る。
+</p>
+
+<video controls>
+   <source src="video/2015-08-05_peco_demo.mp4">
+</video>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> pecoインタフェースのキーバンディングをカスタマイズする</h2>
+<div class="outline-text-2" id="text-4">
+<pre class="example">
+$ mkdir ~/.config/peco
+$ touch ~/.config/peco/config.json
+$ cat &lt;&lt;_EOT_ &gt; ~/.config/peco/config.json
+{
+    "Keymap": {
+        "C-p": "peco.SelectPrevious",
+        "C-n": "peco.SelectNext",
+        "C-g": "peco.Cancel",
+        "C-v": "peco.SelectNextPage",
+        "C-@": "peco.ToggleSelectionAndSelectNext"
+    }
+}
+_EOT_
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> 参考</h2>
+<div class="outline-text-2" id="text-5">
+<ul class="org-ul">
+<li><a href="http://qiita.com/xtetsuji/items/05f6f4c1b17854cdd75b">pecoの基礎の基礎</a>
+</li>
+<li><a href="http://qiita.com/syui/items/f2fe51d00378210d10b1">コマンドラインでの選択的インターフェイスについて考える</a>
+</li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

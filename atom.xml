@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-07-15T23:47:02+09:00</updated>
+  <updated>2015-08-05T01:31:26+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,255 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[Memo][Linux]bash環境にpecoを導入しました]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-08-02-%5Bmemo%5D%5Blinux%5Dbash%E7%92%B0%E5%A2%83%E3%81%ABpeco%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%97%E3%81%BE%E3%81%97%E3%81%9F.html"/>
+    <updated>2015-08-02T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[memo][linux]bash環境にpecoを導入しました</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. peco で何か便利なのか</a></li>
+<li><a href="#sec-2">2. 導入手順</a></li>
+<li><a href="#sec-3">3. bash履歴の検索をpecoインタフェースにする</a></li>
+<li><a href="#sec-4">4. pecoインタフェースのキーバンディングをカスタマイズする</a></li>
+<li><a href="#sec-5">5. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+以前から <a href="https://github.com/mooz/percol">percol</a> の流行りに気になっていたが、python製のため導入が面倒さそうなので保留
+しました。最近、percolを元にgolangで書かれたpecoが出てきて導入しやすくなったと感じて
+手を入れました。
+</p>
+
+<p>
+<!-- more -->
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> peco で何か便利なのか</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>コマンド出力結果のインクリメントサーチが出来る
+<ul class="org-ul">
+<li>Bashコマンド履歴のインクリメントサーチが出来る
+</li>
+<li>プロンプトでログファイルのインクリメントサーチが出来る
+</li>
+<li>パイプラインでたのコマンドとの連携で色々出来ると思います
+</li>
+</ul>
+</li>
+</ul>
+
+<p>
+具体なイメージはgithubの <a href="https://github.com/peco/peco/blob/master/README.md">README</a> が分かりやすい
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> 導入手順</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+一番簡単なのは <code>peco</code> バイナリを <code>PATH</code> に通る。
+</p>
+<pre class="example">
+$ wget https://github.com/peco/peco/releases/download/v0.3.3/peco_linux_amd64.tar.gz
+$ tar xzvf peco_linux_amd64.tar.gz 
+$ tree peco_linux_amd64
+peco_linux_amd64
+├── Changes
+├── README.md
+└── peco
+
+0 directories, 3 files
+$ export PATH=`pwd`/peco_linux_amd64:$PATH
+$ peco --version
+peco: v0.3.3
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> bash履歴の検索をpecoインタフェースにする</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+下記内容を <code>~/.bashrc</code> に追加する
+</p>
+<pre class="example">
+# 重複履歴を無視
+export HISTCONTROL=ignoreboth:erasedups
+
+# 履歴保存対象から外す
+export HISTIGNORE="fg*:bg*:history*:wmctrl*:exit*:ls -al:cd ~"
+
+# コマンド履歴にコマンドを使ったの時刻を記録する
+export HISTTIMEFORMAT='%Y%m%d %T '
+
+export HISTSIZE=10000
+
+# settings for peco
+_replace_by_history() {
+    local l=$(HISTTIMEFORMAT= history | cut -d" " -f4- | tac | sed -e 's/^\s*[0-9]*    \+\s\+//' | peco --query "$READLINE_LINE")
+    READLINE_LINE="$l"
+    READLINE_POINT=${#l}
+}
+bind -x '"\C-r": _replace_by_history'
+bind    '"\C-xr": reverse-search-history'
+</pre>
+
+<p>
+これで、 <code>Ctrl-r</code> で起動されたBash履歴検索がpecoインタフェースに変わる。
+元の検索インタフェースは <code>Ctrl-x r</code> で起動することも出来る。
+</p>
+
+<video controls>
+   <source src="video/2015-08-05_peco_demo.mp4">
+</video>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> pecoインタフェースのキーバンディングをカスタマイズする</h2>
+<div class="outline-text-2" id="text-4">
+<pre class="example">
+$ mkdir ~/.config/peco
+$ touch ~/.config/peco/config.json
+$ cat &lt;&lt;_EOT_ &gt; ~/.config/peco/config.json
+{
+    "Keymap": {
+        "C-p": "peco.SelectPrevious",
+        "C-n": "peco.SelectNext",
+        "C-g": "peco.Cancel",
+        "C-v": "peco.SelectNextPage",
+        "C-@": "peco.ToggleSelectionAndSelectNext"
+    }
+}
+_EOT_
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> 参考</h2>
+<div class="outline-text-2" id="text-5">
+<ul class="org-ul">
+<li><a href="http://qiita.com/xtetsuji/items/05f6f4c1b17854cdd75b">pecoの基礎の基礎</a>
+</li>
+<li><a href="http://qiita.com/syui/items/f2fe51d00378210d10b1">コマンドラインでの選択的インターフェイスについて考える</a>
+</li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Linux]Sambaユーザのパスワード変更]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-07-23-%5Btips%5D%5Blinux%5Dsamba%E3%83%A6%E3%83%BC%E3%82%B6%E3%81%AE%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E5%A4%89%E6%9B%B4.html"/>
+    <updated>2015-07-23T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][linux]sambaユーザのパスワード変更</id>
+    <content type="html"><![CDATA[<p>
+普段はLinuxで作業しているけど、MS系のドキュメントメンテ作業はWindowsでやらざるを得な
+いのでSambaでLinux側のコンテンツをWindowsに共有するようにしていました。
+</p>
+
+<p>
+ところで先週Windows端末再セットアップしたため、Sambaサーバに接続時にパスワードが聞か
+れた時が、すっかり忘れましたのでSamba側でパスワードリセットをしました。
+</p>
+
+<ul class="org-ul">
+<li>パスワードリセットコマンド（ユーザ登録コマンドと一緒）
+<pre class="example">
+$ sudo pdbedit -a -u test001
+new password:
+retype new password:
+</pre>
+</li>
+
+<li>ついにパスワード情報の格納先を確認しました
+<pre class="example">
+$ pdbedit -L
+tdbsam_open: Failed to open/create TDB passwd [/var/lib/samba/private/passdb.tdb]
+tdbsam_getsampwnam: failed to open /var/lib/samba/private/passdb.tdb!
+User Search failed!
+</pre>
+</li>
+</ul>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Linux]Dockerのプロキシ設定]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-07-23-%5Btips%5D%5Blinux%5Ddocker%E3%81%AE%E3%83%97%E3%83%AD%E3%82%AD%E3%82%B7%E8%A8%AD%E5%AE%9A.html"/>
+    <updated>2015-07-23T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][linux]dockerのプロキシ設定</id>
+    <content type="html"><![CDATA[<p>
+基本は本家のドキュメントを見ろう！
+</p>
+
+<p>
+<a href="https://docs.docker.com/articles/systemd/">https://docs.docker.com/articles/systemd/</a>
+</p>
+
+<p>
+ここでは Acrh Linx で確認された手順を記録する。
+</p>
+
+<p>
+社内はフォワードプロキシ経由で外と繋ぐなので、デフォルトでは通らない ;-(
+</p>
+<pre class="example">
+$ docker search oraclelinux
+Error response from daemon: Get https://index.docker.io/v1/search?q=oraclelinux: dial tcp 54.174.226.171:443: no route to host
+</pre>
+
+<p>
+<code>/etc/systemd/system/&lt;サービスID&gt;.d/</code> 配下に環境変数の上書きファイルを定義し、サービ
+スをリロードするだけです。
+</p>
+<pre class="example">
+$ sudo mkdir /etc/systemd/system/docker.service.d
+$ sudo touch /etc/systemd/system/docker.service.d/http-proxy.conf
+$ sudo nano /etc/systemd/system/docker.service.d/http-proxy.conf
+[Service]
+Environment="HTTP_PROXY=http://*********************:8081"
+Environment="HTTPS_PROXY=http://*********************:8081"
+$ sudo systemctl daemon-reload
+$ sudo systemctl restart docker
+$ docker search oraclelinux
+NAME                                      DESCRIPTION                                     STARS     OFFICIAL   AUTOMATED
+oraclelinux                               Oracle Linux is an open-source operating s...   46        [OK]       
+oracle/oraclelinux                        Oracle Linux is an open-source operating s...   16                   [OK]
+tvierling/oraclelinux                     Oracle Linux base images, yum-updated to l...   2                    [OK]
+centminmod/oraclelinux65base              Oracle Linux 6.5 base 1.57GB image              1                    
+avmiller/oraclelinux                      Personal Oracle Linux Test Images (Non-pro...   0                    
+kiwenlau/oraclelinux                                                                      0                    
+talberto/oraclelinux                                                                      0                    
+ksasi/oraclelinux                                                                         0                    
+saltfactory/oraclelinux                   Oracle Linux                                    0                    
+arpagaus/oraclelinux                                                                      0                    
+joseperez/oraclelinux-lamp                oraclelinux 7.0 con mariadb, apache y php.      0                    
+jinyan/oraclelinux                        Oracle Linux 6.6                                0                    
+hootjr/oraclelinux                                                                        0                    
+poisoncreed/oraclelinux-base-with-httpd                                                   0                    
+bdpzone/bdporaclelinux6                   Big Data Partnership Development Environme...   0                    [OK]
+dyoung522/oracle-ruby                     OracleLinux running Ruby                        0                    [OK]
+bdpzone/bdporaclelinux7                   Big Data Partnership Development Environme...   0                    [OK]
+mlechner/oraclelinux7                     GIS tools on Oracle Linux 7                     0                    
+tehmul/oraclelinux6-tc                    Oracle Linux 6+Oracle Server JRE 8+ Apache...   0                    
+calaniz/oraclelinux                                                                       0                    
+dyoung522/oraclelinux-dev                 OracleLinux with development environment        0                    [OK]
+hedlund/oraclelinux                                                                       0                    [OK]
+florentbenoit/oraclelinux-jdk7                                                            0                    [OK]
+</pre>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[Emacs]mew起動時にアカウントの選択を出来るように]]></title>
@@ -30,70 +279,70 @@ mew-init-hookで拡張してみました。
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp"><span style="color: #99968b;">;; </span><span style="color: #99968b;">&#12450;&#12459;&#12454;&#12531;&#12488;1</span>
+<pre class="src src-emacs-lisp"><span style="color: #74af68;">;; </span><span style="color: #74af68;">&#12450;&#12459;&#12454;&#12531;&#12488;1</span>
 (setq my-mew-config-1
       (list
-       '(proto                          <span style="color: #95e454;">"+"</span>)
-       '(name                           <span style="color: #95e454;">"******"</span>)
-       '(user                           <span style="color: #95e454;">"******"</span>)   <span style="color: #99968b;">; </span><span style="color: #99968b;">&#12513;&#12540;&#12523;&#12450;&#12489;&#12524;&#12473;&#12398;@&#12363;&#12425;&#24038;&#37096;&#20998;</span>
-       '(mail-domain                    <span style="color: #95e454;">"******"</span>)   <span style="color: #99968b;">; </span><span style="color: #99968b;">&#12513;&#12540;&#12523;&#12450;&#12489;&#12524;&#12473;&#12398;@&#12363;&#12425;&#21491;&#37096;&#20998;</span>
-       '(smtp-server                    <span style="color: #95e454;">"******"</span>)   <span style="color: #99968b;">; </span><span style="color: #99968b;">&#36865;&#20449;&#29992;&#12469;&#12540;&#12496;&#12450;&#12489;&#12524;&#12473;</span>
-       '(smtp-port                      <span style="color: #95e454;">"1025"</span>)     <span style="color: #99968b;">;</span>
-       '(smtp-user                      <span style="color: #95e454;">"******"</span>)   <span style="color: #99968b;">; </span><span style="color: #99968b;">&#36865;&#20449;&#29992;&#12518;&#12540;&#12470;id</span>
-       '(pop-server                     <span style="color: #95e454;">"******"</span>)   <span style="color: #99968b;">; </span><span style="color: #99968b;">&#21463;&#20449;&#29992;&#12469;&#12540;&#12496;&#12450;&#12489;&#12524;&#12473;</span>
-       '(pop-port                       <span style="color: #95e454;">"1110"</span>)     <span style="color: #99968b;">;</span>
-       '(pop-user                       <span style="color: #95e454;">"******"</span>)   <span style="color: #99968b;">; </span><span style="color: #99968b;">&#21463;&#20449;&#29992;&#12518;&#12540;&#12470;id</span>
-       '(pop-delete                     t)          <span style="color: #99968b;">; </span><span style="color: #99968b;">&#12513;&#12540;&#12523;&#21463;&#20449;&#24460;&#12469;&#12540;&#12496;&#12540;&#20596;&#12398;&#12513;&#12483;&#12475;&#12540;&#12472;&#12434;&#65303;&#26085;&#12434;&#20445;&#25345;&#12377;&#12427;</span>
-       '(pop-auth                       pass)       <span style="color: #99968b;">; </span><span style="color: #99968b;">pop3 &#12391;&#21463;&#20449;&#26178;&#12398;&#35469;&#35388;&#26041;&#24335;&#12289;&#25351;&#23450;&#12375;&#12394;&#12356;&#22580;&#21512;&#12399;apop&#26041;&#24335;&#12364;&#20351;&#29992;&#12373;&#12428;&#12427;</span>
-       '(pop-size                       0)          <span style="color: #99968b;">; </span><span style="color: #99968b;">&#12513;&#12540;&#12523;&#12398;&#19978;&#38480;&#12469;&#12452;&#12474;&#12290;0 &#12398;&#22580;&#21512;&#12399;&#19978;&#38480;&#12394;&#12375;&#12290;</span>
-       '(pop-header-only                t)          <span style="color: #99968b;">; </span><span style="color: #99968b;">[c-u s]&#12391;&#12504;&#12483;&#12480;&#12398; &#12415;&#12398;&#12467;&#12500;&#12540;</span>
-       '(dcc                            <span style="color: #95e454;">"******"</span>)   <span style="color: #99968b;">; </span><span style="color: #99968b;">&#36820;&#20449;&#26178;&#12395;&#33258;&#20998;&#12398;&#12450;&#12489;&#12524;&#12473;&#12434;dcc&#12395;&#20837;&#12428;&#12427;&#12289;dcc&#12399;&#36865;&#20449;&#12375;&#12383;&#12513;&#12540;&#12523;&#12398;&#12504;&#12483;&#12480;&#12540;&#12395;&#34920;&#31034;&#12373;&#12428;&#12394;&#12356;</span>
-       '(fcc                            <span style="color: #95e454;">"+sent"</span>)    <span style="color: #99968b;">; </span><span style="color: #99968b;">&#36865;&#20449;&#12375;&#12383;&#12513;&#12540;&#12523;&#12398;&#20445;&#23384;&#20808;</span>
-       '(smime-signer                   <span style="color: #95e454;">"******"</span>)   <span style="color: #99968b;">; </span><span style="color: #99968b;">&#38651;&#23376;&#32626;&#21517;&#12391;&#20351;&#29992;&#12377;&#12427;&#35388;&#26126;&#26360;id</span>
+       '(proto                          <span style="color: #e67128;">"+"</span>)
+       '(name                           <span style="color: #e67128;">"******"</span>)
+       '(user                           <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#12513;&#12540;&#12523;&#12450;&#12489;&#12524;&#12473;&#12398;@&#12363;&#12425;&#24038;&#37096;&#20998;</span>
+       '(mail-domain                    <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#12513;&#12540;&#12523;&#12450;&#12489;&#12524;&#12473;&#12398;@&#12363;&#12425;&#21491;&#37096;&#20998;</span>
+       '(smtp-server                    <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#36865;&#20449;&#29992;&#12469;&#12540;&#12496;&#12450;&#12489;&#12524;&#12473;</span>
+       '(smtp-port                      <span style="color: #e67128;">"1025"</span>)     <span style="color: #74af68;">;</span>
+       '(smtp-user                      <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#36865;&#20449;&#29992;&#12518;&#12540;&#12470;id</span>
+       '(pop-server                     <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#21463;&#20449;&#29992;&#12469;&#12540;&#12496;&#12450;&#12489;&#12524;&#12473;</span>
+       '(pop-port                       <span style="color: #e67128;">"1110"</span>)     <span style="color: #74af68;">;</span>
+       '(pop-user                       <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#21463;&#20449;&#29992;&#12518;&#12540;&#12470;id</span>
+       '(pop-delete                     t)          <span style="color: #74af68;">; </span><span style="color: #74af68;">&#12513;&#12540;&#12523;&#21463;&#20449;&#24460;&#12469;&#12540;&#12496;&#12540;&#20596;&#12398;&#12513;&#12483;&#12475;&#12540;&#12472;&#12434;&#65303;&#26085;&#12434;&#20445;&#25345;&#12377;&#12427;</span>
+       '(pop-auth                       pass)       <span style="color: #74af68;">; </span><span style="color: #74af68;">pop3 &#12391;&#21463;&#20449;&#26178;&#12398;&#35469;&#35388;&#26041;&#24335;&#12289;&#25351;&#23450;&#12375;&#12394;&#12356;&#22580;&#21512;&#12399;apop&#26041;&#24335;&#12364;&#20351;&#29992;&#12373;&#12428;&#12427;</span>
+       '(pop-size                       0)          <span style="color: #74af68;">; </span><span style="color: #74af68;">&#12513;&#12540;&#12523;&#12398;&#19978;&#38480;&#12469;&#12452;&#12474;&#12290;0 &#12398;&#22580;&#21512;&#12399;&#19978;&#38480;&#12394;&#12375;&#12290;</span>
+       '(pop-header-only                t)          <span style="color: #74af68;">; </span><span style="color: #74af68;">[c-u s]&#12391;&#12504;&#12483;&#12480;&#12398; &#12415;&#12398;&#12467;&#12500;&#12540;</span>
+       '(dcc                            <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#36820;&#20449;&#26178;&#12395;&#33258;&#20998;&#12398;&#12450;&#12489;&#12524;&#12473;&#12434;dcc&#12395;&#20837;&#12428;&#12427;&#12289;dcc&#12399;&#36865;&#20449;&#12375;&#12383;&#12513;&#12540;&#12523;&#12398;&#12504;&#12483;&#12480;&#12540;&#12395;&#34920;&#31034;&#12373;&#12428;&#12394;&#12356;</span>
+       '(fcc                            <span style="color: #e67128;">"+sent"</span>)    <span style="color: #74af68;">; </span><span style="color: #74af68;">&#36865;&#20449;&#12375;&#12383;&#12513;&#12540;&#12523;&#12398;&#20445;&#23384;&#20808;</span>
+       '(smime-signer                   <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#38651;&#23376;&#32626;&#21517;&#12391;&#20351;&#29992;&#12377;&#12427;&#35388;&#26126;&#26360;id</span>
        '(protect-privacy-always         nil)
-       '(privacy-method                 smime)      <span style="color: #99968b;">; </span><span style="color: #99968b;">&#38651;&#23376;&#32626;&#21517;&#12479;&#12452;&#12503;&#12398;&#25351;&#23450;</span>
+       '(privacy-method                 smime)      <span style="color: #74af68;">; </span><span style="color: #74af68;">&#38651;&#23376;&#32626;&#21517;&#12479;&#12452;&#12503;&#12398;&#25351;&#23450;</span>
        '(draft-privacy-method           smime)
        '(protect-privacy-always-type  smime-signature)
        ))
 
-<span style="color: #99968b;">;; </span><span style="color: #99968b;">&#12450;&#12459;&#12454;&#12531;&#12488;2</span>
+<span style="color: #74af68;">;; </span><span style="color: #74af68;">&#12450;&#12459;&#12454;&#12531;&#12488;2</span>
 (setq my-mew-config-2
       (list
-       '(proto                   <span style="color: #95e454;">"%"</span>)
-       '(name                    <span style="color: #95e454;">"******"</span>)
-       '(user                    <span style="color: #95e454;">"******"</span>)
-       '(mail-domain             <span style="color: #95e454;">"gmail.com"</span>)
-       '(dcc                     <span style="color: #95e454;">"*******@gmail.com"</span>)
+       '(proto                   <span style="color: #e67128;">"%"</span>)
+       '(name                    <span style="color: #e67128;">"******"</span>)
+       '(user                    <span style="color: #e67128;">"******"</span>)
+       '(mail-domain             <span style="color: #e67128;">"gmail.com"</span>)
+       '(dcc                     <span style="color: #e67128;">"*******@gmail.com"</span>)
        '(protect-privacy-always  nil)
        '(ssl-verify-level        0)
-       <span style="color: #99968b;">;; </span><span style="color: #99968b;">smtp&#12469;&#12540;&#12496;&#12540;</span>
-       '(smtp-user               <span style="color: #95e454;">"*******@gmail.com"</span>)
+       <span style="color: #74af68;">;; </span><span style="color: #74af68;">smtp&#12469;&#12540;&#12496;&#12540;</span>
+       '(smtp-user               <span style="color: #e67128;">"*******@gmail.com"</span>)
        '(smtp-auth               t)
        '(smtp-ssl                t)
-       '(smtp-server             <span style="color: #95e454;">"smtp.gmail.com"</span>)
-       '(smtp-ssl-port           <span style="color: #95e454;">"465"</span>)
-       <span style="color: #99968b;">;; </span><span style="color: #99968b;">imap&#12434;&#20351;&#29992;&#12377;&#12427;&#22580;&#21512;</span>
-       '(inbox-folder            <span style="color: #95e454;">"%gmail"</span>)
-       '(imap-user               <span style="color: #95e454;">"******@gmail.com"</span>)
-       '(imap-size               5242880) <span style="color: #99968b;">; </span><span style="color: #99968b;">5m&#20197;&#20869;&#21363;&#26178;&#21463;&#20449;&#12377;&#12427;</span>
+       '(smtp-server             <span style="color: #e67128;">"smtp.gmail.com"</span>)
+       '(smtp-ssl-port           <span style="color: #e67128;">"465"</span>)
+       <span style="color: #74af68;">;; </span><span style="color: #74af68;">imap&#12434;&#20351;&#29992;&#12377;&#12427;&#22580;&#21512;</span>
+       '(inbox-folder            <span style="color: #e67128;">"%gmail"</span>)
+       '(imap-user               <span style="color: #e67128;">"******@gmail.com"</span>)
+       '(imap-size               5242880) <span style="color: #74af68;">; </span><span style="color: #74af68;">5m&#20197;&#20869;&#21363;&#26178;&#21463;&#20449;&#12377;&#12427;</span>
        '(imap-auth               t)
        '(imap-ssl                t)
-       '(imap-ssl-port           <span style="color: #95e454;">"993"</span>)
-       '(imap-server             <span style="color: #95e454;">"imap.gmail.com"</span>)
+       '(imap-ssl-port           <span style="color: #e67128;">"993"</span>)
+       '(imap-server             <span style="color: #e67128;">"imap.gmail.com"</span>)
        ))
 
-<span style="color: #99968b;">;;; </span><span style="color: #99968b;">&#12450;&#12459;&#12454;&#12531;&#12488;3</span>
+<span style="color: #74af68;">;;; </span><span style="color: #74af68;">&#12450;&#12459;&#12454;&#12531;&#12488;3</span>
 (setq my-mew-config-3
       (list
-       '(proto                   <span style="color: #95e454;">"+"</span>)
-       <span style="color: #99968b;">;; </span><span style="color: #99968b;">&#65288;&#20013;&#30053;&#65289;</span>
+       '(proto                   <span style="color: #e67128;">"+"</span>)
+       <span style="color: #74af68;">;; </span><span style="color: #74af68;">&#65288;&#20013;&#30053;&#65289;</span>
 ))
 
-<span style="color: #99968b;">;;; </span><span style="color: #99968b;">&#12450;&#12459;&#12454;&#12531;&#12488;4</span>
+<span style="color: #74af68;">;;; </span><span style="color: #74af68;">&#12450;&#12459;&#12454;&#12531;&#12488;4</span>
 (setq my-mew-config-4
       (list
-       '(proto                   <span style="color: #95e454;">"+"</span>)
-       <span style="color: #99968b;">;; </span><span style="color: #99968b;">&#65288;&#20013;&#30053;&#65289;</span>
+       '(proto                   <span style="color: #e67128;">"+"</span>)
+       <span style="color: #74af68;">;; </span><span style="color: #74af68;">&#65288;&#20013;&#30053;&#65289;</span>
 ))
 
 (setq my-mew-account-list
@@ -102,27 +351,29 @@ mew-init-hookで拡張してみました。
             (append (list 'account3) my-mew-config-3)
             (append (list 'account4) my-mew-config-4)))
 
-<span style="color: #99968b;">;; </span><span style="color: #99968b;">&#12450;&#12459;&#12454;&#12531;&#12488;&#36984;&#25246;&#20966;&#29702;</span>
-(<span style="color: #8ac6f2; font-weight: bold;">defun</span> <span style="color: #cae682;">my-mew-select-account</span> ()
-  (<span style="color: #8ac6f2; font-weight: bold;">let*</span> ((account-name-list (mapcar (<span style="color: #8ac6f2; font-weight: bold;">lambda</span> (x) (pp-to-string (car x))) my-mew-account-list))
-         (selected-account (completing-read <span style="color: #95e454;">"mew account: "</span> account-name-list nil t)))
+(<span style="color: #ffad29; font-weight: bold;">require</span> '<span style="color: #008b8b;">dash</span>)
+
+<span style="color: #74af68;">;; </span><span style="color: #74af68;">&#12450;&#12459;&#12454;&#12531;&#12488;&#36984;&#25246;&#20966;&#29702;</span>
+(<span style="color: #ffad29; font-weight: bold;">defun</span> <span style="color: #00ede1; font-weight: bold;">my-mew-select-account</span> ()
+  (<span style="color: #ffad29; font-weight: bold;">let*</span> ((account-name-list (mapcar (<span style="color: #ffad29; font-weight: bold;">lambda</span> (x) (pp-to-string (car x))) my-mew-account-list))
+         (selected-account (completing-read <span style="color: #e67128;">"mew account: "</span> account-name-list nil t)))
     (message selected-account)
     (setq mew-config-alist
           (append
            (list
             (append (list 'default)
                     (cdr
-                     (car (-filter (<span style="color: #8ac6f2; font-weight: bold;">lambda</span> (mew-config)
+                     (car (-filter (<span style="color: #ffad29; font-weight: bold;">lambda</span> (mew-config)
                                      (string= selected-account
                                               (pp-to-string (car mew-config))))
                                    my-mew-account-list)))))
-           (-filter (<span style="color: #8ac6f2; font-weight: bold;">lambda</span> (mew-config)
+           (-filter (<span style="color: #ffad29; font-weight: bold;">lambda</span> (mew-config)
                       (not
                        (string= selected-account
                                 (pp-to-string (car mew-config)))))
                     my-mew-account-list)))))
 
-<span style="color: #99968b;">;; </span><span style="color: #99968b;">&#36215;&#21205;&#26178;&#12395;&#36208;&#12425;&#12379;&#12427;</span>
+<span style="color: #74af68;">;; </span><span style="color: #74af68;">&#36215;&#21205;&#26178;&#12395;&#36208;&#12425;&#12379;&#12427;</span>
 (add-hook 'mew-init-hook 'my-mew-select-account)
 </pre>
 </div>
@@ -150,6 +401,7 @@ mew-init-hookで拡張してみました。
 <li><a href="#sec-3">3. テスト用プログラム</a></li>
 <li><a href="#sec-4">4. 監視してみる</a></li>
 <li><a href="#sec-5">5. 出力形式</a></li>
+<li><a href="#sec-6">6. 2015/08/05 更新</a></li>
 </ul>
 </div>
 </div>
@@ -182,60 +434,60 @@ mew-init-hookで拡張してみました。
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #73d216;">#</span><span style="color: #73d216;">!/bin/</span><span style="color: #b4fa70;">sh</span>
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
 
-<span style="color: #73d216;">###########################################################################</span>
-<span style="color: #73d216;"># </span><span style="color: #73d216;">jvm_stacksize.sh - take a jvm stack size snapshot</span>
-<span style="color: #73d216;">#</span>
-<span style="color: #73d216;">#    </span><span style="color: #73d216;">Authors: Akira Wakana <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
-<span style="color: #73d216;">#</span>
-<span style="color: #73d216;">#    </span><span style="color: #73d216;">This program is free software: you can redistribute it and/or modify</span>
-<span style="color: #73d216;">#    </span><span style="color: #73d216;">it under the terms of the GNU General Public License as published by</span>
-<span style="color: #73d216;">#    </span><span style="color: #73d216;">the Free Software Foundation, version 3 of the License.</span>
-<span style="color: #73d216;">#</span>
-<span style="color: #73d216;">#    </span><span style="color: #73d216;">This program is distributed in the hope that it will be useful,</span>
-<span style="color: #73d216;">#    </span><span style="color: #73d216;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span style="color: #73d216;">#    </span><span style="color: #73d216;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span style="color: #73d216;">#    </span><span style="color: #73d216;">GNU General Public License for more details.</span>
-<span style="color: #73d216;">#</span>
-<span style="color: #73d216;">#    </span><span style="color: #73d216;">You should have received a copy of the GNU General Public License</span>
-<span style="color: #73d216;">#    </span><span style="color: #73d216;">along with this program.  If not, see http://www.gnu.org/licenses</span>
-<span style="color: #73d216;">#</span>
-<span style="color: #73d216;"># </span><span style="color: #73d216;">Usage:</span>
-<span style="color: #73d216;">#    </span><span style="color: #73d216;">$jvm_stacksize.sh &lt;JVM ProcessID&gt;</span>
-<span style="color: #73d216;">###########################################################################</span>
+<span style="color: #74af68;">###########################################################################</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">jvm_stacksize.sh - take a jvm stack size snapshot</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">Authors: Akira Wakana <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">GNU General Public License for more details.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">along with this program.  If not, see http://www.gnu.org/licenses</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">Usage:</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">$jvm_stacksize.sh &lt;JVM ProcessID&gt;</span>
+<span style="color: #74af68;">###########################################################################</span>
 
-<span style="color: #fcaf3e;">PID</span>=$<span style="color: #fcaf3e;">1</span>
+<span style="color: #dbdb95;">PID</span>=$<span style="color: #dbdb95;">1</span>
 
-ps ${<span style="color: #fcaf3e;">PID</span>} | grep [j]ava &gt; /dev/null || {
-    <span style="color: #ad7fa8;">echo</span> <span style="color: #e9b96e;">"-----------------------------------------------------------------------"</span>
+ps ${<span style="color: #dbdb95;">PID</span>} | grep [j]ava &gt; /dev/null || {
+    <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"-----------------------------------------------------------------------"</span>
     ps -ef  | grep [j]ava
-    <span style="color: #ad7fa8;">echo</span> <span style="color: #e9b96e;">"-----------------------------------------------------------------------"</span>
-    <span style="color: #ad7fa8;">echo</span> -n <span style="color: #e9b96e;">"please input the java process id: "</span>
-    <span style="color: #ad7fa8;">read</span> PID
+    <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"-----------------------------------------------------------------------"</span>
+    <span style="color: #23d7d7;">echo</span> -n <span style="color: #e67128;">"please input the java process id: "</span>
+    <span style="color: #23d7d7;">read</span> PID
 }
 
-<span style="color: #ad7fa8;">printf</span> <span style="color: #e9b96e;">"[ PID ]\t[StackSize(kB)]\t[GuardPage(kB)]\t[UsedSize(kB)]\t[Thread Name]\n"</span>
+<span style="color: #23d7d7;">printf</span> <span style="color: #e67128;">"[ PID ]\t[StackSize(kB)]\t[GuardPage(kB)]\t[UsedSize(kB)]\t[Thread Name]\n"</span>
 
-<span style="color: #73d216;"># </span><span style="color: #73d216;">jstack&#12398;&#20986;&#21147;&#32080;&#26524;&#12363;&#12425;&#12473;&#12524;&#12483;&#12489;ID&#12392;&#21517;&#21069;&#12434;&#25277;&#20986;&#12377;&#12427;</span>
-jstack ${<span style="color: #fcaf3e;">PID</span>} | grep nid | sed -e <span style="color: #e9b96e;">"s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"</span> | sort | <span style="color: #b4fa70;">while </span><span style="color: #ad7fa8;">read</span> line
-<span style="color: #b4fa70;">do</span>
-    <span style="color: #73d216;"># </span><span style="color: #73d216;">&#12473;&#12524;&#12483;&#12489;ID&#12434;&#20999;&#12426;&#20986;&#12377;</span>
-    <span style="color: #fcaf3e;">pid_hex</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $1}'`</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">jstack&#12398;&#20986;&#21147;&#32080;&#26524;&#12363;&#12425;&#12473;&#12524;&#12483;&#12489;ID&#12392;&#21517;&#21069;&#12434;&#25277;&#20986;&#12377;&#12427;</span>
+jstack ${<span style="color: #dbdb95;">PID</span>} | grep nid | sed -e <span style="color: #e67128;">"s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"</span> | sort | <span style="color: #ffad29; font-weight: bold;">while </span><span style="color: #23d7d7;">read</span> line
+<span style="color: #ffad29; font-weight: bold;">do</span>
+    <span style="color: #74af68;"># </span><span style="color: #74af68;">&#12473;&#12524;&#12483;&#12489;ID&#12434;&#20999;&#12426;&#20986;&#12377;</span>
+    <span style="color: #dbdb95;">pid_hex</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $1}'`</span>
 
-    <span style="color: #73d216;"># </span><span style="color: #73d216;">&#12473;&#12524;&#12483;&#12489;&#21517;&#12434;&#20999;&#12426;&#20986;&#12377;</span>
-    <span style="color: #fcaf3e;">thread_name</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $2}'`</span>
+    <span style="color: #74af68;"># </span><span style="color: #74af68;">&#12473;&#12524;&#12483;&#12489;&#21517;&#12434;&#20999;&#12426;&#20986;&#12377;</span>
+    <span style="color: #dbdb95;">thread_name</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $2}'`</span>
 
-    <span style="color: #73d216;"># </span><span style="color: #73d216;">&#12473;&#12524;&#12483;&#12489;ID&#12434;10&#36914;&#25968;&#12395;&#22793;&#25563;</span>
-    <span style="color: #fcaf3e;">pid</span>=<span style="color: #fa8072;">`printf '%d\n' ${pid_hex}`</span>
+    <span style="color: #74af68;"># </span><span style="color: #74af68;">&#12473;&#12524;&#12483;&#12489;ID&#12434;10&#36914;&#25968;&#12395;&#22793;&#25563;</span>
+    <span style="color: #dbdb95;">pid</span>=<span style="color: #fa8072;">`printf '%d\n' ${pid_hex}`</span>
 
-    <span style="color: #73d216;"># </span><span style="color: #73d216;">/proc/&lt;pid&gt;/smaps &#12501;&#12449;&#12452;&#12523;&#12363;&#12425;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12289;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#12434;&#21462;&#24471;&#12377;&#12427;</span>
-    <span style="color: #fcaf3e;">guard_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -B16 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
-    <span style="color: #fcaf3e;">stack_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -A15 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
-    <span style="color: #fcaf3e;">used_size</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps  | grep -A15 "stack:${pid}" | grep -e "^Rss:" | awk '{print $2}'`</span>
-    <span style="color: #fcaf3e;">stack_size</span>=<span style="color: #fa8072;">`expr ${guard_page} + ${stack_page}`</span>
-    <span style="color: #ad7fa8;">printf</span> <span style="color: #e9b96e;">"%7d\t%15s\t%15s\t%14s\t%s\n"</span> <span style="color: #e9b96e;">"${pid}"</span> <span style="color: #e9b96e;">"${stack_size}"</span> <span style="color: #e9b96e;">"${guard_page}"</span> <span style="color: #e9b96e;">"${used_size}"</span> <span style="color: #e9b96e;">"${thread_name}"</span>
-<span style="color: #b4fa70;">done</span>
+    <span style="color: #74af68;"># </span><span style="color: #74af68;">/proc/&lt;pid&gt;/smaps &#12501;&#12449;&#12452;&#12523;&#12363;&#12425;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12289;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#12434;&#21462;&#24471;&#12377;&#12427;</span>
+    <span style="color: #dbdb95;">guard_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -B16 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
+    <span style="color: #dbdb95;">stack_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -A15 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
+    <span style="color: #dbdb95;">used_size</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps  | grep -A15 "stack:${pid}" | grep -e "^Rss:" | awk '{print $2}'`</span>
+    <span style="color: #dbdb95;">stack_size</span>=<span style="color: #fa8072;">`expr ${guard_page} + ${stack_page}`</span>
+    <span style="color: #23d7d7;">printf</span> <span style="color: #e67128;">"%7d\t%15s\t%15s\t%14s\t%s\n"</span> <span style="color: #e67128;">"${pid}"</span> <span style="color: #e67128;">"${stack_size}"</span> <span style="color: #e67128;">"${guard_page}"</span> <span style="color: #e67128;">"${used_size}"</span> <span style="color: #e67128;">"${thread_name}"</span>
+<span style="color: #ffad29; font-weight: bold;">done</span>
 </pre>
 </div>
 </div>
@@ -246,35 +498,35 @@ jstack ${<span style="color: #fcaf3e;">PID</span>} | grep nid | sed -e <span sty
 <div class="outline-text-2" id="text-3">
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #b4fa70;">package</span> <span style="color: #e6a8df;">test01</span>;
+<pre class="src src-java"><span style="color: #ffad29; font-weight: bold;">package</span> <span style="color: #008b8b;">test01</span>;
 
-<span style="color: #b4fa70;">public</span> <span style="color: #b4fa70;">class</span> <span style="color: #8cc4ff;">TestTask</span> <span style="color: #b4fa70;">implements</span> <span style="color: #8cc4ff;">Runnable</span> {
+<span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #ffad29; font-weight: bold;">class</span> <span style="color: #34cae2;">TestTask</span> <span style="color: #ffad29; font-weight: bold;">implements</span> <span style="color: #34cae2;">Runnable</span> {
 
-    <span style="color: #e6a8df;">@Override</span>
-    <span style="color: #b4fa70;">public</span> <span style="color: #8cc4ff;">void</span> <span style="color: #fce94f;">run</span>() {
+    <span style="color: #008b8b;">@Override</span>
+    <span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">run</span>() {
         add1(1);
     }
 
-    <span style="color: #b4fa70;">private</span> <span style="color: #8cc4ff;">int</span> <span style="color: #fce94f;">add1</span>(<span style="color: #8cc4ff;">int</span> <span style="color: #fcaf3e;">a</span>) {
-        <span style="color: #b4fa70;">try</span> {
+    <span style="color: #ffad29; font-weight: bold;">private</span> <span style="color: #34cae2;">int</span> <span style="color: #00ede1; font-weight: bold;">add1</span>(<span style="color: #34cae2;">int</span> <span style="color: #dbdb95;">a</span>) {
+        <span style="color: #ffad29; font-weight: bold;">try</span> {
             Thread.sleep(50);
-        } <span style="color: #b4fa70;">catch</span> (<span style="color: #8cc4ff;">InterruptedException</span> <span style="color: #fcaf3e;">e</span>) {
+        } <span style="color: #ffad29; font-weight: bold;">catch</span> (<span style="color: #34cae2;">InterruptedException</span> <span style="color: #dbdb95;">e</span>) {
             e.printStackTrace();
         }
 
-        <span style="color: #b4fa70;">return</span> add2(a++);
+        <span style="color: #ffad29; font-weight: bold;">return</span> add2(a++);
     }
 
-    <span style="color: #b4fa70;">private</span> <span style="color: #8cc4ff;">int</span> <span style="color: #fce94f;">add2</span>(<span style="color: #8cc4ff;">int</span> <span style="color: #fcaf3e;">a</span>) {
-        <span style="color: #73d216;">//</span><span style="color: #73d216;">add1 -&gt; add2 --&gt; add1 &#28961;&#38480;&#12523;&#12540;&#12503;&#12398;&#29366;&#24907;&#12391;</span>
-        <span style="color: #73d216;">//</span><span style="color: #73d216;">&#12473;&#12479;&#12483;&#12463;&#12434;&#39135;&#12356;&#28528;&#12377;</span>
-        <span style="color: #b4fa70;">return</span> add1(a--);
+    <span style="color: #ffad29; font-weight: bold;">private</span> <span style="color: #34cae2;">int</span> <span style="color: #00ede1; font-weight: bold;">add2</span>(<span style="color: #34cae2;">int</span> <span style="color: #dbdb95;">a</span>) {
+        <span style="color: #74af68;">//</span><span style="color: #74af68;">add1 -&gt; add2 --&gt; add1 &#28961;&#38480;&#12523;&#12540;&#12503;&#12398;&#29366;&#24907;&#12391;</span>
+        <span style="color: #74af68;">//</span><span style="color: #74af68;">&#12473;&#12479;&#12483;&#12463;&#12434;&#39135;&#12356;&#28528;&#12377;</span>
+        <span style="color: #ffad29; font-weight: bold;">return</span> add1(a--);
     }
 
-    <span style="color: #b4fa70;">public</span> <span style="color: #b4fa70;">static</span> <span style="color: #8cc4ff;">void</span> <span style="color: #fce94f;">main</span>(<span style="color: #8cc4ff;">String</span>[] <span style="color: #fcaf3e;">args</span>) <span style="color: #b4fa70;">throws</span> <span style="color: #8cc4ff;">Exception</span> {
+    <span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #ffad29; font-weight: bold;">static</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">main</span>(<span style="color: #34cae2;">String</span>[] <span style="color: #dbdb95;">args</span>) <span style="color: #ffad29; font-weight: bold;">throws</span> <span style="color: #34cae2;">Exception</span> {
 
-        <span style="color: #8cc4ff;">Thread</span> <span style="color: #fcaf3e;">t1</span> = <span style="color: #b4fa70;">new</span> <span style="color: #8cc4ff;">Thread</span>(<span style="color: #b4fa70;">new</span> <span style="color: #8cc4ff;">TestTask</span>());
-        <span style="color: #8cc4ff;">Thread</span> <span style="color: #fcaf3e;">t2</span> = <span style="color: #b4fa70;">new</span> <span style="color: #8cc4ff;">Thread</span>(<span style="color: #b4fa70;">new</span> <span style="color: #8cc4ff;">TestTask</span>());
+        <span style="color: #34cae2;">Thread</span> <span style="color: #dbdb95;">t1</span> = <span style="color: #ffad29; font-weight: bold;">new</span> <span style="color: #34cae2;">Thread</span>(<span style="color: #ffad29; font-weight: bold;">new</span> <span style="color: #34cae2;">TestTask</span>());
+        <span style="color: #34cae2;">Thread</span> <span style="color: #dbdb95;">t2</span> = <span style="color: #ffad29; font-weight: bold;">new</span> <span style="color: #34cae2;">Thread</span>(<span style="color: #ffad29; font-weight: bold;">new</span> <span style="color: #34cae2;">TestTask</span>());
         t1.start();
         t2.start();
 
@@ -302,23 +554,23 @@ jstack ${<span style="color: #fcaf3e;">PID</span>} | grep nid | sed -e <span sty
 <div class="outline-text-2" id="text-5">
 <pre class="example">
 [ PID ]	[StackSize(kB)]	[GuardPage(kB)]	[UsedSize(kB)]	[Thread Name]
-  16559	           1044	             12	           116	main
-  16560	           1112	              4	            92	GC task thread#0 (ParallelGC)
-  16561	           1028	              4	             8	GC task thread#1 (ParallelGC)
-  16562	           1028	              4	             8	GC task thread#2 (ParallelGC)
-  16563	           1028	              4	             8	GC task thread#3 (ParallelGC)
-  16564	          12336	              4	            56	VM Thread
-  16565	           1028	             12	            88	Reference Handler
-  16566	           1028	             12	            88	Finalizer
-  16567	           1028	             12	            92	Signal Dispatcher
-  16568	           1028	             12	            20	C2 CompilerThread0
-  16569	           1028	             12	             8	C2 CompilerThread1
-  16570	           1028	             12	            12	C1 CompilerThread2
-  16571	           1028	             12	             8	Service Thread
-  16572	           1028	              4	             8	VM Periodic Task Thread
-  16573	           1028	             12	           428	Thread-0
-  16583	           1028	             12	           228	Thread-1
-  16613	           1028	             12	            12	Attach Listener
+  16559            1044              12            116	main
+  16560            1112               4             92	GC task thread#0 (ParallelGC)
+  16561            1028               4              8	GC task thread#1 (ParallelGC)
+  16562            1028               4              8	GC task thread#2 (ParallelGC)
+  16563            1028               4              8	GC task thread#3 (ParallelGC)
+  16564           12336               4             56	VM Thread
+  16565            1028              12             88	Reference Handler
+  16566            1028              12             88	Finalizer
+  16567            1028              12             92	Signal Dispatcher
+  16568            1028              12             20	C2 CompilerThread0
+  16569            1028              12              8	C2 CompilerThread1
+  16570            1028              12             12	C1 CompilerThread2
+  16571            1028              12              8	Service Thread
+  16572            1028               4              8	VM Periodic Task Thread
+  16573            1028              12            428	Thread-0
+  16583            1028              12            228	Thread-1
+  16613            1028              12             12	Attach Listener
 </pre>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -343,17 +595,17 @@ jstack ${<span style="color: #fcaf3e;">PID</span>} | grep nid | sed -e <span sty
 
 <tr>
 <td class="left">StackSize</td>
-<td class="left">Javaスタック＋Nativeスタックのサイズ</td>
+<td class="left">Javaスタック＋Nativeスタックのサイズ (kB)</td>
 </tr>
 
 <tr>
 <td class="left">GuardPage</td>
-<td class="left">スタック保護ページ</td>
+<td class="left">スタック保護ページ (kB)</td>
 </tr>
 
 <tr>
 <td class="left">UsedSize</td>
-<td class="left">実際使った物理メモリサイズ</td>
+<td class="left">実際使った物理メモリサイズ (kB)</td>
 </tr>
 
 <tr>
@@ -365,6 +617,153 @@ jstack ${<span style="color: #fcaf3e;">PID</span>} | grep nid | sed -e <span sty
 
 <p>
 バッチリ！便利な道具が１つ増えました。
+</p>
+</div>
+</div>
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> 2015/08/05 更新</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+前の実装は <code>watch</code> コマンドでスクリプトを繰り返し実行させスタックサイズの監視をしてい
+たのですが、繰り返しサイクルで毎回jstackでスレッドダンプを取得しているため若干JVMにオー
+バヘッドがかかる。特にスレッドを多数起動されたアプリケーションサーバの場合性能へ影響
+が無視できないので、少しスクリプトの実装シナリオを変えて改善してみました。
+</p>
+
+<p>
+基本コンセプトは
+</p>
+
+<ol class="org-ol">
+<li><code>jstack</code> を１回のみ実行する、その結果(スレッドダンプ)をtmpファイルで保持する
+</li>
+<li><code>ps -H &lt;PID&gt;</code> でスレッドIDを取得して、1のスレッドダンプからスレッド名を引き
+</li>
+<li>スレッドダンプから該当するものがない場合、スレッドダンプが古いと判断し再度
+<code>jstack</code> で新しいスレッドダンプを取る
+</li>
+</ol>
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+<span style="color: #74af68;">###########################################################################</span>
+<span style="color: #74af68;"># </span><span style="color: #74af68;">jvm_stacksize.sh - take jvm stack size snapshot</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">Authors: Akira Wakana <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">GNU General Public License for more details.</span>
+<span style="color: #74af68;">#</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #74af68;">#    </span><span style="color: #74af68;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/&gt;.
+#
+# Usage:
+#    $jvm_stacksize.sh &lt;JVM ProcessID">&lt;http://www.gnu.org/licenses/&gt;.</a></span><a href="http://www.gnu.org/licenses/&gt;.
+#
+# Usage:
+#    $jvm_stacksize.sh &lt;JVM ProcessID">
+</a><span style="color: #74af68;"><a href="http://www.gnu.org/licenses/&gt;.
+#
+# Usage:
+#    $jvm_stacksize.sh &lt;JVM ProcessID">#</a></span><a href="http://www.gnu.org/licenses/&gt;.
+#
+# Usage:
+#    $jvm_stacksize.sh &lt;JVM ProcessID">
+</a><span style="color: #74af68;"><a href="http://www.gnu.org/licenses/&gt;.
+#
+# Usage:
+#    $jvm_stacksize.sh &lt;JVM ProcessID"># </a></span><span style="color: #74af68;"><a href="http://www.gnu.org/licenses/&gt;.
+#
+# Usage:
+#    $jvm_stacksize.sh &lt;JVM ProcessID">Usage:</a></span><a href="http://www.gnu.org/licenses/&gt;.
+#
+# Usage:
+#    $jvm_stacksize.sh &lt;JVM ProcessID">
+</a><span style="color: #74af68;"><a href="http://www.gnu.org/licenses/&gt;.
+#
+# Usage:
+#    $jvm_stacksize.sh &lt;JVM ProcessID">#    </a></span><span style="color: #74af68;"><a href="http://www.gnu.org/licenses/&gt;.
+#
+# Usage:
+#    $jvm_stacksize.sh &lt;JVM ProcessID">$jvm_stacksize.sh &lt;JVM ProcessID&gt;</a></span>
+<span style="color: #74af68;">###########################################################################</span>
+
+<span style="color: #00ede1; font-weight: bold;">print_stacksize</span>()
+{
+    rm -rf ${<span style="color: #dbdb95;">tmpdir</span>}/stacksize.txt
+    <span style="color: #23d7d7;">printf</span> <span style="color: #e67128;">"[ PID ]\t[StackSize(kB)]\t[GuardPage(kB)]\t[UsedSize(kB)]\t[Thread Name]\n"</span>
+    ps h -L --format=lwp ${<span style="color: #dbdb95;">PID</span>} | grep -v <span style="color: #e67128;">"${PID}"</span> | <span style="color: #ffad29; font-weight: bold;">while </span><span style="color: #23d7d7;">read</span> pid
+    <span style="color: #ffad29; font-weight: bold;">do</span>
+        <span style="color: #74af68;"># </span><span style="color: #74af68;">&#12473;&#12524;&#12483;&#12489;ID</span>
+        <span style="color: #dbdb95;">pid_hex</span>=<span style="color: #fa8072;">`printf '%#x\n' $pid`</span>
+
+        <span style="color: #74af68;"># </span><span style="color: #74af68;">&#12473;&#12524;&#12483;&#12489;&#21517;&#12434;&#20999;&#12426;&#20986;&#12377;</span>
+        <span style="color: #dbdb95;">threadinfo</span>=<span style="color: #fa8072;">`cat ${threadtdump} | fgrep " nid=${pid_hex} " | sed -e "s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"`</span>
+        <span style="color: #ffad29; font-weight: bold;">if</span> [ <span style="color: #e67128;">"${threadinfo}"</span> == <span style="color: #e67128;">""</span> ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+            jstack ${<span style="color: #dbdb95;">PID</span>} &gt; ${<span style="color: #dbdb95;">threadtdump</span>}
+            <span style="color: #dbdb95;">threadinfo</span>=<span style="color: #fa8072;">`cat ${threadtdump} | fgrep " nid=${pid_hex} " | sed -e "s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"`</span>
+        <span style="color: #ffad29; font-weight: bold;">fi</span>
+        <span style="color: #dbdb95;">thread_name</span>=<span style="color: #fa8072;">`echo "${threadinfo}" | awk -F"," '{print $2}'`</span>
+
+        <span style="color: #74af68;"># </span><span style="color: #74af68;"># /proc/&lt;pid&gt;/smaps &#12501;&#12449;&#12452;&#12523;&#12363;&#12425;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12289;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#12434;&#21462;&#24471;&#12377;&#12427;</span>
+        <span style="color: #dbdb95;">guard_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -B16 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
+        <span style="color: #dbdb95;">stack_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -A15 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
+        <span style="color: #dbdb95;">used_size</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps  | grep -A15 "stack:${pid}" | grep -e "^Rss:" | awk '{print $2}'`</span>
+        <span style="color: #dbdb95;">stack_size</span>=<span style="color: #fa8072;">`expr ${guard_page} + ${stack_page}`</span>
+        <span style="color: #23d7d7;">printf</span> <span style="color: #e67128;">"%7d\t%15s\t%15s\t%14s\t%s\n"</span> <span style="color: #e67128;">"${pid}"</span> <span style="color: #e67128;">"${stack_size}"</span> <span style="color: #e67128;">"${guard_page}"</span> <span style="color: #e67128;">"${used_size}"</span> <span style="color: #e67128;">"${thread_name}"</span>
+    <span style="color: #ffad29; font-weight: bold;">done</span> &gt; ${<span style="color: #dbdb95;">tmpdir</span>}/stacksize.txt
+    sort -r -k4,4 ${<span style="color: #dbdb95;">tmpdir</span>}/stacksize.txt
+}
+
+<span style="color: #00ede1; font-weight: bold;">finally_func</span>() {
+    <span style="color: #dbdb95;">RET</span>=$<span style="color: #dbdb95;">?</span>
+    <span style="color: #ffad29; font-weight: bold;">if</span> [ -d ${<span style="color: #dbdb95;">tmpdir</span>} ]; <span style="color: #ffad29; font-weight: bold;">then</span>
+        rm -rf ${<span style="color: #dbdb95;">tmpdir</span>}
+    <span style="color: #ffad29; font-weight: bold;">fi</span>
+    <span style="color: #ffad29; font-weight: bold;">exit</span> ${<span style="color: #dbdb95;">RET</span>}
+}
+
+<span style="color: #ffad29; font-weight: bold;">trap</span> finally_func EXIT
+
+<span style="color: #dbdb95;">PID</span>=$<span style="color: #dbdb95;">1</span>
+
+ps ${<span style="color: #dbdb95;">PID</span>} | grep [j]ava &gt; /dev/null || {
+    <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"-----------------------------------------------------------------------"</span>
+    ps -ef  | grep [j]ava
+    <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"-----------------------------------------------------------------------"</span>
+    <span style="color: #23d7d7;">echo</span> -n <span style="color: #e67128;">"please input the java process id: "</span>
+    <span style="color: #23d7d7;">read</span> PID
+}
+
+<span style="color: #23d7d7;">export</span> PID
+
+<span style="color: #23d7d7;">export</span> <span style="color: #dbdb95;">tmpdir</span>=<span style="color: #fa8072;">`mktemp -d`</span>
+
+<span style="color: #23d7d7;">export</span> <span style="color: #dbdb95;">threadtdump</span>=${<span style="color: #dbdb95;">tmpdir</span>}/${<span style="color: #dbdb95;">PID</span>}.tdump
+
+jstack ${<span style="color: #dbdb95;">PID</span>} &gt; ${<span style="color: #dbdb95;">threadtdump</span>}
+
+<span style="color: #23d7d7;">export</span> -f print_stacksize
+
+watch <span style="color: #e67128;">"bash -c print_stacksize"</span>
+
+rm -rf ${<span style="color: #dbdb95;">tmpdir</span>}
+</pre>
+</div>
+
+<video controls>
+   <source src="video/2015-08-05_jvm_stacksize1.mp4" />
+</video>
+
+<p>
+一般的なアプリでは実行中スレッドの数が頻繁に変わらないので、これで満足しています。;-)
 </p>
 </div>
 </div>
@@ -7173,1631 +7572,6 @@ $ sudo userdel zabbix
 <li><a href="http://www.sraoss.co.jp/technology/zabbix/introduction/01-firststep.php">第 1 回 Zabbix を動かしてみよう</a>
 </li>
 <li><a href="http://tech-sketch.jp/2011/11/osszabbix1.html">OSS統合監視ツール「Zabbix」を利用して大規模環境監視(1)</a>
-</li>
-</ul>
-</div>
-</div>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[調査]JBossAS7のソケット操作タイムアウト値について]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html"/>
-    <updated>2014-10-08T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[調査]jbossas7のソケット操作タイムアウト値について</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. DEFAULT_CONNECTION_TIMEOUTオプションの役割</a></li>
-<li><a href="#sec-2">2. JBossASの実装</a></li>
-<li><a href="#sec-3">3. タイムアウト時の挙動</a>
-<ul>
-<li><a href="#sec-3-1">3.1. HTTPヘッダー受信途中タイムアウトの場合</a></li>
-<li><a href="#sec-3-2">3.2. リクエスト本文受信途中タイムアウトの場合</a></li>
-</ul>
-</li>
-<li><a href="#sec-4">4. 注意書き</a></li>
-<li><a href="#sec-5">5. 参考リンク</a></li>
-</ul>
-</div>
-</div>
-<p>
-JBossAS の起動オプション <code>org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT</code> につい
-て誤解があったので、メモしておきます。
-</p>
-
-<p>
-まず、ドキュメントの説明。デフォルトタイムアウト値が60秒ですね。
-</p>
-<pre class="example">
-org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT
-Default socket timeout. The default value is 60000 ms.
-</pre>
-<p>
-説明だけでよく分からない、最初はサーバサイトワーカスレッドの処理時間タイムアウト値
-と理解しました。
-</p>
-
-<p>
-テストアプリでタイムアウト時の動作を確認する。
-</p>
-<pre class="example">
-+----------+            +----------------+
-| SoapUI   +------------+  テストアプリ  |
-+----------+            |                |
-                        +----------------+
-                        |  JBossAS 7.x   |
-                        +----------------+
-</pre>
-<p>
-SoapUIのリードタイムアウトを120秒に変更する、テストアプリに <code>Thread.sleep(70 * 1000)</code>
-コードを仕込んで処理時間を長くする。これでタイムアウトになると考えたのですが、結果的に
-タイムアウトせず、正常なレスポンスでした。これで、 <code>DEFAULT_CONNECTION_TIMEOUT</code> はワー
-カスレッドのタイムアウト値ではないことが分かりました。
-</p>
-
-<p>
-説明文にソケットのタイムアウト値であることが書かれたので <code>telnet</code> でソケット通信の各
-stepの処理時間をあえて長くして動作状況を観測してみました。
-</p>
-
-<ol class="org-ol">
-<li>telnetでコネクションを貼る
-</li>
-<li>ヘッダを途中まで送信する
-</li>
-<li>60秒待つこと
-</li>
-</ol>
-
-<pre class="example">
-$ telnet localhost 8080
-Trying 127.0.0.1...
-Connected to localhost.
-Escape character is '^]'.
-POST http://localhost:8080/testapp/HelloWorld HTTP/1.1
-Connection: close
-Accept-Encoding: gzip,deflate
-Content-Type: text/xml;charset=UTF-8
-SOAPAction: "sayHello"
-Content-Length: 318
-Host: localhost:8080
-★ここで60秒を待つ
-Connection closed by foreign host.
-</pre>
-
-<p>
-step3のところで60秒後、サーバからfinパケットが送出されてコネクションが切れた。
-<code>DEFAULT_CONNECTION_TIMEOUT</code> パラメータの意味が少し掴みました。
-</p>
-
-<p>
-少し掘り下げて見たいので、コードリーディングして実装の概要を以下に紹介します。
-</p>
-
-<p>
-<!-- more -->
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> DEFAULT_CONNECTION_TIMEOUTオプションの役割</h2>
-<div class="outline-text-2" id="text-1">
-<p>
-JBossASのJava起動オプションで指定する
-<code>-Dorg.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT=xxxxx</code> オプションの値は最終的に
-ソケット操作のブロックタイムアウト値 <code>java.net.ServerSocket.setSoTimeout(xx)</code> に反映さ
-れる。
-</p>
-
-<p>
-サーバ側で以下のソケット操作でブロックされる時間が指定時間より超えるとタイムアウトさせ
-る機能です。
-</p>
-<pre class="example">
-ServerSocket.accept();
-SocketInputStream.read();
-DatagramSocket.receive();
-</pre>
-
-<p>
-例えば、HTTPヘッダ受信途中クライアント側がストール状態になり、
-<code>SocketInputStream.read()</code> 処理がずっと待ち続けるには行けないので（FDのリソース枯渇に
-なるかも知らない）、タイムアウトさせる必要があります。
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> JBossASの実装</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-<code>org.apache.coyote.http11.Constants</code> にデフォルト値が60秒で定義されている。
-</p>
-<div class="org-src-container">
-
-<pre class="src src-java"><span style="color: #b4fa70;">public</span> <span style="color: #b4fa70;">final</span> <span style="color: #b4fa70;">class</span> <span style="color: #8cc4ff;">Constants</span> {
-    ...............
-    <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;&#12371;&#12371;&#12391;Java&#12458;&#12503;&#12471;&#12519;&#12531;&#12363;&#12425;&#20516;&#12434;&#21442;&#29031;&#12375;&#12390;&#12356;&#12427;</span>
-    <span style="color: #b4fa70;">public</span> <span style="color: #b4fa70;">static</span> <span style="color: #b4fa70;">final</span> <span style="color: #8cc4ff;">int</span> DEFAULT_CONNECTION_TIMEOUT =
-            Integer.valueOf(System.getProperty(<span style="color: #e9b96e;">"org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT"</span>, <span style="color: #e9b96e;">"60000"</span>)).intValue();
-    .............
-</pre>
-</div>
-
-<p>
-この値は以下の流れで、 <code>JIoEndpoint</code> クラスの <code>soTimeout</code> 属性に反映される。
-</p>
-<pre class="example">
-1.org.jboss.as.web.WebConnectorService.start()
-2.  org.apache.catalina.connector.Connectorのコンストラクタ処理
-3.    apache.coyote.http11.Http11Protocolのコンストラクタ処理
-4.      org.apache.tomcat.util.net.JIoEndpoint.setSoTimeout(xx)
-</pre>
-
-<p>
-<code>acceptor</code> スレッドで新規コネクションをacceptしワーカスレッドに渡した後にワーカスレッ
-ドの <code>run</code> 関数内 <code>java.net.ServerSocket.setSoTimeout(xx)</code> 関数を呼び出し、値を設定す
-る。具体的な流れは以下となります。
-</p>
-
-<pre class="example">
-1. org.apache.tomcat.util.net.JIoEndpoint.Acceptor.run()
-2.   org.apache.tomcat.util.net.JIoEndpoint.processSocket(socket)
-3.     ★ここで分岐がある、別途検証する
-4.     org.apache.tomcat.util.net.JIoEndpoint.Workerが起動される
-5.       org.apache.tomcat.util.net.JIoEndpoint.Worker.run()
-6.         org.apache.tomcat.util.net.JIoEndpoint.setSocketOptions(socket)
-7.           socket.setSoTimeout(soTimeout);
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> タイムアウト時の挙動</h2>
-<div class="outline-text-2" id="text-3">
-</div><div id="outline-container-sec-3-1" class="outline-3">
-<h3 id="sec-3-1"><span class="section-number-3">3.1</span> HTTPヘッダー受信途中タイムアウトの場合</h3>
-<div class="outline-text-3" id="text-3-1">
-<p>
-Cookiesが大きいの場合、HTTPヘッダー電文が複数パケットに分割する可能性が高い。
-ネットワーク障害でHTTPヘッダー受信途中でタイムアウトが起きた場合サーバからFINパケット
-よりコネクションが切断される。
-</p>
-
-<p>
-以下はHTTPヘッダー受信処理のコードの抜粋です。タイムアウトが起きた場合★３の部分が実
-行される。 エラーログを吐かずに処理が終了してしまう。
-</p>
-
-<p>
-<a href="http://anonsvn.jboss.org/repos/jbossweb/tags/JBOSSWEB_7_2_2_FINAL/src/main/java/org/apache/coyote/http11/Http11Processor.java">org.apache.coyote.http11.Http11Processor</a>
-</p>
-<div class="org-src-container">
-
-<pre class="src src-java"><span style="color: #e9b96e;">/**</span>
-<span style="color: #e9b96e;"> * Process pipelined HTTP requests on the specified socket.</span>
-<span style="color: #e9b96e;"> *</span>
-<span style="color: #e9b96e;"> * </span><span style="color: #e6a8df;">@param</span><span style="color: #e9b96e;"> socket Socket from which the HTTP requests will be read</span>
-<span style="color: #e9b96e;"> *               and the HTTP responses will be written.</span>
-<span style="color: #e9b96e;"> *</span>
-<span style="color: #e9b96e;"> * </span><span style="color: #e6a8df;">@throws</span><span style="color: #e9b96e;"> IOException error during an I/O operation</span>
-<span style="color: #e9b96e;"> */</span>
-<span style="color: #b4fa70;">public</span> <span style="color: #8cc4ff;">SocketState</span> <span style="color: #fce94f;">process</span>(<span style="color: #8cc4ff;">Socket</span> <span style="color: #fcaf3e;">socket</span>)
-    <span style="color: #b4fa70;">throws</span> <span style="color: #8cc4ff;">IOException</span> {
-    <span style="color: #8cc4ff;">RequestInfo</span> <span style="color: #fcaf3e;">rp</span> = request.getRequestProcessor();
-    rp.setStage(<span style="color: #e6a8df;">org</span>.<span style="color: #e6a8df;">apache</span>.<span style="color: #e6a8df;">coyote</span>.<span style="color: #e6a8df;">Constants</span>.STAGE_PARSE);
-
-    <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;&#9733;&#9733;&#65296; &#12356;&#12429;&#12356;&#12429;&#30465;&#30053;&#12377;&#12427;</span>
-
-    <span style="color: #b4fa70;">while</span> (!error &amp;&amp; keepAlive &amp;&amp; !event) {
-
-        <span style="color: #73d216;">// </span><span style="color: #73d216;">Parsing the request header</span>
-        <span style="color: #b4fa70;">try</span> {
-            <span style="color: #b4fa70;">if</span> (!disableUploadTimeout &amp;&amp; keptAlive) {
-                <span style="color: #b4fa70;">if</span> (keepAliveTimeout &gt; 0) {
-                    socket.setSoTimeout(keepAliveTimeout);
-                }
-                <span style="color: #b4fa70;">else</span> <span style="color: #b4fa70;">if</span> (soTimeout &gt; 0) {
-                    socket.setSoTimeout(soTimeout);
-                }
-            }
-
-            <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;&#9733;&#9733;&#65297; HTTP&#12504;&#12483;&#12480;&#12540;&#65297;&#34892;&#30446;&#12398;&#21463;&#20449;&#20966;&#29702;</span>
-            inputBuffer.parseRequestLine();
-            request.setStartTime(System.currentTimeMillis());
-            keptAlive = <span style="color: #e6a8df;">true</span>;
-            <span style="color: #b4fa70;">if</span> (!disableUploadTimeout) {
-                socket.setSoTimeout(timeout);
-            }
-
-            <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;&#9733;&#9733;&#65298; HTTP&#12504;&#12483;&#12480;&#12540;&#12398;&#21463;&#20449;&#20966;&#29702;</span>
-            inputBuffer.parseHeaders();
-        } <span style="color: #b4fa70;">catch</span> (<span style="color: #8cc4ff;">IOException</span> <span style="color: #fcaf3e;">e</span>) {
-
-            <span style="color: #73d216;">//</span><span style="color: #73d216;">&#9733;&#9733;&#9733;&#65299; &#12493;&#12483;&#12488;&#12527;&#12540;&#12463;IO&#12456;&#12521;&#12540;&#26178;&#12289;&#20966;&#29702;&#12434;&#27490;&#12417;&#12427;</span>
-            error = <span style="color: #e6a8df;">true</span>;
-            <span style="color: #b4fa70;">break</span>;
-        } <span style="color: #b4fa70;">catch</span> (<span style="color: #8cc4ff;">Throwable</span> <span style="color: #fcaf3e;">t</span>) {
-            <span style="color: #e6a8df;">CoyoteLogger</span>.HTTP_LOGGER.errorParsingHeader(t);
-            <span style="color: #73d216;">// </span><span style="color: #73d216;">400 - Bad Request</span>
-            response.setStatus(400);
-            error = <span style="color: #e6a8df;">true</span>;
-        }
-</pre>
-</div>
-
-<p>
-★３の部分にエラー出力処理を追加しらた、タイムアウト時下記のエラートレースが出力され
-た。
-</p>
-<pre class="example">
-19:23:49,020 ERROR [stderr] (http-/0.0.0.0:8080-1) java.net.SocketTimeoutException: Read timed out
-19:23:49,020 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at java.net.SocketInputStream.socketRead0(Native Method)
-19:23:49,021 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at java.net.SocketInputStream.read(SocketInputStream.java:152)
-19:23:49,021 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at java.net.SocketInputStream.read(SocketInputStream.java:122)
-19:23:49,027 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.coyote.http11.InternalInputBuffer.fill(InternalInputBuffer.java:721)
-19:23:49,028 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.coyote.http11.InternalInputBuffer.parseHeader(InternalInputBuffer.java:660)
-19:23:49,028 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.coyote.http11.InternalInputBuffer.parseHeaders(InternalInputBuffer.java:516)
-19:23:49,029 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.coyote.http11.Http11Processor.process(Http11Processor.java:828)
-19:23:49,032 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.coyote.http11.Http11Protocol$Http11ConnectionHandler.process(Http11Protocol.java:653)
-19:23:49,033 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at org.apache.tomcat.util.net.JIoEndpoint$Worker.run(JIoEndpoint.java:920)
-19:23:49,034 ERROR [stderr] (http-/0.0.0.0:8080-1) 	at java.lang.Thread.run(Thread.java:745)
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-3-2" class="outline-3">
-<h3 id="sec-3-2"><span class="section-number-3">3.2</span> リクエスト本文受信途中タイムアウトの場合</h3>
-<div class="outline-text-3" id="text-3-2">
-<p>
-以下、HTTP本文読み取り処理(HTTP POST)でブロックタイムアウトが起きた時のサーバログです。
-</p>
-<pre class="example">
-Caused by: java.net.SocketTimeoutException: Read timed out
-	at java.net.SocketInputStream.socketRead0(Native Method) [rt.jar:1.7.0_65]
-	at java.net.SocketInputStream.read(SocketInputStream.java:152) [rt.jar:1.7.0_65]
-	at java.net.SocketInputStream.read(SocketInputStream.java:122) [rt.jar:1.7.0_65]
-	at org.apache.coyote.http11.InternalInputBuffer.fill(InternalInputBuffer.java:737) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
-	at org.apache.coyote.http11.InternalInputBuffer$InputStreamInputBuffer.doRead(InternalInputBuffer.java:767) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
-	at org.apache.coyote.http11.filters.IdentityInputFilter.doRead(IdentityInputFilter.java:116) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
-	at org.apache.coyote.http11.InternalInputBuffer.doRead(InternalInputBuffer.java:697) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
-	at org.apache.coyote.Request.doRead(Request.java:438) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
-	at org.apache.catalina.connector.InputBuffer.realReadBytes(InputBuffer.java:341) [jbossweb-7.2.2.Final-redhat-1.jar:7.2.2.Final-redhat-1]
-	... 47 more
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> 注意書き</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-<code>org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT</code> が次のように誤解されることもあ
-るので、要注意です。
-</p>
-<pre class="example">
-ワーカスレッドの実行時間のタイムアウト値
-</pre>
-
-<p>
-あくまでもソケットのブロックタイムアウト値なので、アプリのロジック処理時と関係ないで
-す。主にHTTPヘッダとHTTP本文の読み取り処理のブロック時間を監視するために使われる。
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> 参考リンク</h2>
-<div class="outline-text-2" id="text-5">
-<ul class="org-ul">
-<li><a href="https://docs.jboss.org/jbossweb/7.0.x/sysprops.html">JBossWeb System Properties</a>
-</li>
-<li><a href="http://docs.oracle.com/javase/jp/1.4/api/java/net/Socket.html#getSoTimeout%2528%2529">Java API Doc クラス Socket</a>
-</li>
-<li><a href="http://docs.oracle.com/javase/jp/6/api/java/net/SocketOptions.html#SO_TIMEOUT">Java API Doc - インタフェース SocketOptions</a>
-</li>
-</ul>
-</div>
-</div>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[調査]SAS統計ソフトについて]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-10-05-%5B%E8%AA%BF%E6%9F%BB%5Dsas%E7%B5%B1%E8%A8%88%E3%82%BD%E3%83%95%E3%83%88%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html"/>
-    <updated>2014-10-05T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[調査]sas統計ソフトについて</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. SASとは</a></li>
-<li><a href="#sec-2">2. SAS言語</a></li>
-<li><a href="#sec-3">3. 統計分析のイメージ</a></li>
-<li><a href="#sec-4">4. SASプログラムのイメージ</a></li>
-<li><a href="#sec-5">5. 無償で使えるの？</a></li>
-<li><a href="#sec-6">6. 日本での事例</a></li>
-<li><a href="#sec-7">7. おまけに</a></li>
-<li><a href="#sec-8">8. 参考リンク</a></li>
-</ul>
-</div>
-</div>
-<p>
-ある飲み会で <code>JT</code> のプログラムマーさんと出会って、最初彼からの自己紹介で「プログラムマー
-です」と聞いた時に、Java屋、Ruby屋普通のWebエンジニアだと思った。話を詳しく聞くとなん
-と、「SAS」という言語しか扱っていないようです。 <code>SAS</code> という言語は初耳なので、軽く調べること
-にした。
-</p>
-
-<p>
-<!-- more -->
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> SASとは</h2>
-<div class="outline-text-2" id="text-1">
-<p>
-SASの全称はStatistical Analysis System、日本語発音は「サス」というようです。
-以下はIT用語辞書からの引用です。
-</p>
-<pre class="example">
-SAS Institute社が開発・販売している、統計解析ソフトを中心とするソフトウェア製品群のブ
-ランド名。また、SAS Institute社自体。
-
-世界的に人気の高い統計解析ソフトウェアで、1960年代から主に大学や研究所で科学・工学分野
-の研究に用いられてきた。近年ではビジネス向けの機能や関連製品が充実し、主要なBI(ビジネ
-スインテリジェンス)ツールの一つとして企業の業務分析や意思決定支援の分野でも導入が進ん
-でいる。
-</pre>
-<p>
-なんと1960年代、父親が生まれた時代ですね、かなり古い！
-</p>
-<font color="red"><strong>
-<p>
-という訳で、「SAS」は言語名、会社名、ソフトウェア製品群のブランド名として使える。次に
-SAS言語についてです。
-</p>
-</strong></font>
-</div>
-</div>
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> SAS言語</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-以下は <a href="http://wikiwiki.jp/cattail/?SAS%25C6%25FE%25CC%25E71">SAS入門1</a> からのSAS言語についての説明内容です。
-</p>
-
-<pre class="example">
-ＳＡＳ言語は，非常に古いコンピュータ言語のひとつですが，
-ＦＯＲＴＲＡＮ，ＣＯＢＯＬ，Ｃといった第３世代言語（高級言語）と違い，
-第４世代言語（４ＧＬ）または簡易言語と呼ばれる言語の１つです．
-１つの命令文の受け持つ処理が，高級言語よりたくさんの作業をこなしてくれるので，，
-プログラミングする人にとって複雑な内容を簡単に書くことができるというメリットがあります．
-ＳＡＳが得意とするデータ処理は，統計解析やデータマイニングといった，データ分析処理です．
-データを管理したり，データシステム構築することもできますが，大量データに対する
-データ分析機能は，ＳＡＳがナンバーワンといってもよいでしょう．
-製薬，金融，マーケティング，通信，製造といった分野で広く使われています．
-</pre>
-<p>
-第４世代言語とい言われる代表的な言語は
-</p>
-<ul class="org-ul">
-<li>データベース分野のSQL
-</li>
-<li>統計分野のR言語
-</li>
-<li>Web開発分野のRuby on Rails
-</li>
-</ul>
-<p>
-があるでしょう。SASはこれらの言語の中にR言語と同じ分野ですね。 R言語は過去SI仕事でソフト
-の性能測定結果の統計分析で検証したことがあるので、なんとなくイメージが付きます。ここ
-でようやくSASとの接点が見つかりました。
-</p>
-
-<p>
-ちなみにEmacsからRを扱う設定は <sup><a id="fnr.1" name="fnr.1" class="footref" href="#fn.1">1</a></sup> が参考になります。
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> 統計分析のイメージ</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-<code>JT</code> のプログラムマーさんの話から考えると、SASを使ってデータを統計分析する作業流れは
-以下のようなイメージのようです。(自信がない、間違っているかも知れない)
-</p>
-
-
-<div class="figure">
-<p><img src="img/2014-10-05-sas-chat1.png" alt="2014-10-05-sas-chat1.png" />
-</p>
-</div>
-<ol class="org-ol">
-<li>市場調査手段
-<ul class="org-ul">
-<li>紙媒体アンケート
-</li>
-<li>アンケートサイト
-</li>
-<li>SNS(Twitter,Facebookなど)より情報収集
-</li>
-</ul>
-</li>
-<li>SASより統計分析
-<ul class="org-ul">
-<li>業務視点からデータモデルを設計する（SAS提供している専用モデルの流用など）
-</li>
-<li>SASスクリプトを実装する
-</li>
-<li>1で収集したテキストデータを分析する
-</li>
-<li>レポートを出力する
-</li>
-</ul>
-</li>
-</ol>
-
-<p>
-モデリングの部分は業務知識が要求されるところでしょうね。
-</p>
-
-<p>
-「医療統計学」でamazonを検索したら、本が結構出している感じがする。
-<a href="http://www.amazon.co.jp/gp/bestsellers/books/720750">http://www.amazon.co.jp/gp/bestsellers/books/720750</a>
-</p>
-
-<p>
-医療統計に関して、またっく知識がないのですが、ここではSASプログラムサンプルコードを見
-てスクリプトのイメージを掴みたいと思います。
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> SASプログラムのイメージ</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-以下はSASプログラムの雛形です。
-</p>
-<pre class="example">
-options ...
-
-data &lt;DATAセット名&gt;;
-     infile '&lt;CSVファイルのパス&gt;';
-     INPUT 変数名1 変数名2 変数名3 ......;
-
-proc プロシジャー名 その他オプション;
-
-run;
-</pre>
-
-<p>
-以下は、 <code>plot</code> プロシージャーを利用してテキストデータからアスキーグラフを表現するSAS
-プログラムサンプルです。
-</p>
-<pre class="example">
-options nodate number pageno=1 linesize=80 pagesize=35;
-
-data djia;
-      input Year @7 HighDate date7. High @24 LowDate date7. Low;
-      format highdate lowdate date7.;
-      datalines;
-1954  31DEC54  404.39  11JAN54  279.87
-1955  30DEC55  488.40  17JAN55  388.20
-...more data lines... 
-1993  29DEC93 3794.33  20JAN93 3241.95
-1994  31JAN94 3978.36  04APR94 3593.35
-;
-
-proc plot data=djia;
-   plot high*year='*';
-
-   title 'High Values of the Dow Jones Industrial Average';
-   title2 'from 1954 to 1994';
-run;
-</pre>
-<p>
-コードは <a href="http://support.sas.com/documentation/cdl/en/proc/61895/HTML/default/viewer.htm#a002473567.htm">Base SAS(R) 9.2 Procedures Guide</a> から引用しています。
-</p>
-
-<p>
-出力結果は以下のようなイメージになります。
-</p>
-<pre class="example">
-       High Values of the Dow Jones Industrial Average                1
-                      from 1954 to 1994
-
-           Plot of High*Year.  Symbol used is '*'.
-
-High |
-     |
-4000 +                                              *
-     |                                             *
-     |
-     |                                            *
-     |                                           *
-3000 +                                          *
-     |                                       * *
-     |
-     |
-     |                                        *
-2000 +                                      *
-     |
-     |                                     *
-     |
-     |                                   **
-1000 +                 ***** ***  *** ***
-     |             ****     *   **   *
-     |        *****
-     |      **
-     |
-   0 +
-     |
-     ---+---------+---------+---------+---------+---------+--
-      1950      1960      1970      1980      1990      2000
-
-                               Year
-</pre>
-
-<p>
-SASプログラムの文法構造がかなり <code>gnuplot</code> と似ってことが気付きました。でも <a href="http://www.gnuplot.info/">gnuplot</a> が生
-まれるのが1986年なので、後者が前者の形を引き続いた気がします。仕事でソフトの性能検証デー
-タをフラフに加工する処理でよくgnuplotを使っています。 <code>OSS</code> なので無償で使える。SASで
-も同じことができると思いますが、かなり高額のようです。コストパフォーマンスが悪いでしょ
-うね。
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> 無償で使えるの？</h2>
-<div class="outline-text-2" id="text-5">
-<p>
-商用がメインなのでかなり高額です。SAS無償で使えるやつがあるけど、大学研究用途のみです。
-おそらく個人勉強用でも問題内でしょう。詳細は <a href="http://www.slideshare.net/yuhsukek/sas-university-edition-38601663">Sas University Editionを使おう（インストール編）</a>
-</p>
-
-<p>
-SAS University Editionのダウンロードリンク
-<a href="http://www.sas.com/en_us/software/university-edition/download-software.html">http://www.sas.com/en_us/software/university-edition/download-software.html</a>
-</p>
-
-<p>
-機会があれば、導入して遊んで見たいと思います。
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6"><span class="section-number-2">6</span> 日本での事例</h2>
-<div class="outline-text-2" id="text-6">
-<ul class="org-ul">
-<li><a href="http://www.nec.co.jp/press/ja/1205/2202.html">ビッグデータ領域で、NECとSAS Institute Japanが協業</a>
-</li>
-<li><a href="http://www.sas.com/ja_jp/customers/jt.html">日本たばこ産業株式会社</a>
-</li>
-<li>他にも結構あります。<sup><a id="fnr.2" name="fnr.2" class="footref" href="#fn.2">2</a></sup>
-</li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-sec-7" class="outline-2">
-<h2 id="sec-7"><span class="section-number-2">7</span> おまけに</h2>
-<div class="outline-text-2" id="text-7">
-<ul class="org-ul">
-<li>Javaの接点
-<ul class="org-ul">
-<li>SAS クライアントアプリケーションがJavaに依存しているようです。<sup><a id="fnr.3" name="fnr.3" class="footref" href="#fn.3">3</a></sup>
-</li>
-<li>Hadoopと連携するプロジェクトが今年から発足しているようです。<sup><a id="fnr.4" name="fnr.4" class="footref" href="#fn.4">4</a></sup>
-</li>
-</ul>
-</li>
-
-<li>他の統計ソフトとの比較
-詳細は <sup><a id="fnr.5" name="fnr.5" class="footref" href="#fn.5">5</a></sup>
-</li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-sec-8" class="outline-2">
-<h2 id="sec-8"><span class="section-number-2">8</span> 参考リンク</h2>
-<div class="outline-text-2" id="text-8">
-<ul class="org-ul">
-<li><a href="http://www.rcommanderdeigakutoukeikaiseki.com/index.html">臨床医のためのRコマンダーによる医学統計解析マニュアル</a>
-</li>
-<li><a href="http://www2.ngu.ac.jp/~taniguch/stat/intro-sas.htm">ＳＡＳ統計パッケージ の使い方</a>
-</li>
-<li><a href="http://sas.mathlab.info/index.html">SAS統計データ解析入門</a>
-</li>
-<li><a href="http://wikiwiki.jp/cattail/?FrontPage">Welcome to データ分析・マイニングの世界 by SAS</a>
-</li>
-</ul>
-</div>
-</div>
-<div id="footnotes">
-<h2 class="footnotes">Footnotes: </h2>
-<div id="text-footnotes">
-
-<div class="footdef"><sup><a id="fn.1" name="fn.1" class="footnum" href="#fnr.1">1</a></sup> <p class="footpara">
-<a href="http://sheephead.homelinux.org/2009/10/26/1673/">これからEmacsでR使う人のための設定まとめ</a>
-</p></div>
-
-<div class="footdef"><sup><a id="fn.2" name="fn.2" class="footnum" href="#fnr.2">2</a></sup> <p class="footpara">
-<a href="http://www.sas.com/ja_jp/customers.html">SASユーザー事例</a>
-</p></div>
-
-<div class="footdef"><sup><a id="fn.3" name="fn.3" class="footnum" href="#fnr.3">3</a></sup> <p class="footpara">
-<a href="http://www.sas.com/offices/asiapacific/japan/service/resources/thirdpartysupport/v93/jres.html">SAS® 9.3（TS1M0以降） でサポートするJava Runtime Environment</a>
-</p></div>
-
-<div class="footdef"><sup><a id="fn.4" name="fn.4" class="footnum" href="#fnr.4">4</a></sup> <p class="footpara">
-<a href="http://www.sas.com/ja_jp/news/press-releases/2014/september/2014-09-03-shionogi-imstat-for-hadoop-jp.html">SAS Institute Japan、塩野義製薬とHadoop上でビッグデータを活用した研究プロジェクトを発足</a>
-</p></div>
-
-<div class="footdef"><sup><a id="fn.5" name="fn.5" class="footnum" href="#fnr.5">5</a></sup> <p class="footpara">
-<a href="https://sites.google.com/site/statinfra/comparison">統計ソフトの比較</a>
-</p></div>
-
-
-</div>
-</div>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[メモ]JBossAS稼働情報収取得方法]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-09-30-%5B%E3%83%A1%E3%83%A2%5Djbossas%E7%A8%BC%E5%83%8D%E6%83%85%E5%A0%B1%E5%8F%8E%E5%8F%96%E5%BE%97%E6%96%B9%E6%B3%95.html"/>
-    <updated>2014-09-30T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[メモ]jbossas稼働情報収取得方法</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. <code>jboss-cli.sh</code> 方式</a>
-<ul>
-<li><a href="#sec-1-1">1.1. JBoss管理インスタンスへ接続する</a></li>
-<li><a href="#sec-1-2">1.2. JVMスレッドプール情報取得</a></li>
-<li><a href="#sec-1-3">1.3. JVMメモリ情報取得</a></li>
-<li><a href="#sec-1-4">1.4. データベース接続プール情報取得</a></li>
-<li><a href="#sec-1-5">1.5. JDBCステートメントキャッシュ情報</a></li>
-<li><a href="#sec-1-6">1.6. 起動オプション、システム属性などの確認</a></li>
-<li><a href="#sec-1-7">1.7. EJBスレッドプールの確認</a></li>
-<li><a href="#sec-1-8">1.8. トランザクション情報の確認</a></li>
-</ul>
-</li>
-<li><a href="#sec-2">2. <code>remoting-jmx</code> 方式</a>
-<ul>
-<li><a href="#sec-2-1">2.1. JBossAS接続用のjmxterm起動スクリプト</a></li>
-<li><a href="#sec-2-2">2.2. jmxterm基本的な使い方</a></li>
-<li><a href="#sec-2-3">2.3. Web系ワーカスレッドの情報取得</a></li>
-<li><a href="#sec-2-4">2.4. リクエストプロセッサーの稼働状況</a></li>
-</ul>
-</li>
-<li><a href="#sec-3">3. <code>RESTful</code> 方式</a></li>
-<li><a href="#sec-4">4. 参考情報</a></li>
-</ul>
-</div>
-</div>
-<p>
-コマンドインタフェースから <code>JBossAS 7.x</code> アプリケーションサーバの稼働情報収取得方法に
-ついて検証してみた。主に以下の方法が存在する。
-</p>
-
-<ol class="org-ol">
-<li><code>jboss-cli.sh</code> コマンドでサーバの設定情報やRuntime情報を取得する。
-</li>
-<li>RESTful Management Interfaces HTTP通信でJSON形式で情報ヲ取得する。
-</li>
-<li>remoting-jmx インタフェースでMBeanサーバから情報を取得する。
-</li>
-</ol>
-
-<p>
-1と2の情報源が一緒です。取れる情報が次のようなイメージ、用途に応じて選ぶことになると思
-います。
-</p>
-<pre class="example">
-+-------------+
-| jboss-cli   |
-|   +---------+-----+
-|   |         |     |
-|   |         | JMX |
-|   |         |     |
-|   +---------+-----+
-+-------------+
-</pre>
-
-<p>
-<!-- more -->
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> <code>jboss-cli.sh</code> 方式</h2>
-<div class="outline-text-2" id="text-1">
-</div><div id="outline-container-sec-1-1" class="outline-3">
-<h3 id="sec-1-1"><span class="section-number-3">1.1</span> JBoss管理インスタンスへ接続する</h3>
-<div class="outline-text-3" id="text-1-1">
-<pre class="example">
-$ jboss-cli.sh -c controller=&lt;hostname:port&gt;
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-1-2" class="outline-3">
-<h3 id="sec-1-2"><span class="section-number-3">1.2</span> JVMスレッドプール情報取得</h3>
-<div class="outline-text-3" id="text-1-2">
-<pre class="example">
-[standalone@localhost:9999 /] /core-service=platform-mbean/type=threading:read-resource(recursive=true, include-runtime=true)
-{
-    "outcome" =&gt; "success",
-    "result" =&gt; {
-        "all-thread-ids" =&gt; [
-            137L,
-            .......
-            2L
-        ],
-        "thread-contention-monitoring-supported" =&gt; true,
-        "thread-cpu-time-supported" =&gt; true,
-        "current-thread-cpu-time-supported" =&gt; true,
-        "object-monitor-usage-supported" =&gt; true,
-        "synchronizer-usage-supported" =&gt; true,
-        "thread-contention-monitoring-enabled" =&gt; false,
-        "thread-cpu-time-enabled" =&gt; true,
-        "thread-count" =&gt; 36,
-        "peak-thread-count" =&gt; 78,
-        "total-started-thread-count" =&gt; 130L,
-        "daemon-thread-count" =&gt; 14,
-        "current-thread-cpu-time" =&gt; 5399864L,
-        "current-thread-user-time" =&gt; 0L,
-        "object-name" =&gt; "java.lang:type=Threading"
-    }
-}
-[standalone@localhost:9999 /]
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-1-3" class="outline-3">
-<h3 id="sec-1-3"><span class="section-number-3">1.3</span> JVMメモリ情報取得</h3>
-<div class="outline-text-3" id="text-1-3">
-<p>
-メモリ概要情報
-</p>
-<pre class="example">
-[standalone@localhost:9999 /] /core-service=platform-mbean/type=memory:read-resource(recursive=true, include-runtime=true)
-{
-    "outcome" =&gt; "success",
-    "result" =&gt; {
-        "heap-memory-usage" =&gt; {
-            "init" =&gt; 1366294528L,
-            "used" =&gt; 253812744L,
-            "committed" =&gt; 1320878080L,
-            "max" =&gt; 1321795584L
-        },
-        "non-heap-memory-usage" =&gt; {
-            "init" =&gt; 24313856L,
-            "used" =&gt; 62715312L,
-            "committed" =&gt; 63045632L,
-            "max" =&gt; 318767104L
-        },
-        "object-name" =&gt; "java.lang:type=Memory",
-        "object-pending-finalization-count" =&gt; 0,
-        "verbose" =&gt; false
-    }
-}
-[standalone@localhost:9999 /]
-</pre>
-
-<p>
-メモリ詳細情報
-</p>
-<pre class="example">
-[standalone@localhost:9999 /] /core-service=platform-mbean/type=memory-pool:read-resource(recursive=true, include-runtime=true)
-{
-    "outcome" =&gt; "success",
-    "result" =&gt; {"name" =&gt; {
-        "Eden_Space" =&gt; {
-            "name" =&gt; "Eden_Space",
-            "type" =&gt; "HEAP",
-            "valid" =&gt; true,
-            "memory-manager-names" =&gt; [
-                "MarkSweepCompact",
-                "Copy"
-            ],
-            "usage-threshold-supported" =&gt; false,
-            "collection-usage-threshold-supported" =&gt; true,
-            "usage-threshold" =&gt; undefined,
-            "collection-usage-threshold" =&gt; 0L,
-            "usage" =&gt; {
-                "init" =&gt; 364445696L,
-                "used" =&gt; 227453064L,
-                "committed" =&gt; 364445696L,
-                "max" =&gt; 364642304L
-            },
-            "peak-usage" =&gt; {
-                "init" =&gt; 364445696L,
-                "used" =&gt; 364445696L,
-                "committed" =&gt; 364642304L,
-                "max" =&gt; 364642304L
-            },
-            "usage-threshold-exceeded" =&gt; undefined,
-            "usage-threshold-count" =&gt; undefined,
-            "collection-usage-threshold-exceeded" =&gt; false,
-            "collection-usage-threshold-count" =&gt; 0L,
-            "collection-usage" =&gt; {
-                "init" =&gt; 364445696L,
-                "used" =&gt; 0L,
-                "committed" =&gt; 364445696L,
-                "max" =&gt; 364642304L
-            },
-            "object-name" =&gt; "java.lang:type=MemoryPool,name=\"Eden Space\""
-        },
-        "Survivor_Space" =&gt; {
-            "name" =&gt; "Survivor_Space",
-            "type" =&gt; "HEAP",
-            "valid" =&gt; true,
-            "memory-manager-names" =&gt; [
-                "MarkSweepCompact",
-                "Copy"
-            ],
-            "usage-threshold-supported" =&gt; false,
-            "collection-usage-threshold-supported" =&gt; true,
-            "usage-threshold" =&gt; undefined,
-            "collection-usage-threshold" =&gt; 0L,
-            "usage" =&gt; {
-                "init" =&gt; 45481984L,
-                "used" =&gt; 970896L,
-                "committed" =&gt; 45547520L,
-                "max" =&gt; 45547520L
-            },
-            "peak-usage" =&gt; {
-                "init" =&gt; 45481984L,
-                "used" =&gt; 24101280L,
-                "committed" =&gt; 45547520L,
-                "max" =&gt; 45547520L
-            },
-            "usage-threshold-exceeded" =&gt; undefined,
-            "usage-threshold-count" =&gt; undefined,
-            "collection-usage-threshold-exceeded" =&gt; false,
-            "collection-usage-threshold-count" =&gt; 0L,
-            "collection-usage" =&gt; {
-                "init" =&gt; 45481984L,
-                "used" =&gt; 970896L,
-                "committed" =&gt; 45547520L,
-                "max" =&gt; 45547520L
-            },
-            "object-name" =&gt; "java.lang:type=MemoryPool,name=\"Survivor Space\""
-        },
-        "Perm_Gen" =&gt; {
-            "name" =&gt; "Perm_Gen",
-            "type" =&gt; "NON_HEAP",
-            "valid" =&gt; true,
-            "memory-manager-names" =&gt; ["MarkSweepCompact"],
-            "usage-threshold-supported" =&gt; true,
-            "collection-usage-threshold-supported" =&gt; true,
-            "usage-threshold" =&gt; 0L,
-            "collection-usage-threshold" =&gt; 0L,
-            "usage" =&gt; {
-                "init" =&gt; 21757952L,
-                "used" =&gt; 57597424L,
-                "committed" =&gt; 57802752L,
-                "max" =&gt; 268435456L
-            },
-            "peak-usage" =&gt; {
-                "init" =&gt; 21757952L,
-                "used" =&gt; 57597424L,
-                "committed" =&gt; 57802752L,
-                "max" =&gt; 268435456L
-            },
-            "usage-threshold-exceeded" =&gt; false,
-            "usage-threshold-count" =&gt; 0L,
-            "collection-usage-threshold-exceeded" =&gt; false,
-            "collection-usage-threshold-count" =&gt; 0L,
-            "collection-usage" =&gt; {
-                "init" =&gt; 21757952L,
-                "used" =&gt; 55181008L,
-                "committed" =&gt; 55181312L,
-                "max" =&gt; 268435456L
-            },
-            "object-name" =&gt; "java.lang:type=MemoryPool,name=\"Perm Gen\""
-        },
-        "Code_Cache" =&gt; {
-            "name" =&gt; "Code_Cache",
-            "type" =&gt; "NON_HEAP",
-            "valid" =&gt; true,
-            "memory-manager-names" =&gt; ["CodeCacheManager"],
-            "usage-threshold-supported" =&gt; true,
-            "collection-usage-threshold-supported" =&gt; false,
-            "usage-threshold" =&gt; 0L,
-            "collection-usage-threshold" =&gt; undefined,
-            "usage" =&gt; {
-                "init" =&gt; 2555904L,
-                "used" =&gt; 5117888L,
-                "committed" =&gt; 5242880L,
-                "max" =&gt; 50331648L
-            },
-            "peak-usage" =&gt; {
-                "init" =&gt; 2555904L,
-                "used" =&gt; 5123264L,
-                "committed" =&gt; 5242880L,
-                "max" =&gt; 50331648L
-            },
-            "usage-threshold-exceeded" =&gt; false,
-            "usage-threshold-count" =&gt; 0L,
-            "collection-usage-threshold-exceeded" =&gt; undefined,
-            "collection-usage-threshold-count" =&gt; undefined,
-            "collection-usage" =&gt; undefined,
-            "object-name" =&gt; "java.lang:type=MemoryPool,name=\"Code Cache\""
-        },
-        "Tenured_Gen" =&gt; {
-            "name" =&gt; "Tenured_Gen",
-            "type" =&gt; "HEAP",
-            "valid" =&gt; true,
-            "memory-manager-names" =&gt; ["MarkSweepCompact"],
-            "usage-threshold-supported" =&gt; true,
-            "collection-usage-threshold-supported" =&gt; true,
-            "usage-threshold" =&gt; 0L,
-            "collection-usage-threshold" =&gt; 0L,
-            "usage" =&gt; {
-                "init" =&gt; 910884864L,
-                "used" =&gt; 36957616L,
-                "committed" =&gt; 910884864L,
-                "max" =&gt; 911605760L
-            },
-            "peak-usage" =&gt; {
-                "init" =&gt; 910884864L,
-                "used" =&gt; 36957616L,
-                "committed" =&gt; 910884864L,
-                "max" =&gt; 911605760L
-            },
-            "usage-threshold-exceeded" =&gt; false,
-            "usage-threshold-count" =&gt; 0L,
-            "collection-usage-threshold-exceeded" =&gt; false,
-            "collection-usage-threshold-count" =&gt; 0L,
-            "collection-usage" =&gt; {
-                "init" =&gt; 910884864L,
-                "used" =&gt; 36957616L,
-                "committed" =&gt; 910884864L,
-                "max" =&gt; 911605760L
-            },
-            "object-name" =&gt; "java.lang:type=MemoryPool,name=\"Tenured Gen\""
-        }
-    }}
-}
-[standalone@localhost:9999 /]
-</pre>
-
-<p>
-GCの実行状況
-</p>
-<pre class="example">
-[standalone@localhost:9999 /] /core-service=platform-mbean/type=garbage-collector:read-resource(recursive=true, include-runtime=true)
-{
-    "outcome" =&gt; "success",
-    "result" =&gt; {"name" =&gt; {
-        "MarkSweepCompact" =&gt; {
-            "collection-count" =&gt; 6L,
-            "collection-time" =&gt; 1183L,
-            "memory-pool-names" =&gt; [
-                "Eden_Space",
-                "Survivor_Space",
-                "Tenured_Gen",
-                "Perm_Gen"
-            ],
-            "name" =&gt; "MarkSweepCompact",
-            "object-name" =&gt; "java.lang:type=GarbageCollector,name=MarkSweepCompact",
-            "valid" =&gt; true
-        },
-        "Copy" =&gt; {
-            "collection-count" =&gt; 13L,
-            "collection-time" =&gt; 3003L,
-            "memory-pool-names" =&gt; [
-                "Eden_Space",
-                "Survivor_Space"
-            ],
-            "name" =&gt; "Copy",
-            "object-name" =&gt; "java.lang:type=GarbageCollector,name=Copy",
-            "valid" =&gt; true
-        }
-    }}
-}
-[standalone@localhost:9999 /]
-</pre>
-</div>
-</div>
-<div id="outline-container-sec-1-4" class="outline-3">
-<h3 id="sec-1-4"><span class="section-number-3">1.4</span> データベース接続プール情報取得</h3>
-<div class="outline-text-3" id="text-1-4">
-<pre class="example">
-[standalone@localhost:9999 /] /subsystem=datasources/data-source=ExampleDS/statistics=pool:read-resource(include-runtime=true, recursive=true)
-{
-    "outcome" =&gt; "success",
-    "result" =&gt; {
-        "ActiveCount" =&gt; "0",
-        "AvailableCount" =&gt; "20",
-        "AverageBlockingTime" =&gt; "0",
-        "AverageCreationTime" =&gt; "0",
-        "CreatedCount" =&gt; "0",
-        "DestroyedCount" =&gt; "0",
-        "InUseCount" =&gt; "0",
-        "MaxCreationTime" =&gt; "0",
-        "MaxUsedCount" =&gt; "0",
-        "MaxWaitCount" =&gt; "0",
-        "MaxWaitTime" =&gt; "0",
-        "TimedOut" =&gt; "0",
-        "TotalBlockingTime" =&gt; "0",
-        "TotalCreationTime" =&gt; "0"
-    }
-}
-[standalone@localhost:9999 /]
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-1-5" class="outline-3">
-<h3 id="sec-1-5"><span class="section-number-3">1.5</span> JDBCステートメントキャッシュ情報</h3>
-<div class="outline-text-3" id="text-1-5">
-<pre class="example">
-[standalone@localhost:9999 /] /subsystem=datasources/data-source=ExampleDS/statistics=jdbc:read-resource(include-runtime=true, recursive=true)
-{
-    "outcome" =&gt; "success",
-    "result" =&gt; {
-        "PreparedStatementCacheAccessCount" =&gt; "0",
-        "PreparedStatementCacheAddCount" =&gt; "0",
-        "PreparedStatementCacheCurrentSize" =&gt; "0",
-        "PreparedStatementCacheDeleteCount" =&gt; "0",
-        "PreparedStatementCacheHitCount" =&gt; "0",
-        "PreparedStatementCacheMissCount" =&gt; "0"
-    }
-}
-[standalone@localhost:9999 /]
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-1-6" class="outline-3">
-<h3 id="sec-1-6"><span class="section-number-3">1.6</span> 起動オプション、システム属性などの確認</h3>
-<div class="outline-text-3" id="text-1-6">
-<pre class="example">
-[standalone@localhost:9999 /] /core-service=platform-mbean/type=runtime:read-resource(recursive=true, include-runtime=true)
-{
-    "outcome" =&gt; "success",
-    "result" =&gt; {
-        "name" =&gt; "2147@localhost",
-        "vm-name" =&gt; "OpenJDK 64-Bit Server VM",
-        "vm-vendor" =&gt; "Oracle Corporation",
-        "vm-version" =&gt; "24.65-b04",
-        "spec-name" =&gt; "Java Virtual Machine Specification",
-        "spec-vendor" =&gt; "Oracle Corporation",
-        "spec-version" =&gt; "1.7",
-        "management-spec-version" =&gt; "1.2",
-        "class-path" =&gt; "/opt/jboss-eap-6.2/jboss-modules.jar",
-        "library-path" =&gt; "/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib",
-        "boot-class-path-supported" =&gt; true,
-        "boot-class-path" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/resources.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/rt.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jsse.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jce.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/charsets.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/rhino.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jfr.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/classes",
-        "input-arguments" =&gt; [
-            "-D[Standalone]",
-            "-XX:+UseCompressedOops",
-            "-Xms1303m",
-            "-Xmx1303m",
-            "-XX:MaxPermSize=256m",
-            "-Djava.net.preferIPv4Stack=true",
-            "-Djboss.modules.system.pkgs=org.jboss.byteman",
-            "-Djava.awt.headless=true",
-            "-Djboss.modules.metrics=true",
-            "-Dorg.apache.tomcat.util.ENABLE_MODELER=true",
-            "-Dorg.jboss.boot.log.file=/opt/jboss-eap-6.2/standalone/log/server.log",
-            "-Dlogging.configuration=file:/opt/jboss-eap-6.2/standalone/configuration/logging.properties"
-        ],
-        "start-time" =&gt; 1412040330424L,
-        "system-properties" =&gt; {
-            "[Standalone]" =&gt; "",
-            "awt.toolkit" =&gt; "sun.awt.X11.XToolkit",
-            "catalina.home" =&gt; "/opt/jboss-eap-6.2/standalone/tmp",
-            "file.encoding" =&gt; "UTF-8",
-            "file.encoding.pkg" =&gt; "sun.io",
-            "file.separator" =&gt; "/",
-            "java.awt.graphicsenv" =&gt; "sun.awt.X11GraphicsEnvironment",
-            "java.awt.headless" =&gt; "true",
-            "java.awt.printerjob" =&gt; "sun.print.PSPrinterJob",
-            "java.class.path" =&gt; "/opt/jboss-eap-6.2/jboss-modules.jar",
-            "java.class.version" =&gt; "51.0",
-            "java.endorsed.dirs" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/endorsed",
-            "java.ext.dirs" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/ext:/usr/java/packages/lib/ext",
-            "java.home" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre",
-            "java.io.tmpdir" =&gt; "/tmp",
-            "java.library.path" =&gt; "/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib",
-            "java.naming.factory.url.pkgs" =&gt; "org.jboss.as.naming.interfaces:org.jboss.ejb.client.naming",
-            "java.net.preferIPv4Stack" =&gt; "true",
-            "java.protocol.handler.pkgs" =&gt; "org.jboss.net.protocol|org.jboss.vfs.protocol",
-            "java.runtime.name" =&gt; "OpenJDK Runtime Environment",
-            "java.runtime.version" =&gt; "1.7.0_65-mockbuild_2014_07_16_06_06-b00",
-            "java.specification.name" =&gt; "Java Platform API Specification",
-            "java.specification.vendor" =&gt; "Oracle Corporation",
-            "java.specification.version" =&gt; "1.7",
-            "java.util.logging.manager" =&gt; "org.jboss.logmanager.LogManager",
-            "java.vendor" =&gt; "Oracle Corporation",
-            "java.vendor.url" =&gt; "http://java.oracle.com/",
-            "java.vendor.url.bug" =&gt; "http://bugreport.sun.com/bugreport/",
-            "java.version" =&gt; "1.7.0_65",
-            "java.vm.info" =&gt; "mixed mode",
-            "java.vm.name" =&gt; "OpenJDK 64-Bit Server VM",
-            "java.vm.specification.name" =&gt; "Java Virtual Machine Specification",
-            "java.vm.specification.vendor" =&gt; "Oracle Corporation",
-            "java.vm.specification.version" =&gt; "1.7",
-            "java.vm.vendor" =&gt; "Oracle Corporation",
-            "java.vm.version" =&gt; "24.65-b04",
-            "javax.management.builder.initial" =&gt; "org.jboss.as.jmx.PluggableMBeanServerBuilder",
-            "javax.xml.datatype.DatatypeFactory" =&gt; "__redirected.__DatatypeFactory",
-            "javax.xml.parsers.DocumentBuilderFactory" =&gt; "__redirected.__DocumentBuilderFactory",
-            "javax.xml.parsers.SAXParserFactory" =&gt; "__redirected.__SAXParserFactory",
-            "javax.xml.stream.XMLEventFactory" =&gt; "__redirected.__XMLEventFactory",
-            "javax.xml.stream.XMLInputFactory" =&gt; "__redirected.__XMLInputFactory",
-            "javax.xml.stream.XMLOutputFactory" =&gt; "__redirected.__XMLOutputFactory",
-            "javax.xml.transform.TransformerFactory" =&gt; "__redirected.__TransformerFactory",
-            "javax.xml.validation.SchemaFactory:http://www.w3.org/2001/XMLSchema" =&gt; "__redirected.__SchemaFactory",
-            "javax.xml.xpath.XPathFactory:http://java.sun.com/jaxp/xpath/dom" =&gt; "__redirected.__XPathFactory",
-            "jboss.home.dir" =&gt; "/opt/jboss-eap-6.2",
-            "jboss.host.name" =&gt; "localhost",
-            "jboss.modules.dir" =&gt; "/opt/jboss-eap-6.2/modules",
-            "jboss.modules.metrics" =&gt; "true",
-            "jboss.modules.system.pkgs" =&gt; "org.jboss.byteman",
-            "jboss.node.name" =&gt; "localhost",
-            "jboss.qualified.host.name" =&gt; "localhost",
-            "jboss.server.base.dir" =&gt; "/opt/jboss-eap-6.2/standalone",
-            "jboss.server.config.dir" =&gt; "/opt/jboss-eap-6.2/standalone/configuration",
-            "jboss.server.data.dir" =&gt; "/opt/jboss-eap-6.2/standalone/data",
-            "jboss.server.deploy.dir" =&gt; "/opt/jboss-eap-6.2/standalone/data/content",
-            "jboss.server.log.dir" =&gt; "/opt/jboss-eap-6.2/standalone/log",
-            "jboss.server.name" =&gt; "localhost",
-            "jboss.server.persist.config" =&gt; "true",
-            "jboss.server.temp.dir" =&gt; "/opt/jboss-eap-6.2/standalone/tmp",
-            "line.separator" =&gt; "
-",
-            "logging.configuration" =&gt; "file:/opt/jboss-eap-6.2/standalone/configuration/logging.properties",
-            "module.path" =&gt; "/opt/jboss-eap-6.2/modules",
-            "org.apache.tomcat.util.ENABLE_MODELER" =&gt; "true",
-            "org.apache.xml.security.ignoreLineBreaks" =&gt; "true",
-            "org.jboss.boot.log.file" =&gt; "/opt/jboss-eap-6.2/standalone/log/server.log",
-            "org.jboss.resolver.warning" =&gt; "true",
-            "org.jboss.security.context.ThreadLocal" =&gt; "true",
-            "org.xml.sax.driver" =&gt; "__redirected.__XMLReaderFactory",
-            "os.arch" =&gt; "amd64",
-            "os.name" =&gt; "Linux",
-            "os.version" =&gt; "2.6.32-358.el6.x86_64",
-            "path.separator" =&gt; ":",
-            "sun.arch.data.model" =&gt; "64",
-            "sun.boot.class.path" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/resources.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/rt.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jsse.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jce.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/charsets.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/rhino.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/jfr.jar:/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/classes",
-            "sun.boot.library.path" =&gt; "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.65.x86_64/jre/lib/amd64",
-            "sun.cpu.endian" =&gt; "little",
-            "sun.cpu.isalist" =&gt; "",
-            "sun.io.unicode.encoding" =&gt; "UnicodeLittle",
-            "sun.java.command" =&gt; "/opt/jboss-eap-6.2/jboss-modules.jar -mp /opt/jboss-eap-6.2/modules -jaxpmodule javax.xml.jaxp-provider org.jboss.as.standalone -Djboss.home.dir=/opt/jboss-eap-6.2 -Djboss.server.base.dir=/opt/jboss-eap-6.2/standalone",
-            "sun.java.launcher" =&gt; "SUN_STANDARD",
-            "sun.jnu.encoding" =&gt; "UTF-8",
-            "sun.management.compiler" =&gt; "HotSpot 64-Bit Tiered Compilers",
-            "sun.os.patch.level" =&gt; "unknown",
-            "user.country" =&gt; "JP",
-            "user.dir" =&gt; "/root",
-            "user.home" =&gt; "/root",
-            "user.language" =&gt; "ja",
-            "user.name" =&gt; "root",
-            "user.timezone" =&gt; "Asia/Tokyo"
-        },
-        "uptime" =&gt; 11324677L,
-        "object-name" =&gt; "java.lang:type=Runtime"
-    }
-}
-[standalone@localhost:9999 /]
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-1-7" class="outline-3">
-<h3 id="sec-1-7"><span class="section-number-3">1.7</span> EJBスレッドプールの確認</h3>
-<div class="outline-text-3" id="text-1-7">
-<pre class="example">
-[standalone@localhost:9999 /] /subsystem=ejb3/thread-pool=default:read-resource(include-runtime=true, recursive=true)
-{
-    "outcome" =&gt; "success",
-    "result" =&gt; {
-        "active-count" =&gt; 0,
-        "completed-task-count" =&gt; 0L,
-        "current-thread-count" =&gt; 0,
-        "keepalive-time" =&gt; {
-            "time" =&gt; 100L,
-            "unit" =&gt; "MILLISECONDS"
-        },
-        "largest-thread-count" =&gt; 0,
-        "max-threads" =&gt; 10,
-        "name" =&gt; "default",
-        "queue-size" =&gt; 0,
-        "rejected-count" =&gt; 0,
-        "task-count" =&gt; 0L,
-        "thread-factory" =&gt; undefined
-    }
-}
-[standalone@localhost:9999 /]
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-1-8" class="outline-3">
-<h3 id="sec-1-8"><span class="section-number-3">1.8</span> トランザクション情報の確認</h3>
-<div class="outline-text-3" id="text-1-8">
-<pre class="example">
-[standalone@localhost:9999 /] /subsystem=transactions:read-resource(include-runtime=true, recursive=true)
-{
-    "outcome" =&gt; "success",
-    "result" =&gt; {
-        "default-timeout" =&gt; 300,
-        "enable-statistics" =&gt; false,
-        "enable-tsm-status" =&gt; false,
-        "hornetq-store-enable-async-io" =&gt; false,
-        "jdbc-action-store-drop-table" =&gt; false,
-        "jdbc-action-store-table-prefix" =&gt; undefined,
-        "jdbc-communication-store-drop-table" =&gt; false,
-        "jdbc-communication-store-table-prefix" =&gt; undefined,
-        "jdbc-state-store-drop-table" =&gt; false,
-        "jdbc-state-store-table-prefix" =&gt; undefined,
-        "jdbc-store-datasource" =&gt; undefined,
-        "jts" =&gt; false,
-        "node-identifier" =&gt; "1",
-        "number-of-aborted-transactions" =&gt; 0L,
-        "number-of-application-rollbacks" =&gt; 0L,
-        "number-of-committed-transactions" =&gt; 0L,
-        "number-of-heuristics" =&gt; 0L,
-        "number-of-inflight-transactions" =&gt; 0L,
-        "number-of-nested-transactions" =&gt; 0L,
-        "number-of-resource-rollbacks" =&gt; 0L,
-        "number-of-timed-out-transactions" =&gt; 0L,
-        "number-of-transactions" =&gt; 0L,
-        "object-store-path" =&gt; "tx-object-store",
-        "object-store-relative-to" =&gt; "jboss.server.data.dir",
-        "path" =&gt; "var",
-        "process-id-socket-binding" =&gt; undefined,
-        "process-id-socket-max-ports" =&gt; 10,
-        "process-id-uuid" =&gt; true,
-        "recovery-listener" =&gt; false,
-        "relative-to" =&gt; "jboss.server.data.dir",
-        "socket-binding" =&gt; "txn-recovery-environment",
-        "status-socket-binding" =&gt; "txn-status-manager",
-        "use-hornetq-store" =&gt; false,
-        "use-jdbc-store" =&gt; false,
-        "log-store" =&gt; {"log-store" =&gt; {
-            "type" =&gt; "default",
-            "transactions" =&gt; undefined
-        }}
-    }
-}
-[standalone@localhost:9999 /]
-</pre>
-</div>
-</div>
-</div>
-
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> <code>remoting-jmx</code> 方式</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-JBossAS 7.x のJMX情報を参照するには <code>$JBOSS_HOME/bin/jconsole.sh</code> のGUIツールを利用す
-るのが一般的だと思います。コマンドから参照するにはJDKのJMX APIを用いて自前のコードで
-頑張るか。 <code>jmxterm</code> といゆツールを使うかです。ここでは後者について検証しました。
-<code>jmxterm</code> でlocalhostのJBossASのJMX情報参照はOKで、リモートからは認証処理で失敗した。
-</p>
-</div>
-
-<div id="outline-container-sec-2-1" class="outline-3">
-<h3 id="sec-2-1"><span class="section-number-3">2.1</span> JBossAS接続用のjmxterm起動スクリプト</h3>
-<div class="outline-text-3" id="text-2-1">
-<p>
-<code>jmxterm</code> は <a href="http://wiki.cyclopsgroup.org/jmxterm">ここ</a> からダウンロードできる。
-</p>
-<pre class="example">
-#!/bin/sh
-
-EAP_HOME=/opt/jboss-eap-6.2
-HOST_URL=service:jmx:remoting-jmx://localhost:9999
-
-java -classpath `dirname $0`/jmxterm-1.0-alpha-4-uber.jar:$EAP_HOME/bin/client/jboss-cli-client.jar org.codehaus.classworlds.uberjar.boot.Bootstrapper -l "$HOST_URL"
-</pre>
-
-<p>
-起動時のイメージ
-</p>
-<pre class="example">
-# ./jmxterm.sh
-9 30, 2014 12:42:18 午後 org.xnio.Xnio &lt;clinit&gt;
-INFO: XNIO Version 3.0.7.GA-redhat-1
-9 30, 2014 12:42:18 午後 org.xnio.nio.NioXnio &lt;clinit&gt;
-INFO: XNIO NIO Implementation Version 3.0.7.GA-redhat-1
-9 30, 2014 12:42:18 午後 org.jboss.remoting3.EndpointImpl &lt;clinit&gt;
-INFO: JBoss Remoting version 3.2.18.GA-redhat-1
-Welcome to JMX terminal. Type "help" for available commands.
-$&gt;
-</pre>
-
-<p>
-リモートから接続する場合、認証でエラー
-</p>
-<pre class="example">
-$ ./jmxterm.sh
-9 30, 2014 12:43:31 午後 org.xnio.Xnio &lt;clinit&gt;
-INFO: XNIO Version 3.0.7.GA-redhat-1
-9 30, 2014 12:43:31 午後 org.xnio.nio.NioXnio &lt;clinit&gt;
-INFO: XNIO NIO Implementation Version 3.0.7.GA-redhat-1
-9 30, 2014 12:43:31 午後 org.jboss.remoting3.EndpointImpl &lt;clinit&gt;
-INFO: JBoss Remoting version 3.2.18.GA-redhat-1
-9 30, 2014 12:43:34 午後 org.jboss.remoting3.remote.RemoteConnection handleException
-ERROR: JBREM000200: Remote connection failed: javax.security.sasl.SaslException: Authentication failed: all available authentication mechanisms failed
----------------------------------------------------
-constituent[0]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/jmxterm.jar
-constituent[1]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-beanutils.jar
-constituent[2]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-cli.jar
-constituent[3]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-collections.jar
-constituent[4]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-lang.jar
-constituent[5]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-logging.jar
-constituent[6]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/commons-io.jar
-constituent[7]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/jcli.jar
-constituent[8]: jar:file:/opt/jmxterm/jmxterm-1.0-alpha-4-uber.jar!/WORLDS-INF/lib/jline.jar
----------------------------------------------------
-javax.security.sasl.SaslException: Authentication failed: all available authentication mechanisms failed
-	at org.jboss.remoting3.remote.ClientConnectionOpenListener$Capabilities.handleEvent(ClientConnectionOpenListener.java:367)
-	at org.jboss.remoting3.remote.ClientConnectionOpenListener$Capabilities.handleEvent(ClientConnectionOpenListener.java:229)
-	at org.xnio.ChannelListeners.invokeChannelListener(ChannelListeners.java:72)
-	at org.xnio.channels.TranslatingSuspendableChannel.handleReadable(TranslatingSuspendableChannel.java:189)
-	at org.xnio.channels.TranslatingSuspendableChannel$1.handleEvent(TranslatingSuspendableChannel.java:103)
-	at org.xnio.ChannelListeners.invokeChannelListener(ChannelListeners.java:72)
-	at org.xnio.channels.TranslatingSuspendableChannel.handleReadable(TranslatingSuspendableChannel.java:189)
-	at org.xnio.ssl.JsseConnectedSslStreamChannel.handleReadable(JsseConnectedSslStreamChannel.java:180)
-	at org.xnio.channels.TranslatingSuspendableChannel$1.handleEvent(TranslatingSuspendableChannel.java:103)
-	at org.xnio.ChannelListeners.invokeChannelListener(ChannelListeners.java:72)
-	at org.xnio.nio.NioHandle.run(NioHandle.java:90)
-	at org.xnio.nio.WorkerThread.run(WorkerThread.java:187)
-	at ...asynchronous invocation...(Unknown Source)
-	at org.jboss.remoting3.EndpointImpl.doConnect(EndpointImpl.java:270)
-	at org.jboss.remoting3.EndpointImpl.doConnect(EndpointImpl.java:251)
-	at org.jboss.remoting3.EndpointImpl.connect(EndpointImpl.java:349)
-	at org.jboss.remoting3.EndpointImpl.connect(EndpointImpl.java:333)
-	at org.jboss.remotingjmx.RemotingConnector.internalRemotingConnect(RemotingConnector.java:227)
-	at org.jboss.remotingjmx.RemotingConnector.internalConnect(RemotingConnector.java:148)
-	at org.jboss.remotingjmx.RemotingConnector.connect(RemotingConnector.java:99)
-	at javax.management.remote.JMXConnectorFactory.connect(JMXConnectorFactory.java:270)
-	at org.cyclopsgroup.jmxterm.cc.SessionImpl.doConnect(SessionImpl.java:85)
-	at org.cyclopsgroup.jmxterm.cc.SessionImpl.connect(SessionImpl.java:49)
-	at org.cyclopsgroup.jmxterm.cc.CommandCenter.connect(CommandCenter.java:110)
-	at org.cyclopsgroup.jmxterm.boot.CliMain.execute(CliMain.java:139)
-	at org.cyclopsgroup.jmxterm.boot.CliMain.main(CliMain.java:48)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:483)
-	at org.codehaus.classworlds.Launcher.launchStandard(Launcher.java:353)
-	at org.codehaus.classworlds.Launcher.launch(Launcher.java:264)
-	at org.codehaus.classworlds.Launcher.mainWithExitCode(Launcher.java:430)
-	at org.codehaus.classworlds.Launcher.main(Launcher.java:375)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:483)
-	at org.codehaus.classworlds.uberjar.boot.Bootstrapper.bootstrap(Bootstrapper.java:209)
-	at org.codehaus.classworlds.uberjar.boot.Bootstrapper.main(Bootstrapper.java:116)
-$
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-2-2" class="outline-3">
-<h3 id="sec-2-2"><span class="section-number-3">2.2</span> jmxterm基本的な使い方</h3>
-<div class="outline-text-3" id="text-2-2">
-<pre class="example">
-★ドメインリストの取得
-$&gt;domains
-#following domains are available
-Catalina
-JMImplementation
-com.sun.management
-java.lang
-java.nio
-java.util.logging
-jboss.as
-jboss.as.expr
-jboss.jta
-jboss.modules
-jboss.msc
-jboss.remoting.handler
-jboss.web
-jboss.ws
-
-★特定ドメインのbeanリストの取得
-$&gt;beans -d jboss.web
-#domain = jboss.web:
-jboss.web:J2EEApplication=none,J2EEServer=none,WebModule=//default-host/,j2eeType=Servlet,name=WelcomeContextConsoleServlet
-jboss.web:J2EEApplication=none,J2EEServer=none,j2eeType=WebModule,name=//default-host/
-jboss.web:J2EEApplication=none,J2EEServer=none,j2eeType=WebModule,name=//default-host/sss
-jboss.web:address="/0.0.0.0",port=8080,type=Connector
-jboss.web:address="/0.0.0.0",port=8080,type=ProtocolHandler
-jboss.web:host=default-host,name=ErrorReportValve,type=Valve
-jboss.web:host=default-host,name=SecurityContextAssociationValve,path=/sss,type=Valve
-jboss.web:host=default-host,name=StandardContextValve,path=/,type=Valve
-jboss.web:host=default-host,name=StandardContextValve,path=/sss,type=Valve
-jboss.web:host=default-host,name=StandardHostValve,type=Valve
-jboss.web:host=default-host,path=/,type=Cache
-jboss.web:host=default-host,path=/,type=Manager
-jboss.web:host=default-host,path=/sss,realmPath=/realm0,type=Realm
-jboss.web:host=default-host,path=/sss,type=Cache
-jboss.web:host=default-host,path=/sss,type=Manager
-jboss.web:host=default-host,type=Host
-jboss.web:name=StandardEngineValve,type=Valve
-jboss.web:name=http--0.0.0.0-8080,type=GlobalRequestProcessor
-jboss.web:name=http--0.0.0.0-8080,type=ThreadPool
-jboss.web:serviceName=jboss.web,type=Service
-jboss.web:type=Engine
-
-★beanの中身を参照する
-★ -b の後ろはbeansコマンドで出力した文字列を指定する。
-★ *  全部の属性とメソッドを出力する
-★ bean所属のドメインを指定する
-$&gt;get -b jboss.web:address="/0.0.0.0",port=8080,type=Connector * -d jboss.web
-#mbean = jboss.web:address="/0.0.0.0",port=8080,type=Connector:
-port = 8080;
-
-protocol = HTTP/1.1;
-
-useIPVHosts = false;
-
-objectName = jboss.web:type=Connector,port=8080,address="/0.0.0.0";
-
-redirectPort = 443;
-
-........
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-2-3" class="outline-3">
-<h3 id="sec-2-3"><span class="section-number-3">2.3</span> Web系ワーカスレッドの情報取得</h3>
-<div class="outline-text-3" id="text-2-3">
-<font color="red"><strong>
-<p>
-これはJMX方式しか取れないぽい。
-</p>
-</strong></font>
-<p>
-Web系ワーカスレッドの実装はtomcatそのものが取り入れられているぽいで、JBossASに
-<code>-Dorg.apache.tomcat.util.ENABLE_MODELER=true</code> オプションを付けて起動する必要がある。
-</p>
-
-<pre class="example">
-$&gt;get -b jboss.web:address="/0.0.0.0",port=8080,type=Connector * -d jboss.web
-#mbean = jboss.web:address="/0.0.0.0",port=8080,type=Connector:
-port = 8080;
-
-protocol = HTTP/1.1;
-
-useIPVHosts = false;
-
-objectName = jboss.web:type=Connector,port=8080,address="/0.0.0.0";
-
-redirectPort = 443;
-
-secure = false;
-
-proxyName = null;
-
-enableLookups = false;
-
-maxPostSize = 2097152;
-
-proxyPort = 0;
-
-available = true;
-
-modelerType = org.apache.catalina.connector.Connector;
-
-info = org.apache.catalina.connector.Connector/2.1;
-
-bufferSize = 2048;
-
-scheme = http;
-
-xpoweredBy = false;
-
-allowTrace = false;
-
-domain = jboss.web;
-
-useBodyEncodingForURI = false;
-
-controller = jboss.web:type=Connector,port=8080,address="/0.0.0.0";
-
-uRIEncoding = null;
-
-maxSavePostSize = 4096;
-
-protocolHandlerClassName = org.apache.coyote.http11.Http11Protocol;
-
-$&gt;
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-2-4" class="outline-3">
-<h3 id="sec-2-4"><span class="section-number-3">2.4</span> リクエストプロセッサーの稼働状況</h3>
-<div class="outline-text-3" id="text-2-4">
-<pre class="example">
-$&gt;get -b jboss.web:name=http--0.0.0.0-8080,type=GlobalRequestProcessor *
-#mbean = jboss.web:name=http--0.0.0.0-8080,type=GlobalRequestProcessor:
-bytesSent = 0;
-
-bytesReceived = 0;
-
-processingTime = 0;
-
-errorCount = 0;
-
-maxTime = 0;
-
-requestCount = 0;
-
-modelerType = org.apache.coyote.RequestGroupInfo;
-
-$&gt;
-</pre>
-</div>
-</div>
-</div>
-
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> <code>RESTful</code> 方式</h2>
-<div class="outline-text-2" id="text-3">
-<pre class="example">
-$ curl --digest http://localhost:9990/management?json.pretty -u admin
-Enter host password for user 'admin':
-{
-    "management-major-version" : 1,
-    "management-micro-version" : 0,
-    "management-minor-version" : 5,
-    "name" : "localhost",
-    "namespaces" : [],
-    "product-name" : "EAP",
-    "product-version" : "6.2.4.GA",
-    "profile-name" : null,
-    "release-codename" : "Janus",
-    "release-version" : "7.3.4.Final-redhat-1",
-    "schema-locations" : [],
-    "core-service" : {
-        "management" : null,
-        "service-container" : null,
-        "module-loading" : null,
-        "server-environment" : null,
-        "platform-mbean" : null,
-        "patching" : null
-    },
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> 参考情報</h2>
-<div class="outline-text-2" id="text-4">
-<ul class="org-ul">
-<li><a href="https://docs.jboss.org/author/display/AS71/CLI+Recipes">CLI Recipes</a>
-</li>
-<li><a href="http://zorka.io/install/jboss7.html">JBoss 7.x and Wildfly 8.0 monitoring</a>
-</li>
-<li><a href="http://www.denniskanbier.nl/blog/monitoring/jboss-eap-6-monitoring-using-remoting-jmx-and-zabbix/">JBoss EAP 6 monitoring using remoting-jmx and Zabbix</a>
-</li>
-<li><a href="http://blog.akquinet.de/2014/09/18/jboss-eap-wildfly-management-interfaces-and-clients/">JBoss EAP / Wildfly Management Interfaces and Clients</a>
 </li>
 </ul>
 </div>

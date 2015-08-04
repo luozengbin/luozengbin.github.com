@@ -9,10 +9,13 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="
-Table of Contents 1. 特定のウィンドウを録画する
-2. 全画面を録画する
-3. 録画サンプル ffmpeg と xwininfo コマンドでスクリンキャストを取るシェールスクリプトを作成してみた。 ">
+  <meta name="description" content="Table of Contents 1. 環境
+2. インストール
+3. WLS起動オプションの変更
+4. テスト用サーブレット
+5. トレースして見る
+6. 参考 Weblogicのインスツルメンテーション機能に対して以下の課題が抱えていたため、Bytemanを使
+うことにしました。 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -81,6 +84,209 @@ Table of Contents 1. 特定のウィンドウを録画する
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-07-23-%5B%E6%A4%9C%E8%A8%BC%5Dbyteman%E3%81%A7weblogic%E3%81%AE%E3%82%A2%E3%83%97%E3%83%AA%E3%82%92%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E3%81%99%E3%82%8B.html">[検証]BytemanでWeblogicのアプリをトレースする</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-23T00:00:00+09:00" pubdate data-updated="true">2014-07-23 (Wed)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. インストール</a></li>
+<li><a href="#sec-3">3. WLS起動オプションの変更</a></li>
+<li><a href="#sec-4">4. テスト用サーブレット</a></li>
+<li><a href="#sec-5">5. トレースして見る</a></li>
+<li><a href="#sec-6">6. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+Weblogicのインスツルメンテーション機能に対して以下の課題が抱えていたため、Bytemanを使
+うことにしました。
+</p>
+
+<ul class="org-ul">
+<li><code>DisplayArgumentsAction</code> でメソッドの引数と戻り値が取れない
+</li>
+<li>採集結果がバイナリのため、利用不便(テキスト形式が望ましい)
+</li>
+<li>アプリ再デプロイするとインスツルメンテーション定義が消える
+</li>
+</ul>
+
+<p>
+<code>Byteman</code> はRed HatがリードするJBoss Communityプロジェクトのひつとであるため
+<code>Weblogic</code> でちゃんと動くが不安でした。検証したところ問題なく動いたので手順を残してお
+きます。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-07-23-%5B%E6%A4%9C%E8%A8%BC%5Dbyteman%E3%81%A7weblogic%E3%81%AE%E3%82%A2%E3%83%97%E3%83%AA%E3%82%92%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E3%81%99%E3%82%8B.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-07-22-%5B%E6%A4%9C%E8%A8%BC%5Dweblogic%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%84%E3%83%AB%E3%83%A1%E3%83%B3%E3%83%86%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E6%A9%9F%E8%83%BD.html">[検証]Weblogicのインスツルメンテーション機能</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-22T00:00:00+09:00" pubdate data-updated="true">2014-07-22 (Tue)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 検証アプリの作成</a></li>
+<li><a href="#sec-2">2. インスツルメンテーション設定手順</a>
+<ul>
+<li><a href="#sec-2-1">2.1. 診断システム・モジュールの作成</a></li>
+<li><a href="#sec-2-2">2.2. アプリケーションの設定</a></li>
+<li><a href="#sec-2-3">2.3. 採集されたイベントデータの確認</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. 参考リンク</a></li>
+</ul>
+</div>
+</div>
+<p>
+トラブルシューティング時にログでアプリケーションの動作を追うことが常套手段と言えるで
+しょう。しかし、アプリケーションにログ出力処理が実装されていないケースもあり得るで
+しょう。先日そのようなケースに遭遇してまして、メソッドのエントリとリターンのポイント
+ですらログ出力してくれなかった。コード規模が小さいのであれば、すぐログ出力処理を実装
+すればいいでしょうけど、大規模の場合それなりに大変でしょう。
+</p>
+
+<p>
+幸い、Weblogicサーバにはアプリケーションケーションの動作イベントを記録するような機能
+が提供されている。それはWebLogic診断フレームワークのインスツルメンテーション機能で
+す。以下はインスツルメンテーション機能の使い方を検証します。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-07-22-%5B%E6%A4%9C%E8%A8%BC%5Dweblogic%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%84%E3%83%AB%E3%83%A1%E3%83%B3%E3%83%86%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E6%A9%9F%E8%83%BD.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">[メモ]JDeveloper 11g/12c 開発環境の整備</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-22T00:00:00+09:00" pubdate data-updated="true">2014-07-22 (Tue)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. 12cインストール時のtmp領域足りない問題</a></li>
+<li><a href="#sec-3">3. 12c起動時にプロセスクラッシュ問題</a></li>
+<li><a href="#sec-4">4. 32bit版起動時のUnsatisfiedLinkError</a></li>
+<li><a href="#sec-5">5. 文字化け</a></li>
+<li><a href="#sec-6">6. メニューバーの動作不具合</a></li>
+<li><a href="#sec-7">7. ランチャーから起動できるようにする</a></li>
+<li><a href="#sec-8">8. 未解決問題</a></li>
+<li><a href="#sec-9">9. 参考したリンク</a></li>
+</ul>
+</div>
+</div>
+<p>
+Archlinux環境にJDeveloper 11g/12c 複数バージョンインストール時のメモ。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014-07-22-%5B%E3%83%A1%E3%83%A2%5Djdeveloper11g%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E3%81%AE%E6%95%B4%E5%82%99.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -822,511 +1028,6 @@ Oracle ADFの印刷機能にたずさわる機会がありましたので、一�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-06-16-%5B%E6%A4%9C%E8%A8%BC%5Dfirewalld%E3%82%92%E9%81%8A%E3%82%93%E3%81%A7%E3%81%BF%E3%81%9F.html">[検証]firewalldを遊んでみた</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-06-16T00:00:00+09:00" pubdate data-updated="true">2014-06-16 (Mon)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. firewalld情報収集から始まる</a></li>
-<li><a href="#sec-2">2. 検証環境</a></li>
-<li><a href="#sec-3">3. firewalldのパッケージ構成</a></li>
-<li><a href="#sec-4">4. 定義ファイルの見本</a>
-<ul>
-<li><a href="#sec-4-1">4.1. publicゾーン定義ファイル</a></li>
-<li><a href="#sec-4-2">4.2. SSHサービス定義ファイル</a></li>
-<li><a href="#sec-4-3">4.3. ICMPタイプ定義ファイル</a></li>
-</ul>
-</li>
-<li><a href="#sec-5">5. firewalldコマンドインタフェース</a></li>
-<li><a href="#sec-6">6. インストールとサービスの有効化</a></li>
-<li><a href="#sec-7">7. pingをブロックしてみた</a></li>
-<li><a href="#sec-8">8. sambaサービスを許可してみた</a></li>
-<li><a href="#sec-9">9. 独自ルールで通信履歴をロギングしてみた</a></li>
-<li><a href="#sec-10">10. 独自のゾーンファイルにしてみた</a></li>
-<li><a href="#sec-11">11. NICポートにゾーンの適用</a></li>
-<li><a href="#sec-12">12. GUIツールを使って見た</a></li>
-<li><a href="#sec-13">13. 参考した資料</a></li>
-</ul>
-</div>
-</div>
-<p>
-自宅の <code>Raspberry Pi</code> にfirewalldを入れて遊んで見ました。
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> firewalld情報収集から始まる</h2>
-<div class="outline-text-2" id="text-1">
-<ul class="org-ul">
-<li>iptablesが土台となります、firewalldの設定はipatbles設定へ変換される
-</li>
-<li>D-BUSのAPI経由でアプリケーションから制御が可能
-</li>
-<li>受送信ルールはゾーンファイルにて定義する
-</li>
-<li>受送信サービスタイプ（サービス名＋ポートより識別する）による通信制限が可能
-</li>
-<li>受送信ICMPタイプによる通信制限が可能
-</li>
-<li>通信元のIPサブネットによる通信制限が可能
-</li>
-<li>NICポートごとにゾーンファイルを適用することが可能
-（複数同時適用可能かは未検証）
-</li>
-</ul>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-06-16-%5B%E6%A4%9C%E8%A8%BC%5Dfirewalld%E3%82%92%E9%81%8A%E3%82%93%E3%81%A7%E3%81%BF%E3%81%9F.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-06-15-%5B%E3%83%A1%E3%83%A2%5Dotcopress%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E6%8A%95%E7%A8%BF%E8%87%AA%E5%8B%95%E5%8C%96.html">[メモ]Otcopressコンテンツ投稿自動化</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-06-15T00:00:00+09:00" pubdate data-updated="true">2014-06-15 (Sun)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>
-emacsからblog投稿ツールいくつ試しました、最近以下のツール組み合わせで落ち着いた。
-</p>
-<ul class="org-ul">
-<li>静的コンテンツ生成エンジン <code>Octopress</code> ： <a href="http://Octopress.org/">http://Octopress.org/</a>
-</li>
-<li>コンテンツ公開サービス <code>Github Page</code> : <a href="https://pages.github.com/">https://pages.github.com/</a>
-</li>
-<li>org-modesでOctopress記事を書く： <a href="https://github.com/yoshinari-nomura/org-Octopress">https://github.com/yoshinari-nomura/org-Octopress</a>
-</li>
-<li>自動化スクリプト
-</li>
-</ul>
-
-<p>
-
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> Octopress + Github Page でブログ環境を構築する</h2>
-<div class="outline-text-2" id="text-1">
-<p>
-同じ環境で複数Rubyバージョンを利用できるようにするためRbenvを導入する。
-</p>
-</div>
-
-<div id="outline-container-sec-1-1" class="outline-3">
-<h3 id="sec-1-1"><span class="section-number-3">1.1</span> Rbenvのインストール</h3>
-<div class="outline-text-3" id="text-1-1">
-<pre class="example">
-$ cd ~
-$ git clone git://github.com/sstephenson/rbenv.git .rbenv
-$ echo 'export PATH="$HOME/.rbenv/bin:$PATH"' &gt;&gt; ~/.bashrc
-$ echo 'eval "$(rbenv init -)"' &gt;&gt; ~/.bashrc
-$ git clone git://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build
-$ source ~/.bashrc
-</pre>
-
-<p>
-rbenvでインストール可能なバージョンリストを確認する。 <code>rbenv install -l</code>
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-1-2" class="outline-3">
-<h3 id="sec-1-2"><span class="section-number-3">1.2</span> RbenvによるRubyバージョンの切り替え</h3>
-<div class="outline-text-3" id="text-1-2">
-<pre class="example">
-$ rbenv install 1.9.3-p0
-$ rbenv global 1.9.3-p0
-$ rbenv rehash
-$ rbenv global
-$ ruby --version
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-1-3" class="outline-3">
-<h3 id="sec-1-3"><span class="section-number-3">1.3</span> Octopressのインストール</h3>
-<div class="outline-text-3" id="text-1-3">
-<p>
-GithubからOctopressをダウンロードする
-</p>
-<pre class="example">
-$ git clone git://github.com/imathis/Octopress.git Octopress
-$ cd Octopress
-$ ruby --version  # ruby バージョン確認
-</pre>
-
-<p>
-必要なrubyライブラリをインストールする
-</p>
-<pre class="example">
-$ gem install bundler
-$ rbenv rehash
-$ bundle install
-</pre>
-
-<p>
-Octopressテーマの初期化
-</p>
-<pre class="example">
-$ rake install
-</pre>
-
-<p>
-octostrap3 Themeへ変更
-</p>
-<pre class="example">
-$ cd Octopress
-$ git clone https://github.com/kAworu/octostrap3 .themes/octostrap3
-$ rake 'install[octostrap3]'
-</pre>
-
-<p>
-静的コンテンツの生成
-</p>
-<pre class="example">
-$ rake generate
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-1-4" class="outline-3">
-<h3 id="sec-1-4"><span class="section-number-3">1.4</span> Github Pageサイトの準備</h3>
-<div class="outline-text-3" id="text-1-4">
-<p>
-ここでは省略します。
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-1-5" class="outline-3">
-<h3 id="sec-1-5"><span class="section-number-3">1.5</span> OctopressコンテンツをGithub Pageにコミットする</h3>
-<div class="outline-text-3" id="text-1-5">
-<pre class="example">
-$rake setup_github_pages    # githubリポジトリのurlを入力する
-$rake generate
-$rake deploy
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> emacsから記事を書く道具の整備</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-<code>elpa</code> を通して、=org-mode= で記事を書くための <code>org-ocotpress</code> をインストールする。
-org-ocotpressは MELPAに登録してあるので、 <code>M-x package-install org-ocotpress</code> で
-インストールする。 <code>org-ocotpress</code> から記事を管理するため、emacsの設定とOcotpress
-のpermalink設定を以下のように変える。
-</p>
-
-<p>
-<code>octopress/_config.yml</code>
-</p>
-<pre class="example">
-permalink: /blog/:year-:month-:day-:title.html
-</pre>
-
-<p>
-<code>emacs設定</code>
-</p>
-<div class="org-src-container">
-
-<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">require</span> '<span style="color: #8ae234;">org-octopress</span>)
-(setq org-octopress-directory-top       (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source"</span>))
-(setq org-octopress-directory-posts     (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source/_posts"</span>))
-(setq org-octopress-directory-org-top   (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source"</span>))
-(setq org-octopress-directory-org-posts (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/source/blog"</span>))
-(setq org-octopress-setup-file          (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/setupfile.org"</span>))
-</pre>
-</div>
-
-<p>
-<code>blogs/octopress/setupfile.org</code>
-</p>
-<pre class="example">
-#+OPTIONS: H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:nil -:t f:nil *:t &lt;:t
-#+OPTIONS: TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
-#+OPTIONS: author:nil
-#+OPTIONS: email:nil
-#+OPTIONS: creator:nil
-#+OPTIONS: timestamp:nil
-#+MACRO: more @@html:&lt;!-- more --&gt;@@
-#+MACRO: twitter [[http://twitter.com/$1][@$1]]
-#+MACRO: github [[https://github.com/$1/$2][$2]]
-#+PROPERTY: cache yes
-#+STARTUP: odd
-#+STARTUP: content
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> 自動化スクリプト</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-コンテンツプレビュー自動化elispとshell script
-</p>
-<div class="org-src-container">
-
-<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">defvar</span> <span style="color: #ff6347;">org-octopress-top</span>
-  (concat user-emacs-directory <span style="color: #ad7fa8; font-style: italic;">"blogs/octopress/"</span>)
-  <span style="color: #888a85;">"octopress&#12502;&#12525;&#12464;&#12486;&#12531;&#12503;&#12524;&#12540;&#12488;&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;"</span>)
-
-(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">org-octopress-preview</span> ()
-  <span style="color: #888a85;">"preview octopress content by call external shell script."</span>
-  (interactive)
-  (message <span style="color: #ad7fa8; font-style: italic;">"preview octopress content ...."</span>)
-  (<span style="color: #729fcf; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top)
-                 (preview-url <span style="color: #ad7fa8; font-style: italic;">"http://localhost:4000"</span>))
-    (deferred:$
-      (deferred:process-shell <span style="color: #ad7fa8; font-style: italic;">"blog_preview.sh"</span> org-octopress-top)
-      (deferred:nextc it
-        (<span style="color: #729fcf; font-weight: bold;">lambda</span> (x)
-          (message <span style="color: #ad7fa8; font-style: italic;">"*** preview blog ***"</span>)
-          (message x)
-          (message <span style="color: #ad7fa8; font-style: italic;">"launch preview url %s"</span> preview-url)
-          (browse-url preview-url))))))
-</pre>
-</div>
-
-<p>
-<code>blog_preview.sh</code>
-</p>
-<div class="org-src-container">
-
-<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Usage: blog_preview.sh</span>
-<span style="color: #888a85;">##</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
-<span style="color: #888a85;">##</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
-<span style="color: #888a85;">##          </span><span style="color: #888a85;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12503;&#12524;&#12499;&#12517;&#12540;</span>
-<span style="color: #888a85;">##################################################################### </span>
-
-<span style="color: #ff6347;">RUBY_VER</span>=<span style="color: #ad7fa8; font-style: italic;">"1.9.3-p0"</span>
-<span style="color: #ff6347;">OCTOPRESS_DIR</span>=$<span style="color: #ff6347;">1</span>
-
-which rbenv
-<span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">?</span> = 0 ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-    <span style="color: #888a85;"># </span><span style="color: #888a85;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
-    rbenv global $<span style="color: #ff6347;">RUBY_VER</span>
-    rbenv rehash
-    <span style="color: #ff6347;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
-    <span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">global_ver</span> = $<span style="color: #ff6347;">RUBY_VER</span> ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-        <span style="color: #888a85;"># </span><span style="color: #888a85;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-        <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"run rake with `ruby --version`"</span>
-        <span style="color: #729fcf;">pushd</span> $<span style="color: #ff6347;">OCTOPRESS_DIR</span>
-        rake generate
-        <span style="color: #729fcf; font-weight: bold;">if</span> [ -z <span style="color: #ad7fa8; font-style: italic;">"`netstat -nutl | grep 4000`"</span> ] ; <span style="color: #729fcf; font-weight: bold;">then</span>
-            <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"&gt;&gt;&gt; Startup Preview"</span>
-            rake preview &amp;
-            sleep 2
-        <span style="color: #729fcf; font-weight: bold;">fi</span>
-        <span style="color: #729fcf;">popd</span>
-    <span style="color: #729fcf; font-weight: bold;">fi</span>
-<span style="color: #729fcf; font-weight: bold;">fi</span>
-</pre>
-</div>
-
-<p>
-コンテンツをgithubへ自動同期化elispとshell script
-</p>
-<div class="org-src-container">
-
-<pre class="src src-emacs-lisp">(<span style="color: #729fcf; font-weight: bold;">defun</span> <span style="color: #edd400; font-weight: bold;">org-octopress-deploy</span> ()
-  <span style="color: #888a85;">"deploy octopress content to github page service."</span>
-  (interactive)
-  (message <span style="color: #ad7fa8; font-style: italic;">"deploy octopress content ...."</span>)
-  (<span style="color: #729fcf; font-weight: bold;">lexical-let*</span> ((default-directory org-octopress-top))
-    (deferred:$
-      (deferred:process-shell <span style="color: #ad7fa8; font-style: italic;">"blog_deploy.sh"</span> org-octopress-top)
-      (deferred:nextc it
-        (<span style="color: #729fcf; font-weight: bold;">lambda</span> (x)
-          (message <span style="color: #ad7fa8; font-style: italic;">"*** deploy blog ***"</span>)
-          (message x))))))
-</pre>
-</div>
-
-<p>
-<code>blog_deploy.sh</code>
-</p>
-<div class="org-src-container">
-
-<pre class="src src-sh"><span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
-<span style="color: #888a85;">#</span><span style="color: #888a85;">!/bin/sh</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Usage: blog_deploy.sh</span>
-<span style="color: #888a85;">##</span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Options: $1 octopress&#12487;&#12451;&#12524;&#12463;&#12488;&#12522;&#12398;&#20301;&#32622;</span>
-<span style="color: #888a85;">##   </span>
-<span style="color: #888a85;">## </span><span style="color: #888a85;">Comment: octopress&#37197;&#19979;&#12395;blog&#38745;&#30340;</span>
-<span style="color: #888a85;">##          </span><span style="color: #888a85;">&#12467;&#12531;&#12486;&#12531;&#12484;&#12398;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-<span style="color: #888a85;">##################################################################### </span>
-
-<span style="color: #ff6347;">RUBY_VER</span>=<span style="color: #ad7fa8; font-style: italic;">"1.9.3-p0"</span>
-<span style="color: #ff6347;">OCTOPRESS_DIR</span>=$<span style="color: #ff6347;">1</span>
-
-which rbenv
-<span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">?</span> = 0 ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-    <span style="color: #888a85;"># </span><span style="color: #888a85;">ruby &#12496;&#12540;&#12472;&#12519;&#12531;&#20999;&#12426;&#26367;&#12360;&#20966;&#29702;</span>
-    rbenv global $<span style="color: #ff6347;">RUBY_VER</span>
-    rbenv rehash
-    <span style="color: #ff6347;">global_ver</span>=<span style="color: #fa8072;">`rbenv global`</span>
-    <span style="color: #729fcf; font-weight: bold;">if</span> [ $<span style="color: #ff6347;">global_ver</span> = $<span style="color: #ff6347;">RUBY_VER</span> ]; <span style="color: #729fcf; font-weight: bold;">then</span>
-        <span style="color: #888a85;"># </span><span style="color: #888a85;">blog&#12467;&#12531;&#12486;&#12531;&#12484;&#29983;&#25104;&#12392;&#12487;&#12503;&#12525;&#12452;</span>
-        <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8; font-style: italic;">"run rake with `ruby --version`"</span>
-        <span style="color: #729fcf;">pushd</span> $<span style="color: #ff6347;">OCTOPRESS_DIR</span>
-        rake generate
-        rake deploy
-        <span style="color: #729fcf;">popd</span>
-    <span style="color: #729fcf; font-weight: bold;">fi</span>
-<span style="color: #729fcf; font-weight: bold;">fi</span>
-</pre>
-</div>
-</div>
-</div>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">[検証]SMTPプロトコール監視してみた</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-06-13T00:00:00+09:00" pubdate data-updated="true">2014-06-13 (Fri)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 概要</a></li>
-<li><a href="#sec-2">2. telnetからの接続開始</a></li>
-<li><a href="#sec-3">3. メール送信の開始を宣言する</a></li>
-<li><a href="#sec-4">4. 送信元を指定する</a></li>
-<li><a href="#sec-5">5. 送信先を指定する</a></li>
-<li><a href="#sec-6">6. メール本文を開始する</a></li>
-<li><a href="#sec-7">7. メール本文終了</a></li>
-<li><a href="#sec-8">8. 接続終了</a></li>
-<li><a href="#sec-9">9. ncコマンドでファイルからメール送信テスト</a></li>
-<li><a href="#sec-10">10. 習ったこと</a></li>
-<li><a href="#sec-11">11. 参考</a></li>
-</ul>
-</div>
-</div>
-<p>
-自宅のPC環境にMTA(postfix)サーバを構築しました。
-１周間ほど保持したので、telnet、nc、tcpdumpコマンドから
-メール送信処理の中身を観測してみたいと思います。
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 概要</h2>
-<div class="outline-text-2" id="text-1">
-<p>
-VM環境を立てるのが面倒のため、loopbackインタフェースを通して
-ローカル環境内で検証を行う。
-</p>
-<pre class="example">
-+--------------+         +-------------+
-|              |         |             |
-| クライアント +-- lo ----+  MTAサーバ |
-|              |         |             |
-+--------------+         +-------------+
-  127.0.0.1                127.0.0.1:25
-</pre>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-06-13-%5B%E6%A4%9C%E8%A8%BC%5Dsmtp%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%BC%E3%83%AB%E7%9B%A3%E8%A6%96%E3%81%97%E3%81%A6%E3%81%BF%E3%81%9F.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/5">&larr; Older</a>
@@ -1362,6 +1063,18 @@ VM環境を立てるのが面倒のため、loopbackインタフェースを通�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015-08-02-%5Bmemo%5D%5Blinux%5Dbash%E7%92%B0%E5%A2%83%E3%81%ABpeco%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%97%E3%81%BE%E3%81%97%E3%81%9F.html">[Memo][Linux]bash環境にpecoを導入しました</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-23-%5Btips%5D%5Blinux%5Dsamba%E3%83%A6%E3%83%BC%E3%82%B6%E3%81%AE%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E5%A4%89%E6%9B%B4.html">[tips][Linux]Sambaユーザのパスワード変更</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-23-%5Btips%5D%5Blinux%5Ddocker%E3%81%AE%E3%83%97%E3%83%AD%E3%82%AD%E3%82%B7%E8%A8%AD%E5%AE%9A.html">[tips][Linux]Dockerのプロキシ設定</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015-07-15-%5Bemacs%5Dmew%E8%B5%B7%E5%8B%95%E6%99%82%E3%81%AB%E3%82%A2%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%81%AE%E9%81%B8%E6%8A%9E%E3%82%92%E5%87%BA%E6%9D%A5%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB.html">[Emacs]mew起動時にアカウントの選択を出来るように</a>
       </li>
     
@@ -1389,18 +1102,6 @@ VM環境を立てるのが面倒のため、loopbackインタフェースを通�
         <a href="/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]URLパラメータデコード処理について</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html">[メモ]デバッグ版OpenJDKのビルド</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]JVMのスタックサイズについて</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html">[調査]JBossASソケット受信バッファーのサイズ</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -1408,11 +1109,11 @@ VM環境を立てるのが面倒のため、loopbackインタフェースを通�
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (3)</a></li><li><a href='/blog/categories/java/'>java (18)</a></li><li><a href='/blog/categories/linux/'>linux (19)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (3)</a></li><li><a href='/blog/categories/java/'>java (18)</a></li><li><a href='/blog/categories/linux/'>linux (22)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/javabeans' style='font-size: 120.0%'>JavaBeans(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/journald' style='font-size: 120.0%'>journald(1)</a> <a href='/blog/tags/jvm' style='font-size: 140.0%'>jvm(2)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/mew' style='font-size: 120.0%'>mew(1)</a> <a href='/blog/tags/misc' style='font-size: 120.0%'>misc(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 140.0%'>stack(2)</a> <a href='/blog/tags/swap' style='font-size: 120.0%'>swap(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/bash' style='font-size: 120.0%'>bash(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/docker' style='font-size: 120.0%'>docker(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/javabeans' style='font-size: 120.0%'>JavaBeans(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/journald' style='font-size: 120.0%'>journald(1)</a> <a href='/blog/tags/jvm' style='font-size: 140.0%'>jvm(2)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/mew' style='font-size: 120.0%'>mew(1)</a> <a href='/blog/tags/misc' style='font-size: 120.0%'>misc(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/peco' style='font-size: 120.0%'>peco(1)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/samba' style='font-size: 120.0%'>samba(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 140.0%'>stack(2)</a> <a href='/blog/tags/swap' style='font-size: 120.0%'>swap(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
 </section>
 
 <section>

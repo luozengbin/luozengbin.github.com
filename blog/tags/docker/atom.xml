@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Docker | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/docker/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2015-08-05T01:31:26+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Linux]Dockerのプロキシ設定]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-07-23-%5Btips%5D%5Blinux%5Ddocker%E3%81%AE%E3%83%97%E3%83%AD%E3%82%AD%E3%82%B7%E8%A8%AD%E5%AE%9A.html"/>
+    <updated>2015-07-23T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][linux]dockerのプロキシ設定</id>
+    <content type="html"><![CDATA[<p>
+基本は本家のドキュメントを見ろう！
+</p>
+
+
+
+
+<p>
+<a href="https://docs.docker.com/articles/systemd/">https://docs.docker.com/articles/systemd/</a>
+</p>
+
+
+
+
+<p>
+ここでは Acrh Linx で確認された手順を記録する。
+</p>
+
+
+
+
+<p>
+社内はフォワードプロキシ経由で外と繋ぐなので、デフォルトでは通らない ;-(
+</p>
+
+
+<pre class="example">
+$ docker search oraclelinux
+Error response from daemon: Get https://index.docker.io/v1/search?q=oraclelinux: dial tcp 54.174.226.171:443: no route to host
+</pre>
+
+
+
+
+<p>
+<code>/etc/systemd/system/&lt;サービスID&gt;.d/</code> 配下に環境変数の上書きファイルを定義し、サービ
+スをリロードするだけです。
+</p>
+
+
+<pre class="example">
+$ sudo mkdir /etc/systemd/system/docker.service.d
+$ sudo touch /etc/systemd/system/docker.service.d/http-proxy.conf
+$ sudo nano /etc/systemd/system/docker.service.d/http-proxy.conf
+[Service]
+Environment="HTTP_PROXY=http://*********************:8081"
+Environment="HTTPS_PROXY=http://*********************:8081"
+$ sudo systemctl daemon-reload
+$ sudo systemctl restart docker
+$ docker search oraclelinux
+NAME                                      DESCRIPTION                                     STARS     OFFICIAL   AUTOMATED
+oraclelinux                               Oracle Linux is an open-source operating s...   46        [OK]       
+oracle/oraclelinux                        Oracle Linux is an open-source operating s...   16                   [OK]
+tvierling/oraclelinux                     Oracle Linux base images, yum-updated to l...   2                    [OK]
+centminmod/oraclelinux65base              Oracle Linux 6.5 base 1.57GB image              1                    
+avmiller/oraclelinux                      Personal Oracle Linux Test Images (Non-pro...   0                    
+kiwenlau/oraclelinux                                                                      0                    
+talberto/oraclelinux                                                                      0                    
+ksasi/oraclelinux                                                                         0                    
+saltfactory/oraclelinux                   Oracle Linux                                    0                    
+arpagaus/oraclelinux                                                                      0                    
+joseperez/oraclelinux-lamp                oraclelinux 7.0 con mariadb, apache y php.      0                    
+jinyan/oraclelinux                        Oracle Linux 6.6                                0                    
+hootjr/oraclelinux                                                                        0                    
+poisoncreed/oraclelinux-base-with-httpd                                                   0                    
+bdpzone/bdporaclelinux6                   Big Data Partnership Development Environme...   0                    [OK]
+dyoung522/oracle-ruby                     OracleLinux running Ruby                        0                    [OK]
+bdpzone/bdporaclelinux7                   Big Data Partnership Development Environme...   0                    [OK]
+mlechner/oraclelinux7                     GIS tools on Oracle Linux 7                     0                    
+tehmul/oraclelinux6-tc                    Oracle Linux 6+Oracle Server JRE 8+ Apache...   0                    
+calaniz/oraclelinux                                                                       0                    
+dyoung522/oraclelinux-dev                 OracleLinux with development environment        0                    [OK]
+hedlund/oraclelinux                                                                       0                    [OK]
+florentbenoit/oraclelinux-jdk7                                                            0                    [OK]
+</pre>
+
+]]></content>
+  </entry>
+  
+</feed>

@@ -9,13 +9,11 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="
-Table of Contents 1. 前提
-2. インストール
-3. JBossASプロセスへのアタッチ
-4. トレース用スクリプトの作成
-5. スクリプトの実行
-6. 参考 ミドルウェアの内部動作をトレースするためによく使うので手順を残しておきます。 ">
+  <meta name="description" content="Table of Contents 1. 環境
+2. ビルド手順
+3. gdbでデバッグしてみる
+4. valgrindでコールグラフ出してみる
+5. 参考 今まで、JVM中身の調査は SystemTap + java-1.x.x-openjdk-debuginfo.x86_64 利用してい &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -84,6 +82,249 @@ Table of Contents 1. 前提
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html">[メモ]デバッグ版OpenJDKのビルド</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-05-10T00:00:00+09:00" pubdate data-updated="true">2015-05-10 (Sun)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. ビルド手順</a></li>
+<li><a href="#sec-3">3. gdbでデバッグしてみる</a></li>
+<li><a href="#sec-4">4. valgrindでコールグラフ出してみる</a></li>
+<li><a href="#sec-5">5. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+今まで、JVM中身の調査は <code>SystemTap + java-1.x.x-openjdk-debuginfo.x86_64</code> 利用してい
+たが。もう少しJVMの中身を踏み込みたいのでデバッグ版JVMをビルドしてみました。
+</p>
+
+<p>
+<a href="http://hg.openjdk.java.net/jdk7/jdk7/raw-file/tip/README-builds.html">http://hg.openjdk.java.net/jdk7/jdk7/raw-file/tip/README-builds.html</a> の手順でビルドし
+てもいいのですが、トライ・アンド・エラーで時間が取られそうなので、自分が使っている
+<code>Arch Linux</code> 環境で一番手取りの早い手順で行いました。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]JVMのスタックサイズについて</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-04-22T00:00:00+09:00" pubdate data-updated="true">2015-04-22 (Wed)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 環境</a></li>
+<li><a href="#sec-2">2. JVMのスタック領域について</a></li>
+<li><a href="#sec-3">3. Javaスレッドのスタックページ構成</a></li>
+<li><a href="#sec-4">4. HotSpotの実装</a>
+<ul>
+<li><a href="#sec-4-1">4.1. glibc guard page</a></li>
+<li><a href="#sec-4-2">4.2. HotSpot Guard Pages</a></li>
+<li><a href="#sec-4-3">4.3. Normal Stack</a></li>
+</ul>
+</li>
+<li><a href="#sec-5">5. スタックサイズの制御</a></li>
+<li><a href="#sec-6">6. ulimit -sの影響範囲</a></li>
+<li><a href="#sec-7">7. -Xssと-XX:ThreadStackSizeの違い</a></li>
+<li><a href="#sec-8">8. 参考</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> 環境</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+本記事の内容は以下環境を前提としています。
+</p>
+<ul class="org-ul">
+<li>GNU/Linux x86_64
+</li>
+<li>OpenJDK 64-Bit 1.7.0_xx
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> JVMのスタック領域について</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+<code>-Xss</code> 、 <code>-XX:ThreadStackSize</code> パラメータ値と <code>ulimit -s</code> リソースリミット制限値を混
+乱している記事を見受けたため、HotSpotの中身を調べることにしました。
+</p>
+
+<p>
+結論を先に、
+</p>
+<ul class="org-ul">
+<li><code>ulimit -s</code> のスタック最大サイズ制限値は親プロセスであるJVMランチャーのみ適用される。
+</li>
+<li>JVMランチャーやJavaAPIから起動されたJavaスレッドのスタックサイズは  <code>-Xss</code> もしくは
+<code>-XX:ThreadStackSize</code> パラメータ値が適用される。
+</li>
+<li>JVMランチャーから起動されたイニシャルスレッドのスタックサイズは <code>-Xss</code> パラメータの
+み制御できる。
+</li>
+<li>JNI経由で外部からJVMにアタッチしたスレッドのスタックサイズはJVMの管理対象外である。
+</li>
+</ul>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html">[調査]JBossASソケット受信バッファーのサイズ</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-04-01T00:00:00+09:00" pubdate data-updated="true">2015-04-01 (Wed)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. 実験シナリオ</a></li>
+<li><a href="#sec-2">2. テスト信用のサーブレットを準備する</a></li>
+<li><a href="#sec-3">3. サーバソケットの受信バッファーサイズを確認する</a></li>
+<li><a href="#sec-4">4. Acceptorスレッドを意図的ストールさせる</a></li>
+<li><a href="#sec-5">5. TCPソケット受信バッファサイズを監視する</a></li>
+<li><a href="#sec-6">6. パケット通信を監視する</a></li>
+<li><a href="#sec-7">7. telnetからデータを順次に送りつける</a></li>
+<li><a href="#sec-8">8. 監視結果解析</a></li>
+<li><a href="#sec-9">9. TCPソケット受信バッファーサイズの設定について</a></li>
+<li><a href="#sec-10">10. まとめ</a></li>
+<li><a href="#sec-11">11. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+以下LinuxプラットフォームでJBossASアプリケーションサーバの話です。
+</p>
+
+<p>
+次のケースに置いて、Acceptorスレッドやワーカスレッドの働き状態が悪くなるため、クライ
+アントから送信されてデータがサーバ側のTCPソケット受信バッファーに溜まる。バッファーが
+一杯になるとパケット受信ができなくなる、TCPレーヤでパケット再送が起きる。
+</p>
+
+<ul class="org-ul">
+<li>サーバが過負荷状態でCPU時間がAcceptorスレッドやワーカスレッドに回らない場合
+</li>
+<li>FullGCによるJBossASサーバの一時停止
+</li>
+</ul>
+
+<p>
+この記事はTCP受信バッファーのサイズの実測値を調査致します。
+</p>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -625,297 +866,6 @@ Zabbix2.4、CentOS7用のrpmが見つからなかったので手動ビルドす�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]JBossAS7のソケット操作タイムアウト値について</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-10-08T00:00:00+09:00" pubdate data-updated="true">2014-10-08 (Wed)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. DEFAULT_CONNECTION_TIMEOUTオプションの役割</a></li>
-<li><a href="#sec-2">2. JBossASの実装</a></li>
-<li><a href="#sec-3">3. タイムアウト時の挙動</a>
-<ul>
-<li><a href="#sec-3-1">3.1. HTTPヘッダー受信途中タイムアウトの場合</a></li>
-<li><a href="#sec-3-2">3.2. リクエスト本文受信途中タイムアウトの場合</a></li>
-</ul>
-</li>
-<li><a href="#sec-4">4. 注意書き</a></li>
-<li><a href="#sec-5">5. 参考リンク</a></li>
-</ul>
-</div>
-</div>
-<p>
-JBossAS の起動オプション <code>org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT</code> につい
-て誤解があったので、メモしておきます。
-</p>
-
-<p>
-まず、ドキュメントの説明。デフォルトタイムアウト値が60秒ですね。
-</p>
-<pre class="example">
-org.apache.coyote.http11.DEFAULT_CONNECTION_TIMEOUT
-Default socket timeout. The default value is 60000 ms.
-</pre>
-<p>
-説明だけでよく分からない、最初はサーバサイトワーカスレッドの処理時間タイムアウト値
-と理解しました。
-</p>
-
-<p>
-テストアプリでタイムアウト時の動作を確認する。
-</p>
-<pre class="example">
-+----------+            +----------------+
-| SoapUI   +------------+  テストアプリ  |
-+----------+            |                |
-                        +----------------+
-                        |  JBossAS 7.x   |
-                        +----------------+
-</pre>
-<p>
-SoapUIのリードタイムアウトを120秒に変更する、テストアプリに <code>Thread.sleep(70 * 1000)</code>
-コードを仕込んで処理時間を長くする。これでタイムアウトになると考えたのですが、結果的に
-タイムアウトせず、正常なレスポンスでした。これで、 <code>DEFAULT_CONNECTION_TIMEOUT</code> はワー
-カスレッドのタイムアウト値ではないことが分かりました。
-</p>
-
-<p>
-説明文にソケットのタイムアウト値であることが書かれたので <code>telnet</code> でソケット通信の各
-stepの処理時間をあえて長くして動作状況を観測してみました。
-</p>
-
-<ol class="org-ol">
-<li>telnetでコネクションを貼る
-</li>
-<li>ヘッダを途中まで送信する
-</li>
-<li>60秒待つこと
-</li>
-</ol>
-
-<pre class="example">
-$ telnet localhost 8080
-Trying 127.0.0.1...
-Connected to localhost.
-Escape character is '^]'.
-POST http://localhost:8080/testapp/HelloWorld HTTP/1.1
-Connection: close
-Accept-Encoding: gzip,deflate
-Content-Type: text/xml;charset=UTF-8
-SOAPAction: "sayHello"
-Content-Length: 318
-Host: localhost:8080
-★ここで60秒を待つ
-Connection closed by foreign host.
-</pre>
-
-<p>
-step3のところで60秒後、サーバからfinパケットが送出されてコネクションが切れた。
-<code>DEFAULT_CONNECTION_TIMEOUT</code> パラメータの意味が少し掴みました。
-</p>
-
-<p>
-少し掘り下げて見たいので、コードリーディングして実装の概要を以下に紹介します。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-10-08-%5B%E8%AA%BF%E6%9F%BB%5Djbossas7%E3%81%AE%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%80%A4%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-10-05-%5B%E8%AA%BF%E6%9F%BB%5Dsas%E7%B5%B1%E8%A8%88%E3%82%BD%E3%83%95%E3%83%88%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]SAS統計ソフトについて</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-10-05T00:00:00+09:00" pubdate data-updated="true">2014-10-05 (Sun)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. SASとは</a></li>
-<li><a href="#sec-2">2. SAS言語</a></li>
-<li><a href="#sec-3">3. 統計分析のイメージ</a></li>
-<li><a href="#sec-4">4. SASプログラムのイメージ</a></li>
-<li><a href="#sec-5">5. 無償で使えるの？</a></li>
-<li><a href="#sec-6">6. 日本での事例</a></li>
-<li><a href="#sec-7">7. おまけに</a></li>
-<li><a href="#sec-8">8. 参考リンク</a></li>
-</ul>
-</div>
-</div>
-<p>
-ある飲み会で <code>JT</code> のプログラムマーさんと出会って、最初彼からの自己紹介で「プログラムマー
-です」と聞いた時に、Java屋、Ruby屋普通のWebエンジニアだと思った。話を詳しく聞くとなん
-と、「SAS」という言語しか扱っていないようです。 <code>SAS</code> という言語は初耳なので、軽く調べること
-にした。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-10-05-%5B%E8%AA%BF%E6%9F%BB%5Dsas%E7%B5%B1%E8%A8%88%E3%82%BD%E3%83%95%E3%83%88%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-09-30-%5B%E3%83%A1%E3%83%A2%5Djbossas%E7%A8%BC%E5%83%8D%E6%83%85%E5%A0%B1%E5%8F%8E%E5%8F%96%E5%BE%97%E6%96%B9%E6%B3%95.html">[メモ]JBossAS稼働情報収取得方法</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-09-30T00:00:00+09:00" pubdate data-updated="true">2014-09-30 (Tue)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. <code>jboss-cli.sh</code> 方式</a>
-<ul>
-<li><a href="#sec-1-1">1.1. JBoss管理インスタンスへ接続する</a></li>
-<li><a href="#sec-1-2">1.2. JVMスレッドプール情報取得</a></li>
-<li><a href="#sec-1-3">1.3. JVMメモリ情報取得</a></li>
-<li><a href="#sec-1-4">1.4. データベース接続プール情報取得</a></li>
-<li><a href="#sec-1-5">1.5. JDBCステートメントキャッシュ情報</a></li>
-<li><a href="#sec-1-6">1.6. 起動オプション、システム属性などの確認</a></li>
-<li><a href="#sec-1-7">1.7. EJBスレッドプールの確認</a></li>
-<li><a href="#sec-1-8">1.8. トランザクション情報の確認</a></li>
-</ul>
-</li>
-<li><a href="#sec-2">2. <code>remoting-jmx</code> 方式</a>
-<ul>
-<li><a href="#sec-2-1">2.1. JBossAS接続用のjmxterm起動スクリプト</a></li>
-<li><a href="#sec-2-2">2.2. jmxterm基本的な使い方</a></li>
-<li><a href="#sec-2-3">2.3. Web系ワーカスレッドの情報取得</a></li>
-<li><a href="#sec-2-4">2.4. リクエストプロセッサーの稼働状況</a></li>
-</ul>
-</li>
-<li><a href="#sec-3">3. <code>RESTful</code> 方式</a></li>
-<li><a href="#sec-4">4. 参考情報</a></li>
-</ul>
-</div>
-</div>
-<p>
-コマンドインタフェースから <code>JBossAS 7.x</code> アプリケーションサーバの稼働情報収取得方法に
-ついて検証してみた。主に以下の方法が存在する。
-</p>
-
-<ol class="org-ol">
-<li><code>jboss-cli.sh</code> コマンドでサーバの設定情報やRuntime情報を取得する。
-</li>
-<li>RESTful Management Interfaces HTTP通信でJSON形式で情報ヲ取得する。
-</li>
-<li>remoting-jmx インタフェースでMBeanサーバから情報を取得する。
-</li>
-</ol>
-
-<p>
-1と2の情報源が一緒です。取れる情報が次のようなイメージ、用途に応じて選ぶことになると思
-います。
-</p>
-<pre class="example">
-+-------------+
-| jboss-cli   |
-|   +---------+-----+
-|   |         |     |
-|   |         | JMX |
-|   |         |     |
-|   +---------+-----+
-+-------------+
-</pre>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014-09-30-%5B%E3%83%A1%E3%83%A2%5Djbossas%E7%A8%BC%E5%83%8D%E6%83%85%E5%A0%B1%E5%8F%8E%E5%8F%96%E5%BE%97%E6%96%B9%E6%B3%95.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -951,6 +901,18 @@ step3のところで60秒後、サーバからfinパケットが送出されて�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015-08-02-%5Bmemo%5D%5Blinux%5Dbash%E7%92%B0%E5%A2%83%E3%81%ABpeco%E3%82%92%E5%B0%8E%E5%85%A5%E3%81%97%E3%81%BE%E3%81%97%E3%81%9F.html">[Memo][Linux]bash環境にpecoを導入しました</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-23-%5Btips%5D%5Blinux%5Dsamba%E3%83%A6%E3%83%BC%E3%82%B6%E3%81%AE%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E5%A4%89%E6%9B%B4.html">[tips][Linux]Sambaユーザのパスワード変更</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-23-%5Btips%5D%5Blinux%5Ddocker%E3%81%AE%E3%83%97%E3%83%AD%E3%82%AD%E3%82%B7%E8%A8%AD%E5%AE%9A.html">[tips][Linux]Dockerのプロキシ設定</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015-07-15-%5Bemacs%5Dmew%E8%B5%B7%E5%8B%95%E6%99%82%E3%81%AB%E3%82%A2%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%81%AE%E9%81%B8%E6%8A%9E%E3%82%92%E5%87%BA%E6%9D%A5%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB.html">[Emacs]mew起動時にアカウントの選択を出来るように</a>
       </li>
     
@@ -978,18 +940,6 @@ step3のところで60秒後、サーバからfinパケットが送出されて�
         <a href="/blog/2015-05-14-%5B%E8%AA%BF%E6%9F%BB%5Durl%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%87%E3%82%B3%E3%83%BC%E3%83%89%E5%87%A6%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]URLパラメータデコード処理について</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2015-05-10-%5B%E3%83%A1%E3%83%A2%5D%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E7%89%88openjdk%E3%81%AE%E3%83%93%E3%83%AB%E3%83%89.html">[メモ]デバッグ版OpenJDKのビルド</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[調査]JVMのスタックサイズについて</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-04-01-%5B%E8%AA%BF%E6%9F%BB%5Djbossas%E3%82%BD%E3%82%B1%E3%83%83%E3%83%88%E5%8F%97%E4%BF%A1%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%83%BC%E3%81%AE%E3%82%B5%E3%82%A4%E3%82%BA.html">[調査]JBossASソケット受信バッファーのサイズ</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -997,11 +947,11 @@ step3のところで60秒後、サーバからfinパケットが送出されて�
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (3)</a></li><li><a href='/blog/categories/java/'>java (18)</a></li><li><a href='/blog/categories/linux/'>linux (19)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (3)</a></li><li><a href='/blog/categories/java/'>java (18)</a></li><li><a href='/blog/categories/linux/'>linux (22)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/javabeans' style='font-size: 120.0%'>JavaBeans(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/journald' style='font-size: 120.0%'>journald(1)</a> <a href='/blog/tags/jvm' style='font-size: 140.0%'>jvm(2)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/mew' style='font-size: 120.0%'>mew(1)</a> <a href='/blog/tags/misc' style='font-size: 120.0%'>misc(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 140.0%'>stack(2)</a> <a href='/blog/tags/swap' style='font-size: 120.0%'>swap(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/bash' style='font-size: 120.0%'>bash(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/docker' style='font-size: 120.0%'>docker(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/javabeans' style='font-size: 120.0%'>JavaBeans(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/journald' style='font-size: 120.0%'>journald(1)</a> <a href='/blog/tags/jvm' style='font-size: 140.0%'>jvm(2)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/mew' style='font-size: 120.0%'>mew(1)</a> <a href='/blog/tags/misc' style='font-size: 120.0%'>misc(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/peco' style='font-size: 120.0%'>peco(1)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/samba' style='font-size: 120.0%'>samba(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 140.0%'>stack(2)</a> <a href='/blog/tags/swap' style='font-size: 120.0%'>swap(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
 </section>
 
 <section>
