@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-08-05T01:31:26+09:00</updated>
+  <updated>2015-08-07T16:13:34+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,72 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Linux]Firefox起動時にプロファイル選択出来るようにする]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-08-07-%5Btips%5D%5Blinux%5Dfirefox%E8%B5%B7%E5%8B%95%E6%99%82%E3%81%AB%E3%83%97%E3%83%AD%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E9%81%B8%E6%8A%9E%E5%87%BA%E6%9D%A5%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB%E3%81%99%E3%82%8B.html"/>
+    <updated>2015-08-07T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][linux]firefox起動時にプロファイル選択出来るようにする</id>
+    <content type="html"><![CDATA[<p>
+Web開発でクリーンなテスト環境が必要とする場面が結構あります。
+普段ご利用しているブラウザの設定リセットやキャッシュクリアは平気に出来ないでしょう。
+</p>
+
+<p>
+この問題を解決するために、ブラウザにマルチプロファイル機能が提供してくれる。
+</p>
+
+<p>
+例えばFirefoxに <code>--new-instance</code> オプションを付けて起動時すると下記のようなプロファイ
+ル選択ダイアログが表示されて、「Create Profile」で新しいプロファイルを持ちたFirefoxが
+起動される。
+</p>
+
+
+<div class="figure">
+<p><img src="img/2015-08-07-firefox-new-instance.png" alt="2015-08-07-firefox-new-instance.png" />
+</p>
+</div>
+
+<p>
+自分の環境では下記のdesktopファイルを追加することでランチャーからいつも起動出来るよう
+にしています。
+</p>
+
+<p>
+<code>.local/share/applications/myfirefox.desktop</code>
+</p>
+<pre class="example">
+[Desktop Entry]
+Name=MyFirefox
+GenericName=Web Browser
+GenericName[ja]=ウェブ・ブラウザ
+Comment[ja]=ウェブを閲覧します
+Exec=firefox --new-instance %u
+Terminal=false
+Type=Application
+Icon=firefox
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;application/vnd.mozilla.xul+xml;text/mml;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/ftp;
+StartupNotify=true
+Actions=NewTab;NewWindow;NewPrivateWindow;
+
+[Desktop Action NewTab]
+Name[ja]=新しいタブ
+
+[Desktop Action NewWindow]
+Name[ja]=新しいウィンドウ
+
+[Desktop Action NewPrivateWindow]
+Name[ja]=新しいプライベートウィンドウ
+</pre>
+
+<ul class="org-ul">
+<li><a href="https://support.mozilla.org/ja/kb/profile-manager-create-and-remove-firefox-profiles">プロファイルマネージャを使用して、Firefox のプロファイルを作成または削除する</a>
+</li>
+</ul>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[Memo][Linux]bash環境にpecoを導入しました]]></title>
@@ -279,70 +345,70 @@ mew-init-hookで拡張してみました。
 
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp"><span style="color: #74af68;">;; </span><span style="color: #74af68;">&#12450;&#12459;&#12454;&#12531;&#12488;1</span>
+<pre class="src src-emacs-lisp"><span style="color: #00cd66;">;; </span><span style="color: #00cd66;">&#12450;&#12459;&#12454;&#12531;&#12488;1</span>
 (setq my-mew-config-1
       (list
-       '(proto                          <span style="color: #e67128;">"+"</span>)
-       '(name                           <span style="color: #e67128;">"******"</span>)
-       '(user                           <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#12513;&#12540;&#12523;&#12450;&#12489;&#12524;&#12473;&#12398;@&#12363;&#12425;&#24038;&#37096;&#20998;</span>
-       '(mail-domain                    <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#12513;&#12540;&#12523;&#12450;&#12489;&#12524;&#12473;&#12398;@&#12363;&#12425;&#21491;&#37096;&#20998;</span>
-       '(smtp-server                    <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#36865;&#20449;&#29992;&#12469;&#12540;&#12496;&#12450;&#12489;&#12524;&#12473;</span>
-       '(smtp-port                      <span style="color: #e67128;">"1025"</span>)     <span style="color: #74af68;">;</span>
-       '(smtp-user                      <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#36865;&#20449;&#29992;&#12518;&#12540;&#12470;id</span>
-       '(pop-server                     <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#21463;&#20449;&#29992;&#12469;&#12540;&#12496;&#12450;&#12489;&#12524;&#12473;</span>
-       '(pop-port                       <span style="color: #e67128;">"1110"</span>)     <span style="color: #74af68;">;</span>
-       '(pop-user                       <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#21463;&#20449;&#29992;&#12518;&#12540;&#12470;id</span>
-       '(pop-delete                     t)          <span style="color: #74af68;">; </span><span style="color: #74af68;">&#12513;&#12540;&#12523;&#21463;&#20449;&#24460;&#12469;&#12540;&#12496;&#12540;&#20596;&#12398;&#12513;&#12483;&#12475;&#12540;&#12472;&#12434;&#65303;&#26085;&#12434;&#20445;&#25345;&#12377;&#12427;</span>
-       '(pop-auth                       pass)       <span style="color: #74af68;">; </span><span style="color: #74af68;">pop3 &#12391;&#21463;&#20449;&#26178;&#12398;&#35469;&#35388;&#26041;&#24335;&#12289;&#25351;&#23450;&#12375;&#12394;&#12356;&#22580;&#21512;&#12399;apop&#26041;&#24335;&#12364;&#20351;&#29992;&#12373;&#12428;&#12427;</span>
-       '(pop-size                       0)          <span style="color: #74af68;">; </span><span style="color: #74af68;">&#12513;&#12540;&#12523;&#12398;&#19978;&#38480;&#12469;&#12452;&#12474;&#12290;0 &#12398;&#22580;&#21512;&#12399;&#19978;&#38480;&#12394;&#12375;&#12290;</span>
-       '(pop-header-only                t)          <span style="color: #74af68;">; </span><span style="color: #74af68;">[c-u s]&#12391;&#12504;&#12483;&#12480;&#12398; &#12415;&#12398;&#12467;&#12500;&#12540;</span>
-       '(dcc                            <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#36820;&#20449;&#26178;&#12395;&#33258;&#20998;&#12398;&#12450;&#12489;&#12524;&#12473;&#12434;dcc&#12395;&#20837;&#12428;&#12427;&#12289;dcc&#12399;&#36865;&#20449;&#12375;&#12383;&#12513;&#12540;&#12523;&#12398;&#12504;&#12483;&#12480;&#12540;&#12395;&#34920;&#31034;&#12373;&#12428;&#12394;&#12356;</span>
-       '(fcc                            <span style="color: #e67128;">"+sent"</span>)    <span style="color: #74af68;">; </span><span style="color: #74af68;">&#36865;&#20449;&#12375;&#12383;&#12513;&#12540;&#12523;&#12398;&#20445;&#23384;&#20808;</span>
-       '(smime-signer                   <span style="color: #e67128;">"******"</span>)   <span style="color: #74af68;">; </span><span style="color: #74af68;">&#38651;&#23376;&#32626;&#21517;&#12391;&#20351;&#29992;&#12377;&#12427;&#35388;&#26126;&#26360;id</span>
+       '(proto                          <span style="color: #bdb76b;">"+"</span>)
+       '(name                           <span style="color: #bdb76b;">"******"</span>)
+       '(user                           <span style="color: #bdb76b;">"******"</span>)   <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#12513;&#12540;&#12523;&#12450;&#12489;&#12524;&#12473;&#12398;@&#12363;&#12425;&#24038;&#37096;&#20998;</span>
+       '(mail-domain                    <span style="color: #bdb76b;">"******"</span>)   <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#12513;&#12540;&#12523;&#12450;&#12489;&#12524;&#12473;&#12398;@&#12363;&#12425;&#21491;&#37096;&#20998;</span>
+       '(smtp-server                    <span style="color: #bdb76b;">"******"</span>)   <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#36865;&#20449;&#29992;&#12469;&#12540;&#12496;&#12450;&#12489;&#12524;&#12473;</span>
+       '(smtp-port                      <span style="color: #bdb76b;">"1025"</span>)     <span style="color: #00cd66;">;</span>
+       '(smtp-user                      <span style="color: #bdb76b;">"******"</span>)   <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#36865;&#20449;&#29992;&#12518;&#12540;&#12470;id</span>
+       '(pop-server                     <span style="color: #bdb76b;">"******"</span>)   <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#21463;&#20449;&#29992;&#12469;&#12540;&#12496;&#12450;&#12489;&#12524;&#12473;</span>
+       '(pop-port                       <span style="color: #bdb76b;">"1110"</span>)     <span style="color: #00cd66;">;</span>
+       '(pop-user                       <span style="color: #bdb76b;">"******"</span>)   <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#21463;&#20449;&#29992;&#12518;&#12540;&#12470;id</span>
+       '(pop-delete                     t)          <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#12513;&#12540;&#12523;&#21463;&#20449;&#24460;&#12469;&#12540;&#12496;&#12540;&#20596;&#12398;&#12513;&#12483;&#12475;&#12540;&#12472;&#12434;&#65303;&#26085;&#12434;&#20445;&#25345;&#12377;&#12427;</span>
+       '(pop-auth                       pass)       <span style="color: #00cd66;">; </span><span style="color: #00cd66;">pop3 &#12391;&#21463;&#20449;&#26178;&#12398;&#35469;&#35388;&#26041;&#24335;&#12289;&#25351;&#23450;&#12375;&#12394;&#12356;&#22580;&#21512;&#12399;apop&#26041;&#24335;&#12364;&#20351;&#29992;&#12373;&#12428;&#12427;</span>
+       '(pop-size                       0)          <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#12513;&#12540;&#12523;&#12398;&#19978;&#38480;&#12469;&#12452;&#12474;&#12290;0 &#12398;&#22580;&#21512;&#12399;&#19978;&#38480;&#12394;&#12375;&#12290;</span>
+       '(pop-header-only                t)          <span style="color: #00cd66;">; </span><span style="color: #00cd66;">[c-u s]&#12391;&#12504;&#12483;&#12480;&#12398; &#12415;&#12398;&#12467;&#12500;&#12540;</span>
+       '(dcc                            <span style="color: #bdb76b;">"******"</span>)   <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#36820;&#20449;&#26178;&#12395;&#33258;&#20998;&#12398;&#12450;&#12489;&#12524;&#12473;&#12434;dcc&#12395;&#20837;&#12428;&#12427;&#12289;dcc&#12399;&#36865;&#20449;&#12375;&#12383;&#12513;&#12540;&#12523;&#12398;&#12504;&#12483;&#12480;&#12540;&#12395;&#34920;&#31034;&#12373;&#12428;&#12394;&#12356;</span>
+       '(fcc                            <span style="color: #bdb76b;">"+sent"</span>)    <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#36865;&#20449;&#12375;&#12383;&#12513;&#12540;&#12523;&#12398;&#20445;&#23384;&#20808;</span>
+       '(smime-signer                   <span style="color: #bdb76b;">"******"</span>)   <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#38651;&#23376;&#32626;&#21517;&#12391;&#20351;&#29992;&#12377;&#12427;&#35388;&#26126;&#26360;id</span>
        '(protect-privacy-always         nil)
-       '(privacy-method                 smime)      <span style="color: #74af68;">; </span><span style="color: #74af68;">&#38651;&#23376;&#32626;&#21517;&#12479;&#12452;&#12503;&#12398;&#25351;&#23450;</span>
+       '(privacy-method                 smime)      <span style="color: #00cd66;">; </span><span style="color: #00cd66;">&#38651;&#23376;&#32626;&#21517;&#12479;&#12452;&#12503;&#12398;&#25351;&#23450;</span>
        '(draft-privacy-method           smime)
        '(protect-privacy-always-type  smime-signature)
        ))
 
-<span style="color: #74af68;">;; </span><span style="color: #74af68;">&#12450;&#12459;&#12454;&#12531;&#12488;2</span>
+<span style="color: #00cd66;">;; </span><span style="color: #00cd66;">&#12450;&#12459;&#12454;&#12531;&#12488;2</span>
 (setq my-mew-config-2
       (list
-       '(proto                   <span style="color: #e67128;">"%"</span>)
-       '(name                    <span style="color: #e67128;">"******"</span>)
-       '(user                    <span style="color: #e67128;">"******"</span>)
-       '(mail-domain             <span style="color: #e67128;">"gmail.com"</span>)
-       '(dcc                     <span style="color: #e67128;">"*******@gmail.com"</span>)
+       '(proto                   <span style="color: #bdb76b;">"%"</span>)
+       '(name                    <span style="color: #bdb76b;">"******"</span>)
+       '(user                    <span style="color: #bdb76b;">"******"</span>)
+       '(mail-domain             <span style="color: #bdb76b;">"gmail.com"</span>)
+       '(dcc                     <span style="color: #bdb76b;">"*******@gmail.com"</span>)
        '(protect-privacy-always  nil)
        '(ssl-verify-level        0)
-       <span style="color: #74af68;">;; </span><span style="color: #74af68;">smtp&#12469;&#12540;&#12496;&#12540;</span>
-       '(smtp-user               <span style="color: #e67128;">"*******@gmail.com"</span>)
+       <span style="color: #00cd66;">;; </span><span style="color: #00cd66;">smtp&#12469;&#12540;&#12496;&#12540;</span>
+       '(smtp-user               <span style="color: #bdb76b;">"*******@gmail.com"</span>)
        '(smtp-auth               t)
        '(smtp-ssl                t)
-       '(smtp-server             <span style="color: #e67128;">"smtp.gmail.com"</span>)
-       '(smtp-ssl-port           <span style="color: #e67128;">"465"</span>)
-       <span style="color: #74af68;">;; </span><span style="color: #74af68;">imap&#12434;&#20351;&#29992;&#12377;&#12427;&#22580;&#21512;</span>
-       '(inbox-folder            <span style="color: #e67128;">"%gmail"</span>)
-       '(imap-user               <span style="color: #e67128;">"******@gmail.com"</span>)
-       '(imap-size               5242880) <span style="color: #74af68;">; </span><span style="color: #74af68;">5m&#20197;&#20869;&#21363;&#26178;&#21463;&#20449;&#12377;&#12427;</span>
+       '(smtp-server             <span style="color: #bdb76b;">"smtp.gmail.com"</span>)
+       '(smtp-ssl-port           <span style="color: #bdb76b;">"465"</span>)
+       <span style="color: #00cd66;">;; </span><span style="color: #00cd66;">imap&#12434;&#20351;&#29992;&#12377;&#12427;&#22580;&#21512;</span>
+       '(inbox-folder            <span style="color: #bdb76b;">"%gmail"</span>)
+       '(imap-user               <span style="color: #bdb76b;">"******@gmail.com"</span>)
+       '(imap-size               5242880) <span style="color: #00cd66;">; </span><span style="color: #00cd66;">5m&#20197;&#20869;&#21363;&#26178;&#21463;&#20449;&#12377;&#12427;</span>
        '(imap-auth               t)
        '(imap-ssl                t)
-       '(imap-ssl-port           <span style="color: #e67128;">"993"</span>)
-       '(imap-server             <span style="color: #e67128;">"imap.gmail.com"</span>)
+       '(imap-ssl-port           <span style="color: #bdb76b;">"993"</span>)
+       '(imap-server             <span style="color: #bdb76b;">"imap.gmail.com"</span>)
        ))
 
-<span style="color: #74af68;">;;; </span><span style="color: #74af68;">&#12450;&#12459;&#12454;&#12531;&#12488;3</span>
+<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#12450;&#12459;&#12454;&#12531;&#12488;3</span>
 (setq my-mew-config-3
       (list
-       '(proto                   <span style="color: #e67128;">"+"</span>)
-       <span style="color: #74af68;">;; </span><span style="color: #74af68;">&#65288;&#20013;&#30053;&#65289;</span>
+       '(proto                   <span style="color: #bdb76b;">"+"</span>)
+       <span style="color: #00cd66;">;; </span><span style="color: #00cd66;">&#65288;&#20013;&#30053;&#65289;</span>
 ))
 
-<span style="color: #74af68;">;;; </span><span style="color: #74af68;">&#12450;&#12459;&#12454;&#12531;&#12488;4</span>
+<span style="color: #00cd66;">;;; </span><span style="color: #00cd66;">&#12450;&#12459;&#12454;&#12531;&#12488;4</span>
 (setq my-mew-config-4
       (list
-       '(proto                   <span style="color: #e67128;">"+"</span>)
-       <span style="color: #74af68;">;; </span><span style="color: #74af68;">&#65288;&#20013;&#30053;&#65289;</span>
+       '(proto                   <span style="color: #bdb76b;">"+"</span>)
+       <span style="color: #00cd66;">;; </span><span style="color: #00cd66;">&#65288;&#20013;&#30053;&#65289;</span>
 ))
 
 (setq my-mew-account-list
@@ -351,29 +417,29 @@ mew-init-hookで拡張してみました。
             (append (list 'account3) my-mew-config-3)
             (append (list 'account4) my-mew-config-4)))
 
-(<span style="color: #ffad29; font-weight: bold;">require</span> '<span style="color: #008b8b;">dash</span>)
+(<span style="color: #ffffff;">require</span> '<span style="color: #40e0d0;">dash</span>)
 
-<span style="color: #74af68;">;; </span><span style="color: #74af68;">&#12450;&#12459;&#12454;&#12531;&#12488;&#36984;&#25246;&#20966;&#29702;</span>
-(<span style="color: #ffad29; font-weight: bold;">defun</span> <span style="color: #00ede1; font-weight: bold;">my-mew-select-account</span> ()
-  (<span style="color: #ffad29; font-weight: bold;">let*</span> ((account-name-list (mapcar (<span style="color: #ffad29; font-weight: bold;">lambda</span> (x) (pp-to-string (car x))) my-mew-account-list))
-         (selected-account (completing-read <span style="color: #e67128;">"mew account: "</span> account-name-list nil t)))
+<span style="color: #00cd66;">;; </span><span style="color: #00cd66;">&#12450;&#12459;&#12454;&#12531;&#12488;&#36984;&#25246;&#20966;&#29702;</span>
+(<span style="color: #ffffff;">defun</span> <span style="color: #98fb98;">my-mew-select-account</span> ()
+  (<span style="color: #ffffff;">let*</span> ((account-name-list (mapcar (<span style="color: #ffffff;">lambda</span> (x) (pp-to-string (car x))) my-mew-account-list))
+         (selected-account (completing-read <span style="color: #bdb76b;">"mew account: "</span> account-name-list nil t)))
     (message selected-account)
     (setq mew-config-alist
           (append
            (list
             (append (list 'default)
                     (cdr
-                     (car (-filter (<span style="color: #ffad29; font-weight: bold;">lambda</span> (mew-config)
+                     (car (-filter (<span style="color: #ffffff;">lambda</span> (mew-config)
                                      (string= selected-account
                                               (pp-to-string (car mew-config))))
                                    my-mew-account-list)))))
-           (-filter (<span style="color: #ffad29; font-weight: bold;">lambda</span> (mew-config)
+           (-filter (<span style="color: #ffffff;">lambda</span> (mew-config)
                       (not
                        (string= selected-account
                                 (pp-to-string (car mew-config)))))
                     my-mew-account-list)))))
 
-<span style="color: #74af68;">;; </span><span style="color: #74af68;">&#36215;&#21205;&#26178;&#12395;&#36208;&#12425;&#12379;&#12427;</span>
+<span style="color: #00cd66;">;; </span><span style="color: #00cd66;">&#36215;&#21205;&#26178;&#12395;&#36208;&#12425;&#12379;&#12427;</span>
 (add-hook 'mew-init-hook 'my-mew-select-account)
 </pre>
 </div>
@@ -382,7 +448,7 @@ mew-init-hookで拡張してみました。
 デモ
 </p>
 <video controls>
-   <source src="http://luozengbin.github.io/blog/video/2015-07-15_mew_account_select.mp4">
+   <source src="video/2015-07-15_mew_account_select.mp4">
 </video>
 ]]></content>
   </entry>
@@ -7121,457 +7187,6 @@ Tomcat起動時に次のJavaオプションを付けるとHTTP KeepAliveがOFF�
 <div class="outline-text-2" id="text-3">
 <ul class="org-ul">
 <li><a href="http://blog.nomadscafe.jp/2011/07/apache.html">今こそ見直すApacheの設定</a>
-</li>
-</ul>
-</div>
-</div>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[メモ]Zabbix導入記録]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-10-16-%5B%E3%83%A1%E3%83%A2%5Dzabbix%E5%B0%8E%E5%85%A5%E8%A8%98%E9%8C%B2.html"/>
-    <updated>2014-10-16T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[メモ]zabbix導入記録</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 構成</a></li>
-<li><a href="#sec-2">2. インストール</a></li>
-<li><a href="#sec-3">3. zabbixの起動</a></li>
-<li><a href="#sec-4">4. Zabbix フロントエンドのインストール</a></li>
-<li><a href="#sec-5">5. Zabbix エージェントのインストール</a></li>
-<li><a href="#sec-6">6. Zabbixのアンインストール</a></li>
-<li><a href="#sec-7">7. 参考</a></li>
-</ul>
-</div>
-</div>
-<p>
-Zabbix2.4、CentOS7用のrpmが見つからなかったので手動ビルドすることにした。
-</p>
-
-<p>
-<!-- more -->
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 構成</h2>
-<div class="outline-text-2" id="text-1">
-<pre class="example">
-                            +---------------+
-                            | Apache 2.4    +---+
-                            +---------------+   |         +---------------+
-                                                +---------+   Zabbix DB   |
-                                                |         +---------------+
-              10050       10051                 |         |   PostgreSQL  |
-+--------------+            +---------------+   |         +---------------+
-| Zabbix Agent +------------+ Zabbix Server +---+
-+--------------+            +---------------+
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> インストール</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-必要なパッケージのインストール。
-</p>
-<pre class="example">
-$ sudo yum install postgresql-devel
-$ sudo yum install libxml2 libxml2-devel
-$ sudo yum install net-snmp net-snmp-agent  net-snmp-libs net-snmp-devel
-$ sudo yum install libcurl libcurl-devel
-$ sudo yum install php-bcmath
-</pre>
-
-<p>
-ソースコードをダウンロードし、ビルドする。
-</p>
-<pre class="example">
-$ wget http://downloads.sourceforge.net/sourceforge/zabbix/zabbix-2.4.1.tar.gz
-$ tar xzvf zabbix-2.4.1.tar.gz
-$ cd zabbix-2.4.1/
-$ ./configure --enable-server --enable-agent  --with-postgresql --with-net-snmp --with-libcurl --with-libxml2 --enable-java --sysconfdir=/etc/zabbix
-$ sudo make install
-</pre>
-
-<p>
-Zabbix設定ファイル、DB初期化用SQLを格納用のディレクトリの作成とファイルのコピー。
-</p>
-<pre class="example">
-$ sudo mkdir -p /etc/zabbix/database/postgresql
-$ sudo mkdir -p /etc/zabbix/database/postgresql/upgrade/2.0
-
-$ sudo cp -v ./database/postgresql/*.sql /etc/zabbix/database/postgresql
-$ sudo cp -v ./upgrades/dbpatches/2.0/postgresql/patch.sql /etc/zabbix/database/postgresql/upgrade/2.0
-
-$ sudo chmod 0444 /etc/zabbix/database/postgresql/*.sql
-$ sudo chmod 0444 /etc/zabbix/database/postgresql/upgrade/2.0/*.sql
-</pre>
-
-<p>
-Zabbixログ格納用ディレクトリの作成。
-</p>
-<pre class="example">
-$ sudo mkdir -m 0750 /var/log/zabbix
-</pre>
-
-<p>
-Zabbixプロセス実行ユーザの登録、ディレクトリ権限の付与。
-</p>
-<pre class="example">
-$ sudo groupadd -r zabbix
-$ sudo useradd -r -g zabbix -d /dev/null zabbix -s /sbin/nologin
-$ sudo chown -R zabbix:zabbix /var/log/zabbix
-$ sudo chown -R zabbix:zabbix /etc/zabbix
-$ sudo chown -R zabbix:zabbix /usr/local/share/zabbix
-</pre>
-
-<p>
-Zabbixサーバ設定ファイルにPIDの格納場所を指定する。
-</p>
-<pre class="example">
-$ sudo chmod 0640 /etc/zabbix/zabbix_server.conf
-$ sudo sed -i 's:# PidFile=.*:PidFile=/run/zabbix/zabbix_server.pid:' /etc/zabbix/zabbix_server.conf
-</pre>
-
-<p>
-Zabbixサーバ設定ファイルにログの格納場所を指定する
-</p>
-<pre class="example">
-$ sudo sed -i 's:^LogFile=.*:LogFile=/var/log/zabbix/zabbix_server.log:' /etc/zabbix/zabbix_server.conf
-</pre>
-
-<p>
-監視結果データ及び監視項目設定データを格納するためのDBを作成する。
-</p>
-<pre class="example">
-# su - postgresql
--bash-4.2$ createuser --pwprompt zabbix      ★接続ユーザの作成
--bash-4.2$ createdb --owner=zabbix zabbix    ★データベース作成
-</pre>
-
-<p>
-作成したデータベースにスキーマを初期化する。
-</p>
-<pre class="example">
-$ cd /etc/zabbix/database/postgresql
-$ psql -U zabbix zabbix &lt; schema.sql
-$ psql -U zabbix zabbix &lt; images.sql
-$ psql -U zabbix zabbix &lt; data.sql
-</pre>
-
-<p>
-Zabbixサーバ設定ファイルにDB接続情報を変更する。
-</p>
-<pre class="example">
-DBHost=localhost
-DBName=zabbix
-DBUser=zabbix
-DBPassword=******
-DBPort=5432
-</pre>
-
-<p>
-PIDファイルの親ディレクトリをtmp領域に作成するため、 <code>systemd-tmpfiles</code> 機能でOS起
-動時に予め作成するようにする。
-</p>
-
-<p>
-<code>/usr/lib/tmpfiles.d/zabbix-server.conf</code>
-</p>
-<pre class="example">
-d /run/zabbix 0755 zabbix zabbix -
-</pre>
-
-<p>
-<code>systemd-tmpfiles</code> 手動実行で、ディレクトリを作成する。OS再起動する場合、この手順は不
-要です。
-</p>
-<pre class="example">
-$ sudo systemd-tmpfiles --create /usr/lib/tmpfiles.d/zabbix-server.conf
-</pre>
-
-<p>
-<code>systemd</code> から起動停止できるように <code>zabbix-server.service</code> を作成する。
-</p>
-
-<p>
-<code>/usr/lib/systemd/system/zabbix-server.service</code>
-</p>
-<pre class="example">
-[Unit]
-Description=Zabbix server
-After=syslog.target network.target postgresql.service
-
-[Service]
-Type=forking
-User=root
-ExecStart=/usr/local/sbin/zabbix_server
-PIDFile=/run/zabbix/zabbix_server.pid
-
-[Install]
-WantedBy=multi-user.target
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> zabbixの起動</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-<code>systemctl</code> コマンドで起動する。
-</p>
-<pre class="example">
-$ sudo systemctl enable zabbix-server.service
-$ sudo systemctl start zabbix-server.service
-</pre>
-
-<p>
-ポート確認
-</p>
-<pre class="example">
-$ sudo netstat -nutpl | grep zabbix
-tcp        0      0 0.0.0.0:10051           0.0.0.0:*               LISTEN      23765/zabbix_server
-</pre>
-
-<p>
-ログ確認
-</p>
-<pre class="example">
-# cat zabbix_server.log
- 23765:20141016:231838.117 Starting Zabbix Server. Zabbix 2.4.1 (revision 49643).
- 23765:20141016:231838.118 ****** Enabled features ******
- 23765:20141016:231838.118 SNMP monitoring:           YES
- 23765:20141016:231838.118 IPMI monitoring:            NO
- 23765:20141016:231838.118 WEB monitoring:            YES
- 23765:20141016:231838.118 VMware monitoring:         YES
- 23765:20141016:231838.118 Jabber notifications:       NO
- 23765:20141016:231838.118 Ez Texting notifications:  YES
- 23765:20141016:231838.118 ODBC:                       NO
- 23765:20141016:231838.118 SSH2 support:               NO
- 23765:20141016:231838.118 IPv6 support:               NO
- 23765:20141016:231838.118 ******************************
- 23765:20141016:231838.118 using configuration file: /etc/zabbix/zabbix_server.conf
- 23765:20141016:231838.157 current database version (mandatory/optional): 02040000/02040000
- 23765:20141016:231838.157 required mandatory version: 02040000
- 23765:20141016:231838.190 server #0 started [main process]
- 23775:20141016:231838.191 server #1 started [configuration syncer #1]
- 23776:20141016:231838.191 server #2 started [db watchdog #1]
- 23777:20141016:231838.191 server #3 started [poller #1]
- 23781:20141016:231838.193 server #5 started [poller #3]
- 23783:20141016:231838.195 server #7 started [poller #5]
- 23782:20141016:231838.201 server #6 started [poller #4]
- 23789:20141016:231838.201 server #12 started [trapper #4]
- 23786:20141016:231838.202 server #9 started [trapper #1]
- 23788:20141016:231838.203 server #11 started [trapper #3]
- 23790:20141016:231838.203 server #13 started [trapper #5]
- 23794:20141016:231838.204 server #17 started [timer #1]
- 23791:20141016:231838.204 server #14 started [icmp pinger #1]
- 23787:20141016:231838.204 server #10 started [trapper #2]
- 23792:20141016:231838.204 server #15 started [alerter #1]
- 23784:20141016:231838.207 server #8 started [unreachable poller #1]
- 23795:20141016:231838.208 server #18 started [http poller #1]
- 23799:20141016:231838.208 server #21 started [history syncer #2]
- 23806:20141016:231838.209 server #23 started [history syncer #4]
- 23809:20141016:231838.209 server #26 started [self-monitoring #1]
- 23780:20141016:231838.210 server #4 started [poller #2]
- 23801:20141016:231838.211 server #22 started [history syncer #3]
- 23793:20141016:231838.211 server #16 started [housekeeper #1]
- 23797:20141016:231838.211 server #20 started [history syncer #1]
- 23807:20141016:231838.214 server #24 started [escalator #1]
- 23808:20141016:231838.215 server #25 started [proxy poller #1]
- 23796:20141016:231838.309 server #19 started [discoverer #1]
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> Zabbix フロントエンドのインストール</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-phpコンテンツ格納するディレクトリの作成とコンテンツ実体の格納。
-</p>
-<pre class="example">
-$ sudo mkdir -p /var/www/zabbix
-$ sudo cp -r frontends/php/* /var/www/zabbix
-$ sudo chown -R apache:apache /var/www/zabbix
-$ sudo chmod -R u=rwX,g=rX,o= /var/www/zabbix
-</pre>
-
-<p>
-<code>/etc/php.ini</code> にてphp実行時パラメータを変更する。
-</p>
-<pre class="example">
-max_execution_time = 300     ★変更
-max_input_time = 300         ★変更
-post_max_size = 16M          ★変更
-memory_limit = 128M
-upload_max_filesize = 2M
-session.auto_start = 0
-date.timezone = "Asia/Tokyo" ★変更
-</pre>
-
-<p>
-フラフの日本語表示対応
-</p>
-<pre class="example">
-$ sudo yum install ipa-gothic-fonts ipa-pgothic-fonts vlgothic-fonts vlgothic-p-fonts
-$ sudo -u apache cp /usr/share/fonts/ipa-gothic/ipag.ttf /var/www/zabbix/fonts/
-</pre>
-
-<p>
-<code>/var/www/zabbix/include/defines.inc.php</code>
-</p>
-<pre class="example">
-変更前
-define('ZBX_GRAPH_FONT_NAME',           'DejaVuSans'); // font file name
-
-変更後
-define('ZBX_GRAPH_FONT_NAME',           'ipag'); // font file name
-</pre>
-
-<p>
-Apache設定内容 <code>/etc/httpd/conf.d/httpd-zabbix.conf</code>
-</p>
-<pre class="example">
-Alias /zabbix /var/www/zabbix
-&lt;Location /zabbix&gt;
-    # Apache 2.4
-    Require local
-    #Require host example.com
-&lt;/Location&gt;
-</pre>
-
-<p>
-<code>/etc/httpd/conf/httpd.conf</code>
-</p>
-<pre class="example">
-IncludeOptional conf.d/httpd-zabbix.conf
-</pre>
-
-<p>
-画面を起動する。
-</p>
-
-<video controls>
-   <source src="video/2014-10-17_zabbix_install_01.mp4">
-</video>
-
-<p>
-ウィザードで生成しれたファイルの内容 <code>/var/www/zabbix/conf/zabbix.conf.php</code>
-</p>
-<pre class="example">
-&lt;?php
-// Zabbix GUI configuration file
-global $DB;
-
-$DB['TYPE']     = 'POSTGRESQL';
-$DB['SERVER']   = 'localhost';
-$DB['PORT']     = '0';
-$DB['DATABASE'] = 'zabbix';
-$DB['USER']     = 'zabbix';
-$DB['PASSWORD'] = '**********';
-
-// SCHEMA is relevant only for IBM_DB2 database
-$DB['SCHEMA'] = '';
-
-$ZBX_SERVER      = 'localhost';
-$ZBX_SERVER_PORT = '10051';
-$ZBX_SERVER_NAME = '';
-
-$IMAGE_FORMAT_DEFAULT = IMAGE_FORMAT_PNG;
-?&gt;
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> Zabbix エージェントのインストール</h2>
-<div class="outline-text-2" id="text-5">
-<p>
-Zabbix AgentプロセスのPID格納用ディレクトリの初期化。
-<code>/usr/lib/tmpfiles.d/zabbix-agentd.conf</code>
-</p>
-<pre class="example">
-$ sudo touch /usr/lib/tmpfiles.d/zabbix-agentd.conf
-$ sudo nano /usr/lib/tmpfiles.d/zabbix-agentd.conf
-d /run/zabbix 0755 zabbix zabbix -
-</pre>
-
-<pre class="example">
-$ sudo systemd-tmpfiles --create /usr/lib/tmpfiles.d/zabbix-agentd.conf
-</pre>
-
-<p>
-Zabbix Agentサービス起動・停止用のファイル <code>/usr/lib/systemd/system/zabbix-agentd.service</code>
-</p>
-<pre class="example">
-[Unit]
-Description=Zabbix agent daemon
-After=network.target
-
-[Service]
-Type=forking
-User=root
-ExecStart=/usr/local/sbin/zabbix_agentd
-PIDFile=/run/zabbix/zabbix_agentd.pid
-
-[Install]
-WantedBy=multi-user.target
-</pre>
-
-<p>
-Zabbix Agent設定ファイルに、PID及びログ出力先を変更する。
-</p>
-<pre class="example">
-$ sudo -u zabbix sed -i 's:# PidFile=.*:PidFile=/run/zabbix/zabbix_agentd.pid:' /etc/zabbix/zabbix_agentd.conf
-$ sudo -u zabbix sed -i 's:^LogFile=.*:LogFile=/var/log/zabbix/zabbix_agentd.log:' /etc/zabbix/zabbix_agentd.conf
-</pre>
-
-<p>
-Zabbix Agent設定ファイルに、Zabbix Serverの情報と監視ホスト名を指定する。
-</p>
-<pre class="example">
-Server=127.0.0.1
-ServerActive=127.0.0.1
-Hostname=testhost
-</pre>
-
-<p>
-ポートの確認
-</p>
-<pre class="example">
-$ sudo netstat -nutpl | grep zabbix
-tcp        0      0 0.0.0.0:10050           0.0.0.0:*               LISTEN      17764/zabbix_agentd
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6"><span class="section-number-2">6</span> Zabbixのアンインストール</h2>
-<div class="outline-text-2" id="text-6">
-<pre class="example">
-$ sudo userdel zabbix
-</pre>
-
-<p>
-※未完成
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-7" class="outline-2">
-<h2 id="sec-7"><span class="section-number-2">7</span> 参考</h2>
-<div class="outline-text-2" id="text-7">
-<ul class="org-ul">
-<li><a href="https://www.zabbix.com/documentation/2.2/jp/start">Zabbix documentation in Japanese</a>
-</li>
-<li><a href="http://www.sraoss.co.jp/technology/zabbix/introduction/01-firststep.php">第 1 回 Zabbix を動かしてみよう</a>
-</li>
-<li><a href="http://tech-sketch.jp/2011/11/osszabbix1.html">OSS統合監視ツール「Zabbix」を利用して大規模環境監視(1)</a>
 </li>
 </ul>
 </div>
