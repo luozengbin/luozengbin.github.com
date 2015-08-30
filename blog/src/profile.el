@@ -28,6 +28,7 @@
           :description              "a programmer work in SIer company"
           :skills                 '("Java" "Linux" "Elisp")
           :qualifications         '("2014 Linux Professional Institute Certification Level 2"
+                                    "2014 Linux Professional Institute Certification Level 1"
                                     "2013 Product Specialist for RedHat JBoss EAP"
                                     "2013 Product Specialist for RedHat JDG"
                                     "2013 Product Specialist for RedHat JBoss EDS"

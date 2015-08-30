@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Yum | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/yum/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2015-08-30T22:26:52+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Linux]旧バージョンCentOSでyum更新できなくなった時]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-08-29-%5Btips%5D%5Blinux%5D%E6%97%A7%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3centos%E3%81%A7yum%E6%9B%B4%E6%96%B0%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%8F%E3%81%AA%E3%81%A3%E3%81%9F%E6%99%82.html"/>
+    <updated>2015-08-29T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][linux]旧バージョンcentosでyum更新できなくなった時</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgheadline1">1. CentOS 6.6でyum更新したら404エラー</a></li>
+<li><a href="#orgheadline2">2. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1"><span class="section-number-2">1</span> CentOS 6.6でyum更新したら404エラー</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+CentOS 6.6でyum更新したら404エラーとなって更新できなくなった。
+</p>
+<pre class="example">
+# yum update
+読み込んだプラグイン:fastestmirror
+更新処理の設定をしています
+Loading mirror speeds from cached hostfile
+ * base: ftp.iij.ad.jp
+ * extras: ftp.iij.ad.jp
+ * updates: centos.usonyx.net
+http://ftp.iij.ad.jp/pub/linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.jaist.ac.jp/pub/Linux/CentOS/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.nara.wide.ad.jp/pub/Linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.riken.jp/Linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+</pre>
+
+<p>
+ブラウザからミラーサイトを確認するとreadmeファイルしかありませんでした。
+</p>
+
+
+<div class="figure">
+<p><img src="img/20150829231548_CentOS_yum_404.png" alt="20150829231548_CentOS_yum_404.png" />
+</p>
+</div>
+
+<p>
+readmeの内容は下記となります。
+</p>
+
+<pre class="example">
+$ curl http://ftp.iij.ad.jp/pub/linux/centos/6.6/readme
+This directory (and version of CentOS) is deprecated.  For normal users,
+you should use /6/ and not /6.6/ in your path. Please see this FAQ
+concerning the CentOS release scheme:
+
+https://wiki.centos.org/FAQ/General
+
+If you know what you are doing, and absolutely want to remain at the 6.6
+level, go to http://vault.centos.org/ for packages.
+
+Please keep in mind that 6.0, 6.1, 6.2, 6.3, 6.4 , 6.5 and 6.6 no longer gets any updates, nor
+any security fix's.
+</pre>
+
+<p>
+簡単に言うと更新が止まった旧バージョンのパッケージは <code>http://vault.centos.org/</code>
+ドメイン下に移管された。
+</p>
+
+<p>
+というわけでyumリポジトリのURLを書き換えれば問題が解消されるはずだ。
+</p>
+
+<pre class="example">
+$ sudo sed -i -e "s|mirror\.centos\.org/centos/\$releasever|vault\.centos\.org/6.6|g" /etc/yum.repos.d/CentOS-Base.repo
+$ sudo sed -i -e "s|#baseurl=|baseurl=|g" CentOS-Base.repo
+$ sudo sed -i -e "s|mirrorlist=|#mirrorlist=|g" CentOS-Base.repo
+#  yum update
+読み込んだプラグイン:fastestmirror
+更新処理の設定をしています
+Loading mirror speeds from cached hostfile
+base                                                                                                                                   | 3.7 kB     00:00     
+extras                                                                                                                                 | 3.4 kB     00:00     
+updates                                                                                                                                | 3.4 kB     00:00     
+（中略）
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-orgheadline2" class="outline-2">
+<h2 id="orgheadline2"><span class="section-number-2">2</span> 参考</h2>
+<div class="outline-text-2" id="text-2">
+<ul class="org-ul">
+<li><a href="http://www.linuxask.com/questions/yum-repository-mirror-for-old-centos-versions">Yum repository mirror for old CentOS’ versions</a></li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>

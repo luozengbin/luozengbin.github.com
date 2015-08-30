@@ -1,0 +1,1081 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta  name="viewport" content="width=device-width, initial-scale=1" />
+<title>[Memo][Linux]OpenSSLでサーバ証明書の発行</title>
+<meta  name="generator" content="Org-mode" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  pre.src-sh:before    { content: 'sh'; }
+  pre.src-bash:before  { content: 'sh'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-R:before     { content: 'R'; }
+  pre.src-perl:before  { content: 'Perl'; }
+  pre.src-java:before  { content: 'Java'; }
+  pre.src-sql:before   { content: 'SQL'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">[Memo][Linux]OpenSSLでサーバ証明書の発行</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgheadline1">1. 自己署名証明書の発行手順</a></li>
+<li><a href="#orgheadline6">2. opensslコマンドの基本</a>
+<ul>
+<li><a href="#orgheadline2">2.1. 公開鍵暗号化用の鍵生成</a></li>
+<li><a href="#orgheadline3">2.2. 署名要求(CSR)の作成</a></li>
+<li><a href="#orgheadline4">2.3. 自己署名</a></li>
+<li><a href="#orgheadline5">2.4. CAより署名</a></li>
+</ul>
+</li>
+<li><a href="#orgheadline10">3. RCAの作成</a>
+<ul>
+<li><a href="#orgheadline7">3.1. Create the CA root private key</a></li>
+<li><a href="#orgheadline8">3.2. CA request</a></li>
+<li><a href="#orgheadline9">3.3. self-signed certificate</a></li>
+</ul>
+</li>
+<li><a href="#orgheadline16">4. 中間CAの作成</a>
+<ul>
+<li><a href="#orgheadline11">4.1. Create the ICA private key</a></li>
+<li><a href="#orgheadline12">4.2. Create ICA Request</a></li>
+<li><a href="#orgheadline13">4.3. Root CA で中間CAのリクエストを証明する</a></li>
+<li><a href="#orgheadline14">4.4. Root CAで承認された証明書をICAのデータベースに登録する</a></li>
+<li><a href="#orgheadline15">4.5. 配布用derの作成</a></li>
+</ul>
+</li>
+<li><a href="#orgheadline20">5. サーバ証明書の作成</a>
+<ul>
+<li><a href="#orgheadline17">5.1. Create Server private key</a></li>
+<li><a href="#orgheadline18">5.2. CSR（署名要求 newreq.pem）を作成する</a></li>
+<li><a href="#orgheadline19">5.3. 中間CA（ICA）署名</a></li>
+</ul>
+</li>
+<li><a href="#orgheadline21">6. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+<!-- more -->
+</p>
+
+<p>
+プライベートサーバ／検証用環境にケチケチのサーバ証明書発行方式のメモ書き
+</p>
+
+
+<p>
+opensslでサーバ証明書の発行は主に自己署名方式とプライベートCA署名方式があります。
+</p>
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1"><span class="section-number-2">1</span> 自己署名証明書の発行手順</h2>
+<div class="outline-text-2" id="text-1">
+<ol class="org-ol">
+<li><p>
+秘密鍵の作成
+</p>
+<div class="exmpale">
+<p>
+$ openssl genrsa -aes128 2048 &gt; server.key
+</p>
+
+</div>
+
+<ul class="org-ul">
+<li>公開鍵暗号化方式(RSA)用の秘密鍵を生成する</li>
+<li>生成された鍵を共通鍵暗号化方式(AES128)で暗号化する</li>
+<li>AES暗号化用のパスフレーズが聞かれる、入力しない場合、AES共通暗号化が実施されない</li>
+</ul></li>
+</ol>
+
+<p>
+2.証明書署名要求(CSR)の作成
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline6" class="outline-2">
+<h2 id="orgheadline6"><span class="section-number-2">2</span> opensslコマンドの基本</h2>
+<div class="outline-text-2" id="text-2">
+</div><div id="outline-container-orgheadline2" class="outline-3">
+<h3 id="orgheadline2"><span class="section-number-3">2.1</span> 公開鍵暗号化用の鍵生成</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+<code>man genrsa</code>
+</p>
+</div>
+</div>
+<div id="outline-container-orgheadline3" class="outline-3">
+<h3 id="orgheadline3"><span class="section-number-3">2.2</span> 署名要求(CSR)の作成</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+<code>openssl req</code>
+</p>
+
+<p>
+<code>man req</code>
+</p>
+
+<pre class="example">
+CONFIGURATION FILE FORMAT
+  The configuration options are specified in the req section of the
+  configuration file. As with all configuration files if no value is specified
+  in the specific section (i.e. req) then the initial unnamed or default section
+  is searched too.
+</pre>
+</div>
+</div>
+
+
+<div id="outline-container-orgheadline4" class="outline-3">
+<h3 id="orgheadline4"><span class="section-number-3">2.3</span> 自己署名</h3>
+</div>
+<div id="outline-container-orgheadline5" class="outline-3">
+<h3 id="orgheadline5"><span class="section-number-3">2.4</span> CAより署名</h3>
+</div>
+</div>
+
+<div id="outline-container-orgheadline10" class="outline-2">
+<h2 id="orgheadline10"><span class="section-number-2">3</span> RCAの作成</h2>
+<div class="outline-text-2" id="text-3">
+<pre class="example">
+$ mkdir -p /tmp/ssl/conf
+$ mkdir -p /tmp/ssl/RCA/certs
+$ mkdir -p /tmp/ssl/RCA/crl
+$ mkdir -p /tmp/ssl/RCA/newcerts
+$ mkdir -p /tmp/ssl/RCA/private
+$ touch /tmp/ssl/RCA/index.txt
+</pre>
+</div>
+
+
+<div id="outline-container-orgheadline7" class="outline-3">
+<h3 id="orgheadline7"><span class="section-number-3">3.1</span> Create the CA root private key</h3>
+<div class="outline-text-3" id="text-3-1">
+<pre class="example">
+$ openssl genrsa -aes128 -out /tmp/ssl/RCA/private/caroot.key 2048
+Generating RSA private key, 2048 bit long modulus
+.......................................................................+++
+......................................................................................................................................................................................+++
+e is 65537 (0x10001)
+Enter pass phrase for /tmp/ssl/RCA/private/caroot.key:
+Verifying - Enter pass phrase for /tmp/ssl/RCA/private/caroot.key:
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline8" class="outline-3">
+<h3 id="orgheadline8"><span class="section-number-3">3.2</span> CA request</h3>
+<div class="outline-text-3" id="text-3-2">
+<p>
+<code>/tmp/ssl/conf/rca_req.conf</code>
+</p>
+<pre class="example">
+####################################################################
+[ req ]
+default_bits		= 2048
+default_md		    = sha256
+distinguished_name	= req_distinguished_name
+attributes	     	= req_attributes
+
+# Passwords for private keys if not present they will be prompted for
+# input_password = secret
+# output_password = secret
+
+# This sets a mask for permitted string types. There are several options. 
+# default: PrintableString, T61String, BMPString.
+# pkix	 : PrintableString, BMPString (PKIX recommendation before 2004)
+# utf8only: only UTF8Strings (PKIX recommendation after 2004).
+# nombstr : PrintableString, T61String (no BMPStrings or UTF8Strings).
+# MASK:XXXX a literal mask value.
+# WARNING: ancient versions of Netscape crash on BMPStrings or UTF8Strings.
+string_mask = utf8only
+
+# req_extensions = v3_req # The extensions to add to a certificate request
+
+[ req_distinguished_name ]
+countryName                     = Country Name (2 letter code)
+countryName_default             = JP
+countryName_min                 = 2
+countryName_max                 = 2
+
+stateOrProvinceName             = State or Province Name (full name)
+stateOrProvinceName_default	    = Tokyo
+
+localityName                    = Locality Name (eg, city)
+localityName_default            = Tokyo-to,Arakawa-ku
+
+0.organizationName              = Organization Name (eg, company)
+0.organizationName_default      = Default Company Ltd
+
+# we can do this but it is not needed normally :-)
+#1.organizationName             = Second Organization Name (eg, company)
+#1.organizationName_default     = World Wide Web Pty Ltd
+
+organizationalUnitName          = Organizational Unit Name (eg, section)
+organizationalUnitName_default	= 
+
+commonName                      = Common Name (eg, your name or your server\'s hostname)
+commonName_max                  = 64
+
+emailAddress                    = Email Address
+emailAddress_max                = 64
+
+# SET-ex3			= SET extension number 3
+
+[ req_attributes ]
+challengePassword	  = A challenge password
+challengePassword_min = 4
+challengePassword_max = 20
+unstructuredName	  = An optional company name
+</pre>
+
+
+<pre class="example">
+$ openssl req -config /tmp/ssl/conf/rca_req.conf -new \
+          -key /tmp/ssl/RCA/private/caroot.key  \
+          -out /tmp/ssl/RCA/careq.pem
+
+Enter pass phrase for /tmp/ssl/RCA/private/caroot.key:
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [JP]:
+State or Province Name (full name) [Tokyo]:
+Locality Name (eg, city) [Tokyo-to,Arakawa-ku]:
+Organization Name (eg, company) [Default Company Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) []:Private CA
+Email Address []:
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline9" class="outline-3">
+<h3 id="orgheadline9"><span class="section-number-3">3.3</span> self-signed certificate</h3>
+<div class="outline-text-3" id="text-3-3">
+<p>
+<code>/tmp/ssl/conf/rca_newca.conf</code>
+</p>
+<pre class="example">
+####################################################################
+[ ca ]
+default_ca	= CA_default		# The default ca section
+
+####################################################################
+[ CA_default ]
+
+dir               = /tmp/ssl/RCA	# Where everything is kept
+certs             = $dir/certs		# Where the issued certs are kept
+crl_dir           = $dir/crl		# Where the issued crl are kept
+database          = $dir/index.txt	# database index file.
+#unique_subject   = no			# Set to 'no' to allow creation of
+					# several ctificates with same subject.
+new_certs_dir     = $dir/newcerts		# default place for new certs.
+
+certificate       = $dir/cacert.pem 	# The CA certificate
+serial            = $dir/serial 		# The current serial number
+crlnumber         = $dir/crlnumber    	# the current crl number
+				             	        # must be commented out to leave a V1 CRL
+crl               = $dir/crl.pem 		# The current CRL
+private_key       = $dir/private/caroot.key # The private key
+RANDFILE          = $dir/private/.rand	# private random number file
+
+x509_extensions   = usr_cert		# The extentions to add to the cert
+
+# Comment out the following two lines for the "traditional"
+# (and highly broken) format.
+name_opt          = ca_default		# Subject Name options
+cert_opt          = ca_default		# Certificate field options
+
+# Extension copying option: use with caution.
+# copy_extensions = copy
+
+# Extensions to add to a CRL. Note: Netscape communicator chokes on V2 CRLs
+# so this is commented out by default to leave a V1 CRL.
+# crlnumber must also be commented out to leave a V1 CRL.
+# crl_extensions  = crl_ext
+
+default_days      = 3650			# how long to certify for
+default_crl_days  = 30			# how long before next CRL
+default_md        = default		# use public key default MD
+preserve          = no			# keep passed DN ordering
+
+#-------------------
+# CAのポリシーの定義
+#-------------------
+
+# match   : CAの内容と一致しなければならない
+# optional: 無くてもよい
+# supplied: なければならない
+
+# A few difference way of specifying how similar the request should look
+# For type CA, the listed attributes must be the same, and the optional
+# and supplied fields are just that :-)
+policy		= policy_match
+
+# For the CA policy
+[ policy_match ]
+countryName            = match
+stateOrProvinceName    = match
+organizationName       = match
+organizationalUnitName = optional
+commonName             = supplied
+emailAddress           = optional
+
+# For the 'anything' policy
+# At this point in time, you must list all acceptable 'object'
+# types.
+[ policy_anything ]
+countryName            = optional
+stateOrProvinceName    = optional
+localityName           = optional
+organizationName       = optional
+organizationalUnitName = optional
+commonName             = supplied
+emailAddress           = optional
+
+
+[ v3_ca ]
+# Extensions for a typical CA
+# PKIX recommendation.
+
+subjectKeyIdentifier=hash
+
+authorityKeyIdentifier=keyid:always,issuer
+
+# This is what PKIX recommends but some broken software chokes on critical
+# extensions.
+#basicConstraints = critical,CA:true
+# So we do this instead.
+basicConstraints = CA:true
+
+# Key usage: this is typical for a CA certificate. However since it will
+# prevent it being used as an test self-signed certificate it is best
+# left out by default.
+# keyUsage = cRLSign, keyCertSign
+
+# Some might want this also
+nsCertType = sslCA, emailCA
+
+# Include email address in subject alt name: another PKIX recommendation
+# subjectAltName=email:copy
+# Copy issuer details
+# issuerAltName=issuer:copy
+
+# DER hex encoding of an extension: beware experts only!
+# obj=DER:02:03
+# Where 'obj' is a standard or added object
+# You can even override a supported extension:
+# basicConstraints= critical, DER:30:03:01:01:FF
+</pre>
+
+<pre class="example">
+$ openssl ca -config /tmp/ssl/conf/rca_newca.conf -create_serial \
+             -md sha256 -out /tmp/ssl/RCA/cacert.pem -batch -keyfile /tmp/ssl/RCA/private/caroot.key \
+             -selfsign -extensions v3_ca -infiles /tmp/ssl/RCA/careq.pem
+
+Using configuration from /tmp/ssl/conf/rca_newca.conf
+Enter pass phrase for /tmp/ssl/RCA/private/caroot.key:
+Check that the request matches the signature
+Signature ok
+Certificate Details:
+        Serial Number: 16498905871362098935 (0xe4f7e3799d2506f7)
+        Validity
+            Not Before: Aug  2 15:29:43 2015 GMT
+            Not After : Jul 30 15:29:43 2025 GMT
+        Subject:
+            countryName               = JP
+            stateOrProvinceName       = Tokyo
+            organizationName          = Default Company Ltd
+            commonName                = Private CA
+        X509v3 extensions:
+            X509v3 Subject Key Identifier: 
+                84:53:9A:AF:EB:44:4E:4C:5F:17:4F:2B:2F:61:8B:6C:B4:4C:17:D6
+            X509v3 Authority Key Identifier: 
+                keyid:84:53:9A:AF:EB:44:4E:4C:5F:17:4F:2B:2F:61:8B:6C:B4:4C:17:D6
+
+            X509v3 Basic Constraints: 
+                CA:TRUE
+            Netscape Cert Type: 
+                SSL CA, S/MIME CA
+Certificate is to be certified until Jul 30 15:29:43 2025 GMT (3650 days)
+
+Write out database with 1 new entries
+Data Base Updated
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline16" class="outline-2">
+<h2 id="orgheadline16"><span class="section-number-2">4</span> 中間CAの作成</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+ICA: intermediate certificate authority の解説IT 用語辞典より
+</p>
+<pre class="example">
+中間CAとは、デジタル証明書の認証局（CA：Certificate Authority）の種類の一つで、上位の
+認証局による認証を受けることにより自らの正当性を認証する認証局。これに対し、自分の正
+当性を自ら証明する認証局のことはルート認証局という。中間CAは暗号通信などに用いられる
+デジタル証明書を電子商取引事業者などに発行するが、自分で自分の正当性を証明することは
+できない。Webブラウザなどにあらかじめ証明書の搭載されている著名なルート認証局から認証
+を受けることで、自らの正当性を担保している。
+</pre>
+
+<pre class="example">
+$ mkdir -p /tmp/ssl/ICA/certs
+$ mkdir -p /tmp/ssl/ICA/crl
+$ mkdir -p /tmp/ssl/ICA/newcerts
+$ mkdir -p /tmp/ssl/ICA/private
+$ touch /tmp/ssl/ICA/index.txt
+</pre>
+</div>
+
+
+<div id="outline-container-orgheadline11" class="outline-3">
+<h3 id="orgheadline11"><span class="section-number-3">4.1</span> Create the ICA private key</h3>
+<div class="outline-text-3" id="text-4-1">
+<pre class="example">
+$ openssl genrsa -aes128 -out /tmp/ssl/ICA/private/private.key 2048
+Generating RSA private key, 2048 bit long modulus
+.......................................................................+++
+......................................................................................................................................................................................+++
+e is 65537 (0x10001)
+Enter pass phrase for /tmp/ssl/RCA/private/caroot.key:
+Verifying - Enter pass phrase for /tmp/ssl/RCA/private/caroot.key:
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline12" class="outline-3">
+<h3 id="orgheadline12"><span class="section-number-3">4.2</span> Create ICA Request</h3>
+<div class="outline-text-3" id="text-4-2">
+<p>
+<code>/tmp/ssl/conf/ica_req.conf</code>
+</p>
+<pre class="example">
+####################################################################
+[ req ]
+default_bits		= 2048
+default_md		    = sha256
+distinguished_name	= req_distinguished_name
+attributes	     	= req_attributes
+
+# Passwords for private keys if not present they will be prompted for
+# input_password = secret
+# output_password = secret
+
+# This sets a mask for permitted string types. There are several options. 
+# default: PrintableString, T61String, BMPString.
+# pkix	 : PrintableString, BMPString (PKIX recommendation before 2004)
+# utf8only: only UTF8Strings (PKIX recommendation after 2004).
+# nombstr : PrintableString, T61String (no BMPStrings or UTF8Strings).
+# MASK:XXXX a literal mask value.
+# WARNING: ancient versions of Netscape crash on BMPStrings or UTF8Strings.
+string_mask = utf8only
+
+# req_extensions = v3_req # The extensions to add to a certificate request
+
+[ req_distinguished_name ]
+countryName                     = Country Name (2 letter code)
+countryName_default             = JP
+countryName_min                 = 2
+countryName_max                 = 2
+
+stateOrProvinceName             = State or Province Name (full name)
+stateOrProvinceName_default	    = Tokyo
+
+localityName                    = Locality Name (eg, city)
+localityName_default            = Tokyo-to,Arakawa-ku
+
+0.organizationName              = Organization Name (eg, company)
+0.organizationName_default      = Default Company Ltd
+
+# we can do this but it is not needed normally :-)
+#1.organizationName             = Second Organization Name (eg, company)
+#1.organizationName_default     = World Wide Web Pty Ltd
+
+organizationalUnitName          = Organizational Unit Name (eg, section)
+organizationalUnitName_default	= 
+
+commonName                      = Common Name (eg, your name or your server\'s hostname)
+commonName_default              = Private ICA
+commonName_max                  = 64
+
+emailAddress                    = Email Address
+emailAddress_max                = 64
+
+# SET-ex3			= SET extension number 3
+
+[ req_attributes ]
+challengePassword	  = A challenge password
+challengePassword_min = 4
+challengePassword_max = 20
+unstructuredName	  = An optional company name
+</pre>
+
+<pre class="example">
+$ openssl req -config /tmp/ssl/conf/ica_req.conf -new \
+          -key /tmp/ssl/ICA/private/private.key  \
+          -out /tmp/ssl/ICA/icareq.pem
+
+Enter pass phrase for /tmp/ssl/ICA/private/private.key:
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [JP]:
+State or Province Name (full name) [Tokyo]:
+Locality Name (eg, city) [Tokyo-to,Arakawa-ku]:
+Organization Name (eg, company) [Default Company Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) [Private ICA]:
+Email Address []:
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline13" class="outline-3">
+<h3 id="orgheadline13"><span class="section-number-3">4.3</span> Root CA で中間CAのリクエストを証明する</h3>
+<div class="outline-text-3" id="text-4-3">
+<pre class="example">
+$ openssl ca -config /tmp/ssl/conf/rca_newca.conf \
+             -policy policy_anything -md sha256 -out /tmp/ssl/ICA/icacert.pem \
+             -keyfile /tmp/ssl/RCA/private/caroot.key \
+             -extensions v3_ca -infiles /tmp/ssl/ICA/icareq.pem
+
+Using configuration from /tmp/ssl/conf/rca_newca.conf
+Enter pass phrase for /tmp/ssl/RCA/private/caroot.key:
+Check that the request matches the signature
+Signature ok
+Certificate Details:
+        Serial Number: 16498905871362098936 (0xe4f7e3799d2506f8)
+        Validity
+            Not Before: Aug  2 15:58:51 2015 GMT
+            Not After : Jul 30 15:58:51 2025 GMT
+        Subject:
+            countryName               = JP
+            stateOrProvinceName       = Tokyo
+            localityName              = Tokyo-to,Arakawa-ku
+            organizationName          = Default Company Ltd
+            commonName                = Private ICA
+        X509v3 extensions:
+            X509v3 Subject Key Identifier: 
+                EE:3A:87:1A:A4:24:F2:07:77:E5:A0:2F:6D:18:47:EA:AE:7F:0C:A0
+            X509v3 Authority Key Identifier: 
+                keyid:84:53:9A:AF:EB:44:4E:4C:5F:17:4F:2B:2F:61:8B:6C:B4:4C:17:D6
+
+            X509v3 Basic Constraints: 
+                CA:TRUE
+            Netscape Cert Type: 
+                SSL CA, S/MIME CA
+Certificate is to be certified until Jul 30 15:58:51 2025 GMT (3650 days)
+Sign the certificate? [y/n]:y
+
+
+1 out of 1 certificate requests certified, commit? [y/n]y
+Write out database with 1 new entries
+Data Base Updated
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline14" class="outline-3">
+<h3 id="orgheadline14"><span class="section-number-3">4.4</span> Root CAで承認された証明書をICAのデータベースに登録する</h3>
+<div class="outline-text-3" id="text-4-4">
+<pre class="example">
+$ openssl x509 -in /tmp/ssl/ICA/icacert.pem -noout -next_serial -out /tmp/ssl/ICA/serial
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline15" class="outline-3">
+<h3 id="orgheadline15"><span class="section-number-3">4.5</span> 配布用derの作成</h3>
+<div class="outline-text-3" id="text-4-5">
+<pre class="example">
+$ openssl x509 -in /tmp/ssl/ICA/icacert.pem -outform der -out /tmp/ssl/ICA/ica.der
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline20" class="outline-2">
+<h2 id="orgheadline20"><span class="section-number-2">5</span> サーバ証明書の作成</h2>
+<div class="outline-text-2" id="text-5">
+</div><div id="outline-container-orgheadline17" class="outline-3">
+<h3 id="orgheadline17"><span class="section-number-3">5.1</span> Create Server private key</h3>
+<div class="outline-text-3" id="text-5-1">
+<pre class="example">
+$ openssl genrsa -aes128 -out /tmp/ssl/private.key 2048
+Generating RSA private key, 2048 bit long modulus
+.............+++
+..+++
+e is 65537 (0x10001)
+Enter pass phrase for /tmp/ssl/private.key:
+Verifying - Enter pass phrase for /tmp/ssl/private.key:
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline18" class="outline-3">
+<h3 id="orgheadline18"><span class="section-number-3">5.2</span> CSR（署名要求 newreq.pem）を作成する</h3>
+<div class="outline-text-3" id="text-5-2">
+<p>
+<code>/tmp/ssl/conf/ica_req.conf</code>
+</p>
+<pre class="example">
+####################################################################
+[ req ]
+default_bits		= 2048
+default_md		    = sha256
+distinguished_name	= req_distinguished_name
+attributes	     	= req_attributes
+
+# Passwords for private keys if not present they will be prompted for
+# input_password = secret
+# output_password = secret
+
+# This sets a mask for permitted string types. There are several options. 
+# default: PrintableString, T61String, BMPString.
+# pkix	 : PrintableString, BMPString (PKIX recommendation before 2004)
+# utf8only: only UTF8Strings (PKIX recommendation after 2004).
+# nombstr : PrintableString, T61String (no BMPStrings or UTF8Strings).
+# MASK:XXXX a literal mask value.
+# WARNING: ancient versions of Netscape crash on BMPStrings or UTF8Strings.
+string_mask = utf8only
+
+# req_extensions = v3_req # The extensions to add to a certificate request
+
+[ req_distinguished_name ]
+countryName                     = Country Name (2 letter code)
+countryName_default             = JP
+countryName_min                 = 2
+countryName_max                 = 2
+
+stateOrProvinceName             = State or Province Name (full name)
+stateOrProvinceName_default	    = Tokyo
+
+localityName                    = Locality Name (eg, city)
+localityName_default            = Tokyo-to,Arakawa-ku
+
+0.organizationName              = Organization Name (eg, company)
+0.organizationName_default      = Default Company Ltd
+
+# we can do this but it is not needed normally :-)
+#1.organizationName             = Second Organization Name (eg, company)
+#1.organizationName_default     = World Wide Web Pty Ltd
+
+organizationalUnitName          = Organizational Unit Name (eg, section)
+organizationalUnitName_default	= 
+
+commonName                      = Common Name (eg, your name or your server\'s hostname)
+commonName_default              = ownclond.jizai.mydns.jp
+
+commonName_max                  = 64
+
+emailAddress                    = Email Address
+emailAddress_max                = 64
+
+# SET-ex3			= SET extension number 3
+
+[ req_attributes ]
+challengePassword	  = A challenge password
+challengePassword_min = 4
+challengePassword_max = 20
+unstructuredName	  = An optional company name
+</pre>
+
+<pre class="example">
+$ openssl req -config /tmp/ssl/conf/server_req.conf -new \
+          -key /tmp/ssl/private.key  \
+          -out /tmp/ssl/newreq.pem
+
+Enter pass phrase for /tmp/ssl/private.key:
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [JP]:
+State or Province Name (full name) [Tokyo]:
+Locality Name (eg, city) [Tokyo-to,Arakawa-ku]:
+Organization Name (eg, company) [Default Company Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) [ownclond.jizai.mydns.jp]:
+Email Address []:
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline19" class="outline-3">
+<h3 id="orgheadline19"><span class="section-number-3">5.3</span> 中間CA（ICA）署名</h3>
+<div class="outline-text-3" id="text-5-3">
+<p>
+<code>/tmp/ssl/conf/ica_ca.conf</code>
+</p>
+<pre class="example">
+####################################################################
+[ ca ]
+default_ca	= CA_default		# The default ca section
+
+####################################################################
+[ CA_default ]
+
+dir               = /tmp/ssl/ICA	# Where everything is kept
+certs             = $dir/certs		# Where the issued certs are kept
+crl_dir           = $dir/crl		# Where the issued crl are kept
+database          = $dir/index.txt	# database index file.
+#unique_subject   = no			# Set to 'no' to allow creation of
+					# several ctificates with same subject.
+new_certs_dir     = $dir/newcerts		# default place for new certs.
+
+certificate       = $dir/icacert.pem 	# The CA certificate
+serial            = $dir/serial 		# The current serial number
+crlnumber         = $dir/crlnumber    	# the current crl number
+				             	        # must be commented out to leave a V1 CRL
+crl               = $dir/crl.pem 		# The current CRL
+private_key       = $dir/private/private.key # The private key
+RANDFILE          = $dir/private/.rand	# private random number file
+
+x509_extensions   = usr_cert		# The extentions to add to the cert
+
+# Comment out the following two lines for the "traditional"
+# (and highly broken) format.
+name_opt          = ca_default		# Subject Name options
+cert_opt          = ca_default		# Certificate field options
+
+# Extension copying option: use with caution.
+# copy_extensions = copy
+
+# Extensions to add to a CRL. Note: Netscape communicator chokes on V2 CRLs
+# so this is commented out by default to leave a V1 CRL.
+# crlnumber must also be commented out to leave a V1 CRL.
+# crl_extensions  = crl_ext
+
+default_days      = 3650			# how long to certify for
+default_crl_days  = 30			# how long before next CRL
+default_md        = default		# use public key default MD
+preserve          = no			# keep passed DN ordering
+
+#-------------------
+# CAのポリシーの定義
+#-------------------
+
+# match   : CAの内容と一致しなければならない
+# optional: 無くてもよい
+# supplied: なければならない
+
+# A few difference way of specifying how similar the request should look
+# For type CA, the listed attributes must be the same, and the optional
+# and supplied fields are just that :-)
+policy		= policy_match
+
+# For the CA policy
+[ policy_match ]
+countryName            = match
+stateOrProvinceName    = match
+organizationName       = match
+organizationalUnitName = optional
+commonName             = supplied
+emailAddress           = optional
+
+# For the 'anything' policy
+# At this point in time, you must list all acceptable 'object'
+# types.
+[ policy_anything ]
+countryName            = optional
+stateOrProvinceName    = optional
+localityName           = optional
+organizationName       = optional
+organizationalUnitName = optional
+commonName             = supplied
+emailAddress           = optional
+
+[ usr_cert ]
+
+# These extensions are added when 'ca' signs a request.
+
+# This goes against PKIX guidelines but some CAs do it and some software
+# requires this to avoid interpreting an end user certificate as a CA.
+
+basicConstraints=CA:FALSE
+
+# Here are some examples of the usage of nsCertType. If it is omitted
+# the certificate can be used for anything *except* object signing.
+
+# This is OK for an SSL server.
+nsCertType			= server
+
+# For an object signing certificate this would be used.
+# nsCertType = objsign
+
+# For normal client use this is typical
+# nsCertType = client, email
+
+# and for everything including object signing:
+# nsCertType = client, email, objsign
+
+# This is typical in keyUsage for a client certificate.
+# keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+
+# This will be displayed in Netscape's comment listbox.
+nsComment			= "OpenSSL Generated Certificate"
+
+# PKIX recommendations harmless if included in all certificates.
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
+
+# This stuff is for subjectAltName and issuerAltname.
+# Import the email address.
+# subjectAltName=email:copy
+# An alternative to produce certificates that aren't
+# deprecated according to PKIX.
+# subjectAltName=email:move
+
+# Copy subject details
+# issuerAltName=issuer:copy
+
+#nsCaRevocationUrl		= http://www.domain.dom/ca-crl.pem
+#nsBaseUrl
+#nsRevocationUrl
+#nsRenewalUrl
+#nsCaPolicyUrl
+#nsSslServerName
+
+# This is required for TSA certificates.
+# extendedKeyUsage = critical,timeStamping
+</pre>
+
+
+<pre class="example">
+$ openssl ca -config /tmp/ssl/conf/ica_ca.conf \
+             -policy policy_anything -md sha256 -out /tmp/ssl/newcert.pem \
+             -keyfile /tmp/ssl/ICA/private/private.key \
+             -infiles /tmp/ssl/newreq.pem
+
+Using configuration from /tmp/ssl/conf/ica_ca.conf
+Enter pass phrase for /tmp/ssl/ICA/private/private.key:
+Error opening CA certificate /tmp/ssl/ICA/cacert.pem
+139623196616520:error:02001002:system library:fopen:No such file or directory:bss_file.c:398:fopen('/tmp/ssl/ICA/cacert.pem','r')
+139623196616520:error:20074002:BIO routines:FILE_CTRL:system lib:bss_file.c:400:
+unable to load certificate
+[root@jdg65_lab ssl]# openssl ca -config /tmp/ssl/conf/ica_ca.conf              -policy policy_anything -md sha256 -out /tmp/ssl/newcert.pem              -keyfile /tmp/ssl/ICA/private/private.key              -infiles /tmp/ssl/newreq.pem
+Using configuration from /tmp/ssl/conf/ica_ca.conf
+Enter pass phrase for /tmp/ssl/ICA/private/private.key:
+Check that the request matches the signature
+Signature ok
+Certificate Details:
+        Serial Number: 16498905871362098937 (0xe4f7e3799d2506f9)
+        Validity
+            Not Before: Aug  2 16:25:02 2015 GMT
+            Not After : Jul 30 16:25:02 2025 GMT
+        Subject:
+            countryName               = JP
+            stateOrProvinceName       = Tokyo
+            localityName              = Tokyo-to,Arakawa-ku
+            organizationName          = Default Company Ltd
+            commonName                = ownclond.jizai.mydns.jp
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            Netscape Cert Type: 
+                SSL Server
+            Netscape Comment: 
+                OpenSSL Generated Certificate
+            X509v3 Subject Key Identifier: 
+                35:88:54:CD:73:FC:3F:33:24:7D:7B:A8:F1:9C:7A:7F:45:B8:49:EB
+            X509v3 Authority Key Identifier: 
+                keyid:EE:3A:87:1A:A4:24:F2:07:77:E5:A0:2F:6D:18:47:EA:AE:7F:0C:A0
+
+Certificate is to be certified until Jul 30 16:25:02 2025 GMT (3650 days)
+Sign the certificate? [y/n]:y
+
+
+1 out of 1 certificate requests certified, commit? [y/n]y
+Write out database with 1 new entries
+Data Base Updated
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline21" class="outline-2">
+<h2 id="orgheadline21"><span class="section-number-2">6</span> 参考</h2>
+<div class="outline-text-2" id="text-6">
+<ul class="org-ul">
+<li><a href="http://www.dosancole.com/environment/2014/07/20/self-ssl/">やむを得ない場合の自己証明書と自己認証局によるSSLサイト構築</a></li>
+<li><a href="http://qiita.com/kgbu/items/44535b31c0f1a062693d">CentOS6などで俺俺CAとSHA2証明書を作るときのメモ</a></li>
+<li><a href="http://qiita.com/mitzi2funk/items/602d9c5377f52cb60e54">プライベート認証局(CA)にてクライアント証明書の発行</a></li>
+<li><a href="http://pages.cs.wisc.edu/~zmiller/ca-howto/">How To Setup a CA</a></li>
+<li><a href="http://l-w-i.net/t/openssl/cert_001.txt">プライベート認証局(CA)を構築して証明書の発行を行なう</a></li>
+<li><a href="http://l-w-i.net/t/openssl/conf_001.txt">openssl.cnfの設定項目</a></li>
+<li><a href="http://www.ipa.go.jp/security/rfc/RFC2459JA.html">RFC2459</a></li>
+<li><a href="http://www.ipa.go.jp/security/fy10/contents/over-all/02/21.html">X509の解説</a></li>
+<li><a href="http://d.hatena.ne.jp/blooper/20120907/1347027334">私が愛した openssl (PKI 編 その 1)</a></li>
+<li><a href="http://d.hatena.ne.jp/blooper/20120912/1347465070">私が愛した openssl (PKI 編 その 2)</a></li>
+<li><a href="http://d.hatena.ne.jp/blooper/20120904/1346774526">私が愛した openssl (プリミティヴ編)</a></li>
+<li><a href="http://d.hatena.ne.jp/blooper/20120910/1347285980">私が愛した openssl (SSL/TLS 編)</a></li>
+<li><a href="http://www.nina.jp/server/slackware/openssl/openssl-command.html">サーバの実験室 Slackware - opensslコマンド</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: 2015-08-02</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: Jstat | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/jstat/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2015-08-30T22:26:52+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[Java道具]jstat -gcの出力を見やすくする]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-08-30-%5Bjava%E9%81%93%E5%85%B7%5Djstat--gc%E3%81%AE%E5%87%BA%E5%8A%9B%E3%82%92%E8%A6%8B%E3%82%84%E3%81%99%E3%81%8F%E3%81%99%E3%82%8B.html"/>
+    <updated>2015-08-30T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[java道具]jstat&#8211;gcの出力を見やすくする</id>
+    <content type="html"><![CDATA[<p>
+<code>jstat -gc</code> でJVMのメモリ仕様状況を確認する際によく使うのですが、次の問題で少し見づら
+いと感じましたので、整形用のオレオレスクリプトを作成しました。
+</p>
+
+
+
+
+<ul class="org-ul">
+<li>出力単位がbyteとなっています、数字長い時目視でメガバイト(mb)への換算が大変</li>
+<li>ヘッダ行と値行がズレる時があります</li>
+</ul>
+
+
+
+
+<p>
+デフォルトの出力形式
+</p>
+
+
+<pre class="example">
+$ jstat -gc 10901
+ S0C    S1C    S0U    S1U      EC       EU        OC         OU       MC     MU    CCSC   CCSU   YGC     YGCT    FGC    FGCT     GCT
+55296.0 55296.0  0.0    0.0   334336.0 157179.1  890368.0   23266.0   35748.0 32020.9 5248.0 4068.9      3    0.124   2      0.195    0.320
+</pre>
+
+
+
+
+<p>
+次はスクリプトで整形後の出力形式(JDK8の場合)
+</p>
+
+
+<pre class="example">
+---------------------------------------------
+S0  領域 |   54.00 /    0.00 (MB)  |  0.00%
+S1  領域 |   54.00 /    0.00 (MB)  |  0.00%
+Eden領域 |  326.50 /  170.63 (MB)  | 52.26%
+Old 領域 |   22.72 /  869.50 (MB)  |  2.61%
+Meta領域 |   31.27 /   34.91 (MB)  | 89.57%
+CCPS領域 |    3.97 /   54.00 (MB)  | 77.53%
+---------------------------------------------
+YGC 回数 |       3 回
+YGC 時間 |    0.12 秒
+FGC 回数 |       2 回
+FGC 時間 |    0.20 秒
+---------------------------------------------
+</pre>
+
+
+
+
+<p>
+コードはgithubに公開しています。
+</p>
+
+
+
+
+<p>
+<a href="https://github.com/luozengbin/misc-box/blob/master/jvm_memstst.sh">jvm_memstst.sh</a>
+</p>
+
+
+
+
+<script src="https://gist.github.com/luozengbin/52d1359f89e88654e6ec.js"></script>
+
+
+<script src="http://luozengbin.github.io/javascripts/custom/fixgist.js"></script>
+
+
+
+
+<p>
+出力加工機能以外、次の便利な機能も提供しています。
+</p>
+
+
+<ul class="org-ul">
+<li>JavaプロセスID自動特定する</li>
+<li>JAVA_HOMEを自動的に特定する</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>

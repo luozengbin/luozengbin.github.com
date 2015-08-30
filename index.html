@@ -9,8 +9,9 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="Web開発でクリーンなテスト環境が必要とする場面が結構あります。
-普段ご利用しているブラウザの設定リセットやキャッシュクリアは平気に出来ないでしょう。 この問題を解決するために、ブラウザにマルチプロファイル機能が提供してくれる。 例えばFirefoxに --new-instance &hellip;">
+  <meta name="description" content="jstat -gc でJVMのメモリ仕様状況を確認する際によく使うのですが、次の問題で少し見づら
+いと感じましたので、整形用のオレオレスクリプトを作成しました。 出力単位がbyteとなっています、数字長い時目視でメガバイト(mb)への換算が大変
+ヘッダ行と値行がズレる時があります &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -79,6 +80,293 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-08-30-%5Bjava%E9%81%93%E5%85%B7%5Djstat--gc%E3%81%AE%E5%87%BA%E5%8A%9B%E3%82%92%E8%A6%8B%E3%82%84%E3%81%99%E3%81%8F%E3%81%99%E3%82%8B.html">[Java道具]jstat -gcの出力を見やすくする</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-08-30T00:00:00+09:00" pubdate data-updated="true">2015-08-30 (Sun)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>
+<code>jstat -gc</code> でJVMのメモリ仕様状況を確認する際によく使うのですが、次の問題で少し見づら
+いと感じましたので、整形用のオレオレスクリプトを作成しました。
+</p>
+
+<ul class="org-ul">
+<li>出力単位がbyteとなっています、数字長い時目視でメガバイト(mb)への換算が大変</li>
+<li>ヘッダ行と値行がズレる時があります</li>
+</ul>
+
+<p>
+デフォルトの出力形式
+</p>
+<pre class="example">
+$ jstat -gc 10901
+ S0C    S1C    S0U    S1U      EC       EU        OC         OU       MC     MU    CCSC   CCSU   YGC     YGCT    FGC    FGCT     GCT
+55296.0 55296.0  0.0    0.0   334336.0 157179.1  890368.0   23266.0   35748.0 32020.9 5248.0 4068.9      3    0.124   2      0.195    0.320
+</pre>
+
+<p>
+次はスクリプトで整形後の出力形式(JDK8の場合)
+</p>
+<pre class="example">
+---------------------------------------------
+S0  領域 |   54.00 /    0.00 (MB)  |  0.00%
+S1  領域 |   54.00 /    0.00 (MB)  |  0.00%
+Eden領域 |  326.50 /  170.63 (MB)  | 52.26%
+Old 領域 |   22.72 /  869.50 (MB)  |  2.61%
+Meta領域 |   31.27 /   34.91 (MB)  | 89.57%
+CCPS領域 |    3.97 /   54.00 (MB)  | 77.53%
+---------------------------------------------
+YGC 回数 |       3 回
+YGC 時間 |    0.12 秒
+FGC 回数 |       2 回
+FGC 時間 |    0.20 秒
+---------------------------------------------
+</pre>
+
+<p>
+コードはgithubに公開しています。
+</p>
+
+<p>
+<a href="https://github.com/luozengbin/misc-box/blob/master/jvm_memstst.sh">jvm_memstst.sh</a>
+</p>
+
+
+<script src="https://gist.github.com/luozengbin/52d1359f89e88654e6ec.js"></script>
+<script src="/javascripts/custom/fixgist.js"></script>
+
+<p>
+出力加工機能以外、次の便利な機能も提供しています。
+</p>
+<ul class="org-ul">
+<li>JavaプロセスID自動特定する</li>
+<li>JAVA_HOMEを自動的に特定する</li>
+</ul>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-08-29-%5Btips%5D%5Blinux%5D%E6%97%A7%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3centos%E3%81%A7yum%E6%9B%B4%E6%96%B0%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%8F%E3%81%AA%E3%81%A3%E3%81%9F%E6%99%82.html">[tips][Linux]旧バージョンCentOSでyum更新できなくなった時</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-08-29T00:00:00+09:00" pubdate data-updated="true">2015-08-29 (Sat)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgheadline1">1. CentOS 6.6でyum更新したら404エラー</a></li>
+<li><a href="#orgheadline2">2. 参考</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1"><span class="section-number-2">1</span> CentOS 6.6でyum更新したら404エラー</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+CentOS 6.6でyum更新したら404エラーとなって更新できなくなった。
+</p>
+<pre class="example">
+# yum update
+読み込んだプラグイン:fastestmirror
+更新処理の設定をしています
+Loading mirror speeds from cached hostfile
+ * base: ftp.iij.ad.jp
+ * extras: ftp.iij.ad.jp
+ * updates: centos.usonyx.net
+http://ftp.iij.ad.jp/pub/linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.jaist.ac.jp/pub/Linux/CentOS/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.nara.wide.ad.jp/pub/Linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.riken.jp/Linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+</pre>
+
+<p>
+ブラウザからミラーサイトを確認するとreadmeファイルしかありませんでした。
+</p>
+
+
+<div class="figure">
+<p><img src="blog/img/20150829231548_CentOS_yum_404.png" alt="20150829231548_CentOS_yum_404.png" />
+</p>
+</div>
+
+<p>
+readmeの内容は下記となります。
+</p>
+
+<pre class="example">
+$ curl http://ftp.iij.ad.jp/pub/linux/centos/6.6/readme
+This directory (and version of CentOS) is deprecated.  For normal users,
+you should use /6/ and not /6.6/ in your path. Please see this FAQ
+concerning the CentOS release scheme:
+
+https://wiki.centos.org/FAQ/General
+
+If you know what you are doing, and absolutely want to remain at the 6.6
+level, go to http://vault.centos.org/ for packages.
+
+Please keep in mind that 6.0, 6.1, 6.2, 6.3, 6.4 , 6.5 and 6.6 no longer gets any updates, nor
+any security fix's.
+</pre>
+
+<p>
+簡単に言うと更新が止まった旧バージョンのパッケージは <code>http://vault.centos.org/</code>
+ドメイン下に移管された。
+</p>
+
+<p>
+というわけでyumリポジトリのURLを書き換えれば問題が解消されるはずだ。
+</p>
+
+<pre class="example">
+$ sudo sed -i -e "s|mirror\.centos\.org/centos/\$releasever|vault\.centos\.org/6.6|g" /etc/yum.repos.d/CentOS-Base.repo
+$ sudo sed -i -e "s|#baseurl=|baseurl=|g" CentOS-Base.repo
+$ sudo sed -i -e "s|mirrorlist=|#mirrorlist=|g" CentOS-Base.repo
+#  yum update
+読み込んだプラグイン:fastestmirror
+更新処理の設定をしています
+Loading mirror speeds from cached hostfile
+base                                                                                                                                   | 3.7 kB     00:00     
+extras                                                                                                                                 | 3.4 kB     00:00     
+updates                                                                                                                                | 3.4 kB     00:00     
+（中略）
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline2" class="outline-2">
+<h2 id="orgheadline2"><span class="section-number-2">2</span> 参考</h2>
+<div class="outline-text-2" id="text-2">
+<ul class="org-ul">
+<li><a href="http://www.linuxask.com/questions/yum-repository-mirror-for-old-centos-versions">Yum repository mirror for old CentOS’ versions</a></li>
+</ul>
+</div>
+</div>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-08-29-%5Btips%5D%5Bjava%5Dopenjdk8%E4%BB%98%E5%B1%9E%E3%83%84%E3%83%BC%E3%83%AB%E5%AE%9F%E8%A1%8C%E6%99%82%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%AE%E5%AF%BE%E7%AD%96.html">[tips][Java]OpenJDK8付属ツール実行時エラーの対策</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-08-29T00:00:00+09:00" pubdate data-updated="true">2015-08-29 (Sat)</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgheadline1">1. プロセスアタッチ出来ない</a></li>
+<li><a href="#orgheadline2">2. Metadata does not appear to be polymorphic</a></li>
+<li><a href="#orgheadline3">3. unknown CollectedHeap type</a></li>
+</ul>
+</div>
+</div>
+<p>
+本記事に、OpenJDKの障害は次の環境で確認されました。
+</p>
+
+<pre class="example">
+$ java -version
+openjdk version "1.8.0_60"
+OpenJDK Runtime Environment (build 1.8.0_60-b24)
+OpenJDK 64-Bit Server VM (build 25.60-b23, mixed mode)
+
+$ uname -a
+Linux mimi 4.1.6-1-ARCH #1 SMP PREEMPT Mon Aug 17 08:52:28 CEST 2015 x86_64 GNU/Linux
+</pre>
+
+<p>
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-08-29-%5Btips%5D%5Bjava%5Dopenjdk8%E4%BB%98%E5%B1%9E%E3%83%84%E3%83%BC%E3%83%AB%E5%AE%9F%E8%A1%8C%E6%99%82%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%AE%E5%AF%BE%E7%AD%96.html">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -727,301 +1015,6 @@ mew-init-hookで拡張してみました。
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-06-28-%5Btips%5D%5Blinux%5Djournald%E3%82%A8%E3%83%A9%E3%83%BC%E3%83%AD%E3%82%B0%E3%82%92%E3%83%A1%E3%83%BC%E3%83%AB%E3%81%A7%E9%80%9A%E7%9F%A5%E3%81%99%E3%82%8B.html">[tips][Linux]journaldエラーログをメールで通知する</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2015-06-28T00:00:00+09:00" pubdate data-updated="true">2015-06-28 (Sun)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>
-systemdを採用しているdistroのシステムログがjournaldを一元管理してくれる。
-</p>
-
-<ul class="org-ul">
-<li><a href="http://enakai00.hatenablog.com/entry/20141130/1417310904">RHEL7/CentOS7のjournaldについてのもろもろ</a>
-</li>
-<li><a href="http://www.school.ctc-g.co.jp/columns/nakai/nakai56.html">第56回　RHEL7/CentOS7のjournaldでシステムログを一元管理 (中井悦司)</a>
-</li>
-</ul>
-
-<p>
-ただし、journaldにエラーログを通知する機能が持っていないため監視通知のし掛けが必要で
-す。
-</p>
-
-<ol class="org-ol">
-<li>journaldログをsyslogに転送し、従来のsyslog監視方法を適用する
-</li>
-<li>独自のスクリプトで実現する
-</li>
-</ol>
-
-<p>
-自宅のサーバは下記スクリプトでエラーログの通知機能を実現しています。
-</p>
-
-<p>
-<code>/etc/cron.hourly/journal_error</code>
-</p>
-<div class="org-src-container">
-
-<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
-
-<span style="color: #00cd66;"># </span><span style="color: #00cd66;">&#19968;&#26178;&#20197;&#20869;&#12398;&#12456;&#12521;&#12540;&#12525;&#12464;&#12434;&#27161;&#28310;&#20986;&#21147;&#12392;/var/log/journal_error&#12501;&#12449;&#12452;&#12523;&#12408;&#20986;&#21147;&#12377;&#12427;</span>
-journalctl -o short-iso -p err --since -1hours 2&gt;/dev/null | tail -n+2 | tee -a /var/log/journal_error
-</pre>
-</div>
-
-<p>
-journalctl コマンドを駆使して１時間以内のエラーログを標準出力に出力するスクリプト。
-これをcronの時間単位ジョブディレクトリ <code>/etc/cron.hourly</code> に登録する。
-あとはcronのメール通知機能を有効化するだけです。
-</p>
-
-<p>
-cronのメール通知先は <code>/etc/cron.d/0hourly</code> の <code>MAILTO</code> 項目にて指定する。
-</p>
-<div class="org-src-container">
-
-<pre class="src src-sh">$ cat /etc/cron.d/0hourly
-<span style="color: #00cd66;"># </span><span style="color: #00cd66;">Run the hourly jobs</span>
-<span style="color: #9acd32;">SHELL</span>=/bin/bash
-<span style="color: #9acd32;">PATH</span>=/sbin:/bin:/usr/sbin:/usr/bin
-<span style="color: #9acd32;">MAILTO</span>=&lt;&lt;&#12513;&#12540;&#12523;&#12398;&#36865;&#20449;&#20808;&#12434;&#12371;&#12371;&#12395;&#26360;&#12367;&gt;&gt;
-<span style="color: #ffff00; font-weight: bold;">1 * * * * root run-parts /etc/cron.hourly</span>
-</pre>
-</div>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[まとめ]Linuxシステム時刻について</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2015-06-27T00:00:00+09:00" pubdate data-updated="true">2015-06-27 (Sat)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-1">1. ハードウェアクロック／システムクロックの違い</a></li>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-2">2. 時刻の表示仕様</a></li>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-3">3. 時刻表示／調整関連コマンド</a>
-<ul>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-3-1">3.1. NTP時刻同期化を自動化する</a></li>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-3-2">3.2. タイムゾーンの変更</a></li>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-3-3">3.3. ハードウェアクロックとの同期化</a></li>
-</ul>
-</li>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-4">4. 時刻関連ファイル</a></li>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-5">5. デュアルブートの注意点</a></li>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-6">6. NTPサーバの構築</a></li>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-7">7. システムコール</a></li>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-8">8. カーネルの実装について</a></li>
-<li><a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html#sec-9">9. 参考</a></li>
-</ul>
-</div>
-</div>
-<p>
-Linuxシステム時刻に関わる知識やリソースのまとめです。
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> ハードウェアクロック／システムクロックの違い</h2>
-<div class="outline-text-2" id="text-1">
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<thead>
-<tr>
-<th scope="col" class="left">クロック種別</th>
-<th scope="col" class="left">説明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="left">ハードウェアクロック</td>
-<td class="left">* マザーボード上のICによって提供される時計です。</td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">* 通常は電池でバックアップして駆動されるので、電源をお落としても時計が進みます。</td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">* RTC（Real Time Clock）、BIOS、CMOSクロックとも呼ばれる。</td>
-</tr>
-</tbody>
-<tbody>
-<tr>
-<td class="left">システムクロック</td>
-<td class="left">* Linux カーネルの内部に存在している時計で、 タイマ割り込みによって駆動されている</td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">* Linux システムは起動時に一度だけハードウェア・クロックを参照し、 システム・クロックを設定する。</td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">* 精度の高いクロック、1GHz以上のCPUの場合1クロックは1ナノ秒のなります。</td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">* 時刻は1970/01/01T00:00:00からの経過時間を秒単位／ナノ秒単位で保持される。</td>
-</tr>
-</tbody>
-</table>
-
-<p>
-ハードウェアクロック持っていないボードも存在する。RaspberryPiボードはその一つです、
-RTCが必要な場合、別途RTCモジュールを導入しなければいけません。<a href="#fn2">2</a>
-</p>
-
-<p>
-RaspberryPiで <code>hwclock</code> コマンドでハードウェアクロックを参照すると <code>/dev/rtc</code> デバイ
-スがない旨のメッセージが表示された。
-</p>
-<pre class="example">
-$ sudo hwclock --debug
-hwclock from util-linux 2.26.2
-hwclock: cannot open /dev/rtc: No such file or directory
-No usable clock interface found.
-hwclock: Cannot access the Hardware Clock via any known method.
-</pre>
-
-<p>
-RaspberryPiはNTPサーバから時刻同期のし掛けが必要です。そしないとシステムクロックが
-POSIXにおける紀元時刻(Epoch; 1970-01-01 00:00:00 +0000 (UTC))に設定されてしまう。
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html">[メモ]JavaBeans仕様を再認識する</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2015-06-13T00:00:00+09:00" pubdate data-updated="true">2015-06-13 (Sat)</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html#sec-1">1. 仕様のゴール</a></li>
-<li><a href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html#sec-2">2. JavaBeansとは</a></li>
-<li><a href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html#sec-3">3. JavaBeansの出番</a></li>
-<li><a href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html#sec-4">4. APIパッケージの概要</a></li>
-<li><a href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html#sec-5">5. よく出てくるクラス</a></li>
-<li><a href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html#sec-6">6. サードパーティライブラリ</a></li>
-<li><a href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html#sec-7">7. 参考情報</a></li>
-</ul>
-</div>
-</div>
-<p>
-勉強メモ
-</p>
-
-<p>
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -1055,6 +1048,18 @@ POSIXにおける紀元時刻(Epoch; 1970-01-01 00:00:00 +0000 (UTC))に設定�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015-08-30-%5Bjava%E9%81%93%E5%85%B7%5Djstat--gc%E3%81%AE%E5%87%BA%E5%8A%9B%E3%82%92%E8%A6%8B%E3%82%84%E3%81%99%E3%81%8F%E3%81%99%E3%82%8B.html">[Java道具]jstat -gcの出力を見やすくする</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-08-29-%5Btips%5D%5Blinux%5D%E6%97%A7%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3centos%E3%81%A7yum%E6%9B%B4%E6%96%B0%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%8F%E3%81%AA%E3%81%A3%E3%81%9F%E6%99%82.html">[tips][Linux]旧バージョンCentOSでyum更新できなくなった時</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-08-29-%5Btips%5D%5Bjava%5Dopenjdk8%E4%BB%98%E5%B1%9E%E3%83%84%E3%83%BC%E3%83%AB%E5%AE%9F%E8%A1%8C%E6%99%82%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%AE%E5%AF%BE%E7%AD%96.html">[tips][Java]OpenJDK8付属ツール実行時エラーの対策</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015-08-07-%5Btips%5D%5Blinux%5Dfirefox%E8%B5%B7%E5%8B%95%E6%99%82%E3%81%AB%E3%83%97%E3%83%AD%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E9%81%B8%E6%8A%9E%E5%87%BA%E6%9D%A5%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB%E3%81%99%E3%82%8B.html">[tips][Linux]Firefox起動時にプロファイル選択出来るようにする</a>
       </li>
     
@@ -1082,18 +1087,6 @@ POSIXにおける紀元時刻(Epoch; 1970-01-01 00:00:00 +0000 (UTC))に設定�
         <a href="/blog/2015-06-29-%5Btips%5D%5Bjava%5D%E3%83%A1%E3%83%A2%E3%83%AAswap%E3%81%AB%E3%82%88%E3%82%8B%E7%84%A1%E5%BF%9C%E7%AD%94.html">[tips][Java]メモリswapによる無応答</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2015-06-28-%5Btips%5D%5Blinux%5Djournald%E3%82%A8%E3%83%A9%E3%83%BC%E3%83%AD%E3%82%B0%E3%82%92%E3%83%A1%E3%83%BC%E3%83%AB%E3%81%A7%E9%80%9A%E7%9F%A5%E3%81%99%E3%82%8B.html">[tips][Linux]journaldエラーログをメールで通知する</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-06-27-%5B%E3%81%BE%E3%81%A8%E3%82%81%5Dlinux%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%99%82%E5%88%BB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">[まとめ]Linuxシステム時刻について</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-06-13-%5B%E3%83%A1%E3%83%A2%5Djavabeans%E4%BB%95%E6%A7%98%E3%82%92%E5%86%8D%E8%AA%8D%E8%AD%98%E3%81%99%E3%82%8B.html">[メモ]JavaBeans仕様を再認識する</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -1101,11 +1094,11 @@ POSIXにおける紀元時刻(Epoch; 1970-01-01 00:00:00 +0000 (UTC))に設定�
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (3)</a></li><li><a href='/blog/categories/java/'>java (18)</a></li><li><a href='/blog/categories/linux/'>linux (23)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (3)</a></li><li><a href='/blog/categories/java/'>java (20)</a></li><li><a href='/blog/categories/linux/'>linux (24)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/bash' style='font-size: 120.0%'>bash(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/docker' style='font-size: 120.0%'>docker(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firefox' style='font-size: 120.0%'>firefox(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/javabeans' style='font-size: 120.0%'>JavaBeans(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/journald' style='font-size: 120.0%'>journald(1)</a> <a href='/blog/tags/jvm' style='font-size: 140.0%'>jvm(2)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/mew' style='font-size: 120.0%'>mew(1)</a> <a href='/blog/tags/misc' style='font-size: 120.0%'>misc(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/peco' style='font-size: 120.0%'>peco(1)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/samba' style='font-size: 120.0%'>samba(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 140.0%'>stack(2)</a> <a href='/blog/tags/swap' style='font-size: 120.0%'>swap(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/bash' style='font-size: 120.0%'>bash(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/docker' style='font-size: 120.0%'>docker(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firefox' style='font-size: 120.0%'>firefox(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/javabeans' style='font-size: 120.0%'>JavaBeans(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/journald' style='font-size: 120.0%'>journald(1)</a> <a href='/blog/tags/jstat' style='font-size: 120.0%'>jstat(1)</a> <a href='/blog/tags/jvm' style='font-size: 140.0%'>jvm(2)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/mew' style='font-size: 120.0%'>mew(1)</a> <a href='/blog/tags/misc' style='font-size: 120.0%'>misc(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/peco' style='font-size: 120.0%'>peco(1)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/sa' style='font-size: 120.0%'>SA(1)</a> <a href='/blog/tags/samba' style='font-size: 120.0%'>samba(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 140.0%'>stack(2)</a> <a href='/blog/tags/swap' style='font-size: 120.0%'>swap(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/yum' style='font-size: 120.0%'>yum(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
 </section>
 
 <section>

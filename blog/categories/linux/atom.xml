@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Linux | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-08-07T16:13:34+09:00</updated>
+  <updated>2015-08-30T22:26:52+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,117 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Linux]旧バージョンCentOSでyum更新できなくなった時]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-08-29-%5Btips%5D%5Blinux%5D%E6%97%A7%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3centos%E3%81%A7yum%E6%9B%B4%E6%96%B0%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%8F%E3%81%AA%E3%81%A3%E3%81%9F%E6%99%82.html"/>
+    <updated>2015-08-29T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][linux]旧バージョンcentosでyum更新できなくなった時</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgheadline1">1. CentOS 6.6でyum更新したら404エラー</a></li>
+<li><a href="#orgheadline2">2. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1"><span class="section-number-2">1</span> CentOS 6.6でyum更新したら404エラー</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+CentOS 6.6でyum更新したら404エラーとなって更新できなくなった。
+</p>
+<pre class="example">
+# yum update
+読み込んだプラグイン:fastestmirror
+更新処理の設定をしています
+Loading mirror speeds from cached hostfile
+ * base: ftp.iij.ad.jp
+ * extras: ftp.iij.ad.jp
+ * updates: centos.usonyx.net
+http://ftp.iij.ad.jp/pub/linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.jaist.ac.jp/pub/Linux/CentOS/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.nara.wide.ad.jp/pub/Linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.riken.jp/Linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+</pre>
+
+<p>
+ブラウザからミラーサイトを確認するとreadmeファイルしかありませんでした。
+</p>
+
+
+<div class="figure">
+<p><img src="img/20150829231548_CentOS_yum_404.png" alt="20150829231548_CentOS_yum_404.png" />
+</p>
+</div>
+
+<p>
+readmeの内容は下記となります。
+</p>
+
+<pre class="example">
+$ curl http://ftp.iij.ad.jp/pub/linux/centos/6.6/readme
+This directory (and version of CentOS) is deprecated.  For normal users,
+you should use /6/ and not /6.6/ in your path. Please see this FAQ
+concerning the CentOS release scheme:
+
+https://wiki.centos.org/FAQ/General
+
+If you know what you are doing, and absolutely want to remain at the 6.6
+level, go to http://vault.centos.org/ for packages.
+
+Please keep in mind that 6.0, 6.1, 6.2, 6.3, 6.4 , 6.5 and 6.6 no longer gets any updates, nor
+any security fix's.
+</pre>
+
+<p>
+簡単に言うと更新が止まった旧バージョンのパッケージは <code>http://vault.centos.org/</code>
+ドメイン下に移管された。
+</p>
+
+<p>
+というわけでyumリポジトリのURLを書き換えれば問題が解消されるはずだ。
+</p>
+
+<pre class="example">
+$ sudo sed -i -e "s|mirror\.centos\.org/centos/\$releasever|vault\.centos\.org/6.6|g" /etc/yum.repos.d/CentOS-Base.repo
+$ sudo sed -i -e "s|#baseurl=|baseurl=|g" CentOS-Base.repo
+$ sudo sed -i -e "s|mirrorlist=|#mirrorlist=|g" CentOS-Base.repo
+#  yum update
+読み込んだプラグイン:fastestmirror
+更新処理の設定をしています
+Loading mirror speeds from cached hostfile
+base                                                                                                                                   | 3.7 kB     00:00     
+extras                                                                                                                                 | 3.4 kB     00:00     
+updates                                                                                                                                | 3.4 kB     00:00     
+（中略）
+</pre>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-orgheadline2" class="outline-2">
+<h2 id="orgheadline2"><span class="section-number-2">2</span> 参考</h2>
+<div class="outline-text-2" id="text-2">
+<ul class="org-ul">
+<li><a href="http://www.linuxask.com/questions/yum-repository-mirror-for-old-centos-versions">Yum repository mirror for old CentOS’ versions</a></li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[tips][Linux]Firefox起動時にプロファイル選択出来るようにする]]></title>
@@ -389,98 +500,6 @@ dyoung522/oraclelinux-dev                 OracleLinux with development environme
 hedlund/oraclelinux                                                                       0                    [OK]
 florentbenoit/oraclelinux-jdk7                                                            0                    [OK]
 </pre>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[tips][Linux]journaldエラーログをメールで通知する]]></title>
-    <link href="http://luozengbin.github.io/blog/2015-06-28-%5Btips%5D%5Blinux%5Djournald%E3%82%A8%E3%83%A9%E3%83%BC%E3%83%AD%E3%82%B0%E3%82%92%E3%83%A1%E3%83%BC%E3%83%AB%E3%81%A7%E9%80%9A%E7%9F%A5%E3%81%99%E3%82%8B.html"/>
-    <updated>2015-06-28T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[tips][linux]journaldエラーログをメールで通知する</id>
-    <content type="html"><![CDATA[<p>
-systemdを採用しているdistroのシステムログがjournaldを一元管理してくれる。
-</p>
-
-
-
-
-<ul class="org-ul">
-<li><a href="http://enakai00.hatenablog.com/entry/20141130/1417310904">RHEL7/CentOS7のjournaldについてのもろもろ</a>
-</li>
-<li><a href="http://www.school.ctc-g.co.jp/columns/nakai/nakai56.html">第56回　RHEL7/CentOS7のjournaldでシステムログを一元管理 (中井悦司)</a>
-</li>
-</ul>
-
-
-
-
-<p>
-ただし、journaldにエラーログを通知する機能が持っていないため監視通知のし掛けが必要で
-す。
-</p>
-
-
-
-
-<ol class="org-ol">
-<li>journaldログをsyslogに転送し、従来のsyslog監視方法を適用する
-</li>
-<li>独自のスクリプトで実現する
-</li>
-</ol>
-
-
-
-
-<p>
-自宅のサーバは下記スクリプトでエラーログの通知機能を実現しています。
-</p>
-
-
-
-
-<p>
-<code>/etc/cron.hourly/journal_error</code>
-</p>
-
-
-<div class="org-src-container">
-
-<pre class="src src-sh"><span style="color: #00cd66;">#</span><span style="color: #00cd66;">!/bin/</span><span style="color: #ffffff;">sh</span>
-
-<span style="color: #00cd66;"># </span><span style="color: #00cd66;">&#19968;&#26178;&#20197;&#20869;&#12398;&#12456;&#12521;&#12540;&#12525;&#12464;&#12434;&#27161;&#28310;&#20986;&#21147;&#12392;/var/log/journal_error&#12501;&#12449;&#12452;&#12523;&#12408;&#20986;&#21147;&#12377;&#12427;</span>
-journalctl -o short-iso -p err --since -1hours 2&gt;/dev/null | tail -n+2 | tee -a /var/log/journal_error
-</pre>
-</div>
-
-
-
-
-<p>
-journalctl コマンドを駆使して１時間以内のエラーログを標準出力に出力するスクリプト。
-これをcronの時間単位ジョブディレクトリ <code>/etc/cron.hourly</code> に登録する。
-あとはcronのメール通知機能を有効化するだけです。
-</p>
-
-
-
-
-<p>
-cronのメール通知先は <code>/etc/cron.d/0hourly</code> の <code>MAILTO</code> 項目にて指定する。
-</p>
-
-
-<div class="org-src-container">
-
-<pre class="src src-sh">$ cat /etc/cron.d/0hourly
-<span style="color: #00cd66;"># </span><span style="color: #00cd66;">Run the hourly jobs</span>
-<span style="color: #9acd32;">SHELL</span>=/bin/bash
-<span style="color: #9acd32;">PATH</span>=/sbin:/bin:/usr/sbin:/usr/bin
-<span style="color: #9acd32;">MAILTO</span>=&lt;&lt;&#12513;&#12540;&#12523;&#12398;&#36865;&#20449;&#20808;&#12434;&#12371;&#12371;&#12395;&#26360;&#12367;&gt;&gt;
-<span style="color: #ffff00; font-weight: bold;">1 * * * * root run-parts /etc/cron.hourly</span>
-</pre>
-</div>
 
 ]]></content>
   </entry>

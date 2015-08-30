@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-08-07T16:13:34+09:00</updated>
+  <updated>2015-08-30T22:26:52+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -12,6 +12,396 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[Java道具]jstat -gcの出力を見やすくする]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-08-30-%5Bjava%E9%81%93%E5%85%B7%5Djstat--gc%E3%81%AE%E5%87%BA%E5%8A%9B%E3%82%92%E8%A6%8B%E3%82%84%E3%81%99%E3%81%8F%E3%81%99%E3%82%8B.html"/>
+    <updated>2015-08-30T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[java道具]jstat&#8211;gcの出力を見やすくする</id>
+    <content type="html"><![CDATA[<p>
+<code>jstat -gc</code> でJVMのメモリ仕様状況を確認する際によく使うのですが、次の問題で少し見づら
+いと感じましたので、整形用のオレオレスクリプトを作成しました。
+</p>
+
+<ul class="org-ul">
+<li>出力単位がbyteとなっています、数字長い時目視でメガバイト(mb)への換算が大変</li>
+<li>ヘッダ行と値行がズレる時があります</li>
+</ul>
+
+<p>
+デフォルトの出力形式
+</p>
+<pre class="example">
+$ jstat -gc 10901
+ S0C    S1C    S0U    S1U      EC       EU        OC         OU       MC     MU    CCSC   CCSU   YGC     YGCT    FGC    FGCT     GCT
+55296.0 55296.0  0.0    0.0   334336.0 157179.1  890368.0   23266.0   35748.0 32020.9 5248.0 4068.9      3    0.124   2      0.195    0.320
+</pre>
+
+<p>
+次はスクリプトで整形後の出力形式(JDK8の場合)
+</p>
+<pre class="example">
+---------------------------------------------
+S0  領域 |   54.00 /    0.00 (MB)  |  0.00%
+S1  領域 |   54.00 /    0.00 (MB)  |  0.00%
+Eden領域 |  326.50 /  170.63 (MB)  | 52.26%
+Old 領域 |   22.72 /  869.50 (MB)  |  2.61%
+Meta領域 |   31.27 /   34.91 (MB)  | 89.57%
+CCPS領域 |    3.97 /   54.00 (MB)  | 77.53%
+---------------------------------------------
+YGC 回数 |       3 回
+YGC 時間 |    0.12 秒
+FGC 回数 |       2 回
+FGC 時間 |    0.20 秒
+---------------------------------------------
+</pre>
+
+<p>
+コードはgithubに公開しています。
+</p>
+
+<p>
+<a href="https://github.com/luozengbin/misc-box/blob/master/jvm_memstst.sh">jvm_memstst.sh</a>
+</p>
+
+
+<script src="https://gist.github.com/luozengbin/52d1359f89e88654e6ec.js"></script>
+<script src="http://luozengbin.github.io/javascripts/custom/fixgist.js"></script>
+
+<p>
+出力加工機能以外、次の便利な機能も提供しています。
+</p>
+<ul class="org-ul">
+<li>JavaプロセスID自動特定する</li>
+<li>JAVA_HOMEを自動的に特定する</li>
+</ul>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Linux]旧バージョンCentOSでyum更新できなくなった時]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-08-29-%5Btips%5D%5Blinux%5D%E6%97%A7%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3centos%E3%81%A7yum%E6%9B%B4%E6%96%B0%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%8F%E3%81%AA%E3%81%A3%E3%81%9F%E6%99%82.html"/>
+    <updated>2015-08-29T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][linux]旧バージョンcentosでyum更新できなくなった時</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgheadline1">1. CentOS 6.6でyum更新したら404エラー</a></li>
+<li><a href="#orgheadline2">2. 参考</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1"><span class="section-number-2">1</span> CentOS 6.6でyum更新したら404エラー</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+CentOS 6.6でyum更新したら404エラーとなって更新できなくなった。
+</p>
+<pre class="example">
+# yum update
+読み込んだプラグイン:fastestmirror
+更新処理の設定をしています
+Loading mirror speeds from cached hostfile
+ * base: ftp.iij.ad.jp
+ * extras: ftp.iij.ad.jp
+ * updates: centos.usonyx.net
+http://ftp.iij.ad.jp/pub/linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.jaist.ac.jp/pub/Linux/CentOS/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.nara.wide.ad.jp/pub/Linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+http://ftp.riken.jp/Linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+他のミラーを試します。
+</pre>
+
+<p>
+ブラウザからミラーサイトを確認するとreadmeファイルしかありませんでした。
+</p>
+
+
+<div class="figure">
+<p><img src="img/20150829231548_CentOS_yum_404.png" alt="20150829231548_CentOS_yum_404.png" />
+</p>
+</div>
+
+<p>
+readmeの内容は下記となります。
+</p>
+
+<pre class="example">
+$ curl http://ftp.iij.ad.jp/pub/linux/centos/6.6/readme
+This directory (and version of CentOS) is deprecated.  For normal users,
+you should use /6/ and not /6.6/ in your path. Please see this FAQ
+concerning the CentOS release scheme:
+
+https://wiki.centos.org/FAQ/General
+
+If you know what you are doing, and absolutely want to remain at the 6.6
+level, go to http://vault.centos.org/ for packages.
+
+Please keep in mind that 6.0, 6.1, 6.2, 6.3, 6.4 , 6.5 and 6.6 no longer gets any updates, nor
+any security fix's.
+</pre>
+
+<p>
+簡単に言うと更新が止まった旧バージョンのパッケージは <code>http://vault.centos.org/</code>
+ドメイン下に移管された。
+</p>
+
+<p>
+というわけでyumリポジトリのURLを書き換えれば問題が解消されるはずだ。
+</p>
+
+<pre class="example">
+$ sudo sed -i -e "s|mirror\.centos\.org/centos/\$releasever|vault\.centos\.org/6.6|g" /etc/yum.repos.d/CentOS-Base.repo
+$ sudo sed -i -e "s|#baseurl=|baseurl=|g" CentOS-Base.repo
+$ sudo sed -i -e "s|mirrorlist=|#mirrorlist=|g" CentOS-Base.repo
+#  yum update
+読み込んだプラグイン:fastestmirror
+更新処理の設定をしています
+Loading mirror speeds from cached hostfile
+base                                                                                                                                   | 3.7 kB     00:00     
+extras                                                                                                                                 | 3.4 kB     00:00     
+updates                                                                                                                                | 3.4 kB     00:00     
+（中略）
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline2" class="outline-2">
+<h2 id="orgheadline2"><span class="section-number-2">2</span> 参考</h2>
+<div class="outline-text-2" id="text-2">
+<ul class="org-ul">
+<li><a href="http://www.linuxask.com/questions/yum-repository-mirror-for-old-centos-versions">Yum repository mirror for old CentOS’ versions</a></li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Java]OpenJDK8付属ツール実行時エラーの対策]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-08-29-%5Btips%5D%5Bjava%5Dopenjdk8%E4%BB%98%E5%B1%9E%E3%83%84%E3%83%BC%E3%83%AB%E5%AE%9F%E8%A1%8C%E6%99%82%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%AE%E5%AF%BE%E7%AD%96.html"/>
+    <updated>2015-08-29T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][java]openjdk8付属ツール実行時エラーの対策</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgheadline1">1. プロセスアタッチ出来ない</a></li>
+<li><a href="#orgheadline2">2. Metadata does not appear to be polymorphic</a></li>
+<li><a href="#orgheadline3">3. unknown CollectedHeap type</a></li>
+</ul>
+</div>
+</div>
+<p>
+本記事に、OpenJDKの障害は次の環境で確認されました。
+</p>
+
+<pre class="example">
+$ java -version
+openjdk version "1.8.0_60"
+OpenJDK Runtime Environment (build 1.8.0_60-b24)
+OpenJDK 64-Bit Server VM (build 25.60-b23, mixed mode)
+
+$ uname -a
+Linux mimi 4.1.6-1-ARCH #1 SMP PREEMPT Mon Aug 17 08:52:28 CEST 2015 x86_64 GNU/Linux
+</pre>
+
+<p>
+<!-- more -->
+</p>
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1"><span class="section-number-2">1</span> プロセスアタッチ出来ない</h2>
+<div class="outline-text-2" id="text-1">
+<pre class="example">
+$ /usr/lib/jvm/java-8-openjdk/bin/jinfo -sysprops 22286
+Attaching to process ID 22286, please wait...
+Error attaching to process: sun.jvm.hotspot.debugger.DebuggerException: Can't attach to the process
+sun.jvm.hotspot.debugger.DebuggerException: sun.jvm.hotspot.debugger.DebuggerException: Can't attach to the process
+	at sun.jvm.hotspot.debugger.linux.LinuxDebuggerLocal$LinuxDebuggerLocalWorkerThread.execute(LinuxDebuggerLocal.java:163)
+	at sun.jvm.hotspot.debugger.linux.LinuxDebuggerLocal.attach(LinuxDebuggerLocal.java:278)
+	at sun.jvm.hotspot.HotSpotAgent.attachDebugger(HotSpotAgent.java:671)
+	at sun.jvm.hotspot.HotSpotAgent.setupDebuggerLinux(HotSpotAgent.java:611)
+	at sun.jvm.hotspot.HotSpotAgent.setupDebugger(HotSpotAgent.java:337)
+	at sun.jvm.hotspot.HotSpotAgent.go(HotSpotAgent.java:304)
+	at sun.jvm.hotspot.HotSpotAgent.attach(HotSpotAgent.java:140)
+	at sun.jvm.hotspot.tools.Tool.start(Tool.java:185)
+	at sun.jvm.hotspot.tools.Tool.execute(Tool.java:118)
+	at sun.jvm.hotspot.tools.JInfo.main(JInfo.java:138)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:497)
+	at sun.tools.jinfo.JInfo.runTool(JInfo.java:108)
+	at sun.tools.jinfo.JInfo.main(JInfo.java:76)
+Caused by: sun.jvm.hotspot.debugger.DebuggerException: Can't attach to the process
+	at sun.jvm.hotspot.debugger.linux.LinuxDebuggerLocal.attach0(Native Method)
+	at sun.jvm.hotspot.debugger.linux.LinuxDebuggerLocal.access$100(LinuxDebuggerLocal.java:62)
+	at sun.jvm.hotspot.debugger.linux.LinuxDebuggerLocal$1AttachTask.doit(LinuxDebuggerLocal.java:269)
+	at sun.jvm.hotspot.debugger.linux.LinuxDebuggerLocal$LinuxDebuggerLocalWorkerThread.run(LinuxDebuggerLocal.java:138)
+</pre>
+
+<p>
+同じ障害に遭遇した方々の記録
+</p>
+<ul class="org-ul">
+<li><a href="https://thenonsensetechlogs.wordpress.com/2014/04/09/error-attaching-to-process-sun-jvm-hotspot-debugger-debuggerexception-cant-attach-to-the-process-solved/">Error attaching to process: sun.jvm.hotspot.debugger.DebuggerException: Can’t attach to the process { solved }</a></li>
+<li><a href="http://d.hatena.ne.jp/Kazuhira/20150811/1439304298">Linuxでjmap使用時に「Can&#8217;t attach to the process」と言われたら</a></li>
+</ul>
+
+<p>
+straceで見たら、 <a href="http://surf.ml.seikei.ac.jp/~nakano/JMwww/html/LDP_man-pages/man2/ptrace.2.html">ptrace</a> システムコールのPTRACE_ATTACHリクエストで実行中のJavaプロセス
+をアタッチするところで <code>Operation not permitted</code> 理由に怒られた。
+</p>
+<pre class="example">
+  |$ strace -ff /usr/lib/jvm/java-8-openjdk/bin/jinfo -sysprops 22286
+  |（中略）
+  |[pid 24277] close(7)                    = 0
+**|[pid 24277] ptrace(PTRACE_ATTACH, 22286, 0, 0) = -1 EPERM (Operation not permitted)
+  |[pid 24277] futex(0x7fef94008854, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x7fef94008850, {FUTEX_OP_SET, 0, FUTEX_OP_CMP_GT, 1}) = 1
+  |[pid 24263] &lt;... futex resumed&gt; )       = 0
+  |[pid 24277] futex(0x7fef9414b154, FUTEX_WAIT_PRIVATE, 3, NULL &lt;unfinished ...&gt;
+  |[pid 24263] futex(0x7fef94008828, FUTEX_WAKE_PRIVATE, 1) = 0
+  |[pid 24263] write(2, "Error attaching to process: ", 28Error attaching to process: ) = 28
+  |[pid 24274] futex(0x7fef940bb654, FUTEX_WAIT_BITSET_PRIVATE, 57, {29187, 107955715}, ffffffff &lt;unfinished ...&gt;
+**|[pid 24263] write(2, "sun.jvm.hotspot.debugger.Debugge"..., 71sun.jvm.hotspot.debugger.DebuggerException: Can't attach to the process) = 71
+  |[pid 24263] write(2, "\n", 1
+</pre>
+
+<p>
+これはLinuxカーネルのセキュリティモジュール <a href="https://www.kernel.org/doc/Documentation/security/Yama.txt">yama</a> の制限がかかっいるのが原因です。
+下記手順でこの制限を解除すれば、エラーが解消されます。
+</p>
+
+<pre class="example">
+$ echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+</pre>
+
+<p>
+yamaによるptrace制限に関して下記が分かやすいと思います。
+</p>
+
+<p>
+<a href="https://wiki.ubuntu.com/SecurityTeam/Roadmap/KernelHardening#ptrace_Protection">https://wiki.ubuntu.com/SecurityTeam/Roadmap/KernelHardening#ptrace_Protection</a>
+</p>
+
+<p>
+もっと簡単な対応方法として、sudoでrootユーザで実行すれば良いでしょう。
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline2" class="outline-2">
+<h2 id="orgheadline2"><span class="section-number-2">2</span> Metadata does not appear to be polymorphic</h2>
+<div class="outline-text-2" id="text-2">
+<pre class="example">
+$ /usr/lib/jvm/java-8-openjdk/bin/jinfo -sysprops 22286
+Attaching to process ID 22286, please wait...
+Debugger attached successfully.
+Server compiler detected.
+JVM version is 25.60-b23
+Exception in thread "main" java.lang.reflect.InvocationTargetException
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:497)
+	at sun.tools.jinfo.JInfo.runTool(JInfo.java:108)
+	at sun.tools.jinfo.JInfo.main(JInfo.java:76)
+Caused by: java.lang.InternalError: Metadata does not appear to be polymorphic
+	at sun.jvm.hotspot.types.basic.BasicTypeDataBase.findDynamicTypeForAddress(BasicTypeDataBase.java:278)
+	at sun.jvm.hotspot.runtime.VirtualBaseConstructor.instantiateWrapperFor(VirtualBaseConstructor.java:102)
+	at sun.jvm.hotspot.oops.Metadata.instantiateWrapperFor(Metadata.java:68)
+	at sun.jvm.hotspot.memory.SystemDictionary.getSystemKlass(SystemDictionary.java:127)
+	at sun.jvm.hotspot.runtime.VM.readSystemProperties(VM.java:879)
+	at sun.jvm.hotspot.runtime.VM.getSystemProperties(VM.java:873)
+	at sun.jvm.hotspot.tools.SysPropsDumper.run(SysPropsDumper.java:44)
+	at sun.jvm.hotspot.tools.JInfo.run(JInfo.java:94)
+	at sun.jvm.hotspot.tools.Tool.startInternal(Tool.java:260)
+	at sun.jvm.hotspot.tools.Tool.start(Tool.java:223)
+	at sun.jvm.hotspot.tools.Tool.execute(Tool.java:118)
+	at sun.jvm.hotspot.tools.JInfo.main(JInfo.java:138)
+	... 6 more
+</pre>
+
+<p>
+原因はよくわからないのですが、<a href="https://twitter.com/cero_t/status/616551729954295808">twitter上で流れた情報</a> によるとdebuginfoを入れれば問題が
+回避される。実際に確認したところで確かに回避出来た。debuginfo入れ禁止の商用環境や
+debuginfoが簡単に導入出来ないdistroには寂しいよね！
+</p>
+
+<p>
+yumが使える環境は、次のように <code>debuginfo-install</code> で簡単にインストールが出来ます。
+</p>
+<pre class="example">
+$ sudo debuginfo-install java-1.8.0-openjdk-devel
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline3" class="outline-2">
+<h2 id="orgheadline3"><span class="section-number-2">3</span> unknown CollectedHeap type</h2>
+<div class="outline-text-2" id="text-3">
+<pre class="example">
+$ /usr/lib/jvm/java-8-openjdk/bin/jmap -heap 22286
+Attaching to process ID 22286, please wait...
+Debugger attached successfully.
+Server compiler detected.
+JVM version is 25.60-b23
+
+using thread-local object allocation.
+Parallel GC with 4 thread(s)
+
+Heap Configuration:
+   MinHeapFreeRatio         = 0
+   MaxHeapFreeRatio         = 100
+   MaxHeapSize              = 1367343104 (1304.0MB)
+   NewSize                  = 455606272 (434.5MB)
+   MaxNewSize               = 455606272 (434.5MB)
+   OldSize                  = 911736832 (869.5MB)
+   NewRatio                 = 2
+   SurvivorRatio            = 8
+   MetaspaceSize            = 21807104 (20.796875MB)
+   CompressedClassSpaceSize = 1073741824 (1024.0MB)
+   MaxMetaspaceSize         = 17592186044415 MB
+   G1HeapRegionSize         = 0 (0.0MB)
+
+Heap Usage:
+Exception in thread "main" java.lang.reflect.InvocationTargetException
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:497)
+	at sun.tools.jmap.JMap.runTool(JMap.java:201)
+	at sun.tools.jmap.JMap.main(JMap.java:130)
+Caused by: java.lang.RuntimeException: unknown CollectedHeap type : class sun.jvm.hotspot.gc_interface.CollectedHeap
+	at sun.jvm.hotspot.tools.HeapSummary.run(HeapSummary.java:144)
+	at sun.jvm.hotspot.tools.Tool.startInternal(Tool.java:260)
+	at sun.jvm.hotspot.tools.Tool.start(Tool.java:223)
+	at sun.jvm.hotspot.tools.Tool.execute(Tool.java:118)
+	at sun.jvm.hotspot.tools.HeapSummary.main(HeapSummary.java:49)
+	... 6 more
+</pre>
+
+<p>
+このエラーもdebuginfoを入れれば、回避される。
+</p>
+
+<p>
+↓OpenJDK7でバグ報告された記録、残念ながら WONTFIX 状態でした。
+</p>
+
+<p>
+<a href="https://bugzilla.redhat.com/show_bug.cgi?id=1010786">https://bugzilla.redhat.com/show_bug.cgi?id=1010786</a>
+</p>
+</div>
+</div>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[tips][Linux]Firefox起動時にプロファイル選択出来るようにする]]></title>
@@ -5499,1694 +5889,6 @@ vboxnet0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
 <div class="outline-text-2" id="text-4">
 <ul class="org-ul">
 <li><a href="https://wiki.archlinux.org/index.php/VirtualBox#Load_the_VirtualBox_kernel_modules">Load the VirtualBox kernel modules</a>
-</li>
-</ul>
-</div>
-</div>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[メモ]自宅サーバディスク増設記録]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-11-16-%5B%E3%83%A1%E3%83%A2%5D%E8%87%AA%E5%AE%85%E3%82%B5%E3%83%BC%E3%83%90%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E5%A2%97%E8%A8%AD%E8%A8%98%E9%8C%B2.html"/>
-    <updated>2014-11-16T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[メモ]自宅サーバディスク増設記録</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 環境</a></li>
-<li><a href="#sec-2">2. ツールの整備</a></li>
-<li><a href="#sec-3">3. ディスク情報確認</a></li>
-<li><a href="#sec-4">4. 現在のパーティション構成</a></li>
-<li><a href="#sec-5">5. 増設後のパーティション構成</a></li>
-<li><a href="#sec-6">6. 増設手順</a>
-<ul>
-<li><a href="#sec-6-1">6.1. gdiskでパーティションを初期化する</a></li>
-<li><a href="#sec-6-2">6.2. LVMパーティション再構成</a></li>
-<li><a href="#sec-6-3">6.3. 増設結果を確認する</a></li>
-</ul>
-</li>
-<li><a href="#sec-7">7. 参考情報</a></li>
-</ul>
-</div>
-</div>
-<p>
-半年前、約1年ちょっと使った <a href="http://www.wdc.com/global/products/specs/?driveID=1092&language=6">WD Blue(WD10EZEX)</a> ディスクが壊れた (I/Oスピードが激遅い現
-象が起きた)ため、RMA保証手続きで交換しました。交換で約1ヶ月かかる、かつサーバがRAID0構
-成のため、代用品を購入し、復旧を実施した。RAM交換で届いたディスクがずっと置いたまま、
-今日もう一台のNASサーバに増設を実施します。
-</p>
-
-<p>
-<!-- more -->
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 環境</h2>
-<div class="outline-text-2" id="text-1">
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">OS</td>
-<td class="left">CentOS Linux release 7.0.1406 (Core)</td>
-</tr>
-
-<tr>
-<td class="left">/dev/sda</td>
-<td class="left"><a href="http://www.crucial.com/usa/en/storage-ssd-mx100-ja">Crucial MX100 2.5インチ内蔵型SSD 256GB SATAIII</a></td>
-</tr>
-
-<tr>
-<td class="left">/dev/sdb</td>
-<td class="left">増設HDD: WD10EZEX [1TB SATA600 7200]</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> ツールの整備</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-<code>hdparm</code> は HDD (SATA/IDE)デバイスのパフォーマンスとベンチマークのツールです｡
-</p>
-<pre class="example">
-$ sudo yum install hdparm
-</pre>
-
-<p>
-<code>sdparm</code> SCSIデバイスのパフォーマンスとベンチマークのツールです｡
-</p>
-<pre class="example">
-$ sudo yum install sdparm
-</pre>
-
-<p>
-GPTをサポートするパーティションリングツール
-</p>
-<pre class="example">
-$ sudo yum install gdisk
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> ディスク情報確認</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-<code>/dev/sda</code> SSDのハード情報を確認する。
-</p>
-<pre class="example">
-$ sudo hdparm -I /dev/sda
-
-/dev/sda:
-
-ATA device, with non-removable media
-	Model Number:       Crucial_CT256MX100SSD1
-	Serial Number:      ************
-	Firmware Revision:  *****
-	Transport:          Serial, ATA8-AST, SATA 1.0a, SATA II Extensions, SATA Rev 2.5, SATA Rev 2.6, SATA Rev 3.0
-Standards:
-	Used: unknown (minor revision code 0x0028)
-	Supported: 9 8 7 6 5 
-	Likely used: 9
-Configuration:
-	Logical		max	current
-	cylinders	16383	16383
-	heads		16	16
-	sectors/track	63	63
-	--
-	CHS current addressable sectors:   16514064
-	LBA    user addressable sectors:  268435455
-	LBA48  user addressable sectors:  500118192
-	Logical  Sector size:                   512 bytes
-	Physical Sector size:                  4096 bytes
-	Logical Sector-0 offset:                  0 bytes
-	device size with M = 1024*1024:      244198 MBytes
-	device size with M = 1000*1000:      256060 MBytes (256 GB)
-	cache/buffer size  = unknown
-	Form Factor: 2.5 inch
-	Nominal Media Rotation Rate: Solid State Device
-Capabilities:
-	LBA, IORDY(can be disabled)
-	Queue depth: 32
-	Standby timer values: spec'd by Standard, with device specific minimum
-	R/W multiple sector transfer: Max = 16	Current = 16
-	Advanced power management level: 254
-	DMA: mdma0 mdma1 mdma2 udma0 udma1 udma2 udma3 udma4 udma5 *udma6 
-	     Cycle time: min=120ns recommended=120ns
-	PIO: pio0 pio1 pio2 pio3 pio4 
-	     Cycle time: no flow control=120ns  IORDY flow control=120ns
-Commands/features:
-	Enabled	Supported:
-	   *	SMART feature set
-	    	Security Mode feature set
-	   *	Power Management feature set
-	   *	Write cache
-	   *	Look-ahead
-	   *	Host Protected Area feature set
-	   *	WRITE_BUFFER command
-	   *	READ_BUFFER command
-	   *	NOP cmd
-	   *	DOWNLOAD_MICROCODE
-	   *	Advanced Power Management feature set
-	    	SET_MAX security extension
-	   *	48-bit Address feature set
-	   *	Device Configuration Overlay feature set
-	   *	Mandatory FLUSH_CACHE
-	   *	FLUSH_CACHE_EXT
-	   *	SMART error logging
-	   *	SMART self-test
-	   *	General Purpose Logging feature set
-	   *	WRITE_{DMA|MULTIPLE}_FUA_EXT
-	   *	64-bit World wide name
-	   *	IDLE_IMMEDIATE with UNLOAD
-	    	Write-Read-Verify feature set
-	   *	WRITE_UNCORRECTABLE_EXT command
-	   *	{READ,WRITE}_DMA_EXT_GPL commands
-	   *	Segmented DOWNLOAD_MICROCODE
-	   *	Gen1 signaling speed (1.5Gb/s)
-	   *	Gen2 signaling speed (3.0Gb/s)
-	   *	Gen3 signaling speed (6.0Gb/s)
-	   *	Native Command Queueing (NCQ)
-	   *	Phy event counters
-	   *	NCQ priority information
-	   *	unknown 76[15]
-	   *	DMA Setup Auto-Activate optimization
-	    	Device-initiated interface power management
-	    	Asynchronous notification (eg. media change)
-	   *	Software settings preservation
-	    	unknown 78[8]
-	   *	SMART Command Transport (SCT) feature set
-	   *	SCT Write Same (AC2)
-	   *	SCT Features Control (AC4)
-	   *	SCT Data Tables (AC5)
-	   *	reserved 69[4]
-	   *	reserved 69[7]
-	   *	Data Set Management TRIM supported (limit 8 blocks)
-	   *	Deterministic read ZEROs after TRIM
-Security: 
-	Master password revision code = 65534
-		supported
-	not	enabled
-	not	locked
-		frozen
-	not	expired: security count
-		supported: enhanced erase
-	2min for SECURITY ERASE UNIT. 2min for ENHANCED SECURITY ERASE UNIT.
-Logical Unit WWN Device Identifier: ***************
-	NAA		: 5
-	IEEE OUI	: 00a075
-	Unique ID	: ********
-Checksum: correct
-</pre>
-
-<p>
-<code>/dev/sdb</code> HDDのハード情報を確認する。
-</p>
-<pre class="example">
-$ sudo hdparm -I /dev/sdb
-
-/dev/sdb:
-
-ATA device, with non-removable media
-	Model Number:       WDC WD10EZEX-00RKKA0
-	Serial Number:      WD-WMC**********
-	Firmware Revision:  80.00A80
-	Transport:          Serial, SATA 1.0a, SATA II Extensions, SATA Rev 2.5, SATA Rev 2.6, SATA Rev 3.0
-Standards:
-	Supported: 8 7 6 5 
-	Likely used: 8
-Configuration:
-	Logical		max	current
-	cylinders	16383	16383
-	heads		16	16
-	sectors/track	63	63
-	--
-	CHS current addressable sectors:   16514064
-	LBA    user addressable sectors:  268435455
-	LBA48  user addressable sectors: 1953525168
-	Logical  Sector size:                   512 bytes
-	Physical Sector size:                  4096 bytes
-	device size with M = 1024*1024:      953869 MBytes
-	device size with M = 1000*1000:     1000204 MBytes (1000 GB)
-	cache/buffer size  = unknown
-Capabilities:
-	LBA, IORDY(can be disabled)
-	Queue depth: 32
-	Standby timer values: spec'd by Standard, with device specific minimum
-	R/W multiple sector transfer: Max = 16	Current = 16
-	DMA: mdma0 mdma1 mdma2 udma0 udma1 udma2 udma3 udma4 udma5 *udma6 
-	     Cycle time: min=120ns recommended=120ns
-	PIO: pio0 pio1 pio2 pio3 pio4 
-	     Cycle time: no flow control=120ns  IORDY flow control=120ns
-Commands/features:
-	Enabled	Supported:
-	   *	SMART feature set
-	    	Security Mode feature set
-	   *	Power Management feature set
-	   *	Write cache
-	   *	Look-ahead
-	   *	Host Protected Area feature set
-	   *	WRITE_BUFFER command
-	   *	READ_BUFFER command
-	   *	NOP cmd
-	   *	DOWNLOAD_MICROCODE
-	    	Power-Up In Standby feature set
-	   *	SET_FEATURES required to spinup after power up
-	    	SET_MAX security extension
-	   *	48-bit Address feature set
-	   *	Device Configuration Overlay feature set
-	   *	Mandatory FLUSH_CACHE
-	   *	FLUSH_CACHE_EXT
-	   *	SMART error logging
-	   *	SMART self-test
-	   *	General Purpose Logging feature set
-	   *	64-bit World wide name
-	   *	{READ,WRITE}_DMA_EXT_GPL commands
-	   *	Segmented DOWNLOAD_MICROCODE
-	   *	Gen1 signaling speed (1.5Gb/s)
-	   *	Gen2 signaling speed (3.0Gb/s)
-	   *	Gen3 signaling speed (6.0Gb/s)
-	   *	Native Command Queueing (NCQ)
-	   *	Host-initiated interface power management
-	   *	Phy event counters
-	   *	NCQ priority information
-	   *	unknown 76[15]
-	   *	DMA Setup Auto-Activate optimization
-	   *	Software settings preservation
-	   *	SMART Command Transport (SCT) feature set
-	   *	SCT Write Same (AC2)
-	   *	SCT Features Control (AC4)
-	   *	SCT Data Tables (AC5)
-	    	unknown 206[7]
-	    	unknown 206[12] (vendor specific)
-	    	unknown 206[13] (vendor specific)
-Security: 
-	Master password revision code = 65534
-		supported
-	not	enabled
-	not	locked
-		frozen
-	not	expired: security count
-		supported: enhanced erase
-	112min for SECURITY ERASE UNIT. 112min for ENHANCED SECURITY ERASE UNIT. 
-Logical Unit WWN Device Identifier: ****************
-	NAA		: 5
-	IEEE OUI	: 0014ee
-	Unique ID	: ******
-Checksum: correct
-$
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> 現在のパーティション構成</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-<code>/dev/sda</code> の物理パーティション構成を確認する。
-</p>
-<pre class="example">
-$ sudo gdisk -l /dev/sda 
-GPT fdisk (gdisk) version 0.8.6
-
-Partition table scan:
-  MBR: protective
-  BSD: not present
-  APM: not present
-  GPT: present
-
-Found valid GPT with protective MBR; using GPT.
-Disk /dev/sda: 500118192 sectors, 238.5 GiB
-Logical sector size: 512 bytes
-Disk identifier (GUID): A2BE7525-7A02-4E36-8C41-B9E4487690BD
-Partition table holds up to 128 entries
-First usable sector is 34, last usable sector is 500118158
-Partitions will be aligned on 2048-sector boundaries
-Total free space is 2669 sectors (1.3 MiB)
-
-Number  Start (sector)    End (sector)  Size       Code  Name
-   1            2048          411647   200.0 MiB   EF00  EFI System Partition
-   2          411648         1435647   500.0 MiB   0700  
-   3         1435648       500117503   237.8 GiB   8E00  
-$
-</pre>
-
-<p>
-LVMの構成状況
-</p>
-<pre class="example">
-$ sudo lvmdiskscan
-  /dev/centos/swap [       7.27 GiB] 
-  /dev/sda1        [     200.00 MiB] 
-  /dev/centos/root [      50.00 GiB] 
-  /dev/sda2        [     500.00 MiB] 
-  /dev/centos/home [     180.52 GiB] 
-........
-</pre>
-
-<p>
-先頭の物理パーティションをブート関係用にマウントしています。
-</p>
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">/dev/sda1</td>
-<td class="left">vfat</td>
-<td class="left">/boot/efi</td>
-<td class="left">200MB</td>
-</tr>
-
-<tr>
-<td class="left">/dev/sda2</td>
-<td class="left">xfs</td>
-<td class="left">/boot</td>
-<td class="left">500MB</td>
-</tr>
-</tbody>
-</table>
-
-<p>
-三番目の物理パーティションをLVMで割って使っています。
-</p>
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<thead>
-<tr>
-<th scope="col" class="left">PV</th>
-<th scope="col" class="left">VG</th>
-<th scope="col" class="left">LV</th>
-<th scope="col" class="left">Format</th>
-<th scope="col" class="left">Mount Point</th>
-<th scope="col" class="left">Size</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="left">/dev/sda3</td>
-<td class="left">centos</td>
-<td class="left">/dev/centos/swap</td>
-<td class="left">swap</td>
-<td class="left">&#xa0;</td>
-<td class="left">7.27G</td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-<td class="left">/dev/centos/home</td>
-<td class="left">xfs</td>
-<td class="left">/home</td>
-<td class="left">180G</td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-<td class="left">/dev/centos/root</td>
-<td class="left">xfs</td>
-<td class="left">/</td>
-<td class="left">50G</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> 増設後のパーティション構成</h2>
-<div class="outline-text-2" id="text-5">
-<p>
-増設したHDDに <code>vg01</code> を増やして、 <code>/home</code> と <code>/var</code> をこちら配置するようにする。
-</p>
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<thead>
-<tr>
-<th scope="col" class="left">PV</th>
-<th scope="col" class="left">VG</th>
-<th scope="col" class="left">LV</th>
-<th scope="col" class="left">Format</th>
-<th scope="col" class="left">Mount Point</th>
-<th scope="col" class="left">Size</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="left">/dev/sda3</td>
-<td class="left">centos</td>
-<td class="left">/dev/centos/swap</td>
-<td class="left">swap</td>
-<td class="left">&#xa0;</td>
-<td class="left">7.27G</td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-<td class="left">/dev/centos/root</td>
-<td class="left">xfs</td>
-<td class="left">/</td>
-<td class="left">230G</td>
-</tr>
-
-<tr>
-<td class="left">/dev/sdb1</td>
-<td class="left">vg01</td>
-<td class="left">/dev/vg01/home</td>
-<td class="left">xfs</td>
-<td class="left">/home</td>
-<td class="left">431G</td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-<td class="left">/dev/vg01/var</td>
-<td class="left">xfs</td>
-<td class="left">/var</td>
-<td class="left">500G</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-
-<div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6"><span class="section-number-2">6</span> 増設手順</h2>
-<div class="outline-text-2" id="text-6">
-</div><div id="outline-container-sec-6-1" class="outline-3">
-<h3 id="sec-6-1"><span class="section-number-3">6.1</span> gdiskでパーティションを初期化する</h3>
-<div class="outline-text-3" id="text-6-1">
-<pre class="example">
-$ sudo gdisk /dev/sdb
-GPT fdisk (gdisk) version 0.8.6
-
-Partition table scan:
-  MBR: not present
-  BSD: not present
-  APM: not present
-  GPT: not present
-
-Creating new GPT entries.
-
-Command (? for help): o        ★GPTパーティションテーブルを新規作成する
-This option deletes all partitions and creates a new protective MBR.
-Proceed? (Y/N): Y
-
-Command (? for help): n        ★新規パーティションを作成する
-Partition number (1-128, default 1): 
-First sector (34-1953525134, default = 2048) or {+-}size{KMGTP}: 
-Last sector (2048-1953525134, default = 1953525134) or {+-}size{KMGTP}: 
-Current type is 'Linux filesystem'
-Hex code or GUID (L to show codes, Enter = 8300): 8e00 ★パーティションタイプをLVMにする
-Changed type of partition to 'Linux LVM'
-
-Command (? for help): w
-
-Final checks complete. About to write GPT data. THIS WILL OVERWRITE EXISTING
-PARTITIONS!!
-
-Do you want to proceed? (Y/N): Y
-OK; writing new GUID partition table (GPT) to /dev/sdb.
-The operation has completed successfully.
-$
-</pre>
-
-<p>
-結果を確認する
-</p>
-<pre class="example">
-$ sudo gdisk -l /dev/sdb
-GPT fdisk (gdisk) version 0.8.6
-
-Partition table scan:
-  MBR: protective
-  BSD: not present
-  APM: not present
-  GPT: present
-
-Found valid GPT with protective MBR; using GPT.
-Disk /dev/sdb: 1953525168 sectors, 931.5 GiB
-Logical sector size: 512 bytes
-Disk identifier (GUID): DE117DAF-1D96-4505-89EC-6F1E6BB08E4C
-Partition table holds up to 128 entries
-First usable sector is 34, last usable sector is 1953525134
-Partitions will be aligned on 2048-sector boundaries
-Total free space is 2014 sectors (1007.0 KiB)
-
-Number  Start (sector)    End (sector)  Size       Code  Name
-   1            2048      1953525134   931.5 GiB   8E00  Linux LVM
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-6-2" class="outline-3">
-<h3 id="sec-6-2"><span class="section-number-3">6.2</span> LVMパーティション再構成</h3>
-<div class="outline-text-3" id="text-6-2">
-<p>
-PV <code>/dev/sdb1</code> 作成する
-</p>
-<pre class="example">
-$ sudo pvcreate /dev/sdb1
-  Physical volume "/dev/sdb1" successfully created
-</pre>
-
-<p>
-VG <code>vg01</code> を作成する
-</p>
-<pre class="example">
-$ sudo vgcreate vg01 /dev/sdb1
-  Volume group "vg01" successfully created
-</pre>
-
-<p>
-VG <code>centos</code> の <code>home</code> 論理ボリュームを 一旦 <code>home0</code> にリネームする。
-</p>
-<pre class="example">
-$ sudo lvrename centos home home0
-  Renamed "home" to "home0" in volume group "centos"
-</pre>
-
-<p>
-VG <code>vg01</code> 上で <code>/var</code> 用の <code>var</code> 論理ボリュームを作成する。
-</p>
-<pre class="example">
-$ sudo lvcreate -L 500G vg01 -n var
-  Logical volume "var" created
-</pre>
-
-<p>
-VG <code>vg01</code> 上残りに容量を <code>/home</code> 用の <code>home</code> 論理ボリュームを作成する。
-</p>
-<pre class="example">
-$ sudo lvcreate -l +100%FREE vg01 -n home
-  Logical volume "home" created
-</pre>
-
-<p>
-<code>var</code> 論理ボリュームを <code>xfs</code> タイプファイルシステムでフォーマットする。
-</p>
-<pre class="example">
-$ sudo mkfs.xfs /dev/mapper/vg01-var 
-meta-data=/dev/mapper/vg01-var   isize=256    agcount=4, agsize=32768000 blks
-         =                       sectsz=4096  attr=2, projid32bit=1
-         =                       crc=0
-data     =                       bsize=4096   blocks=131072000, imaxpct=25
-         =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
-log      =internal log           bsize=4096   blocks=64000, version=2
-         =                       sectsz=4096  sunit=1 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
-
-$#+end_example
-
-=home= 論理ボリュームを =xfs= タイプファイルシステムでフォーマットする。
-#+begin_example
-$ sudo mkfs.xfs /dev/mapper/vg01-home 
-meta-data=/dev/mapper/vg01-home  isize=256    agcount=4, agsize=28279296 blks
-         =                       sectsz=4096  attr=2, projid32bit=1
-         =                       crc=0
-data     =                       bsize=4096   blocks=113117184, imaxpct=25
-         =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
-log      =internal log           bsize=4096   blocks=55233, version=2
-         =                       sectsz=4096  sunit=1 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
-$
-</pre>
-
-<p>
-<code>/home</code> 領域データをコピーする。
-</p>
-<pre class="example">
-$ sudo mount /dev/mapper/vg01-home /mnt/
-$ sudo cp --archive /home /mnt
-$ ls -al /mnt/
-合計 4
-drwxr-xr-x   3 root root   17 11月 16 22:04 .
-drwxr-xr-x. 17 root root 4096 11月 10 21:46 ..
-drwxr-xr-x.  3 root root   18  9月 14 23:07 home
-$ sudo mv /mnt/home/* /mnt/
-$ sudo rm -rf /mnt/home/
-$ sudo umount /mnt
-</pre>
-
-<p>
-<code>/var</code> 領域を使用しているサービスを止めて、データをコピーする。
-</p>
-<pre class="example">
-$ sudo systemctl stop xxxxx.service
-$ sudo mount /dev/mapper/vg01-var /mnt/
-$ sudo cp --archive /var /mnt
-$ sudo mv /mnt/var/* /mnt/
-$ sudo rm -rf /mnt/var/
-$ sudo umount /mnt
-</pre>
-
-<p>
-<code>/etc/fstab</code> を適切に変更する。
-</p>
-<pre class="example">
-/dev/mapper/centos-root /                       xfs     defaults        1 1
-/dev/mapper/centos-swap swap                    swap    defaults        0 0
-/dev/mapper/vg01-home   /home                   xfs     defaults        1 2
-/dev/mapper/vg01-var    /var                    xfs     defaults        1 2
-.....
-</pre>
-
-<p>
-旧 <code>/var</code> ディレクトリ名を適当に変更し、システムを再起動する。
-</p>
-<pre class="example">
-$ sudo mv /var /var.0
-</pre>
-
-<p>
-<code>root</code> 論理ボリュームを拡張する
-</p>
-<pre class="example">
-★home0論理ボリュームの削除
-$ sudo lvremove -f centos/home0
-  Logical volume "home0" successfully removed
-
-★root論理ボリュームの拡大
-$ sudo lvextend -l +100%FREE centos/root
-  Extending logical volume root to 230.52 GiB
-  Logical volume root successfully resized
-
-★xfsファイルシステムサイズの拡大
-$ xfs_growfs /
-</pre>
-</div>
-</div>
-
-
-<div id="outline-container-sec-6-3" class="outline-3">
-<h3 id="sec-6-3"><span class="section-number-3">6.3</span> 増設結果を確認する</h3>
-<div class="outline-text-3" id="text-6-3">
-<p>
-<code>lvmdiskscan</code> の表示
-</p>
-<pre class="example">
-$ sudo lvmdiskscan 
-  /dev/centos/swap [       7.27 GiB] 
-  /dev/sda1        [     200.00 MiB] 
-  /dev/centos/root [     230.52 GiB] 
-  /dev/sda2        [     500.00 MiB] 
-  /dev/vg01/var    [     500.00 GiB] 
-  /dev/sda3        [     237.79 GiB] LVM physical volume
-  /dev/vg01/home   [     431.51 GiB] 
-  /dev/sdb1        [     931.51 GiB] LVM physical volume
-  4 disks
-  2 partitions
-  0 LVM physical volume whole disks
-  2 LVM physical volumes
-</pre>
-
-<p>
-<code>df -h</code> の表示
-</p>
-<pre class="example">
-$ df -h
-ファイルシス            サイズ  使用  残り 使用% マウント位置
-/dev/sda1                 200M  9.6M  191M    5% /boot/efi
-/dev/sda2                 494M  203M  292M   42% /boot
-/dev/mapper/centos-root   231G   16G  215G    7% /
-/dev/mapper/vg01-home     432G  379M  431G    1% /home
-/dev/mapper/vg01-var      500G   13G  488G    3% /var
-.......
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-sec-7" class="outline-2">
-<h2 id="sec-7"><span class="section-number-2">7</span> 参考情報</h2>
-<div class="outline-text-2" id="text-7">
-<ul class="org-ul">
-<li><a href="https://wiki.archlinux.org/index.php/Lvm#lvextend">Archlinux Wiki - LVM</a>
-</li>
-<li><a href="http://kuenishi.hatenadiary.jp/entry/20070325/1174833266">ディスクを加えてXFS on LVMを拡張する</a>
-</li>
-<li><a href="https://access.redhat.com/documentation/ja-JP/Red_Hat_Enterprise_Linux/6/html/Storage_Administration_Guide/xfsgrow.html">XFS ファイルシステムのサイズの拡大</a>
-</li>
-</ul>
-</div>
-</div>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[メモ]CMS GCログの見方]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-11-05-%5B%E3%83%A1%E3%83%A2%5Dcms-gc%E3%83%AD%E3%82%B0%E3%81%AE%E8%A6%8B%E6%96%B9.html"/>
-    <updated>2014-11-05T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[メモ]cms-gcログの見方</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 基本おさらい</a></li>
-<li><a href="#sec-2">2. 実験するためのプログラム</a></li>
-<li><a href="#sec-3">3. CMSログの見方</a>
-<ul>
-<li><a href="#sec-3-1">3.1. New領域GCログ</a></li>
-<li><a href="#sec-3-2">3.2. Old領域GCログ</a></li>
-<li><a href="#sec-3-3">3.3. concurrent mode failure</a></li>
-<li><a href="#sec-3-4">3.4. 手動FullGC時のログ</a></li>
-</ul>
-</li>
-<li><a href="#sec-4">4. 参考</a></li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 基本おさらい</h2>
-<div class="outline-text-2" id="text-1">
-<p>
-CMSとは <code>Concurrent Mark &amp; Sweep</code> 、JVM OLD領域GC処理アルゴリズムの一種です。
-CMSはアプリケーションを停止する時間を削減することが出来ます。処理の流れは下図に示す。
-</p>
-
-<p>
-※Concurrentは同時という意味です。
-</p>
-
-<pre class="example">
-       ①        ②          ③    ④
----&gt; | ==&gt; | ============&gt; | ==&gt; | ==========&gt; -----&gt;
----&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
----&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
----&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
----&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
----&gt; |     | ------------&gt; | ==&gt; | -----------------&gt;
-       STW                   STW
-
-凡例
-+--------------------+
-| ==&gt; GCスレッド     |
-| --&gt; アプリスレッド |
-+--------------------+
-</pre>
-
-<p>
-図上示している通り、①と③の処理だけアプリケーションが停止する。
-</p>
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">①</td>
-<td class="left">Initial Mark</td>
-<td class="left">STW</td>
-<td class="left">Rootを起点に利用されてるオブジェクトをマークする</td>
-</tr>
-
-<tr>
-<td class="left">②-1</td>
-<td class="left">Concurrent Mark</td>
-<td class="left">&#xa0;</td>
-<td class="left">①でマークされたオブジェクトを起点に使用中のオブジェクトをマークする</td>
-</tr>
-
-<tr>
-<td class="left">②-2</td>
-<td class="left">Concurrent precleaning</td>
-<td class="left">&#xa0;</td>
-<td class="left">②-1処理中アプリによる生じた変化部分をマークする、③の処理時間を短縮するため</td>
-</tr>
-
-<tr>
-<td class="left">③</td>
-<td class="left">Parallel Remark</td>
-<td class="left">STW</td>
-<td class="left">②処理中アプリによる生じた変化部分をマークする</td>
-</tr>
-
-<tr>
-<td class="left">④-1</td>
-<td class="left">Concurrent Sweeping</td>
-<td class="left">&#xa0;</td>
-<td class="left">マーク処理によって判明した使用済みオブジェクトを削除する</td>
-</tr>
-
-<tr>
-<td class="left">④-2</td>
-<td class="left">Concurrent Reset</td>
-<td class="left">&#xa0;</td>
-<td class="left">CMS処理自体のリセット</td>
-</tr>
-</tbody>
-</table>
-
-<p>
-<!-- more -->
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> 実験するためのプログラム</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-メモリを大量に消費するWebサービス
-</p>
-<div class="org-src-container">
-
-<pre class="src src-java"><span style="color: #f0dfaf; font-weight: bold;">package</span> test.<span style="color: #bfebbf;">example</span>;
-
-<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #8cd0d3;">WebMethod</span>;
-<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #8cd0d3;">WebParam</span>;
-<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #8cd0d3;">WebService</span>;
-<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #bfebbf;">soap</span>.<span style="color: #8cd0d3;">SOAPBinding</span>;
-
-<span style="color: #bfebbf;">@WebService</span>
-<span style="color: #bfebbf;">@SOAPBinding</span>(style = <span style="color: #bfebbf;">SOAPBinding</span>.<span style="color: #bfebbf;">Style</span>.DOCUMENT, use = <span style="color: #bfebbf;">SOAPBinding</span>.<span style="color: #bfebbf;">Use</span>.LITERAL, parameterStyle = <span style="color: #bfebbf;">SOAPBinding</span>.<span style="color: #bfebbf;">ParameterStyle</span>.WRAPPED)
-<span style="color: #f0dfaf; font-weight: bold;">public</span> <span style="color: #f0dfaf; font-weight: bold;">class</span> <span style="color: #8cd0d3;">HelloWorld</span> {
-
-    <span style="color: #bfebbf;">@WebMethod</span>(action = <span style="color: #cc9393;">"sayHello"</span>)
-    <span style="color: #f0dfaf; font-weight: bold;">public</span> <span style="color: #8cd0d3;">String</span> <span style="color: #8cd0d3;">sayHello</span>(<span style="color: #bfebbf;">@WebParam</span>(name = <span style="color: #cc9393;">"name"</span> ) <span style="color: #8cd0d3;">String</span> <span style="color: #dfaf8f;">name</span>) <span style="color: #f0dfaf; font-weight: bold;">throws</span> <span style="color: #8cd0d3;">CustomException</span> {
-
-        System.out.println(<span style="color: #cc9393;">"Hello: "</span> + name);
-
-        <span style="color: #bfebbf;">java</span>.<span style="color: #bfebbf;">util</span>.<span style="color: #8cd0d3;">List</span> <span style="color: #dfaf8f;">l</span>  =  <span style="color: #f0dfaf; font-weight: bold;">new</span> <span style="color: #bfebbf;">java</span>.<span style="color: #bfebbf;">util</span>.<span style="color: #8cd0d3;">ArrayList</span>&lt;&gt;();
-        <span style="color: #8cd0d3;">int</span> <span style="color: #dfaf8f;">x</span>  = 0;
-        <span style="color: #f0dfaf; font-weight: bold;">while</span> (x &lt; 6300) {
-            <span style="color: #8cd0d3;">Thread</span> <span style="color: #dfaf8f;">t</span>  =  <span style="color: #f0dfaf; font-weight: bold;">new</span> <span style="color: #8cd0d3;">Thread</span>();
-            l.add(t);
-
-            <span style="color: #f0dfaf; font-weight: bold;">try</span> {
-                Thread.sleep(10);
-            } <span style="color: #f0dfaf; font-weight: bold;">catch</span> (<span style="color: #8cd0d3;">Exception</span> <span style="color: #dfaf8f;">e</span>) {
-            }
-            x++;
-            System.out.println(x);
-        }
-        <span style="color: #f0dfaf; font-weight: bold;">return</span> <span style="color: #cc9393;">"Hello "</span> + name + <span style="color: #cc9393;">"!"</span>;
-    }
-}
-</pre>
-</div>
-
-<p>
-Webサービスを載せるAPサーバの起動オプションにGC関係のパラメータを追加する。
-Old領域のGCを発生しやすくため、ヒープサイズを小さめに割り当てる。
-</p>
-<pre class="example">
-JAVA_OPTS="$JAVA_OPTS -Xms512m -Xmx512m -XX:MaxPermSize=256m"
-JAVA_OPTS="$JAVA_OPTS -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled"
-JAVA_OPTS="$JAVA_OPTS -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps"
-JAVA_OPTS="$JAVA_OPTS -Xloggc:/tmp/gc-`date '+%Y-%m-%d'`.log"
-</pre>
-
-<p>
-以下のオプション、GC時に詳細なオブジェクト統計情報も出力する。ここでは略します。
-</p>
-<pre class="example">
-JAVA_OPTS="$JAVA_OPTS -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution"
-</pre>
-
-<p>
-SoapUIから100多重で負荷を掛けて、テストアプリを実行させる。
-</p>
-
-<p>
-SoapUIから負荷を掛けた後はしばらく、New領域のGCログが出続ける。Old領域が満タンな状態
-になる前にOld領域のGCログが出始める。以下はOld領域GC発生前後のログを示す。
-</p>
-
-<pre class="example">
-2014-11-05T14:24:49.336+0900: 214.204: [GC2014-11-05T14:24:49.336+0900: 214.204: [DefNew: 76672K-&gt;8512K(76672K), 0.0978870 secs] 455251K-&gt;395770K(515776K), 0.0981100 secs] [Times: user=0.08 sys=0.00, real=0.10 secs] 
-2014-11-05T14:24:51.971+0900: 216.840: [GC2014-11-05T14:24:51.971+0900: 216.840: [DefNew: 76672K-&gt;8412K(76672K), 0.0816580 secs] 463930K-&gt;404301K(515776K), 0.0818720 secs] [Times: user=0.06 sys=0.00, real=0.08 secs] 
-2014-11-05T14:24:54.767+0900: 219.636: [GC2014-11-05T14:24:54.767+0900: 219.636: [DefNew: 76572K-&gt;8415K(76672K), 0.1165260 secs] 472461K-&gt;412833K(515776K), 0.1172920 secs] [Times: user=0.06 sys=0.01, real=0.12 secs] 
-2014-11-05T14:24:54.899+0900: 219.768: [GC [1 CMS-initial-mark: 404417K(439104K)] 414152K(515776K), 0.0252080 secs] [Times: user=0.02 sys=0.00, real=0.03 secs] 
-2014-11-05T14:24:55.043+0900: 219.912: [CMS-concurrent-mark-start]
-2014-11-05T14:24:56.941+0900: 221.810: [GC2014-11-05T14:24:56.941+0900: 221.810: [DefNew: 76575K-&gt;8512K(76672K), 0.0933500 secs] 480993K-&gt;423185K(515776K), 0.0935560 secs] [Times: user=0.07 sys=0.00, real=0.10 secs] 
-2014-11-05T14:24:58.119+0900: 222.988: [CMS-concurrent-mark: 2.773/3.076 secs] [Times: user=2.38 sys=0.46, real=3.07 secs] 
-2014-11-05T14:24:58.119+0900: 222.988: [CMS-concurrent-preclean-start]
-2014-11-05T14:24:58.127+0900: 222.996: [CMS-concurrent-preclean: 0.007/0.008 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
-2014-11-05T14:24:58.127+0900: 222.996: [CMS-concurrent-abortable-preclean-start]
- CMS: abort preclean due to time 2014-11-05T14:25:03.224+0900: 228.092: [CMS-concurrent-abortable-preclean: 2.683/5.096 secs] [Times: user=2.44 sys=0.08, real=5.10 secs] 
-2014-11-05T14:25:03.224+0900: 228.093: [GC[YG occupancy: 48273 K (76672 K)]2014-11-05T14:25:03.224+0900: 228.093: [Rescan (non-parallel) 2014-11-05T14:25:03.224+0900: 228.093: [grey object rescan, 0.0011680 secs]2014-11-05T14:25:03.225+0900: 228.094: [root rescan, 0.2362360 secs], 0.2375020 secs]2014-11-05T14:25:03.462+0900: 228.331: [weak refs processing, 0.0044290 secs]2014-11-05T14:25:03.466+0900: 228.335: [class unloading, 0.0089260 secs]2014-11-05T14:25:03.475+0900: 228.344: [scrub symbol table, 0.0179240 secs]2014-11-05T14:25:03.493+0900: 228.362: [scrub string table, 0.0013030 secs] [1 CMS-remark: 414673K(439104K)] 462947K(515776K), 0.2714240 secs] [Times: user=0.26 sys=0.00, real=0.27 secs] 
-2014-11-05T14:25:03.504+0900: 228.373: [CMS-concurrent-sweep-start]
-2014-11-05T14:25:03.816+0900: 228.685: [CMS-concurrent-sweep: 0.310/0.312 secs] [Times: user=0.23 sys=0.00, real=0.31 secs] 
-2014-11-05T14:25:03.817+0900: 228.686: [CMS-concurrent-reset-start]
-2014-11-05T14:25:03.819+0900: 228.687: [CMS-concurrent-reset: 0.001/0.001 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
-2014-11-05T14:25:04.454+0900: 229.323: [GC [1 CMS-initial-mark: 394635K(439104K)] 443918K(515776K), 0.0809520 secs] [Times: user=0.08 sys=0.00, real=0.08 secs] 
-2014-11-05T14:25:04.538+0900: 229.407: [CMS-concurrent-mark-start]
-2014-11-05T14:25:05.602+0900: 230.471: [CMS-concurrent-mark: 1.064/1.064 secs] [Times: user=1.01 sys=0.00, real=1.07 secs] 
-2014-11-05T14:25:05.603+0900: 230.471: [CMS-concurrent-preclean-start]
-2014-11-05T14:25:05.605+0900: 230.474: [CMS-concurrent-preclean: 0.003/0.003 secs] [Times: user=0.01 sys=0.00, real=0.00 secs] 
-2014-11-05T14:25:05.605+0900: 230.474: [CMS-concurrent-abortable-preclean-start]
- CMS: abort preclean due to time 2014-11-05T14:25:10.648+0900: 235.516: [CMS-concurrent-abortable-preclean: 1.979/5.042 secs] [Times: user=1.89 sys=0.01, real=5.04 secs] 
-2014-11-05T14:25:10.648+0900: 235.517: [GC[YG occupancy: 55959 K (76672 K)]2014-11-05T14:25:10.648+0900: 235.517: [Rescan (non-parallel) 2014-11-05T14:25:10.648+0900: 235.517: [grey object rescan, 0.0012890 secs]2014-11-05T14:25:10.649+0900: 235.518: [root rescan, 0.1016560 secs], 0.1030300 secs]2014-11-05T14:25:10.751+0900: 235.620: [weak refs processing, 0.0000500 secs]2014-11-05T14:25:10.751+0900: 235.620: [class unloading, 0.0078410 secs]2014-11-05T14:25:10.759+0900: 235.628: [scrub symbol table, 0.0162830 secs]2014-11-05T14:25:10.775+0900: 235.644: [scrub string table, 0.0010720 secs] [1 CMS-remark: 394635K(439104K)] 450595K(515776K), 0.1292870 secs] [Times: user=0.12 sys=0.01, real=0.13 secs] 
-2014-11-05T14:25:10.777+0900: 235.646: [CMS-concurrent-sweep-start]
-2014-11-05T14:25:10.981+0900: 235.850: [CMS-concurrent-sweep: 0.203/0.203 secs] [Times: user=0.20 sys=0.00, real=0.20 secs] 
-2014-11-05T14:25:10.981+0900: 235.850: [CMS-concurrent-reset-start]
-2014-11-05T14:25:10.983+0900: 235.852: [CMS-concurrent-reset: 0.001/0.001 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
-2014-11-05T14:25:32.473+0900: 257.342: [GC2014-11-05T14:25:32.474+0900: 257.342: [DefNew: 76664K-&gt;2361K(76672K), 0.0146410 secs] 463666K-&gt;389381K(515776K), 0.0148600 secs] [Times: user=0.01 sys=0.00, real=0.02 secs] 
-2014-11-05T14:26:44.480+0900: 329.349: [GC2014-11-05T14:26:44.480+0900: 329.349: [DefNew: 70521K-&gt;1291K(76672K), 0.0214830 secs] 457541K-&gt;388311K(515776K), 0.0216760 secs] [Times: user=0.01 sys=0.00, real=0.02 secs] 
-2014-11-05T14:27:56.504+0900: 401.373: [GC2014-11-05T14:27:56.504+0900: 401.373: [DefNew: 69451K-&gt;1214K(76672K), 0.0102000 secs] 456471K-&gt;388234K(515776K), 0.0103740 secs] [Times: user=0.01 sys=0.00, real=0.01 secs]
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> CMSログの見方</h2>
-<div class="outline-text-2" id="text-3">
-</div><div id="outline-container-sec-3-1" class="outline-3">
-<h3 id="sec-3-1"><span class="section-number-3">3.1</span> New領域GCログ</h3>
-<div class="outline-text-3" id="text-3-1">
-<p>
-New領域のGCは <code>minor GC</code> と呼ばれる場合があります。
-</p>
-
-<p>
-<code>DefNew</code> と <code>PraNew</code> 文字が含まれた行は <code>New</code> 領域のGC処理ログです。シングルコアの場合
-<code>DefNew=、マルチコアは =PraNew</code> となります。
-</p>
-
-<p>
-New領域のGCログは一行で完結する。ログ先頭の <code>GC</code> タグはSTWであることを示している。(つ
-まりNew領域のGC処理はStop the worldです)続きの部分はGC前後New領域内メモリの変化を示し
-ている、その次の部分は、JVM全体のメモリ使用量の変化を示している。
-</p>
-<pre class="example">
-2014-11-05T16:59:21.544+0900: 9486.413: [GC2014-11-05T16:59:21.544+0900: 9486.413: [DefNew: 68932K-&gt;1046K(76672K), 0.0122090 secs] 472847K-&gt;405094K(515776K), 0.0123880 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
-                                          ★                                        ~~~~~~  ~~~~~   ~~~~  ~~~~                     ~~~~~~~  ~~~~~~
-                                                                                      A       B       C     D                         E       F
-</pre>
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">A</td>
-<td class="left">New領域のGC</td>
-<td class="left">DefNew</td>
-</tr>
-
-<tr>
-<td class="left">B</td>
-<td class="left">GC前New領域の使用量</td>
-<td class="left">68932K</td>
-</tr>
-
-<tr>
-<td class="left">C</td>
-<td class="left">GC後New領域の使用量</td>
-<td class="left">1046K</td>
-</tr>
-
-<tr>
-<td class="left">D</td>
-<td class="left">New領域GCの閾値</td>
-<td class="left">76672K</td>
-</tr>
-
-<tr>
-<td class="left">E</td>
-<td class="left">GC前JVMメモリの使用量</td>
-<td class="left">472847K</td>
-</tr>
-
-<tr>
-<td class="left">F</td>
-<td class="left">GC後JVMメモリの使用量</td>
-<td class="left">405094K</td>
-</tr>
-</tbody>
-</table>
-
-<p>
-New領域容量の変化とJMV全体のメモリ容量の変化からOLD領域の増加サイズを算出する。
-</p>
-
-<pre class="example">
-New領域変化容量： 68932 K - 1046K   = 67886K
-JVM全体変化容量： 472847K - 405094K = 67753K
-★OLD領域の増加サイズ： New領域変化容量 - JVM全体変化容量 = 133K
-</pre>
-
-<p>
-最後の <code>real</code> 部分はSTW(アプリ停止時間)の時間となります、10ミリ秒ですね。
-</p>
-<pre class="example">
-[Times: user=0.01 sys=0.00, real=0.01 secs]
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-3-2" class="outline-3">
-<h3 id="sec-3-2"><span class="section-number-3">3.2</span> Old領域GCログ</h3>
-<div class="outline-text-3" id="text-3-2">
-<p>
-以下は通常なCMS処理のログです。
-</p>
-<pre class="example">
-★CMS起きる前のNewGCログ
-2014-11-05T16:59:21.544+0900: 9486.413: [GC2014-11-05T16:59:21.544+0900: 9486.413: [DefNew: 68932K-&gt;1046K(76672K), 0.0122090 secs] 472847K-&gt;405094K(515776K), 0.0123880 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
-
-★①
-2014-11-05T16:59:21.564+0900: 9486.433: [GC [1 CMS-initial-mark: 404047K(439104K)] 405358K(515776K), 0.0084940 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
-
-★②-1
-2014-11-05T16:59:21.573+0900: 9486.442: [CMS-concurrent-mark-start]
-2014-11-05T16:59:21.727+0900: 9486.596: [CMS-concurrent-mark: 0.154/0.154 secs] [Times: user=0.14 sys=0.00, real=0.15 secs] 
-
-★②-2
-2014-11-05T16:59:21.727+0900: 9486.596: [CMS-concurrent-preclean-start]
-2014-11-05T16:59:21.754+0900: 9486.623: [CMS-concurrent-preclean: 0.027/0.027 secs] [Times: user=0.00 sys=0.00, real=0.03 secs] 
-
-★③
-2014-11-05T16:59:21.754+0900: 9486.623: [GC[YG occupancy: 1535 K (76672 K)]2014-11-05T16:59:21.754+0900: 9486.623: [Rescan (non-parallel) 2014-11-05T16:59:21.754+0900: 9486.623: [grey object rescan, 0.0012560 secs]2014-11-05T16:59:21.755+0900: 9486.624: [root rescan, 0.0064000 secs], 0.0077470 secs]2014-11-05T16:59:21.762+0900: 9486.631: [weak refs processing, 0.0003290 secs]2014-11-05T16:59:21.762+0900: 9486.631: [class unloading, 0.0108870 secs]2014-11-05T16:59:21.773+0900: 9486.642: [scrub symbol table, 0.0156480 secs]2014-11-05T16:59:21.789+0900: 9486.658: [scrub string table, 0.0012200 secs] [1 CMS-remark: 404047K(439104K)] 405583K(515776K), 0.0371740 secs] [Times: user=0.04 sys=0.01, real=0.04 secs] 
-
-★④-1
-2014-11-05T16:59:21.792+0900: 9486.661: [CMS-concurrent-sweep-start]
-2014-11-05T16:59:22.187+0900: 9487.056: [CMS-concurrent-sweep: 0.395/0.395 secs] [Times: user=0.38 sys=0.00, real=0.39 secs] 
-
-★④-2
-2014-11-05T16:59:22.189+0900: 9487.057: [CMS-concurrent-reset-start]
-
-2014-11-05T16:59:22.190+0900: 9487.059: [CMS-concurrent-reset: 0.001/0.001 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
-
-★CMS後のNewGCログ
-2014-11-05T17:00:32.559+0900: 9557.428: [GC2014-11-05T17:00:32.559+0900: 9557.428: [DefNew: 69206K-&gt;1062K(76672K), 0.0103860 secs] 104633K-&gt;36628K(515776K), 0.0105880 secs] [Times: user=0.01 sys=0.00, real=0.01 secs]
-</pre>
-<p>
-CMS前後のNewGCログのJVMメモリ使用量からメモリが掃除されることをわかります。
-405094K → 104633K、約293MBが掃除された。
-</p>
-
-<p>
-Initial Markフェースログの先頭に <code>GC</code> 文字が現れるので、STWが発生することが分かります。
-</p>
-<pre class="example">
-★①
-2014-11-05T16:59:21.564+0900: 9486.433: [GC [1 CMS-initial-mark: 404047K(439104K)] 405358K(515776K), 0.0084940 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
-                                                                 ~~~~~~  ~~~~~~    ~~~~~~  ~~~~~~                                                 ~~~~~~~~~~~~
-                                                                   A        B        C       D                                                         E
-</pre>
-<p>
-Initial Markフェースログの内訳
-</p>
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">A</td>
-<td class="left">CMS起動時のOLD領域使用量</td>
-<td class="left">404047K</td>
-</tr>
-
-<tr>
-<td class="left">B</td>
-<td class="left">CMSトリガーするOLD領域閾値</td>
-<td class="left">439104K</td>
-</tr>
-
-<tr>
-<td class="left">C</td>
-<td class="left">CMS起動時JVMのメモリの使用量</td>
-<td class="left">405358K</td>
-</tr>
-
-<tr>
-<td class="left">D</td>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-</tr>
-
-<tr>
-<td class="left">E</td>
-<td class="left">Initial Markフェースで消費した時間</td>
-<td class="left">10 ミリ秒</td>
-</tr>
-</tbody>
-</table>
-
-<p>
-続いて、Concurrent MarkとConcurrent precleaning処理の時間を示している。この部分の処理
-はアプリケーションと平行で行われるため、停止時間生じない。
-</p>
-<pre class="example">
-★②-1
-2014-11-05T16:59:21.573+0900: 9486.442: [CMS-concurrent-mark-start]
-2014-11-05T16:59:21.727+0900: 9486.596: [CMS-concurrent-mark: 0.154/0.154 secs] [Times: user=0.14 sys=0.00, real=0.15 secs] 
-                                                                                                            ~~~~~~~~~~~~~~
-                                                                                                                  F
-★②-2
-2014-11-05T16:59:21.727+0900: 9486.596: [CMS-concurrent-preclean-start]
-2014-11-05T16:59:21.754+0900: 9486.623: [CMS-concurrent-preclean: 0.027/0.027 secs] [Times: user=0.00 sys=0.00, real=0.03 secs] 
-                                                                                                                ~~~~~~~~~~~~~~
-                                                                                                                      G
-</pre>
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">F</td>
-<td class="left">Concurrent Markフェースで消費した時間</td>
-<td class="left">150 ミリ秒</td>
-</tr>
-
-<tr>
-<td class="left">G</td>
-<td class="left">Concurrent Precleanフェースで消費した時間</td>
-<td class="left">30ミリ秒</td>
-</tr>
-</tbody>
-</table>
-
-<p>
-Parallel Remarkフェーズのログは１行で完結する、折り返してインデントを付けると次の形に
-なります。
-</p>
-<pre class="example">
-★③
-2014-11-05T16:59:21.754+0900: 9486.623:
-[GC
-    [YG occupancy: 1535 K (76672 K)]
-                   ~~~~    ~~~~~
-                    H        I
-    2014-11-05T16:59:21.754+0900: 9486.623:
-                                            [
-                                              Rescan (non-parallel)
-                                                2014-11-05T16:59:21.754+0900: 9486.623: [grey object rescan, 0.0012560 secs]
-                                                2014-11-05T16:59:21.755+0900: 9486.624: [root rescan, 0.0064000 secs]
-                                             , 0.0077470 secs
-                                            ]
-    2014-11-05T16:59:21.762+0900: 9486.631: [weak refs processing, 0.0003290 secs]
-    2014-11-05T16:59:21.762+0900: 9486.631: [class unloading, 0.0108870 secs]
-    2014-11-05T16:59:21.773+0900: 9486.642: [scrub symbol table, 0.0156480 secs]
-    2014-11-05T16:59:21.789+0900: 9486.658: [scrub string table, 0.0012200 secs]
-
-    [1 CMS-remark: 404047K(439104K)] 405583K(515776K), 0.0371740 secs
-                   ~~~~~~  ~~~~~~    ~~~~~~  ~~~~~~
-                     J       K         L       M
-]
-[Times: user=0.04 sys=0.01, real=0.04 secs]
-                            ~~~~~~~~~~~~~~
-                                 N
-</pre>
-<p>
-内訳
-</p>
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">H</td>
-<td class="left">現時点New領域の使用量</td>
-<td class="left">1535K</td>
-<td class="left">&#xa0;</td>
-</tr>
-
-<tr>
-<td class="left">I</td>
-<td class="left">New領域GCの閾値</td>
-<td class="left">76672K</td>
-<td class="left">&#xa0;</td>
-</tr>
-
-<tr>
-<td class="left">J</td>
-<td class="left">現時点OLD領域使用量</td>
-<td class="left">404047K</td>
-<td class="left">変化なし</td>
-</tr>
-
-<tr>
-<td class="left">K</td>
-<td class="left">CMSトリガーするOLD領域閾値</td>
-<td class="left">439104K</td>
-<td class="left">&#xa0;</td>
-</tr>
-
-<tr>
-<td class="left">L</td>
-<td class="left">現時点JVMのメモリの使用量</td>
-<td class="left">405583K</td>
-<td class="left">225K増加</td>
-</tr>
-
-<tr>
-<td class="left">M</td>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-</tr>
-
-<tr>
-<td class="left">N</td>
-<td class="left">Parallel Remarkフェーズで消費した時間</td>
-<td class="left">40 ミリ秒</td>
-<td class="left">&#xa0;</td>
-</tr>
-</tbody>
-</table>
-<p>
-処理時間からみるとParallel RemarkフェーズはInitial Markフフェーズより時間がかかること
-が分かりました。
-</p>
-
-<p>
-続いて、Concurrent SweepとConcurrent Reset処理の時間を示している。この部分の処理
-はアプリケーションと平行で行われるため、停止時間生じない。
-</p>
-<pre class="example">
-★④-1
-2014-11-05T16:59:21.792+0900: 9486.661: [CMS-concurrent-sweep-start]
-2014-11-05T16:59:22.187+0900: 9487.056: [CMS-concurrent-sweep: 0.395/0.395 secs] [Times: user=0.38 sys=0.00, real=0.39 secs]
-                                                                                                             ~~~~~~~~~~~~~~
-                                                                                                                   O
-★④-2
-2014-11-05T16:59:22.189+0900: 9487.057: [CMS-concurrent-reset-start]
-2014-11-05T16:59:22.190+0900: 9487.059: [CMS-concurrent-reset: 0.001/0.001 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]
-                                                                                                             ~~~~~~~~~~~~~~~
-                                                                                                                   P
-</pre>
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">O</td>
-<td class="left">Concurrent Sweepフェースで消費した時間</td>
-<td class="left">390 ミリ秒</td>
-</tr>
-
-<tr>
-<td class="left">P</td>
-<td class="left">Concurrent Resetフェースで消費した時間</td>
-<td class="left">10ミリ秒</td>
-</tr>
-</tbody>
-</table>
-
-<p>
-フェース①〜④の処理時間とJVMメモリ容量変化は以下となります。
-</p>
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="right" />
-
-<col  class="right" />
-</colgroup>
-<thead>
-<tr>
-<th scope="col" class="left">&#xa0;</th>
-<th scope="col" class="left">フェーズ名</th>
-<th scope="col" class="left">一時停止</th>
-<th scope="col" class="right">処理時間(ミリ秒)</th>
-<th scope="col" class="right">JVMメモリ(MB)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="left">①</td>
-<td class="left">Initial Mark</td>
-<td class="left">◯</td>
-<td class="right">10</td>
-<td class="right">395.8</td>
-</tr>
-
-<tr>
-<td class="left">②-1</td>
-<td class="left">Concurrent Mark</td>
-<td class="left">&#xa0;</td>
-<td class="right">150</td>
-<td class="right">&#xa0;</td>
-</tr>
-
-<tr>
-<td class="left">②-2</td>
-<td class="left">Concurrent precleaning</td>
-<td class="left">&#xa0;</td>
-<td class="right">30</td>
-<td class="right">&#xa0;</td>
-</tr>
-
-<tr>
-<td class="left">③</td>
-<td class="left">Parallel Remark</td>
-<td class="left">◯</td>
-<td class="right">40</td>
-<td class="right">396.0</td>
-</tr>
-
-<tr>
-<td class="left">④-1</td>
-<td class="left">Concurrent Sweeping</td>
-<td class="left">&#xa0;</td>
-<td class="right">390</td>
-<td class="right">102.0</td>
-</tr>
-
-<tr>
-<td class="left">④-2</td>
-<td class="left">Concurrent Reset</td>
-<td class="left">&#xa0;</td>
-<td class="right">10</td>
-<td class="right">&#xa0;</td>
-</tr>
-</tbody>
-<tbody>
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-<td class="right">630</td>
-<td class="right">-294</td>
-</tr>
-</tbody>
-</table>
-<p>
-CMS全体処理で630ミリ秒かかる、そのうち50ミリ秒の停止時間が発生する。掃除されたメモリ
-容量約294MB。
-</p>
-</div>
-</div>
-
-
-<div id="outline-container-sec-3-3" class="outline-3">
-<h3 id="sec-3-3"><span class="section-number-3">3.3</span> concurrent mode failure</h3>
-<div class="outline-text-3" id="text-3-3">
-<p>
-次の状況に置いて、コンカレントGCが縮退しFullGCを引き起こす可能性があります。
-</p>
-<ul class="org-ul">
-<li>システムが高負荷時に、新しいオブジェクトの生成速度がGCのメモリ解放速度より早い
-</li>
-<li>Java ヒープの断片化率が非常に高い時
-</li>
-</ul>
-
-<p>
-また、縮退後のFullGCは <code>Serial Old</code> モードで行われるため、アプリ停止時間が長くなります。
-</p>
-
-<p>
-<code>Initial Mark</code> 次の <code>Concurrent Mark</code> で縮退が起きて、 <code>FullGC</code> が起こった例。
-</p>
-<pre class="example">
-2014-11-20T14:04:17.969+0900: 423.523: [GC [1 CMS-initial-mark: 439103K(439104K)] 451488K(515776K), 0.0209760 secs] [Times: user=0.02 sys=0.00, real=0.02 secs] 
-2014-11-20T14:04:18.110+0900: 423.663: [CMS-concurrent-mark-start]
-2014-11-20T14:04:19.105+0900: 424.659: [Full GC2014-11-20T14:04:19.105+0900: 424.659: [CMS2014-11-20T14:04:19.745+0900: 425.299: [CMS-concurrent-mark: 1.632/1.636 secs] [Times: user=1.41 sys=0.17, real=1.64 secs] 
- (concurrent mode failure): 439103K-&gt;439103K(439104K), 1.7507640 secs] 515775K-&gt;458321K(515776K), [CMS Perm : 57066K-&gt;57066K(95504K)], 1.7509190 secs] [Times: user=1.74 sys=0.00, real=1.75 secs]
-</pre>
-
-<p>
-<code>FullGC</code> を示すログに内容を分解すると次のようになります。
-</p>
-<pre class="example">
-2014-11-20T14:04:19.105+0900: 424.659:
-    [Full GC2014-11-20T14:04:19.105+0900: 424.659: 
-
-          ★CMS失敗時の内容
-          [CMS2014-11-20T14:04:19.745+0900: 425.299: 
-               [CMS-concurrent-mark: 1.632/1.636 secs]
-               [Times: user=1.41 sys=0.17, real=1.64 secs]  
-               (concurrent mode failure): 439103K-&gt;439103K(439104K), 1.7507640 secs] 
-
-          ★縮退後、FullGC実施後の結果
-          515775K-&gt;458321K(515776K), [CMS Perm : 57066K-&gt;57066K(95504K)], 1.7509190 secs]
-
-    [Times: user=1.74 sys=0.00, real=1.75 secs]
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-3-4" class="outline-3">
-<h3 id="sec-3-4"><span class="section-number-3">3.4</span> 手動FullGC時のログ</h3>
-<div class="outline-text-3" id="text-3-4">
-<p>
-CMS GCを利用した場合でも手動でFullGCを起こすことは可能です。以下は手動GC掛けられた時
-にのGCログとなります。
-</p>
-
-<pre class="example">
-2014-11-20T15:03:39.462+0900: 2611.658: [Full GC2014-11-20T15:03:39.462+0900: 2611.658: [CMS: 365597K-&gt;33109K(439104K), 0.3923750 secs] 408803K-&gt;33109K(515776K), [CMS Perm : 57580K-&gt;57357K(95888K)], 0.3925240 secs] [Times: user=0.36 sys=0.00, real=0.39 secs] 
-
-★分解
-2014-11-20T15:03:39.462+0900: 2611.658: 
-    [Full GC2014-11-20T15:03:39.462+0900: 2611.658: 
-          [CMS: 365597K-&gt;33109K(439104K), 0.3923750 secs] 408803K-&gt;33109K(515776K), 
-          [CMS Perm : 57580K-&gt;57357K(95888K)], 0.3925240 secs] 
-    [Times: user=0.36 sys=0.00, real=0.39 secs]
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> 参考</h2>
-<div class="outline-text-2" id="text-4">
-<ul class="org-ul">
-<li><a href="http://wall-climb.com/2009/10/12/%25E3%2582%25B3%25E3%2583%25B3%25E3%2582%25AB%25E3%2583%25AC%25E3%2583%25B3%25E3%2583%2588gc%25E3%2581%25AE%25E6%25B3%25A8%25E6%2584%258F%25E7%2582%25B9/">コンカレントGCの注意点</a>
-</li>
-<li><a href="http://automation123.blogspot.jp/2012/02/understanding-concurrent-mark-sweep.html">Understanding Concurrent Mark Sweep Garbage Collector Logs</a>
-</li>
-<li><a href="https://blogs.oracle.com/poonam/entry/understanding_cms_gc_logs">Understanding CMS GC Logs</a>
-</li>
-<li><a href="http://a4dosanddos.hatenablog.com/entry/2014/01/24/011007">「Java」GC ログを出力する</a>
-</li>
-<li><a href="http://h50146.www5.hp.com/products/software/oe/hpux/developer/column02/gabage_02/">Javaのかなめ、「ガベージ・コレクション」をやさしく学ぶ・後編</a>
-</li>
-</ul>
-</div>
-</div>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[メモ]ApacheでbackendとのKeepAliveをOFFにする]]></title>
-    <link href="http://luozengbin.github.io/blog/2014-10-29-%5B%E3%83%A1%E3%83%A2%5Dapache%E3%81%A7backend%E3%81%A8%E3%81%AEkeepalive%E3%82%92off%E3%81%AB%E3%81%99%E3%82%8B.html"/>
-    <updated>2014-10-29T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[メモ]apacheでbackendとのkeepaliveをoffにする</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. Apache側でKeepAliveを制御する</a></li>
-<li><a href="#sec-2">2. APサーバ側にてKeepAliveを制御する</a></li>
-<li><a href="#sec-3">3. 参考</a></li>
-</ul>
-</div>
-</div>
-<p>
-次のような構成でApacheとAPサーバ間のHTTP KeepAliveが有効にすると
-</p>
-<ol class="org-ol">
-<li>LBの振り分けが偏る可能性がある
-</li>
-<li>LBの無振り分け先の切り替えに影響が生じる可能性がある、詳細は こちらの記事 を参照してください。
-</li>
-</ol>
-<p>
-のような不都合があります。
-</p>
-
-<pre class="example">
-+----------+         +------------+        +-----------+     +-------------+
-| Client   +---------&gt; Apache     +--------&gt;   LB      +-----&gt; AP Server   |
-+----------+         +------------+        +-----------+     +-------------+
-</pre>
-
-<p>
-とい言うわけでApacheとAPサーバ間KeepAliveをOFFにする方法を調査した。
-</p>
-
-<p>
-<!-- more -->
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> Apache側でKeepAliveを制御する</h2>
-<div class="outline-text-2" id="text-1">
-<p>
-<code>ProxyPass</code> ディレクティブの <code>keepalive</code> パラメータが期待通り動作しないので迷っていた、
-しかしドキュメントによると
-</p>
-
-<pre class="example">
-バックエンドサーバと Apache の間にファイアーウォールがある場合には、 このパラメータを
-使ってください。ファイアウォールは往々にして、 非活動状態のコネクションを落とそうとし
-ます。 このフラグは OS に指示して、KEEP_ALIVE メッセージを非活動状態の コネクションで
-も送るようにします。これによってファイアウォールによってコネクションが 落とされること
-を防げます。keepalive を有効にするには、このプロパティを On にしてください。
-</pre>
-
-<p>
-HTTP KeepAliveに関係しそうに見えたが、実はあんまり関係ないのようです。
-TCPレベルでコネクションをファイアウォールによる切断を防ぐためのパラメータです。
-</p>
-
-<p>
-更に調べると <code>mod_proxy_http</code> モジュールの環境変数にHTTP KeepAliveに関係するものが
-出てきた。
-</p>
-
-<ul class="org-ul">
-<li>force-proxy-request-1.0
-プロキシがバックエンドに HTTP/1.0 でリクエストを送るようにし、HTTP/1.1 の機能を無効にします。
-</li>
-
-<li>proxy-nokeepalive
-プロキシがリクエスト終了後にバックエンドとの接続を切るようにします。
-</li>
-</ul>
-
-<p>
-よし！これだそう。次のように設定したらうまくできた。
-</p>
-<pre class="example">
-&lt;Location /test/&gt;
-    ProxyPass http://dummyhost:8080/app1/
-    SetEnv proxy-nokeepalive 1
-&lt;/Location&gt;
-</pre>
-
-<p>
-これで、ApacheからAPサーバへのHTTPリクエストヘッダに <code>Connection: close</code> が付与される
-ようになりました。 <code>tcpdump</code> でパケットのやり取りを確認すると、ちゃんと毎回クライアン
-トのからコネクション切断するためのfinパケットが送信されることを確認しました。
-</p>
-</div>
-</div>
-
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> APサーバ側にてKeepAliveを制御する</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-一般的にAPサーバ側でもKeepAliveの設定が可能です。
-流れ的に、HTTPレスポンスのHTTPヘッダに <code>Connection: close</code> を付与して返すことで
-リクエスト側にコネクション切断する旨を伝える。
-</p>
-
-<p>
-Tomcat起動時に次のJavaオプションを付けるとHTTP KeepAliveがOFFになります。
-</p>
-<pre class="example">
--Dorg.apache.coyote.http11.Http11Protocol.MAX_KEEP_ALIVE_REQUESTS=1
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> 参考</h2>
-<div class="outline-text-2" id="text-3">
-<ul class="org-ul">
-<li><a href="http://blog.nomadscafe.jp/2011/07/apache.html">今こそ見直すApacheの設定</a>
 </li>
 </ul>
 </div>
