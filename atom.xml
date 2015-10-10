@@ -4,7 +4,7 @@
   <title><![CDATA[Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-08-30T22:26:52+09:00</updated>
+  <updated>2015-10-10T19:29:08+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -14,22 +14,421 @@
 
   
   <entry>
+    <title type="html"><![CDATA[[tips][Java]CodeCache領域使用状況の確認方法]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html"/>
+    <updated>2015-09-01T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][java]codecache領域使用状況の確認方法</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgheadline1">1. CodeCacheについて</a></li>
+<li><a href="#orgheadline6">2. CodeCache使用状況の確認方法</a>
+<ul>
+<li><a href="#orgheadline2">2.1. JVM Printフラグで確認する</a></li>
+<li><a href="#orgheadline3">2.2. JConsoleからの確認方法</a></li>
+<li><a href="#orgheadline4">2.3. VisualVMからのからの確認方法</a></li>
+<li><a href="#orgheadline5">2.4. Java8のNTM(Native Memory Tracking)で確認する</a></li>
+</ul>
+</li>
+<li><a href="#orgheadline7">3. CodeCahe溢れた時の出力</a></li>
+<li><a href="#orgheadline8">4. CodeCahe溢れた時の対応</a></li>
+<li><a href="#orgheadline9">5. 参考</a></li>
+</ul>
+</div>
+</div>
+<p>
+先日CodeCacheによる性能問題が発生したのですが、問題を突き止めるには時間が掛かりました。
+そのわけは、
+</p>
+
+<ol class="org-ol">
+<li>全体が遅いではなく、一部処理のみ遅い</li>
+<li>スレッドダンプから遅い箇所の特定が出来ない</li>
+<li>プロファイリングからホットメソットの特定が出来ない</li>
+<li>性能劣化時間帯に同期化によるロック待ちが発生していない</li>
+<li>性能劣化時間帯のシステムコールコストは平時と変わらない</li>
+<li>性能劣化時間帯にメジャーGCが起きていない、マイナーGCの時間も正常数値範囲ないである</li>
+</ol>
+
+<p>
+JVM性能に影響するよく言われている方法や要素を一通り確認しても、問題特出が来ない。
+つまりCodeCacheによる性能劣化は気づきにくい場合があります。
+</p>
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1"><span class="section-number-2">1</span> CodeCacheについて</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+CodeCacheについてJava Magazineに <a href="https://twitter.com/kittylyst">BEN EVANS</a> さんの記事が分かりやすいと思います。
+</p>
+
+<ul class="org-ul">
+<li><a href="http://www.oracle.com/webfolder/technetwork/jp/javamagazine/Java-JA13-Architect-evans.pdf">Java HotSpot VM コード・キャッシュについて</a></li>
+<li><a href="http://www.oracle.com/webfolder/technetwork/jp/javamagazine/Java-MJ12-architect.pdf">Java HotSpot VMにおけるJITコンパイルの概要</a></li>
+<li><a href="http://www.oracle.com/webfolder/technetwork/jp/javamagazine/Java-SO12-Architect-evans.pdf">Java HotSpot VMの内部を探る(2): パフォーマンス解析のための統計情報</a></li>
+<li><a href="http://www.oracle.com/webfolder/technetwork/jp/javamagazine/Java-JA14-Architect-Evans.pdf">JITWatchを使用したJava JITコンパイルの理解</a></li>
+</ul>
+
+<p>
+以下は自分のまとめです。
+</p>
+
+<ul class="org-ul">
+<li>JITコンパイラーの結果がCodeCacheに格納される</li>
+<li>CodeCacheが一杯になるとJITコンパイラーが停止してしまう</li>
+<li>JITコンパイラーが停止すると性能が劣化する（事例: 本来6秒で終わる処理が40秒かかる）</li>
+<li>アプリを振り返し再デプロイするとCodeCache領域が溢れる可能性がある</li>
+<li>SpringやJPAのような実行時にClassを動的生成するアプリに置いてCodeCache領域を大量に消費する場合がある</li>
+<li>JDK7で階層型コンパイラーを有効化するとCodeCache領域の消費が増加する</li>
+<li>ミドルウェア／アプリケーションサーバのCodeCache領域をチューニングスべき</li>
+<li>ミドルウェア／アプリケーションサーバのCodeCache領域常時監視しておくべき</li>
+</ul>
+
+<p>
+<!-- more -->
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline6" class="outline-2">
+<h2 id="orgheadline6"><span class="section-number-2">2</span> CodeCache使用状況の確認方法</h2>
+<div class="outline-text-2" id="text-2">
+</div><div id="outline-container-orgheadline2" class="outline-3">
+<h3 id="orgheadline2"><span class="section-number-3">2.1</span> JVM Printフラグで確認する</h3>
+<div class="outline-text-3" id="text-2-1">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">フラグ</th>
+<th scope="col" class="org-left">説明</th>
+<th scope="col" class="org-left">JDKバージョン</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">-XX:+PrintCodeCache</td>
+<td class="org-left">JVM終了時に出力する</td>
+<td class="org-left">JDK 8から利用可能</td>
+</tr>
+
+<tr>
+<td class="org-left">-XX:+PrintCodeCacheOnCompilation</td>
+<td class="org-left">JITコンパイル動作時に出力する</td>
+<td class="org-left">JDK 8から利用可能</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+OpenJDK8で <code>-XX:+PrintCodeCache</code> フラグの出力サンプル
+</p>
+<pre class="example">
+$ java -XX:+PrintCodeCache -version
+openjdk version "1.8.0_51"
+OpenJDK Runtime Environment (build 1.8.0_51-b16)
+OpenJDK 64-Bit Server VM (build 25.51-b03, mixed mode)
+CodeCache: size=245760Kb used=1057Kb max_used=1068Kb free=244702Kb
+ bounds [0x00007f79a5000000, 0x00007f79a5270000, 0x00007f79b4000000]
+ total_blobs=220 nmethods=2 adapters=135
+ compilation: enabled
+</pre>
+
+<p>
+各項目について
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">項目名</th>
+<th scope="col" class="org-left">値</th>
+<th scope="col" class="org-left">説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">size</td>
+<td class="org-left">245760Kb</td>
+<td class="org-left">CodeCache領域予約サイズ(最大サイズ)</td>
+</tr>
+
+<tr>
+<td class="org-left">used</td>
+<td class="org-left">1057Kb</td>
+<td class="org-left">現在の使用量</td>
+</tr>
+
+<tr>
+<td class="org-left">max_used</td>
+<td class="org-left">1068Kb</td>
+<td class="org-left">最高水標(High Water Mark)</td>
+</tr>
+
+<tr>
+<td class="org-left">free</td>
+<td class="org-left">244702Kb</td>
+<td class="org-left">未使用分のサイズ</td>
+</tr>
+
+<tr>
+<td class="org-left">bounds</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">CodeCache領域のメモリアドレス</td>
+</tr>
+
+<tr>
+<td class="org-left">total_blobs</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">★TODO調査</td>
+</tr>
+
+<tr>
+<td class="org-left">nmethods</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">★TODO調査</td>
+</tr>
+
+<tr>
+<td class="org-left">adapters</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">★TODO調査</td>
+</tr>
+
+<tr>
+<td class="org-left">compilation</td>
+<td class="org-left">enabled</td>
+<td class="org-left">JITコンパイラーの状態</td>
+</tr>
+</tbody>
+</table>
+<ul class="org-ul">
+<li><code>size</code> の値は <code>-XX:ReservedCodeCacheSize</code> オプションで指定可能です。</li>
+<li><code>compilation</code> の値がJITコンパイラーの状態を示しているため、重要な指標と考えます。</li>
+</ul>
+
+<p>
+OpenJDK8で <code>-XX:+PrintCodeCacheOnCompilation</code> フラグの出力サンプル
+</p>
+<pre class="example">
+$ java -XX:+PrintCodeCacheOnCompilation -jar sample.jar
+CodeCache: size=245760Kb used=1022Kb max_used=1031Kb free=244737Kb
+CodeCache: size=245760Kb used=1056Kb max_used=1065Kb free=244703Kb
+CodeCache: size=245760Kb used=1060Kb max_used=1070Kb free=244699Kb
+CodeCache: size=245760Kb used=1067Kb max_used=1072Kb free=244692Kb
+CodeCache: size=245760Kb used=1069Kb max_used=1072Kb free=244690Kb
+（中略）
+</pre>
+
+<p>
+この出力からrunning状態のJVMのCacheCode領域の変化を見ることができる。
+</p>
+
+<p>
+TODO: 図形にplotする
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline3" class="outline-3">
+<h3 id="orgheadline3"><span class="section-number-3">2.2</span> JConsoleからの確認方法</h3>
+<div class="outline-text-3" id="text-2-2">
+<ul class="org-ul">
+<li>グラフで確認する
+メモリータブビュー「メモリー・プール&#8221;Code Cache&#8221;」チャートからリアルタイムで確認でき
+る。下部の縦棒グラフに青で囲んでいる部分から空き領域との比例が分かりやすい。
+<img src="img/20150826111416_jconsole_cache_code.png" alt="20150826111416_jconsole_cache_code.png" /></li>
+<li>MBeanで確認する
+<img src="img/20150826111416_jconsole_mbean.png" alt="20150826111416_jconsole_mbean.png" /></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgheadline4" class="outline-3">
+<h3 id="orgheadline4"><span class="section-number-3">2.3</span> VisualVMからのからの確認方法</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+JConsoleと同じくMBeanで確認できる、<a href="https://java.net/projects/memorypoolview/downloads">MEMORY POOL VIEW</a> プラグインで視覚的なビューでも確
+認が可能です。しかし、MEMORY POOL VIEWプラグインはプラグインセンターから直接ダウンロー
+ドが出来ず、手動でダウンロードし、インストールが必要となります。
+</p>
+
+<ul class="org-ul">
+<li>プラグイン
+<img src="img/20150826111416_jvisual_plugins.png" alt="20150826111416_jvisual_plugins.png" /></li>
+
+<li>CodeCache利用状況
+<img src="img/20150826112544_jvisualvm_memorypool.png" alt="20150826112544_jvisualvm_memorypool.png" /></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgheadline5" class="outline-3">
+<h3 id="orgheadline5"><span class="section-number-3">2.4</span> Java8のNTM(Native Memory Tracking)で確認する</h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+<code>-XX:NativeMemoryTracking=detail</code> でJVMの起動すると、jcmdからNativeメモリの割り当て状
+況を追跡することができるようになります。
+</p>
+
+<p>
+以下summaryモードの出力に20〜22行がCodeCache割り当ての概要となります。
+</p>
+<pre class="example">
+$ jcmd $JAVA_PID VM.native_memory summary
+ 1|29354:
+ 2| 
+ 3|Native Memory Tracking:
+ 4| 
+ 5|Total:  reserved=1366991KB,  committed=347155KB
+ 6| 
+ 7|-                 Java Heap (reserved=1069056KB, committed=102400KB)
+ 8|                            (mmap: reserved=1069056KB, committed=102400KB)
+ 9| 
+10|-                     Class (reserved=661KB, committed=661KB)
+11|                            (classes #5558)
+12|                            (malloc=661KB, #4626)
+13| 
+14|-                    Thread (reserved=41318KB, committed=41318KB)
+15|                            (thread #40)
+16|                            (stack: reserved=41120KB, committed=41120KB)
+17|                            (malloc=121KB, #167)
+18|                            (arena=77KB, #80)
+19| 
+20|-                      Code (reserved=50209KB, committed=2825KB)
+21|                            (malloc=289KB, #1084)
+22|                            (mmap: reserved=49920KB, committed=2536KB)
+23| 
+24|-                        GC (reserved=179288KB, committed=173556KB)
+25|                            (malloc=139596KB, #776)
+26|                            (mmap: reserved=39692KB, committed=33960KB)
+27| 
+28|-                  Compiler (reserved=130KB, committed=130KB)
+29|                            (malloc=32KB, #68)
+30|                            (arena=98KB, #2)
+31| 
+32|-                  Internal (reserved=1646KB, committed=1582KB)
+33|                            (malloc=1582KB, #1631)
+34|                            (mmap: reserved=64KB, committed=0KB)
+35| 
+36|-                    Symbol (reserved=8541KB, committed=8541KB)
+37|                            (malloc=6551KB, #66839)
+38|                            (arena=1990KB, #1)
+39| 
+40|-           Memory Tracking (reserved=5169KB, committed=5169KB)
+41|                            (malloc=5169KB, #166)
+42| 
+43|-                   Tracing (reserved=10436KB, committed=10436KB)
+44|                            (malloc=10436KB, #91)
+45| 
+46|-        Pooled Free Chunks (reserved=539KB, committed=539KB)
+47|                            (malloc=539KB)
+</pre>
+
+<p>
+detailモードに&#8221;reserved xxxxxKB for Code&#8221;部分がCodeCacheの割り当て詳細となります。
+</p>
+<pre class="example">
+（中略）
+
+[0x00007f2691000000 - 0x00007f2694000000] reserved 49152KB for Code
+		from [ReservedSpace::initialize(unsigned long, unsigned long, bool, char*, unsigned long, bool)+0x266]
+	[0x00007f2691000000 - 0x00007f2691270000] committed 2496KB from [VirtualSpace::expand_by(unsigned long, bool)+0x1c9]
+
+（中略）
+
+[0x00007f26985af000 - 0x00007f269866f000] reserved 768KB for Code
+		from [ReservedSpace::initialize(unsigned long, unsigned long, bool, char*, unsigned long, bool)+0x266]
+	[0x00007f26985af000 - 0x00007f26985b9000] committed 40KB from [VirtualSpace::expand_by(unsigned long, bool)+0x1c9]
+
+（中略）
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline7" class="outline-2">
+<h2 id="orgheadline7"><span class="section-number-2">3</span> CodeCahe溢れた時の出力</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+通常CodeCahe領域が溢れた時にJVMの標準出力に警告ログが出される。しかしJDK7一部バージョ
+ンではこのログが出力されない場合があります。
+</p>
+
+<pre class="example">
+Java HotSpot(TM) Server VM warning: CodeCache is full. Compiler has been disabled.
+Java HotSpot(TM) Server VM warning: Try increasing the code cache size using -XX:ReservedCodeCacheSize=
+</pre>
+
+<p>
+<span class="underline">事例</span>
+</p>
+
+<ul class="org-ul">
+<li><a href="http://www.albinsblog.com/2012/09/codecache-is-full-compiler-has-been.html#.Vd5t4zKcrRY">CodeCache is full. Compiler has been disabled - Oracle SOA Suite 11g</a></li>
+<li><a href="http://xmlandmore.blogspot.jp/2014/08/jdk-8-revisiting-reservedcodecachesize.html">JDK 8: Revisiting ReservedCodeCacheSize and CompileThreshold</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgheadline8" class="outline-2">
+<h2 id="orgheadline8"><span class="section-number-2">4</span> CodeCahe溢れた時の対応</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+未完成続く
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline9" class="outline-2">
+<h2 id="orgheadline9"><span class="section-number-2">5</span> 参考</h2>
+<div class="outline-text-2" id="text-5">
+<ul class="org-ul">
+<li><a href="https://docs.oracle.com/javase/8/embedded/develop-apps-platforms/codecache.htm">Oracle Java SE Embedded: Developer&#8217;s Guide - 15 Codecache Tuning</a></li>
+<li><a href="https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/tooldescr007.html">Java Platform, Standard Edition Troubleshooting Guide - 2.7 Native Memory Tracking</a></li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[[Java道具]jstat -gcの出力を見やすくする]]></title>
     <link href="http://luozengbin.github.io/blog/2015-08-30-%5Bjava%E9%81%93%E5%85%B7%5Djstat--gc%E3%81%AE%E5%87%BA%E5%8A%9B%E3%82%92%E8%A6%8B%E3%82%84%E3%81%99%E3%81%8F%E3%81%99%E3%82%8B.html"/>
     <updated>2015-08-30T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[java道具]jstat&#8211;gcの出力を見やすくする</id>
     <content type="html"><![CDATA[<p>
-<code>jstat -gc</code> でJVMのメモリ仕様状況を確認する際によく使うのですが、次の問題で少し見づら
-いと感じましたので、整形用のオレオレスクリプトを作成しました。
+<code>jstat -gc</code> でJVMのメモリ使用状況を確認する際によく使うのですが、少し見づらいと感じま
+したので、整形用のオレオレスクリプトを作成しました。
 </p>
 
+<p>
+jstat出力見づらい要因として
+</p>
 <ul class="org-ul">
 <li>出力単位がbyteとなっています、数字長い時目視でメガバイト(mb)への換算が大変</li>
 <li>ヘッダ行と値行がズレる時があります</li>
 </ul>
 
 <p>
-デフォルトの出力形式
+デフォルトの出力形式は以下の通り
 </p>
 <pre class="example">
 $ jstat -gc 10901
@@ -38,7 +437,7 @@ $ jstat -gc 10901
 </pre>
 
 <p>
-次はスクリプトで整形後の出力形式(JDK8の場合)
+次は自作スクリプトで整形後の出力形式(JDK8の場合)
 </p>
 <pre class="example">
 ---------------------------------------------
@@ -118,7 +517,7 @@ http://ftp.riken.jp/Linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] P
 </pre>
 
 <p>
-ブラウザからミラーサイトを確認するとreadmeファイルしかありませんでした。
+ブラウザからミラーサイトを直接確認するとreadmeファイルしかありませんでした。
 </p>
 
 
@@ -152,7 +551,7 @@ any security fix's.
 </p>
 
 <p>
-というわけでyumリポジトリのURLを書き換えれば問題が解消されるはずだ。
+というわけでyumリポジトリのURLを書き換えれば問題が解消される。
 </p>
 
 <pre class="example">
@@ -191,14 +590,14 @@ updates                                                                         
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgheadline1">1. プロセスアタッチ出来ない</a></li>
+<li><a href="#orgheadline1">1. プロセスのアタッチ出来ない</a></li>
 <li><a href="#orgheadline2">2. Metadata does not appear to be polymorphic</a></li>
 <li><a href="#orgheadline3">3. unknown CollectedHeap type</a></li>
 </ul>
 </div>
 </div>
 <p>
-本記事に、OpenJDKの障害は次の環境で確認されました。
+本記事のOpenJDK障害は次の環境で確認しています。
 </p>
 
 <pre class="example">
@@ -216,7 +615,7 @@ Linux mimi 4.1.6-1-ARCH #1 SMP PREEMPT Mon Aug 17 08:52:28 CEST 2015 x86_64 GNU/
 </p>
 
 <div id="outline-container-orgheadline1" class="outline-2">
-<h2 id="orgheadline1"><span class="section-number-2">1</span> プロセスアタッチ出来ない</h2>
+<h2 id="orgheadline1"><span class="section-number-2">1</span> プロセスのアタッチ出来ない</h2>
 <div class="outline-text-2" id="text-1">
 <pre class="example">
 $ /usr/lib/jvm/java-8-openjdk/bin/jinfo -sysprops 22286
@@ -247,7 +646,7 @@ Caused by: sun.jvm.hotspot.debugger.DebuggerException: Can't attach to the proce
 </pre>
 
 <p>
-同じ障害に遭遇した方々の記録
+同じ障害に遭遇した方々
 </p>
 <ul class="org-ul">
 <li><a href="https://thenonsensetechlogs.wordpress.com/2014/04/09/error-attaching-to-process-sun-jvm-hotspot-debugger-debuggerexception-cant-attach-to-the-process-solved/">Error attaching to process: sun.jvm.hotspot.debugger.DebuggerException: Can’t attach to the process { solved }</a></li>
@@ -256,7 +655,7 @@ Caused by: sun.jvm.hotspot.debugger.DebuggerException: Can't attach to the proce
 
 <p>
 straceで見たら、 <a href="http://surf.ml.seikei.ac.jp/~nakano/JMwww/html/LDP_man-pages/man2/ptrace.2.html">ptrace</a> システムコールのPTRACE_ATTACHリクエストで実行中のJavaプロセス
-をアタッチするところで <code>Operation not permitted</code> 理由に怒られた。
+をアタッチしようとするところで <code>Operation not permitted</code> 理由に怒られた。
 </p>
 <pre class="example">
   |$ strace -ff /usr/lib/jvm/java-8-openjdk/bin/jinfo -sysprops 22286
@@ -274,7 +673,7 @@ straceで見たら、 <a href="http://surf.ml.seikei.ac.jp/~nakano/JMwww/html/LD
 </pre>
 
 <p>
-これはLinuxカーネルのセキュリティモジュール <a href="https://www.kernel.org/doc/Documentation/security/Yama.txt">yama</a> の制限がかかっいるのが原因です。
+これはLinuxカーネルのセキュリティモジュール <a href="https://www.kernel.org/doc/Documentation/security/Yama.txt">yama</a> の制限に引掛かったのが原因です。
 下記手順でこの制限を解除すれば、エラーが解消されます。
 </p>
 
@@ -329,9 +728,9 @@ Caused by: java.lang.InternalError: Metadata does not appear to be polymorphic
 </pre>
 
 <p>
-原因はよくわからないのですが、<a href="https://twitter.com/cero_t/status/616551729954295808">twitter上で流れた情報</a> によるとdebuginfoを入れれば問題が
-回避される。実際に確認したところで確かに回避出来た。debuginfo入れ禁止の商用環境や
-debuginfoが簡単に導入出来ないdistroには寂しいよね！
+原因はよくわからないのですが、<a href="https://twitter.com/cero_t/status/616551729954295808">twitter上で流れた情報</a> によるとJVMのdebuginfoを入れれば
+問題が回避されるようです。実際に確認したところで確かに回避出来た、しかしdebuginfo禁止
+の商用環境やdebuginfoが簡単に導入出来ないdistroには寂しいでしょう。
 </p>
 
 <p>
@@ -388,7 +787,7 @@ Caused by: java.lang.RuntimeException: unknown CollectedHeap type : class sun.jv
 </pre>
 
 <p>
-このエラーもdebuginfoを入れれば、回避される。
+このエラーもdebuginfoをインストールすれば、回避出来る。
 </p>
 
 <p>
@@ -409,12 +808,12 @@ Caused by: java.lang.RuntimeException: unknown CollectedHeap type : class sun.jv
     <updated>2015-08-07T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[tips][linux]firefox起動時にプロファイル選択出来るようにする</id>
     <content type="html"><![CDATA[<p>
-Web開発でクリーンなテスト環境が必要とする場面が結構あります。
-普段ご利用しているブラウザの設定リセットやキャッシュクリアは平気に出来ないでしょう。
+Web開発でクリーンなブラウザテスト環境が必要とする場面が結構あります。
+普段利用しているブラウザの設定をリセットやキャッシュクリアは平気に出来ないでしょう。
 </p>
 
 <p>
-この問題を解決するために、ブラウザにマルチプロファイル機能が提供してくれる。
+この問題はブラウザのマルチプロファイル機能を利用すればを解決する。
 </p>
 
 <p>
@@ -461,11 +860,6 @@ Name[ja]=新しいウィンドウ
 [Desktop Action NewPrivateWindow]
 Name[ja]=新しいプライベートウィンドウ
 </pre>
-
-<ul class="org-ul">
-<li><a href="https://support.mozilla.org/ja/kb/profile-manager-create-and-remove-firefox-profiles">プロファイルマネージャを使用して、Firefox のプロファイルを作成または削除する</a>
-</li>
-</ul>
 ]]></content>
   </entry>
   
@@ -5740,157 +6134,6 @@ TCP SYNの再送間隔は以下の通り、約64秒でタイムアウトにな�
 した上でワーカースレッドのbusy数とCPUの使用率を監視し、閉塞運用、スペアインスタンスの
 運用などを設計することが大事だと思います。
 </p>
-</div>
-</div>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[[メモ]VirtualBox HostOnly on Linux]]></title>
-    <link href="http://luozengbin.github.io/blog/2015-02-06-%5B%E3%83%A1%E3%83%A2%5Dvirtualbox-hostonly-on-linux.html"/>
-    <updated>2015-02-06T00:00:00+09:00</updated>
-    <id>http://luozengbin.github.io/blog/[メモ]virtualbox-hostonly-on-linux</id>
-    <content type="html"><![CDATA[<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. VirtualBox使用出来るネットワークアダプタ</a></li>
-<li><a href="#sec-2">2. 複数アダプターユースケース</a></li>
-<li><a href="#sec-3">3. ホストオンリーネットワークの追加手順</a>
-<ul>
-<li><a href="#sec-3-1">3.1. カーネルモジュールのロード</a></li>
-<li><a href="#sec-3-2">3.2. ホストオンリーネットワークの追加</a></li>
-<li><a href="#sec-3-3">3.3. アダプターと紐付ける</a></li>
-</ul>
-</li>
-<li><a href="#sec-4">4. 参考</a></li>
-</ul>
-</div>
-</div>
-<p>
-VirtualBox上で動く仮想マシンにデフォルトではNATネットワークアダプタが割り当てられてい
-るため、Host OSとの通信ができないです。これを回避するために <code>ホストオンリーネットワー
-ク</code> アダプターを使えば回避できる。最近のバージョン追加手順が変わったため、メモしてお
-きます。
-</p>
-
-<p>
-<!-- more -->
-</p>
-
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> VirtualBox使用出来るネットワークアダプタ</h2>
-<div class="outline-text-2" id="text-1">
-<ol class="org-ol">
-<li>NAT
-VirtualBox のデフォルト設定。ゲスト OS からインターネットは繋がる。
-ゲスト OS とホストOS 間は繋がらない。
-</li>
-<li>ブリッジネットワーク
-ゲスト OS のネットワークがホスト OS と同じネットワークに繋がる。イン
-ターネットに繋がり、ゲスト OS とホスト OS の間が繋がる。同じネットワー
-ク上の他の PC からも見える。
-</li>
-<li>内部ネットワーク
-仮想マシンを複数起動したときに、各マシン間を繋ぐためのネットワーク？
-</li>
-<li>ホストオンリーネットワーク
-ホスト OS と ゲスト OS 間のネットワーク。ゲスト OS をローカルのウェ
-ブサービス開発環境として利用する場合、次のようなネットワークだと都合
-が良いです。
-</li>
-</ol>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> 複数アダプターユースケース</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-アダプタ ２ に「ホストオンリーネットワーク」を割り当て、アダプ
-タ １に「NAT」を割り当てます。こうすると、ホスト OS とゲスト OS 間が繋
-がり、NAT によりゲスト OS から外部ネットへのアクセスもきるようになります。
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> ホストオンリーネットワークの追加手順</h2>
-<div class="outline-text-2" id="text-3">
-</div><div id="outline-container-sec-3-1" class="outline-3">
-<h3 id="sec-3-1"><span class="section-number-3">3.1</span> カーネルモジュールのロード</h3>
-<div class="outline-text-3" id="text-3-1">
-<pre class="example">
-sudo modprobe vboxdrv
-sudo modprobe vboxnetadp
-sudo modprobe vboxnetflt
-</pre>
-</div>
-</div>
-
-<div id="outline-container-sec-3-2" class="outline-3">
-<h3 id="sec-3-2"><span class="section-number-3">3.2</span> ホストオンリーネットワークの追加</h3>
-<div class="outline-text-3" id="text-3-2">
-<p>
-ホストと通信するための仮想ブリッジを追加するイメージとなります。またこのブリッジに対
-してIPの指定やDHCPサーバ機能の有効化も可能です。VirtualBoxのグローバル設定ダイアログか
-らホストオンリーネットワークを追加する。
-</p>
-
-<ul class="org-ul">
-<li>ホストオンリーネットワークの追加
-<img src="img/2015-02-06-vbox001.png" alt="2015-02-06-vbox001.png" />
-</li>
-
-<li>ブリッジにIPを割り当てる
-<img src="img/2015-02-06-vbox002.png" alt="2015-02-06-vbox002.png" />
-</li>
-
-<li>DHCPサーバを有効化する
-<img src="img/2015-02-06-vbox003.png" alt="2015-02-06-vbox003.png" />
-</li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-sec-3-3" class="outline-3">
-<h3 id="sec-3-3"><span class="section-number-3">3.3</span> アダプターと紐付ける</h3>
-<div class="outline-text-3" id="text-3-3">
-<p>
-仮想マシンのネットワークディバイス設定でアダプター２を有効化し、作成したホストオンリー
-ネットワークと紐付ける。
-  <img src="img/2015-02-06-vbox004.png" alt="2015-02-06-vbox004.png" />
-</p>
-
-<p>
-仮想マシンを機能すると共に仮想ブリッジディバイスがホストOS上で自動的に生成されること
-を確認する。
-</p>
-
-<pre class="example">
-$ ifconfig
-★省略..........
-
-vboxnet0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
-        inet 192.168.56.1  netmask 255.255.255.0  broadcast 192.168.56.255
-        inet6 fe80::800:27ff:fe00:0  prefixlen 64  scopeid 0x20&lt;link&gt;
-        ether 0a:00:27:00:00:00  txqueuelen 1000  (Ethernet)
-        RX packets 0  bytes 0 (0.0 B)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 107  bytes 18000 (17.5 KiB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> 参考</h2>
-<div class="outline-text-2" id="text-4">
-<ul class="org-ul">
-<li><a href="https://wiki.archlinux.org/index.php/VirtualBox#Load_the_VirtualBox_kernel_modules">Load the VirtualBox kernel modules</a>
-</li>
-</ul>
 </div>
 </div>
 ]]></content>

@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: Jstat | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/jstat/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-08-30T22:26:52+09:00</updated>
+  <updated>2015-10-10T19:29:08+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -19,11 +19,16 @@
     <updated>2015-08-30T00:00:00+09:00</updated>
     <id>http://luozengbin.github.io/blog/[java道具]jstat&#8211;gcの出力を見やすくする</id>
     <content type="html"><![CDATA[<p>
-<code>jstat -gc</code> でJVMのメモリ仕様状況を確認する際によく使うのですが、次の問題で少し見づら
-いと感じましたので、整形用のオレオレスクリプトを作成しました。
+<code>jstat -gc</code> でJVMのメモリ使用状況を確認する際によく使うのですが、少し見づらいと感じま
+したので、整形用のオレオレスクリプトを作成しました。
 </p>
 
 
+
+
+<p>
+jstat出力見づらい要因として
+</p>
 
 
 <ul class="org-ul">
@@ -35,7 +40,7 @@
 
 
 <p>
-デフォルトの出力形式
+デフォルトの出力形式は以下の通り
 </p>
 
 
@@ -49,7 +54,7 @@ $ jstat -gc 10901
 
 
 <p>
-次はスクリプトで整形後の出力形式(JDK8の場合)
+次は自作スクリプトで整形後の出力形式(JDK8の場合)
 </p>
 
 

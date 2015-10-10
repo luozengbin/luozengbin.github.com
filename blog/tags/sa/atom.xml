@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: SA | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/sa/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-08-30T22:26:52+09:00</updated>
+  <updated>2015-10-10T19:29:08+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -22,7 +22,7 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgheadline1">1. プロセスアタッチ出来ない</a></li>
+<li><a href="#orgheadline1">1. プロセスのアタッチ出来ない</a></li>
 <li><a href="#orgheadline2">2. Metadata does not appear to be polymorphic</a></li>
 <li><a href="#orgheadline3">3. unknown CollectedHeap type</a></li>
 </ul>
@@ -31,7 +31,7 @@
 
 
 <p>
-本記事に、OpenJDKの障害は次の環境で確認されました。
+本記事のOpenJDK障害は次の環境で確認しています。
 </p>
 
 
@@ -58,7 +58,7 @@ Linux mimi 4.1.6-1-ARCH #1 SMP PREEMPT Mon Aug 17 08:52:28 CEST 2015 x86_64 GNU/
 
 
 <div id="outline-container-orgheadline1" class="outline-2">
-<h2 id="orgheadline1"><span class="section-number-2">1</span> プロセスアタッチ出来ない</h2>
+<h2 id="orgheadline1"><span class="section-number-2">1</span> プロセスのアタッチ出来ない</h2>
 <div class="outline-text-2" id="text-1">
 <pre class="example">
 $ /usr/lib/jvm/java-8-openjdk/bin/jinfo -sysprops 22286
@@ -89,7 +89,7 @@ Caused by: sun.jvm.hotspot.debugger.DebuggerException: Can't attach to the proce
 </pre>
 
 <p>
-同じ障害に遭遇した方々の記録
+同じ障害に遭遇した方々
 </p>
 <ul class="org-ul">
 <li><a href="https://thenonsensetechlogs.wordpress.com/2014/04/09/error-attaching-to-process-sun-jvm-hotspot-debugger-debuggerexception-cant-attach-to-the-process-solved/">Error attaching to process: sun.jvm.hotspot.debugger.DebuggerException: Can’t attach to the process { solved }</a></li>
@@ -98,7 +98,7 @@ Caused by: sun.jvm.hotspot.debugger.DebuggerException: Can't attach to the proce
 
 <p>
 straceで見たら、 <a href="http://surf.ml.seikei.ac.jp/~nakano/JMwww/html/LDP_man-pages/man2/ptrace.2.html">ptrace</a> システムコールのPTRACE_ATTACHリクエストで実行中のJavaプロセス
-をアタッチするところで <code>Operation not permitted</code> 理由に怒られた。
+をアタッチしようとするところで <code>Operation not permitted</code> 理由に怒られた。
 </p>
 <pre class="example">
   |$ strace -ff /usr/lib/jvm/java-8-openjdk/bin/jinfo -sysprops 22286
@@ -116,7 +116,7 @@ straceで見たら、 <a href="http://surf.ml.seikei.ac.jp/~nakano/JMwww/html/LD
 </pre>
 
 <p>
-これはLinuxカーネルのセキュリティモジュール <a href="https://www.kernel.org/doc/Documentation/security/Yama.txt">yama</a> の制限がかかっいるのが原因です。
+これはLinuxカーネルのセキュリティモジュール <a href="https://www.kernel.org/doc/Documentation/security/Yama.txt">yama</a> の制限に引掛かったのが原因です。
 下記手順でこの制限を解除すれば、エラーが解消されます。
 </p>
 
@@ -174,9 +174,9 @@ Caused by: java.lang.InternalError: Metadata does not appear to be polymorphic
 </pre>
 
 <p>
-原因はよくわからないのですが、<a href="https://twitter.com/cero_t/status/616551729954295808">twitter上で流れた情報</a> によるとdebuginfoを入れれば問題が
-回避される。実際に確認したところで確かに回避出来た。debuginfo入れ禁止の商用環境や
-debuginfoが簡単に導入出来ないdistroには寂しいよね！
+原因はよくわからないのですが、<a href="https://twitter.com/cero_t/status/616551729954295808">twitter上で流れた情報</a> によるとJVMのdebuginfoを入れれば
+問題が回避されるようです。実際に確認したところで確かに回避出来た、しかしdebuginfo禁止
+の商用環境やdebuginfoが簡単に導入出来ないdistroには寂しいでしょう。
 </p>
 
 <p>
@@ -236,7 +236,7 @@ Caused by: java.lang.RuntimeException: unknown CollectedHeap type : class sun.jv
 </pre>
 
 <p>
-このエラーもdebuginfoを入れれば、回避される。
+このエラーもdebuginfoをインストールすれば、回避出来る。
 </p>
 
 <p>

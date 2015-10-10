@@ -53,10 +53,18 @@
 
 <body   >
   <header role="banner"><hgroup>
-  <h1><a href="/">Akira's Tech Notes</a></h1>
-  
-    <h2>Java, Linux, Emacs,知的好奇心駆動</h2>
-  
+  <div style="float:left;">
+    <h1><a href="/">Akira's Tech Notes</a></h1>
+    
+    <h2 class="custom1">Java/JVM | GNU/Linux | Emacs/Lisp | 知的好奇心駆動</h2>
+    
+  </div>
+  <div style="float:right;">
+    <img src="/images/headericon.png" alt="header-icon" height="100" width="100"/>
+  </div>
+  <div style="clear:both;">
+    <span class="subtitle2">ネイティブでない日本語で思い付くことや気になることをダラダラ書く、体裁とかは気にしない。読みづらいと感じた時に随時更新する。</span>
+  </div>
 </hgroup>
 
 </header>
@@ -113,23 +121,23 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#sec-1">1. 基本おさらい</a></li>
-<li><a href="#sec-2">2. 実験するためのプログラム</a></li>
-<li><a href="#sec-3">3. CMSログの見方</a>
+<li><a href="#orgheadline1">1. 基本おさらい</a></li>
+<li><a href="#orgheadline2">2. 実験するためのプログラム</a></li>
+<li><a href="#orgheadline7">3. CMSログの見方</a>
 <ul>
-<li><a href="#sec-3-1">3.1. New領域GCログ</a></li>
-<li><a href="#sec-3-2">3.2. Old領域GCログ</a></li>
-<li><a href="#sec-3-3">3.3. concurrent mode failure</a></li>
-<li><a href="#sec-3-4">3.4. 手動FullGC時のログ</a></li>
+<li><a href="#orgheadline3">3.1. New領域GCログ</a></li>
+<li><a href="#orgheadline4">3.2. Old領域GCログ</a></li>
+<li><a href="#orgheadline5">3.3. concurrent mode failure</a></li>
+<li><a href="#orgheadline6">3.4. 手動FullGC時のログ</a></li>
 </ul>
 </li>
-<li><a href="#sec-4">4. 参考</a></li>
+<li><a href="#orgheadline8">4. 参考</a></li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 基本おさらい</h2>
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1"><span class="section-number-2">1</span> 基本おさらい</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 CMSとは <code>Concurrent Mark &amp; Sweep</code> 、JVM OLD領域GC処理アルゴリズムの一種です。
@@ -164,55 +172,55 @@ CMSはアプリケーションを停止する時間を削減することが出�
 
 
 <colgroup>
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 </colgroup>
 <tbody>
 <tr>
-<td class="left">①</td>
-<td class="left">Initial Mark</td>
-<td class="left">STW</td>
-<td class="left">Rootを起点に利用されてるオブジェクトをマークする</td>
+<td class="org-left">①</td>
+<td class="org-left">Initial Mark</td>
+<td class="org-left">STW</td>
+<td class="org-left">Rootを起点に利用されてるオブジェクトをマークする</td>
 </tr>
 
 <tr>
-<td class="left">②-1</td>
-<td class="left">Concurrent Mark</td>
-<td class="left">&#xa0;</td>
-<td class="left">①でマークされたオブジェクトを起点に使用中のオブジェクトをマークする</td>
+<td class="org-left">②-1</td>
+<td class="org-left">Concurrent Mark</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">①でマークされたオブジェクトを起点に使用中のオブジェクトをマークする</td>
 </tr>
 
 <tr>
-<td class="left">②-2</td>
-<td class="left">Concurrent precleaning</td>
-<td class="left">&#xa0;</td>
-<td class="left">②-1処理中アプリによる生じた変化部分をマークする、③の処理時間を短縮するため</td>
+<td class="org-left">②-2</td>
+<td class="org-left">Concurrent precleaning</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">②-1処理中アプリによる生じた変化部分をマークする、③の処理時間を短縮するため</td>
 </tr>
 
 <tr>
-<td class="left">③</td>
-<td class="left">Parallel Remark</td>
-<td class="left">STW</td>
-<td class="left">②処理中アプリによる生じた変化部分をマークする</td>
+<td class="org-left">③</td>
+<td class="org-left">Parallel Remark</td>
+<td class="org-left">STW</td>
+<td class="org-left">②処理中アプリによる生じた変化部分をマークする</td>
 </tr>
 
 <tr>
-<td class="left">④-1</td>
-<td class="left">Concurrent Sweeping</td>
-<td class="left">&#xa0;</td>
-<td class="left">マーク処理によって判明した使用済みオブジェクトを削除する</td>
+<td class="org-left">④-1</td>
+<td class="org-left">Concurrent Sweeping</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">マーク処理によって判明した使用済みオブジェクトを削除する</td>
 </tr>
 
 <tr>
-<td class="left">④-2</td>
-<td class="left">Concurrent Reset</td>
-<td class="left">&#xa0;</td>
-<td class="left">CMS処理自体のリセット</td>
+<td class="org-left">④-2</td>
+<td class="org-left">Concurrent Reset</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">CMS処理自体のリセット</td>
 </tr>
 </tbody>
 </table>
@@ -220,47 +228,56 @@ CMSはアプリケーションを停止する時間を削減することが出�
 <p>
 <!-- more -->
 </p>
+
+<p>
+TODO: GCスレッドについて
+</p>
+<ul class="org-ul">
+<li>Parallel GC Threads</li>
+<li>Parallel CMS Threads</li>
+<li>Concurrent Mark-Sweep GC Thread</li>
+</ul>
 </div>
 </div>
 
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> 実験するためのプログラム</h2>
+<div id="outline-container-orgheadline2" class="outline-2">
+<h2 id="orgheadline2"><span class="section-number-2">2</span> 実験するためのプログラム</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 メモリを大量に消費するWebサービス
 </p>
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #f0dfaf; font-weight: bold;">package</span> test.<span style="color: #bfebbf;">example</span>;
+<pre class="src src-java"><span style="color: #ffad29; font-weight: bold;">package</span> test.<span style="color: #008b8b;">example</span>;
 
-<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #8cd0d3;">WebMethod</span>;
-<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #8cd0d3;">WebParam</span>;
-<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #8cd0d3;">WebService</span>;
-<span style="color: #f0dfaf; font-weight: bold;">import</span> <span style="color: #bfebbf;">javax</span>.<span style="color: #bfebbf;">jws</span>.<span style="color: #bfebbf;">soap</span>.<span style="color: #8cd0d3;">SOAPBinding</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">jws</span>.<span style="color: #34cae2;">WebMethod</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">jws</span>.<span style="color: #34cae2;">WebParam</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">jws</span>.<span style="color: #34cae2;">WebService</span>;
+<span style="color: #ffad29; font-weight: bold;">import</span> <span style="color: #008b8b;">javax</span>.<span style="color: #008b8b;">jws</span>.<span style="color: #008b8b;">soap</span>.<span style="color: #34cae2;">SOAPBinding</span>;
 
-<span style="color: #bfebbf;">@WebService</span>
-<span style="color: #bfebbf;">@SOAPBinding</span>(style = <span style="color: #bfebbf;">SOAPBinding</span>.<span style="color: #bfebbf;">Style</span>.DOCUMENT, use = <span style="color: #bfebbf;">SOAPBinding</span>.<span style="color: #bfebbf;">Use</span>.LITERAL, parameterStyle = <span style="color: #bfebbf;">SOAPBinding</span>.<span style="color: #bfebbf;">ParameterStyle</span>.WRAPPED)
-<span style="color: #f0dfaf; font-weight: bold;">public</span> <span style="color: #f0dfaf; font-weight: bold;">class</span> <span style="color: #8cd0d3;">HelloWorld</span> {
+<span style="color: #008b8b;">@WebService</span>
+<span style="color: #008b8b;">@SOAPBinding</span>(style = <span style="color: #008b8b;">SOAPBinding</span>.<span style="color: #008b8b;">Style</span>.DOCUMENT, use = <span style="color: #008b8b;">SOAPBinding</span>.<span style="color: #008b8b;">Use</span>.LITERAL, parameterStyle = <span style="color: #008b8b;">SOAPBinding</span>.<span style="color: #008b8b;">ParameterStyle</span>.WRAPPED)
+<span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #ffad29; font-weight: bold;">class</span> <span style="color: #34cae2;">HelloWorld</span> {
 
-    <span style="color: #bfebbf;">@WebMethod</span>(action = <span style="color: #cc9393;">"sayHello"</span>)
-    <span style="color: #f0dfaf; font-weight: bold;">public</span> <span style="color: #8cd0d3;">String</span> <span style="color: #8cd0d3;">sayHello</span>(<span style="color: #bfebbf;">@WebParam</span>(name = <span style="color: #cc9393;">"name"</span> ) <span style="color: #8cd0d3;">String</span> <span style="color: #dfaf8f;">name</span>) <span style="color: #f0dfaf; font-weight: bold;">throws</span> <span style="color: #8cd0d3;">CustomException</span> {
+    <span style="color: #008b8b;">@WebMethod</span>(action = <span style="color: #e67128;">"sayHello"</span>)
+    <span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">String</span> <span style="color: #00ede1; font-weight: bold;">sayHello</span>(<span style="color: #008b8b;">@WebParam</span>(name = <span style="color: #e67128;">"name"</span> ) <span style="color: #34cae2;">String</span> <span style="color: #dbdb95;">name</span>) <span style="color: #ffad29; font-weight: bold;">throws</span> <span style="color: #34cae2;">CustomException</span> {
 
-        System.out.println(<span style="color: #cc9393;">"Hello: "</span> + name);
+        System.out.println(<span style="color: #e67128;">"Hello: "</span> + name);
 
-        <span style="color: #bfebbf;">java</span>.<span style="color: #bfebbf;">util</span>.<span style="color: #8cd0d3;">List</span> <span style="color: #dfaf8f;">l</span>  =  <span style="color: #f0dfaf; font-weight: bold;">new</span> <span style="color: #bfebbf;">java</span>.<span style="color: #bfebbf;">util</span>.<span style="color: #8cd0d3;">ArrayList</span>&lt;&gt;();
-        <span style="color: #8cd0d3;">int</span> <span style="color: #dfaf8f;">x</span>  = 0;
-        <span style="color: #f0dfaf; font-weight: bold;">while</span> (x &lt; 6300) {
-            <span style="color: #8cd0d3;">Thread</span> <span style="color: #dfaf8f;">t</span>  =  <span style="color: #f0dfaf; font-weight: bold;">new</span> <span style="color: #8cd0d3;">Thread</span>();
+        <span style="color: #008b8b;">java</span>.<span style="color: #008b8b;">util</span>.<span style="color: #34cae2;">List</span> <span style="color: #dbdb95;">l</span>  =  <span style="color: #ffad29; font-weight: bold;">new</span> <span style="color: #008b8b;">java</span>.<span style="color: #008b8b;">util</span>.<span style="color: #34cae2;">ArrayList</span>&lt;&gt;();
+        <span style="color: #34cae2;">int</span> <span style="color: #dbdb95;">x</span>  = 0;
+        <span style="color: #ffad29; font-weight: bold;">while</span> (x &lt; 6300) {
+            <span style="color: #34cae2;">Thread</span> <span style="color: #dbdb95;">t</span>  =  <span style="color: #ffad29; font-weight: bold;">new</span> <span style="color: #34cae2;">Thread</span>();
             l.add(t);
 
-            <span style="color: #f0dfaf; font-weight: bold;">try</span> {
+            <span style="color: #ffad29; font-weight: bold;">try</span> {
                 Thread.sleep(10);
-            } <span style="color: #f0dfaf; font-weight: bold;">catch</span> (<span style="color: #8cd0d3;">Exception</span> <span style="color: #dfaf8f;">e</span>) {
+            } <span style="color: #ffad29; font-weight: bold;">catch</span> (<span style="color: #34cae2;">Exception</span> <span style="color: #dbdb95;">e</span>) {
             }
             x++;
             System.out.println(x);
         }
-        <span style="color: #f0dfaf; font-weight: bold;">return</span> <span style="color: #cc9393;">"Hello "</span> + name + <span style="color: #cc9393;">"!"</span>;
+        <span style="color: #ffad29; font-weight: bold;">return</span> <span style="color: #e67128;">"Hello "</span> + name + <span style="color: #e67128;">"!"</span>;
     }
 }
 </pre>
@@ -329,11 +346,11 @@ SoapUIから負荷を掛けた後はしばらく、New領域のGCログが出続
 </div>
 </div>
 
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> CMSログの見方</h2>
+<div id="outline-container-orgheadline7" class="outline-2">
+<h2 id="orgheadline7"><span class="section-number-2">3</span> CMSログの見方</h2>
 <div class="outline-text-2" id="text-3">
-</div><div id="outline-container-sec-3-1" class="outline-3">
-<h3 id="sec-3-1"><span class="section-number-3">3.1</span> New領域GCログ</h3>
+</div><div id="outline-container-orgheadline3" class="outline-3">
+<h3 id="orgheadline3"><span class="section-number-3">3.1</span> New領域GCログ</h3>
 <div class="outline-text-3" id="text-3-1">
 <p>
 New領域のGCは <code>minor GC</code> と呼ばれる場合があります。
@@ -358,47 +375,47 @@ New領域のGCログは一行で完結する。ログ先頭の <code>GC</code> �
 
 
 <colgroup>
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 </colgroup>
 <tbody>
 <tr>
-<td class="left">A</td>
-<td class="left">New領域のGC</td>
-<td class="left">DefNew</td>
+<td class="org-left">A</td>
+<td class="org-left">New領域のGC</td>
+<td class="org-left">DefNew</td>
 </tr>
 
 <tr>
-<td class="left">B</td>
-<td class="left">GC前New領域の使用量</td>
-<td class="left">68932K</td>
+<td class="org-left">B</td>
+<td class="org-left">GC前New領域の使用量</td>
+<td class="org-left">68932K</td>
 </tr>
 
 <tr>
-<td class="left">C</td>
-<td class="left">GC後New領域の使用量</td>
-<td class="left">1046K</td>
+<td class="org-left">C</td>
+<td class="org-left">GC後New領域の使用量</td>
+<td class="org-left">1046K</td>
 </tr>
 
 <tr>
-<td class="left">D</td>
-<td class="left">New領域GCの閾値</td>
-<td class="left">76672K</td>
+<td class="org-left">D</td>
+<td class="org-left">New領域GCの閾値</td>
+<td class="org-left">76672K</td>
 </tr>
 
 <tr>
-<td class="left">E</td>
-<td class="left">GC前JVMメモリの使用量</td>
-<td class="left">472847K</td>
+<td class="org-left">E</td>
+<td class="org-left">GC前JVMメモリの使用量</td>
+<td class="org-left">472847K</td>
 </tr>
 
 <tr>
-<td class="left">F</td>
-<td class="left">GC後JVMメモリの使用量</td>
-<td class="left">405094K</td>
+<td class="org-left">F</td>
+<td class="org-left">GC後JVMメモリの使用量</td>
+<td class="org-left">405094K</td>
 </tr>
 </tbody>
 </table>
@@ -422,8 +439,8 @@ JVM全体変化容量： 472847K - 405094K = 67753K
 </div>
 </div>
 
-<div id="outline-container-sec-3-2" class="outline-3">
-<h3 id="sec-3-2"><span class="section-number-3">3.2</span> Old領域GCログ</h3>
+<div id="outline-container-orgheadline4" class="outline-3">
+<h3 id="orgheadline4"><span class="section-number-3">3.2</span> Old領域GCログ</h3>
 <div class="outline-text-3" id="text-3-2">
 <p>
 以下は通常なCMS処理のログです。
@@ -479,41 +496,41 @@ Initial Markフェースログの内訳
 
 
 <colgroup>
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 </colgroup>
 <tbody>
 <tr>
-<td class="left">A</td>
-<td class="left">CMS起動時のOLD領域使用量</td>
-<td class="left">404047K</td>
+<td class="org-left">A</td>
+<td class="org-left">CMS起動時のOLD領域使用量</td>
+<td class="org-left">404047K</td>
 </tr>
 
 <tr>
-<td class="left">B</td>
-<td class="left">CMSトリガーするOLD領域閾値</td>
-<td class="left">439104K</td>
+<td class="org-left">B</td>
+<td class="org-left">CMSトリガーするOLD領域閾値</td>
+<td class="org-left">439104K</td>
 </tr>
 
 <tr>
-<td class="left">C</td>
-<td class="left">CMS起動時JVMのメモリの使用量</td>
-<td class="left">405358K</td>
+<td class="org-left">C</td>
+<td class="org-left">CMS起動時JVMのメモリの使用量</td>
+<td class="org-left">405358K</td>
 </tr>
 
 <tr>
-<td class="left">D</td>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
+<td class="org-left">D</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
 </tr>
 
 <tr>
-<td class="left">E</td>
-<td class="left">Initial Markフェースで消費した時間</td>
-<td class="left">10 ミリ秒</td>
+<td class="org-left">E</td>
+<td class="org-left">Initial Markフェースで消費した時間</td>
+<td class="org-left">10 ミリ秒</td>
 </tr>
 </tbody>
 </table>
@@ -538,23 +555,23 @@ Initial Markフェースログの内訳
 
 
 <colgroup>
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 </colgroup>
 <tbody>
 <tr>
-<td class="left">F</td>
-<td class="left">Concurrent Markフェースで消費した時間</td>
-<td class="left">150 ミリ秒</td>
+<td class="org-left">F</td>
+<td class="org-left">Concurrent Markフェースで消費した時間</td>
+<td class="org-left">150 ミリ秒</td>
 </tr>
 
 <tr>
-<td class="left">G</td>
-<td class="left">Concurrent Precleanフェースで消費した時間</td>
-<td class="left">30ミリ秒</td>
+<td class="org-left">G</td>
+<td class="org-left">Concurrent Precleanフェースで消費した時間</td>
+<td class="org-left">30ミリ秒</td>
 </tr>
 </tbody>
 </table>
@@ -597,62 +614,62 @@ Parallel Remarkフェーズのログは１行で完結する、折り返して�
 
 
 <colgroup>
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 </colgroup>
 <tbody>
 <tr>
-<td class="left">H</td>
-<td class="left">現時点New領域の使用量</td>
-<td class="left">1535K</td>
-<td class="left">&#xa0;</td>
+<td class="org-left">H</td>
+<td class="org-left">現時点New領域の使用量</td>
+<td class="org-left">1535K</td>
+<td class="org-left">&#xa0;</td>
 </tr>
 
 <tr>
-<td class="left">I</td>
-<td class="left">New領域GCの閾値</td>
-<td class="left">76672K</td>
-<td class="left">&#xa0;</td>
+<td class="org-left">I</td>
+<td class="org-left">New領域GCの閾値</td>
+<td class="org-left">76672K</td>
+<td class="org-left">&#xa0;</td>
 </tr>
 
 <tr>
-<td class="left">J</td>
-<td class="left">現時点OLD領域使用量</td>
-<td class="left">404047K</td>
-<td class="left">変化なし</td>
+<td class="org-left">J</td>
+<td class="org-left">現時点OLD領域使用量</td>
+<td class="org-left">404047K</td>
+<td class="org-left">変化なし</td>
 </tr>
 
 <tr>
-<td class="left">K</td>
-<td class="left">CMSトリガーするOLD領域閾値</td>
-<td class="left">439104K</td>
-<td class="left">&#xa0;</td>
+<td class="org-left">K</td>
+<td class="org-left">CMSトリガーするOLD領域閾値</td>
+<td class="org-left">439104K</td>
+<td class="org-left">&#xa0;</td>
 </tr>
 
 <tr>
-<td class="left">L</td>
-<td class="left">現時点JVMのメモリの使用量</td>
-<td class="left">405583K</td>
-<td class="left">225K増加</td>
+<td class="org-left">L</td>
+<td class="org-left">現時点JVMのメモリの使用量</td>
+<td class="org-left">405583K</td>
+<td class="org-left">225K増加</td>
 </tr>
 
 <tr>
-<td class="left">M</td>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
+<td class="org-left">M</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
 </tr>
 
 <tr>
-<td class="left">N</td>
-<td class="left">Parallel Remarkフェーズで消費した時間</td>
-<td class="left">40 ミリ秒</td>
-<td class="left">&#xa0;</td>
+<td class="org-left">N</td>
+<td class="org-left">Parallel Remarkフェーズで消費した時間</td>
+<td class="org-left">40 ミリ秒</td>
+<td class="org-left">&#xa0;</td>
 </tr>
 </tbody>
 </table>
@@ -681,23 +698,23 @@ Parallel Remarkフェーズのログは１行で完結する、折り返して�
 
 
 <colgroup>
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 </colgroup>
 <tbody>
 <tr>
-<td class="left">O</td>
-<td class="left">Concurrent Sweepフェースで消費した時間</td>
-<td class="left">390 ミリ秒</td>
+<td class="org-left">O</td>
+<td class="org-left">Concurrent Sweepフェースで消費した時間</td>
+<td class="org-left">390 ミリ秒</td>
 </tr>
 
 <tr>
-<td class="left">P</td>
-<td class="left">Concurrent Resetフェースで消費した時間</td>
-<td class="left">10ミリ秒</td>
+<td class="org-left">P</td>
+<td class="org-left">Concurrent Resetフェースで消費した時間</td>
+<td class="org-left">10ミリ秒</td>
 </tr>
 </tbody>
 </table>
@@ -709,81 +726,81 @@ Parallel Remarkフェーズのログは１行で完結する、折り返して�
 
 
 <colgroup>
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="right" />
+<col  class="org-right" />
 
-<col  class="right" />
+<col  class="org-right" />
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="left">&#xa0;</th>
-<th scope="col" class="left">フェーズ名</th>
-<th scope="col" class="left">一時停止</th>
-<th scope="col" class="right">処理時間(ミリ秒)</th>
-<th scope="col" class="right">JVMメモリ(MB)</th>
+<th scope="col" class="org-left">&#xa0;</th>
+<th scope="col" class="org-left">フェーズ名</th>
+<th scope="col" class="org-left">一時停止</th>
+<th scope="col" class="org-right">処理時間(ミリ秒)</th>
+<th scope="col" class="org-right">JVMメモリ(MB)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="left">①</td>
-<td class="left">Initial Mark</td>
-<td class="left">◯</td>
-<td class="right">10</td>
-<td class="right">395.8</td>
+<td class="org-left">①</td>
+<td class="org-left">Initial Mark</td>
+<td class="org-left">◯</td>
+<td class="org-right">10</td>
+<td class="org-right">395.8</td>
 </tr>
 
 <tr>
-<td class="left">②-1</td>
-<td class="left">Concurrent Mark</td>
-<td class="left">&#xa0;</td>
-<td class="right">150</td>
-<td class="right">&#xa0;</td>
+<td class="org-left">②-1</td>
+<td class="org-left">Concurrent Mark</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-right">150</td>
+<td class="org-right">&#xa0;</td>
 </tr>
 
 <tr>
-<td class="left">②-2</td>
-<td class="left">Concurrent precleaning</td>
-<td class="left">&#xa0;</td>
-<td class="right">30</td>
-<td class="right">&#xa0;</td>
+<td class="org-left">②-2</td>
+<td class="org-left">Concurrent precleaning</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-right">30</td>
+<td class="org-right">&#xa0;</td>
 </tr>
 
 <tr>
-<td class="left">③</td>
-<td class="left">Parallel Remark</td>
-<td class="left">◯</td>
-<td class="right">40</td>
-<td class="right">396.0</td>
+<td class="org-left">③</td>
+<td class="org-left">Parallel Remark</td>
+<td class="org-left">◯</td>
+<td class="org-right">40</td>
+<td class="org-right">396.0</td>
 </tr>
 
 <tr>
-<td class="left">④-1</td>
-<td class="left">Concurrent Sweeping</td>
-<td class="left">&#xa0;</td>
-<td class="right">390</td>
-<td class="right">102.0</td>
+<td class="org-left">④-1</td>
+<td class="org-left">Concurrent Sweeping</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-right">390</td>
+<td class="org-right">102.0</td>
 </tr>
 
 <tr>
-<td class="left">④-2</td>
-<td class="left">Concurrent Reset</td>
-<td class="left">&#xa0;</td>
-<td class="right">10</td>
-<td class="right">&#xa0;</td>
+<td class="org-left">④-2</td>
+<td class="org-left">Concurrent Reset</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-right">10</td>
+<td class="org-right">&#xa0;</td>
 </tr>
 </tbody>
 <tbody>
 <tr>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-<td class="left">&#xa0;</td>
-<td class="right">630</td>
-<td class="right">-294</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-right">630</td>
+<td class="org-right">-294</td>
 </tr>
 </tbody>
 </table>
@@ -794,18 +811,15 @@ CMS全体処理で630ミリ秒かかる、そのうち50ミリ秒の停止時間
 </div>
 </div>
 
-
-<div id="outline-container-sec-3-3" class="outline-3">
-<h3 id="sec-3-3"><span class="section-number-3">3.3</span> concurrent mode failure</h3>
+<div id="outline-container-orgheadline5" class="outline-3">
+<h3 id="orgheadline5"><span class="section-number-3">3.3</span> concurrent mode failure</h3>
 <div class="outline-text-3" id="text-3-3">
 <p>
 次の状況に置いて、コンカレントGCが縮退しFullGCを引き起こす可能性があります。
 </p>
 <ul class="org-ul">
-<li>システムが高負荷時に、新しいオブジェクトの生成速度がGCのメモリ解放速度より早い
-</li>
-<li>Java ヒープの断片化率が非常に高い時
-</li>
+<li>システムが高負荷時に、新しいオブジェクトの生成速度がGCのメモリ解放速度より早い</li>
+<li>Java ヒープの断片化率が非常に高い時</li>
 </ul>
 
 <p>
@@ -843,8 +857,8 @@ CMS全体処理で630ミリ秒かかる、そのうち50ミリ秒の停止時間
 </div>
 </div>
 
-<div id="outline-container-sec-3-4" class="outline-3">
-<h3 id="sec-3-4"><span class="section-number-3">3.4</span> 手動FullGC時のログ</h3>
+<div id="outline-container-orgheadline6" class="outline-3">
+<h3 id="orgheadline6"><span class="section-number-3">3.4</span> 手動FullGC時のログ</h3>
 <div class="outline-text-3" id="text-3-4">
 <p>
 CMS GCを利用した場合でも手動でFullGCを起こすことは可能です。以下は手動GC掛けられた時
@@ -865,20 +879,15 @@ CMS GCを利用した場合でも手動でFullGCを起こすことは可能で�
 </div>
 </div>
 
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> 参考</h2>
+<div id="outline-container-orgheadline8" class="outline-2">
+<h2 id="orgheadline8"><span class="section-number-2">4</span> 参考</h2>
 <div class="outline-text-2" id="text-4">
 <ul class="org-ul">
-<li><a href="http://wall-climb.com/2009/10/12/%25E3%2582%25B3%25E3%2583%25B3%25E3%2582%25AB%25E3%2583%25AC%25E3%2583%25B3%25E3%2583%2588gc%25E3%2581%25AE%25E6%25B3%25A8%25E6%2584%258F%25E7%2582%25B9/">コンカレントGCの注意点</a>
-</li>
-<li><a href="http://automation123.blogspot.jp/2012/02/understanding-concurrent-mark-sweep.html">Understanding Concurrent Mark Sweep Garbage Collector Logs</a>
-</li>
-<li><a href="https://blogs.oracle.com/poonam/entry/understanding_cms_gc_logs">Understanding CMS GC Logs</a>
-</li>
-<li><a href="http://a4dosanddos.hatenablog.com/entry/2014/01/24/011007">「Java」GC ログを出力する</a>
-</li>
-<li><a href="http://h50146.www5.hp.com/products/software/oe/hpux/developer/column02/gabage_02/">Javaのかなめ、「ガベージ・コレクション」をやさしく学ぶ・後編</a>
-</li>
+<li><a href="http://wall-climb.com/2009/10/12/%E3%82%B3%E3%83%B3%E3%82%AB%E3%83%AC%E3%83%B3%E3%83%88gc%E3%81%AE%E6%B3%A8%E6%84%8F%E7%82%B9/">コンカレントGCの注意点</a></li>
+<li><a href="http://automation123.blogspot.jp/2012/02/understanding-concurrent-mark-sweep.html">Understanding Concurrent Mark Sweep Garbage Collector Logs</a></li>
+<li><a href="https://blogs.oracle.com/poonam/entry/understanding_cms_gc_logs">Understanding CMS GC Logs</a></li>
+<li><a href="http://a4dosanddos.hatenablog.com/entry/2014/01/24/011007">「Java」GC ログを出力する</a></li>
+<li><a href="http://h50146.www5.hp.com/products/software/oe/hpux/developer/column02/gabage_02/">Javaのかなめ、「ガベージ・コレクション」をやさしく学ぶ・後編</a></li>
 </ul>
 </div>
 </div>
@@ -974,6 +983,10 @@ CMS GCを利用した場合でも手動でFullGCを起こすことは可能で�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html">[tips][Java]CodeCache領域使用状況の確認方法</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015-08-30-%5Bjava%E9%81%93%E5%85%B7%5Djstat--gc%E3%81%AE%E5%87%BA%E5%8A%9B%E3%82%92%E8%A6%8B%E3%82%84%E3%81%99%E3%81%8F%E3%81%99%E3%82%8B.html">[Java道具]jstat -gcの出力を見やすくする</a>
       </li>
     
@@ -1009,10 +1022,6 @@ CMS GCを利用した場合でも手動でFullGCを起こすことは可能で�
         <a href="/blog/2015-07-02-%5B%E5%B0%8F%E9%81%93%E5%85%B7%5D%5Bjava%5D%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E7%9B%A3%E8%A6%96%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%97%E3%83%88.html">[小道具][Java]スタックサイズ監視スクリプト</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2015-06-29-%5Btips%5D%5Bjava%5D%E3%83%A1%E3%83%A2%E3%83%AAswap%E3%81%AB%E3%82%88%E3%82%8B%E7%84%A1%E5%BF%9C%E7%AD%94.html">[tips][Java]メモリswapによる無応答</a>
-      </li>
-    
   </ul>
 </section>
 
@@ -1020,11 +1029,11 @@ CMS GCを利用した場合でも手動でFullGCを起こすことは可能で�
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (3)</a></li><li><a href='/blog/categories/java/'>java (20)</a></li><li><a href='/blog/categories/linux/'>linux (24)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/emacs/'>emacs (3)</a></li><li><a href='/blog/categories/java/'>java (21)</a></li><li><a href='/blog/categories/linux/'>linux (24)</a></li><li><a href='/blog/categories/misc/'>misc (2)</a></li></ul>
 </section>
 <section>
   <h1>Tag Cloud</h1>
-    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/bash' style='font-size: 120.0%'>bash(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/docker' style='font-size: 120.0%'>docker(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firefox' style='font-size: 120.0%'>firefox(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/javabeans' style='font-size: 120.0%'>JavaBeans(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/journald' style='font-size: 120.0%'>journald(1)</a> <a href='/blog/tags/jstat' style='font-size: 120.0%'>jstat(1)</a> <a href='/blog/tags/jvm' style='font-size: 140.0%'>jvm(2)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/mew' style='font-size: 120.0%'>mew(1)</a> <a href='/blog/tags/misc' style='font-size: 120.0%'>misc(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/peco' style='font-size: 120.0%'>peco(1)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/sa' style='font-size: 120.0%'>SA(1)</a> <a href='/blog/tags/samba' style='font-size: 120.0%'>samba(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 140.0%'>stack(2)</a> <a href='/blog/tags/swap' style='font-size: 120.0%'>swap(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/yum' style='font-size: 120.0%'>yum(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
+    <span id="tag-cloud"><a href='/blog/tags/adf' style='font-size: 120.0%'>ADF(1)</a> <a href='/blog/tags/apache' style='font-size: 120.0%'>apache(1)</a> <a href='/blog/tags/awk' style='font-size: 120.0%'>awk(1)</a> <a href='/blog/tags/bash' style='font-size: 120.0%'>bash(1)</a> <a href='/blog/tags/byteman' style='font-size: 160.0%'>Byteman(3)</a> <a href='/blog/tags/cms' style='font-size: 120.0%'>cms(1)</a> <a href='/blog/tags/codecache' style='font-size: 120.0%'>CodeCache(1)</a> <a href='/blog/tags/ddskk' style='font-size: 120.0%'>ddskk(1)</a> <a href='/blog/tags/debug' style='font-size: 120.0%'>debug(1)</a> <a href='/blog/tags/docker' style='font-size: 120.0%'>docker(1)</a> <a href='/blog/tags/ffmpeg' style='font-size: 120.0%'>ffmpeg(1)</a> <a href='/blog/tags/find' style='font-size: 120.0%'>find(1)</a> <a href='/blog/tags/firefox' style='font-size: 120.0%'>firefox(1)</a> <a href='/blog/tags/firewalld' style='font-size: 120.0%'>firewalld(1)</a> <a href='/blog/tags/gc' style='font-size: 120.0%'>gc(1)</a> <a href='/blog/tags/gnuplot' style='font-size: 120.0%'>gnuplot(1)</a> <a href='/blog/tags/iops' style='font-size: 120.0%'>iops(1)</a> <a href='/blog/tags/iptables' style='font-size: 120.0%'>iptables(1)</a> <a href='/blog/tags/javabeans' style='font-size: 120.0%'>JavaBeans(1)</a> <a href='/blog/tags/jboss' style='font-size: 120.0%'>jboss(1)</a> <a href='/blog/tags/jboss-as' style='font-size: 120.0%'>jboss-as(1)</a> <a href='/blog/tags/jboss-lci' style='font-size: 120.0%'>jboss-lci(1)</a> <a href='/blog/tags/jbossas' style='font-size: 160.0%'>JBossAS(3)</a> <a href='/blog/tags/jdev' style='font-size: 120.0%'>jdev(1)</a> <a href='/blog/tags/jenkins' style='font-size: 120.0%'>jenkins(1)</a> <a href='/blog/tags/jmc' style='font-size: 120.0%'>jmc(1)</a> <a href='/blog/tags/journald' style='font-size: 120.0%'>journald(1)</a> <a href='/blog/tags/jstat' style='font-size: 120.0%'>jstat(1)</a> <a href='/blog/tags/jvm' style='font-size: 140.0%'>jvm(2)</a> <a href='/blog/tags/kerberos' style='font-size: 120.0%'>kerberos(1)</a> <a href='/blog/tags/kerbrose' style='font-size: 120.0%'>kerbrose(1)</a> <a href='/blog/tags/ldap' style='font-size: 120.0%'>LDAP(1)</a> <a href='/blog/tags/lpic' style='font-size: 120.0%'>lpic(1)</a> <a href='/blog/tags/lvm' style='font-size: 120.0%'>lvm(1)</a> <a href='/blog/tags/mew' style='font-size: 120.0%'>mew(1)</a> <a href='/blog/tags/misc' style='font-size: 120.0%'>misc(1)</a> <a href='/blog/tags/otcopress' style='font-size: 140.0%'>Otcopress(2)</a> <a href='/blog/tags/passwd' style='font-size: 140.0%'>passwd(2)</a> <a href='/blog/tags/peco' style='font-size: 120.0%'>peco(1)</a> <a href='/blog/tags/r' style='font-size: 120.0%'>R(1)</a> <a href='/blog/tags/rfc3986' style='font-size: 120.0%'>rfc3986(1)</a> <a href='/blog/tags/sa' style='font-size: 120.0%'>SA(1)</a> <a href='/blog/tags/samba' style='font-size: 120.0%'>samba(1)</a> <a href='/blog/tags/sas' style='font-size: 120.0%'>SAS(1)</a> <a href='/blog/tags/smtp' style='font-size: 120.0%'>smtp(1)</a> <a href='/blog/tags/socket' style='font-size: 120.0%'>socket(1)</a> <a href='/blog/tags/sort' style='font-size: 120.0%'>sort(1)</a> <a href='/blog/tags/ssh' style='font-size: 120.0%'>ssh(1)</a> <a href='/blog/tags/stack' style='font-size: 140.0%'>stack(2)</a> <a href='/blog/tags/swap' style='font-size: 120.0%'>swap(1)</a> <a href='/blog/tags/sync' style='font-size: 120.0%'>sync(1)</a> <a href='/blog/tags/syslog' style='font-size: 120.0%'>syslog(1)</a> <a href='/blog/tags/tcp' style='font-size: 160.0%'>tcp(3)</a> <a href='/blog/tags/virtualbox' style='font-size: 120.0%'>VirtualBox(1)</a> <a href='/blog/tags/vpn' style='font-size: 120.0%'>vpn(1)</a> <a href='/blog/tags/weblogic' style='font-size: 140.0%'>weblogic(2)</a> <a href='/blog/tags/xauth' style='font-size: 120.0%'>xauth(1)</a> <a href='/blog/tags/xhost' style='font-size: 120.0%'>xhost(1)</a> <a href='/blog/tags/yum' style='font-size: 120.0%'>yum(1)</a> <a href='/blog/tags/zabbix' style='font-size: 120.0%'>zabbix(1)</a> </span>
 </section>
 
 <section>

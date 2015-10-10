@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: CodeCache | Akira's Tech Notes]]></title>
+  <link href="http://luozengbin.github.io/blog/tags/codecache/atom.xml" rel="self"/>
+  <link href="http://luozengbin.github.io/"/>
+  <updated>2015-10-10T19:29:08+09:00</updated>
+  <id>http://luozengbin.github.io/</id>
+  <author>
+    <name><![CDATA[luozengbin]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[[tips][Java]CodeCache領域使用状況の確認方法]]></title>
+    <link href="http://luozengbin.github.io/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html"/>
+    <updated>2015-09-01T00:00:00+09:00</updated>
+    <id>http://luozengbin.github.io/blog/[tips][java]codecache領域使用状況の確認方法</id>
+    <content type="html"><![CDATA[<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgheadline1">1. CodeCacheについて</a></li>
+<li><a href="#orgheadline6">2. CodeCache使用状況の確認方法</a>
+<ul>
+<li><a href="#orgheadline2">2.1. JVM Printフラグで確認する</a></li>
+<li><a href="#orgheadline3">2.2. JConsoleからの確認方法</a></li>
+<li><a href="#orgheadline4">2.3. VisualVMからのからの確認方法</a></li>
+<li><a href="#orgheadline5">2.4. Java8のNTM(Native Memory Tracking)で確認する</a></li>
+</ul>
+</li>
+<li><a href="#orgheadline7">3. CodeCahe溢れた時の出力</a></li>
+<li><a href="#orgheadline8">4. CodeCahe溢れた時の対応</a></li>
+<li><a href="#orgheadline9">5. 参考</a></li>
+</ul>
+</div>
+</div>
+
+
+<p>
+先日CodeCacheによる性能問題が発生したのですが、問題を突き止めるには時間が掛かりました。
+そのわけは、
+</p>
+
+
+
+
+<ol class="org-ol">
+<li>全体が遅いではなく、一部処理のみ遅い</li>
+<li>スレッドダンプから遅い箇所の特定が出来ない</li>
+<li>プロファイリングからホットメソットの特定が出来ない</li>
+<li>性能劣化時間帯に同期化によるロック待ちが発生していない</li>
+<li>性能劣化時間帯のシステムコールコストは平時と変わらない</li>
+<li>性能劣化時間帯にメジャーGCが起きていない、マイナーGCの時間も正常数値範囲ないである</li>
+</ol>
+
+
+
+
+<p>
+JVM性能に影響するよく言われている方法や要素を一通り確認しても、問題特出が来ない。
+つまりCodeCacheによる性能劣化は気づきにくい場合があります。
+</p>
+
+
+
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1"><span class="section-number-2">1</span> CodeCacheについて</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+CodeCacheについてJava Magazineに <a href="https://twitter.com/kittylyst">BEN EVANS</a> さんの記事が分かりやすいと思います。
+</p>
+
+<ul class="org-ul">
+<li><a href="http://www.oracle.com/webfolder/technetwork/jp/javamagazine/Java-JA13-Architect-evans.pdf">Java HotSpot VM コード・キャッシュについて</a></li>
+<li><a href="http://www.oracle.com/webfolder/technetwork/jp/javamagazine/Java-MJ12-architect.pdf">Java HotSpot VMにおけるJITコンパイルの概要</a></li>
+<li><a href="http://www.oracle.com/webfolder/technetwork/jp/javamagazine/Java-SO12-Architect-evans.pdf">Java HotSpot VMの内部を探る(2): パフォーマンス解析のための統計情報</a></li>
+<li><a href="http://www.oracle.com/webfolder/technetwork/jp/javamagazine/Java-JA14-Architect-Evans.pdf">JITWatchを使用したJava JITコンパイルの理解</a></li>
+</ul>
+
+<p>
+以下は自分のまとめです。
+</p>
+
+<ul class="org-ul">
+<li>JITコンパイラーの結果がCodeCacheに格納される</li>
+<li>CodeCacheが一杯になるとJITコンパイラーが停止してしまう</li>
+<li>JITコンパイラーが停止すると性能が劣化する（事例: 本来6秒で終わる処理が40秒かかる）</li>
+<li>アプリを振り返し再デプロイするとCodeCache領域が溢れる可能性がある</li>
+<li>SpringやJPAのような実行時にClassを動的生成するアプリに置いてCodeCache領域を大量に消費する場合がある</li>
+<li>JDK7で階層型コンパイラーを有効化するとCodeCache領域の消費が増加する</li>
+<li>ミドルウェア／アプリケーションサーバのCodeCache領域をチューニングスべき</li>
+<li>ミドルウェア／アプリケーションサーバのCodeCache領域常時監視しておくべき</li>
+</ul>
+
+<p>
+<!-- more -->
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-orgheadline6" class="outline-2">
+<h2 id="orgheadline6"><span class="section-number-2">2</span> CodeCache使用状況の確認方法</h2>
+<div class="outline-text-2" id="text-2">
+</div><div id="outline-container-orgheadline2" class="outline-3">
+<h3 id="orgheadline2"><span class="section-number-3">2.1</span> JVM Printフラグで確認する</h3>
+<div class="outline-text-3" id="text-2-1">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">フラグ</th>
+<th scope="col" class="org-left">説明</th>
+<th scope="col" class="org-left">JDKバージョン</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">-XX:+PrintCodeCache</td>
+<td class="org-left">JVM終了時に出力する</td>
+<td class="org-left">JDK 8から利用可能</td>
+</tr>
+
+<tr>
+<td class="org-left">-XX:+PrintCodeCacheOnCompilation</td>
+<td class="org-left">JITコンパイル動作時に出力する</td>
+<td class="org-left">JDK 8から利用可能</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+OpenJDK8で <code>-XX:+PrintCodeCache</code> フラグの出力サンプル
+</p>
+<pre class="example">
+$ java -XX:+PrintCodeCache -version
+openjdk version "1.8.0_51"
+OpenJDK Runtime Environment (build 1.8.0_51-b16)
+OpenJDK 64-Bit Server VM (build 25.51-b03, mixed mode)
+CodeCache: size=245760Kb used=1057Kb max_used=1068Kb free=244702Kb
+ bounds [0x00007f79a5000000, 0x00007f79a5270000, 0x00007f79b4000000]
+ total_blobs=220 nmethods=2 adapters=135
+ compilation: enabled
+</pre>
+
+<p>
+各項目について
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">項目名</th>
+<th scope="col" class="org-left">値</th>
+<th scope="col" class="org-left">説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">size</td>
+<td class="org-left">245760Kb</td>
+<td class="org-left">CodeCache領域予約サイズ(最大サイズ)</td>
+</tr>
+
+<tr>
+<td class="org-left">used</td>
+<td class="org-left">1057Kb</td>
+<td class="org-left">現在の使用量</td>
+</tr>
+
+<tr>
+<td class="org-left">max_used</td>
+<td class="org-left">1068Kb</td>
+<td class="org-left">最高水標(High Water Mark)</td>
+</tr>
+
+<tr>
+<td class="org-left">free</td>
+<td class="org-left">244702Kb</td>
+<td class="org-left">未使用分のサイズ</td>
+</tr>
+
+<tr>
+<td class="org-left">bounds</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">CodeCache領域のメモリアドレス</td>
+</tr>
+
+<tr>
+<td class="org-left">total_blobs</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">★TODO調査</td>
+</tr>
+
+<tr>
+<td class="org-left">nmethods</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">★TODO調査</td>
+</tr>
+
+<tr>
+<td class="org-left">adapters</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">★TODO調査</td>
+</tr>
+
+<tr>
+<td class="org-left">compilation</td>
+<td class="org-left">enabled</td>
+<td class="org-left">JITコンパイラーの状態</td>
+</tr>
+</tbody>
+</table>
+<ul class="org-ul">
+<li><code>size</code> の値は <code>-XX:ReservedCodeCacheSize</code> オプションで指定可能です。</li>
+<li><code>compilation</code> の値がJITコンパイラーの状態を示しているため、重要な指標と考えます。</li>
+</ul>
+
+<p>
+OpenJDK8で <code>-XX:+PrintCodeCacheOnCompilation</code> フラグの出力サンプル
+</p>
+<pre class="example">
+$ java -XX:+PrintCodeCacheOnCompilation -jar sample.jar
+CodeCache: size=245760Kb used=1022Kb max_used=1031Kb free=244737Kb
+CodeCache: size=245760Kb used=1056Kb max_used=1065Kb free=244703Kb
+CodeCache: size=245760Kb used=1060Kb max_used=1070Kb free=244699Kb
+CodeCache: size=245760Kb used=1067Kb max_used=1072Kb free=244692Kb
+CodeCache: size=245760Kb used=1069Kb max_used=1072Kb free=244690Kb
+（中略）
+</pre>
+
+<p>
+この出力からrunning状態のJVMのCacheCode領域の変化を見ることができる。
+</p>
+
+<p>
+TODO: 図形にplotする
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline3" class="outline-3">
+<h3 id="orgheadline3"><span class="section-number-3">2.2</span> JConsoleからの確認方法</h3>
+<div class="outline-text-3" id="text-2-2">
+<ul class="org-ul">
+<li>グラフで確認する
+メモリータブビュー「メモリー・プール&#8221;Code Cache&#8221;」チャートからリアルタイムで確認でき
+る。下部の縦棒グラフに青で囲んでいる部分から空き領域との比例が分かりやすい。
+<img src="img/20150826111416_jconsole_cache_code.png" alt="20150826111416_jconsole_cache_code.png" /></li>
+<li>MBeanで確認する
+<img src="img/20150826111416_jconsole_mbean.png" alt="20150826111416_jconsole_mbean.png" /></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgheadline4" class="outline-3">
+<h3 id="orgheadline4"><span class="section-number-3">2.3</span> VisualVMからのからの確認方法</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+JConsoleと同じくMBeanで確認できる、<a href="https://java.net/projects/memorypoolview/downloads">MEMORY POOL VIEW</a> プラグインで視覚的なビューでも確
+認が可能です。しかし、MEMORY POOL VIEWプラグインはプラグインセンターから直接ダウンロー
+ドが出来ず、手動でダウンロードし、インストールが必要となります。
+</p>
+
+<ul class="org-ul">
+<li>プラグイン
+<img src="img/20150826111416_jvisual_plugins.png" alt="20150826111416_jvisual_plugins.png" /></li>
+
+<li>CodeCache利用状況
+<img src="img/20150826112544_jvisualvm_memorypool.png" alt="20150826112544_jvisualvm_memorypool.png" /></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgheadline5" class="outline-3">
+<h3 id="orgheadline5"><span class="section-number-3">2.4</span> Java8のNTM(Native Memory Tracking)で確認する</h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+<code>-XX:NativeMemoryTracking=detail</code> でJVMの起動すると、jcmdからNativeメモリの割り当て状
+況を追跡することができるようになります。
+</p>
+
+<p>
+以下summaryモードの出力に20〜22行がCodeCache割り当ての概要となります。
+</p>
+<pre class="example">
+$ jcmd $JAVA_PID VM.native_memory summary
+ 1|29354:
+ 2| 
+ 3|Native Memory Tracking:
+ 4| 
+ 5|Total:  reserved=1366991KB,  committed=347155KB
+ 6| 
+ 7|-                 Java Heap (reserved=1069056KB, committed=102400KB)
+ 8|                            (mmap: reserved=1069056KB, committed=102400KB)
+ 9| 
+10|-                     Class (reserved=661KB, committed=661KB)
+11|                            (classes #5558)
+12|                            (malloc=661KB, #4626)
+13| 
+14|-                    Thread (reserved=41318KB, committed=41318KB)
+15|                            (thread #40)
+16|                            (stack: reserved=41120KB, committed=41120KB)
+17|                            (malloc=121KB, #167)
+18|                            (arena=77KB, #80)
+19| 
+20|-                      Code (reserved=50209KB, committed=2825KB)
+21|                            (malloc=289KB, #1084)
+22|                            (mmap: reserved=49920KB, committed=2536KB)
+23| 
+24|-                        GC (reserved=179288KB, committed=173556KB)
+25|                            (malloc=139596KB, #776)
+26|                            (mmap: reserved=39692KB, committed=33960KB)
+27| 
+28|-                  Compiler (reserved=130KB, committed=130KB)
+29|                            (malloc=32KB, #68)
+30|                            (arena=98KB, #2)
+31| 
+32|-                  Internal (reserved=1646KB, committed=1582KB)
+33|                            (malloc=1582KB, #1631)
+34|                            (mmap: reserved=64KB, committed=0KB)
+35| 
+36|-                    Symbol (reserved=8541KB, committed=8541KB)
+37|                            (malloc=6551KB, #66839)
+38|                            (arena=1990KB, #1)
+39| 
+40|-           Memory Tracking (reserved=5169KB, committed=5169KB)
+41|                            (malloc=5169KB, #166)
+42| 
+43|-                   Tracing (reserved=10436KB, committed=10436KB)
+44|                            (malloc=10436KB, #91)
+45| 
+46|-        Pooled Free Chunks (reserved=539KB, committed=539KB)
+47|                            (malloc=539KB)
+</pre>
+
+<p>
+detailモードに&#8221;reserved xxxxxKB for Code&#8221;部分がCodeCacheの割り当て詳細となります。
+</p>
+<pre class="example">
+（中略）
+
+[0x00007f2691000000 - 0x00007f2694000000] reserved 49152KB for Code
+        from [ReservedSpace::initialize(unsigned long, unsigned long, bool, char*, unsigned long, bool)+0x266]
+    [0x00007f2691000000 - 0x00007f2691270000] committed 2496KB from [VirtualSpace::expand_by(unsigned long, bool)+0x1c9]
+
+（中略）
+
+[0x00007f26985af000 - 0x00007f269866f000] reserved 768KB for Code
+        from [ReservedSpace::initialize(unsigned long, unsigned long, bool, char*, unsigned long, bool)+0x266]
+    [0x00007f26985af000 - 0x00007f26985b9000] committed 40KB from [VirtualSpace::expand_by(unsigned long, bool)+0x1c9]
+
+（中略）
+</pre>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-orgheadline7" class="outline-2">
+<h2 id="orgheadline7"><span class="section-number-2">3</span> CodeCahe溢れた時の出力</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+通常CodeCahe領域が溢れた時にJVMの標準出力に警告ログが出される。しかしJDK7一部バージョ
+ンではこのログが出力されない場合があります。
+</p>
+
+<pre class="example">
+Java HotSpot(TM) Server VM warning: CodeCache is full. Compiler has been disabled.
+Java HotSpot(TM) Server VM warning: Try increasing the code cache size using -XX:ReservedCodeCacheSize=
+</pre>
+
+<p>
+<span class="underline">事例</span>
+</p>
+
+<ul class="org-ul">
+<li><a href="http://www.albinsblog.com/2012/09/codecache-is-full-compiler-has-been.html#.Vd5t4zKcrRY">CodeCache is full. Compiler has been disabled - Oracle SOA Suite 11g</a></li>
+<li><a href="http://xmlandmore.blogspot.jp/2014/08/jdk-8-revisiting-reservedcodecachesize.html">JDK 8: Revisiting ReservedCodeCacheSize and CompileThreshold</a></li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-orgheadline8" class="outline-2">
+<h2 id="orgheadline8"><span class="section-number-2">4</span> CodeCahe溢れた時の対応</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+未完成続く
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-orgheadline9" class="outline-2">
+<h2 id="orgheadline9"><span class="section-number-2">5</span> 参考</h2>
+<div class="outline-text-2" id="text-5">
+<ul class="org-ul">
+<li><a href="https://docs.oracle.com/javase/8/embedded/develop-apps-platforms/codecache.htm">Oracle Java SE Embedded: Developer&#8217;s Guide - 15 Codecache Tuning</a></li>
+<li><a href="https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/tooldescr007.html">Java Platform, Standard Edition Troubleshooting Guide - 2.7 Native Memory Tracking</a></li>
+</ul>
+</div>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>
