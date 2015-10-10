@@ -59,7 +59,7 @@ mew-init-hookで拡張してみました。 ;; &#12450;&# &hellip;">
   <div id="headericon" style="float:right;">
     <img src="/images/headericon.png" alt="header-icon" height="100" width="100"/>
   </div>
-  <div style="clear:both;">
+  <div id="subtitle2" style="clear:both;">
     <span class="subtitle2">ネイティブでない日本語で思い付くことや気になることをダラダラ書く、体裁とかは気にしない。読みづらいと感じた時に随時更新する。</span>
   </div>
 
@@ -82,10 +82,10 @@ mew-init-hookで拡張してみました。 ;; &#12450;&# &hellip;">
       }
       })(window.navigator.userAgent.toLowerCase());
 
-      //if(_ua.Mobile){
-      //    var element = document.getElementById("headericon");
-      //    element.style.visibility = 'hidden';
-      //}
+      if(_ua.Mobile){
+          var element = document.getElementById("headericon");
+          element.style.display = 'none';
+      }
   </script>
 </hgroup>
 
