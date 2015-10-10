@@ -87,10 +87,10 @@
       }
       })(window.navigator.userAgent.toLowerCase());
 
-      if(_ua.Mobile){
-          var element = document.getElementById("headericon");
-          element.style.visibility = 'hidden';
-      }
+      //if(_ua.Mobile){
+      //    var element = document.getElementById("headericon");
+      //    element.style.visibility = 'hidden';
+      //}
   </script>
 </hgroup>
 
