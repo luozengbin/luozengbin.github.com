@@ -9,11 +9,12 @@
   <meta name="author" content="luozengbin">
 
   
-  <meta name="description" content="Table of Contents 1. CodeCacheについて
-2. CodeCache使用状況の確認方法 2.1. JVM Printフラグで確認する
-2.2. JConsoleからの確認方法
-2.3. VisualVMからのからの確認方法
-2.4. Java8のNTM(Native &hellip;">
+  <meta name="description" content="Table of Contents 1. CodeCacheによる性能劣化事例
+2. CodeCacheについて
+3. CodeCache使用状況の確認方法 3.1. JVM Printフラグで確認する
+3.2. JConsoleからの確認方法
+3.3. VisualVMからのからの確認方法
+3 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -148,23 +149,28 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline1">1. CodeCacheについて</a></li>
-<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline6">2. CodeCache使用状況の確認方法</a>
+<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline1">1. CodeCacheによる性能劣化事例</a></li>
+<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline2">2. CodeCacheについて</a></li>
+<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline7">3. CodeCache使用状況の確認方法</a>
 <ul>
-<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline2">2.1. JVM Printフラグで確認する</a></li>
-<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline3">2.2. JConsoleからの確認方法</a></li>
-<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline4">2.3. VisualVMからのからの確認方法</a></li>
-<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline5">2.4. Java8のNTM(Native Memory Tracking)で確認する</a></li>
+<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline3">3.1. JVM Printフラグで確認する</a></li>
+<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline4">3.2. JConsoleからの確認方法</a></li>
+<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline5">3.3. VisualVMからのからの確認方法</a></li>
+<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline6">3.4. Java8のNTM(Native Memory Tracking)で確認する</a></li>
 </ul>
 </li>
-<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline7">3. CodeCahe溢れた時の出力</a></li>
-<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline8">4. CodeCahe溢れた時の対応</a></li>
-<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline9">5. 参考</a></li>
+<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline8">4. CodeCahe溢れた時の出力</a></li>
+<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline9">5. CodeCahe溢れた時の対応</a></li>
+<li><a href="/blog/2015-09-01-%5Btips%5D%5Bjava%5Dcodecache%E9%A0%98%E5%9F%9F%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%B3%81%E3%81%AE%E7%A2%BA%E8%AA%8D%E6%96%B9%E6%B3%95.html#orgheadline10">6. 参考</a></li>
 </ul>
 </div>
 </div>
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1"><span class="section-number-2">1</span> CodeCacheによる性能劣化事例</h2>
+<div class="outline-text-2" id="text-1">
 <p>
-先日CodeCacheによる性能問題が発生したのですが、問題を突き止めるには時間が掛かりました。
+先日CodeCacheによる性能問題が発生した、原因を突き止めるには時間が掛かりました。
 そのわけは、
 </p>
 
@@ -173,18 +179,66 @@
 <li>スレッドダンプから遅い箇所の特定が出来ない</li>
 <li>プロファイリングからホットメソットの特定が出来ない</li>
 <li>性能劣化時間帯に同期化によるロック待ちが発生していない</li>
-<li>性能劣化時間帯のシステムコールコストは平時と変わらない</li>
+<li>性能劣化時間帯のシステムコールのコストは平常時と変わらない</li>
 <li>性能劣化時間帯にメジャーGCが起きていない、マイナーGCの時間も正常数値範囲ないである</li>
 </ol>
 
 <p>
-JVM性能に影響するよく言われている方法や要素を一通り確認しても、問題特出が来ない。
-つまりCodeCacheによる性能劣化は気づきにくい場合があります。
+よく言われているJVM性能に影響する要素を一通り確認しても、問題の特出が出来なかった。
 </p>
 
-<div id="outline-container-orgheadline1" class="outline-2">
-<h2 id="orgheadline1"><span class="section-number-2">1</span> CodeCacheについて</h2>
-<div class="outline-text-2" id="text-1">
+<p>
+今回の障害ケースは以下のような特徴があります。
+</p>
+
+<ul class="org-ul">
+<li>アプリケーションサーバ一定時間運転後、特定画面の処理時間が数十倍伸びる</li>
+<li>アプリケーション再デプロイ後、スローダウン現象が起きやすくなる傾向がある</li>
+<li>一度性能劣化すると、アプリケーションサーバを再起動しないと回復しない</li>
+</ul>
+
+<p>
+この現象はメモリリークによるGC時間が伸びるのような性能劣化ケースと似ている。
+しかしGCによるスローダウンは波があるはず、かつ特定画面が遅いとは限らないでしょう。
+つまり、CodeCacheによる性能劣化は原因を気づきにくい場合があります。
+最終的Flight RecorderのJITコンパイラー記録から問題がCodeCacheにあることを推測した。
+OpenJDKご使用の場合 <code>-XX:+PrintCompilation</code> JVM起動フラグでJITコンパイルログから同
+じことも確認できる。
+</p>
+
+<p>
+<span class="underline">スローダウン前に取れた記録</span>
+</p>
+
+
+<div class="figure">
+<p><img src="blog/img/20150901_codecache_jfr_1.png" alt="20150901_codecache_jfr_1.png" />
+</p>
+</div>
+
+<p>
+<span class="underline">性能劣化時間帯で取れた記録</span>
+</p>
+
+
+<div class="figure">
+<p><img src="blog/img/20150901_codecahce_jfr_2.png" alt="20150901_codecahce_jfr_2.png" />
+</p>
+</div>
+
+<p>
+ご覧の通り、性能劣化時間帯にJITコンパイラーが動いていないようだ。
+CodeCache領域の使用量を確認すると、空きがないことも確認されました。
+ここで問題はCodeCacheが足りないと推測出来るでしょう。ただ単に推測に過ぎないので、
+根拠付けるためにテスト用アプリケーションをデプロイしてJITコンパイラーの挙動を確認しました。
+やはりJITコンパイラーが動いていないのだ。
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline2" class="outline-2">
+<h2 id="orgheadline2"><span class="section-number-2">2</span> CodeCacheについて</h2>
+<div class="outline-text-2" id="text-2">
 <p>
 CodeCacheについてJava Magazineに <a href="https://twitter.com/kittylyst">BEN EVANS</a> さんの記事が分かりやすいと思います。
 </p>
@@ -207,7 +261,7 @@ CodeCacheについてJava Magazineに <a href="https://twitter.com/kittylyst">BE
 <li>アプリを振り返し再デプロイするとCodeCache領域が溢れる可能性がある</li>
 <li>SpringやJPAのような実行時にClassを動的生成するアプリに置いてCodeCache領域を大量に消費する場合がある</li>
 <li>JDK7で階層型コンパイラーを有効化するとCodeCache領域の消費が増加する</li>
-<li>ミドルウェア／アプリケーションサーバのCodeCache領域をチューニングスべき</li>
+<li>ミドルウェア／アプリケーションサーバのCodeCache領域をチューニングすべき</li>
 <li>ミドルウェア／アプリケーションサーバのCodeCache領域常時監視しておくべき</li>
 </ul>
 
@@ -386,7 +440,7 @@ http://ftp.riken.jp/Linux/centos/6.6/os/x86_64/repodata/repomd.xml: [Errno 14] P
 
 
 <div class="figure">
-<p><img src="img/20150829231548_CentOS_yum_404.png" alt="20150829231548_CentOS_yum_404.png" />
+<p><img src="blog/img/20150829231548_CentOS_yum_404.png" alt="20150829231548_CentOS_yum_404.png" />
 </p>
 </div>
 
@@ -558,7 +612,7 @@ Web開発でクリーンなブラウザテスト環境が必要とする場面�
 
 
 <div class="figure">
-<p><img src="img/2015-08-07-firefox-new-instance.png" alt="2015-08-07-firefox-new-instance.png" />
+<p><img src="blog/img/2015-08-07-firefox-new-instance.png" alt="2015-08-07-firefox-new-instance.png" />
 </p>
 </div>
 
