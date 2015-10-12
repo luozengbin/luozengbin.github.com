@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: CodeCache | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/tags/codecache/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-10-11T16:45:08+09:00</updated>
+  <updated>2015-10-12T20:06:17+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -462,6 +462,15 @@ Java HotSpot(TM) Server VM warning: Try increasing the code cache size using -XX
 <p>
 未完成続く&#x2026;
 </p>
+
+<p>
+以下は未整理のネタ
+<span class="underline">CodeCacheMinimumFreeSpace</span>  I2C/C2I adapters 用の予約スペース
+</p>
+<ul class="org-ul">
+<li><a href="http://www.azulsystems.com/blog/cliff/2010-07-16-tiered-compilation">http://www.azulsystems.com/blog/cliff/2010-07-16-tiered-compilation</a></li>
+<li><a href="http://blogs.atlassian.com/2012/05/codecache-is-full-compiler-has-been-disabled/">CodeCache is full. Compiler has been disabled.</a></li>
+</ul>
 </div>
 </div>
 

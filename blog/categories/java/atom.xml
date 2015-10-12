@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | Akira's Tech Notes]]></title>
   <link href="http://luozengbin.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://luozengbin.github.io/"/>
-  <updated>2015-10-11T16:45:08+09:00</updated>
+  <updated>2015-10-12T20:06:17+09:00</updated>
   <id>http://luozengbin.github.io/</id>
   <author>
     <name><![CDATA[luozengbin]]></name>
@@ -462,6 +462,15 @@ Java HotSpot(TM) Server VM warning: Try increasing the code cache size using -XX
 <p>
 未完成続く&#x2026;
 </p>
+
+<p>
+以下は未整理のネタ
+<span class="underline">CodeCacheMinimumFreeSpace</span>  I2C/C2I adapters 用の予約スペース
+</p>
+<ul class="org-ul">
+<li><a href="http://www.azulsystems.com/blog/cliff/2010-07-16-tiered-compilation">http://www.azulsystems.com/blog/cliff/2010-07-16-tiered-compilation</a></li>
+<li><a href="http://blogs.atlassian.com/2012/05/codecache-is-full-compiler-has-been-disabled/">CodeCache is full. Compiler has been disabled.</a></li>
+</ul>
 </div>
 </div>
 
@@ -828,12 +837,13 @@ Caused by: java.lang.RuntimeException: unknown CollectedHeap type : class sun.jv
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#sec-1">1. 環境</a></li>
-<li><a href="#sec-2">2. スクリプト</a></li>
-<li><a href="#sec-3">3. テスト用プログラム</a></li>
-<li><a href="#sec-4">4. 監視してみる</a></li>
-<li><a href="#sec-5">5. 出力形式</a></li>
-<li><a href="#sec-6">6. 2015/08/05 更新</a></li>
+<li><a href="#orgheadline1">1. 環境</a></li>
+<li><a href="#orgheadline2">2. スクリプト</a></li>
+<li><a href="#orgheadline3">3. テスト用プログラム</a></li>
+<li><a href="#orgheadline4">4. 監視してみる</a></li>
+<li><a href="#orgheadline5">5. 出力形式</a></li>
+<li><a href="#orgheadline6">6. 2015/08/05 更新</a></li>
+<li><a href="#orgheadline7">7. 参考</a></li>
 </ul>
 </div>
 </div>
@@ -854,14 +864,34 @@ Caused by: java.lang.RuntimeException: unknown CollectedHeap type : class sun.jv
 
 
 
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> 環境</h2>
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1"><span class="section-number-2">1</span> 環境</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
-<li>java version &#8220;1.8.0_45&#8221;
-</li>
-<li>x86_64 gnu/linux
-</li>
+<li>java version &#8220;1.8.0_45&#8221;</li>
+<li>x86_64 gnu/linux</li>
+<li><p>
+/proc/&lt;pid&gt;/smaps にスタックセグメントが次のように <code>[stack:スレッドID]</code> ラベルが出
+力されていること(Linux 3.4 以降)
+</p>
+<pre class="example">
+7f3984233000-7f3984331000 rw-p 00000000 00:00 0                          [stack:2988]
+Size:               1016 kB
+Rss:                  92 kB
+Pss:                  92 kB
+Shared_Clean:          0 kB
+Shared_Dirty:          0 kB
+Private_Clean:         0 kB
+Private_Dirty:        92 kB
+Referenced:           92 kB
+Anonymous:            92 kB
+AnonHugePages:         0 kB
+Swap:                  0 kB
+KernelPageSize:        4 kB
+MMUPageSize:           4 kB
+Locked:                0 kB
+VmFlags: rd wr mr mw me ac
+</pre></li>
 </ul>
 </div>
 </div>
@@ -869,68 +899,102 @@ Caused by: java.lang.RuntimeException: unknown CollectedHeap type : class sun.jv
 
 
 
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> スクリプト</h2>
+<div id="outline-container-orgheadline2" class="outline-2">
+<h2 id="orgheadline2"><span class="section-number-2">2</span> スクリプト</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 スクリプトの元ネタは以前の記事を参考してください。 <a href="2015-04-22-%5B%E8%AA%BF%E6%9F%BB%5Djvm%E3%81%AE%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.html">jvmのスタックサイズについて</a>
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
+<pre class="src src-sh"><span style="color: #888a85; font-style: italic;">#</span><span style="color: #888a85; font-style: italic;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
 
-<span style="color: #74af68;">###########################################################################</span>
-<span style="color: #74af68;"># </span><span style="color: #74af68;">jvm_stacksize.sh - take a jvm stack size snapshot</span>
-<span style="color: #74af68;">#</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">Authors: Akira Wakana <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
-<span style="color: #74af68;">#</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is free software: you can redistribute it and/or modify</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">it under the terms of the GNU General Public License as published by</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">the Free Software Foundation, version 3 of the License.</span>
-<span style="color: #74af68;">#</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is distributed in the hope that it will be useful,</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">GNU General Public License for more details.</span>
-<span style="color: #74af68;">#</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">You should have received a copy of the GNU General Public License</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">along with this program.  If not, see http://www.gnu.org/licenses</span>
-<span style="color: #74af68;">#</span>
-<span style="color: #74af68;"># </span><span style="color: #74af68;">Usage:</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">$jvm_stacksize.sh &lt;JVM ProcessID&gt;</span>
-<span style="color: #74af68;">###########################################################################</span>
+<span style="color: #888a85; font-style: italic;">###########################################################################</span>
+<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">jvm_stacksize.sh - take a jvm stack size snapshot</span>
+<span style="color: #888a85; font-style: italic;">#</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">Authors: Akira Wakana <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #888a85; font-style: italic;">#</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #888a85; font-style: italic;">#</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">GNU General Public License for more details.</span>
+<span style="color: #888a85; font-style: italic;">#</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">along with this program.  If not, see http://www.gnu.org/licenses</span>
+<span style="color: #888a85; font-style: italic;">#</span>
+<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">Usage:</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">$jvm_stacksize.sh &lt;JVM ProcessID&gt;</span>
+<span style="color: #888a85; font-style: italic;">###########################################################################</span>
 
-<span style="color: #dbdb95;">PID</span>=$<span style="color: #dbdb95;">1</span>
+<span style="color: #ff6347;">PID</span>=$<span style="color: #ff6347;">1</span>
 
-ps ${<span style="color: #dbdb95;">PID</span>} | grep [j]ava &gt; /dev/null || {
-    <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"-----------------------------------------------------------------------"</span>
+ps ${<span style="color: #ff6347;">PID</span>} | grep [j]ava &gt; /dev/null || {
+    <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8;">"-----------------------------------------------------------------------"</span>
     ps -ef  | grep [j]ava
-    <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"-----------------------------------------------------------------------"</span>
-    <span style="color: #23d7d7;">echo</span> -n <span style="color: #e67128;">"please input the java process id: "</span>
-    <span style="color: #23d7d7;">read</span> PID
+    <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8;">"-----------------------------------------------------------------------"</span>
+    <span style="color: #729fcf;">echo</span> -n <span style="color: #ad7fa8;">"please input the java process id: "</span>
+    <span style="color: #729fcf;">read</span> PID
 }
 
-<span style="color: #23d7d7;">printf</span> <span style="color: #e67128;">"[ PID ]\t[StackSize(kB)]\t[GuardPage(kB)]\t[UsedSize(kB)]\t[Thread Name]\n"</span>
+<span style="color: #729fcf;">printf</span> <span style="color: #ad7fa8;">"[ PID ]\t[StackSize(kB)]\t[GuardPage(kB)]\t[UsedSize(kB)]\t[Thread Name]\n"</span>
 
-<span style="color: #74af68;"># </span><span style="color: #74af68;">jstack&#12398;&#20986;&#21147;&#32080;&#26524;&#12363;&#12425;&#12473;&#12524;&#12483;&#12489;ID&#12392;&#21517;&#21069;&#12434;&#25277;&#20986;&#12377;&#12427;</span>
-jstack ${<span style="color: #dbdb95;">PID</span>} | grep nid | sed -e <span style="color: #e67128;">"s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"</span> | sort | <span style="color: #ffad29; font-weight: bold;">while </span><span style="color: #23d7d7;">read</span> line
-<span style="color: #ffad29; font-weight: bold;">do</span>
-    <span style="color: #74af68;"># </span><span style="color: #74af68;">&#12473;&#12524;&#12483;&#12489;ID&#12434;&#20999;&#12426;&#20986;&#12377;</span>
-    <span style="color: #dbdb95;">pid_hex</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $1}'`</span>
+<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">jstack&#12398;&#20986;&#21147;&#32080;&#26524;&#12363;&#12425;&#12473;&#12524;&#12483;&#12489;ID&#12392;&#21517;&#21069;&#12434;&#25277;&#20986;&#12377;&#12427;</span>
+jstack ${<span style="color: #ff6347;">PID</span>} | grep nid | sed -e <span style="color: #ad7fa8;">"s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"</span> | sort | <span style="color: #729fcf; font-weight: bold;">while </span><span style="color: #729fcf;">read</span> line
+<span style="color: #729fcf; font-weight: bold;">do</span>
+    <span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">&#12473;&#12524;&#12483;&#12489;ID&#12434;&#20999;&#12426;&#20986;&#12377;</span>
+    <span style="color: #ff6347;">pid_hex</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $1}'`</span>
 
-    <span style="color: #74af68;"># </span><span style="color: #74af68;">&#12473;&#12524;&#12483;&#12489;&#21517;&#12434;&#20999;&#12426;&#20986;&#12377;</span>
-    <span style="color: #dbdb95;">thread_name</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $2}'`</span>
+    <span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">&#12473;&#12524;&#12483;&#12489;&#21517;&#12434;&#20999;&#12426;&#20986;&#12377;</span>
+    <span style="color: #ff6347;">thread_name</span>=<span style="color: #fa8072;">`echo "${line}" | awk -F"," '{print $2}'`</span>
 
-    <span style="color: #74af68;"># </span><span style="color: #74af68;">&#12473;&#12524;&#12483;&#12489;ID&#12434;10&#36914;&#25968;&#12395;&#22793;&#25563;</span>
-    <span style="color: #dbdb95;">pid</span>=<span style="color: #fa8072;">`printf '%d\n' ${pid_hex}`</span>
+    <span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">&#12473;&#12524;&#12483;&#12489;ID&#12434;10&#36914;&#25968;&#12395;&#22793;&#25563;</span>
+    <span style="color: #ff6347;">pid</span>=<span style="color: #fa8072;">`printf '%d\n' ${pid_hex}`</span>
 
-    <span style="color: #74af68;"># </span><span style="color: #74af68;">/proc/&lt;pid&gt;/smaps &#12501;&#12449;&#12452;&#12523;&#12363;&#12425;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12289;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#12434;&#21462;&#24471;&#12377;&#12427;</span>
-    <span style="color: #dbdb95;">guard_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -B16 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
-    <span style="color: #dbdb95;">stack_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -A15 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
-    <span style="color: #dbdb95;">used_size</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps  | grep -A15 "stack:${pid}" | grep -e "^Rss:" | awk '{print $2}'`</span>
-    <span style="color: #dbdb95;">stack_size</span>=<span style="color: #fa8072;">`expr ${guard_page} + ${stack_page}`</span>
-    <span style="color: #23d7d7;">printf</span> <span style="color: #e67128;">"%7d\t%15s\t%15s\t%14s\t%s\n"</span> <span style="color: #e67128;">"${pid}"</span> <span style="color: #e67128;">"${stack_size}"</span> <span style="color: #e67128;">"${guard_page}"</span> <span style="color: #e67128;">"${used_size}"</span> <span style="color: #e67128;">"${thread_name}"</span>
-<span style="color: #ffad29; font-weight: bold;">done</span>
+    <span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">/proc/&lt;pid&gt;/smaps &#12501;&#12449;&#12452;&#12523;&#12363;&#12425;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12289;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#12434;&#21462;&#24471;&#12377;&#12427;</span>
+    <span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">&#27425;&#12398;smaps&#20986;&#21147;&#12469;&#12531;&#12503;&#12523;&#12395;&#9733;&#12467;&#12513;&#12531;&#12488;&#12398;&#37096;&#20998;&#12399;&#21462;&#24471;&#35443;&#32048;&#12525;&#12472;&#12483;&#12463;&#12392;&#12394;&#12426;&#12414;&#12377;&#12290;</span>
+    <span style="color: #888a85; font-style: italic;">#</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">7ff751076000-7ff751079000 ---p 00000000 00:00 0</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Size:                 12 kB    &#9733;&#35500;&#26126;: StackRedPages(4Kb) + StackYellowPages(8Kb) = 12Kb</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Rss:                   0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Pss:                   0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Shared_Clean:          0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Shared_Dirty:          0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Private_Clean:         0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Private_Dirty:         0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Referenced:            0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Anonymous:             0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">AnonHugePages:         0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Swap:                  0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">KernelPageSize:        4 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">MMUPageSize:           4 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Locked:                0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">VmFlags: mr mw me ac          &#9733;&#35500;&#26126;:&#26360;&#12365;&#36796;&#12415;&#19981;&#21487;</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">7ff751079000-7ff751177000 rw-p 00000000 00:00 0                          [stack:21275]</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Size:               1016 kB   &#9733;&#35500;&#26126;: &#12371;&#12371;&#12363;&#12425;Normal Stack&#12506;&#12540;&#12472;</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Rss:                 108 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Pss:                 108 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Shared_Clean:          0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Shared_Dirty:          0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Private_Clean:         0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Private_Dirty:       108 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Referenced:          108 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Anonymous:           108 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">AnonHugePages:         0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Swap:                  0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">KernelPageSize:        4 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">MMUPageSize:           4 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">Locked:                0 kB</span>
+    <span style="color: #888a85; font-style: italic;">#     </span><span style="color: #888a85; font-style: italic;">VmFlags: rd wr mr mw me ac</span>
+    <span style="color: #ff6347;">guard_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -B16 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
+    <span style="color: #ff6347;">stack_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -A15 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
+    <span style="color: #ff6347;">used_size</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps  | grep -A15 "stack:${pid}" | grep -e "^Rss:"  | awk '{print $2}'`</span>
+    <span style="color: #ff6347;">stack_size</span>=<span style="color: #fa8072;">`expr ${guard_page} + ${stack_page}`</span>
+    <span style="color: #729fcf;">printf</span> <span style="color: #ad7fa8;">"%7d\t%15s\t%15s\t%14s\t%s\n"</span> <span style="color: #ad7fa8;">"${pid}"</span> <span style="color: #ad7fa8;">"${stack_size}"</span> <span style="color: #ad7fa8;">"${guard_page}"</span> <span style="color: #ad7fa8;">"${used_size}"</span> <span style="color: #ad7fa8;">"${thread_name}"</span>
+<span style="color: #729fcf; font-weight: bold;">done</span>
 </pre>
 </div>
 </div>
@@ -939,40 +1003,40 @@ jstack ${<span style="color: #dbdb95;">PID</span>} | grep nid | sed -e <span sty
 
 
 
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> テスト用プログラム</h2>
+<div id="outline-container-orgheadline3" class="outline-2">
+<h2 id="orgheadline3"><span class="section-number-2">3</span> テスト用プログラム</h2>
 <div class="outline-text-2" id="text-3">
 <div class="org-src-container">
 
-<pre class="src src-java"><span style="color: #ffad29; font-weight: bold;">package</span> <span style="color: #008b8b;">test01</span>;
+<pre class="src src-java"><span style="color: #729fcf; font-weight: bold;">package</span> <span style="color: #5E8C6A;">test01</span>;
 
-<span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #ffad29; font-weight: bold;">class</span> <span style="color: #34cae2;">TestTask</span> <span style="color: #ffad29; font-weight: bold;">implements</span> <span style="color: #34cae2;">Runnable</span> {
+<span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #729fcf; font-weight: bold;">class</span> <span style="color: #2DA6F5; font-weight: bold;">TestTask</span> <span style="color: #729fcf; font-weight: bold;">implements</span> <span style="color: #2DA6F5; font-weight: bold;">Runnable</span> {
 
-    <span style="color: #008b8b;">@Override</span>
-    <span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">run</span>() {
+    <span style="color: #5E8C6A;">@Override</span>
+    <span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #2DA6F5; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">run</span>() {
         add1(1);
     }
 
-    <span style="color: #ffad29; font-weight: bold;">private</span> <span style="color: #34cae2;">int</span> <span style="color: #00ede1; font-weight: bold;">add1</span>(<span style="color: #34cae2;">int</span> <span style="color: #dbdb95;">a</span>) {
-        <span style="color: #ffad29; font-weight: bold;">try</span> {
+    <span style="color: #729fcf; font-weight: bold;">private</span> <span style="color: #2DA6F5; font-weight: bold;">int</span> <span style="color: #edd400; font-weight: bold;">add1</span>(<span style="color: #2DA6F5; font-weight: bold;">int</span> <span style="color: #ff6347;">a</span>) {
+        <span style="color: #729fcf; font-weight: bold;">try</span> {
             Thread.sleep(50);
-        } <span style="color: #ffad29; font-weight: bold;">catch</span> (<span style="color: #34cae2;">InterruptedException</span> <span style="color: #dbdb95;">e</span>) {
+        } <span style="color: #729fcf; font-weight: bold;">catch</span> (<span style="color: #2DA6F5; font-weight: bold;">InterruptedException</span> <span style="color: #ff6347;">e</span>) {
             e.printStackTrace();
         }
 
-        <span style="color: #ffad29; font-weight: bold;">return</span> add2(a++);
+        <span style="color: #729fcf; font-weight: bold;">return</span> add2(a++);
     }
 
-    <span style="color: #ffad29; font-weight: bold;">private</span> <span style="color: #34cae2;">int</span> <span style="color: #00ede1; font-weight: bold;">add2</span>(<span style="color: #34cae2;">int</span> <span style="color: #dbdb95;">a</span>) {
-        <span style="color: #74af68;">//</span><span style="color: #74af68;">add1 -&gt; add2 --&gt; add1 &#28961;&#38480;&#12523;&#12540;&#12503;&#12398;&#29366;&#24907;&#12391;</span>
-        <span style="color: #74af68;">//</span><span style="color: #74af68;">&#12473;&#12479;&#12483;&#12463;&#12434;&#39135;&#12356;&#28528;&#12377;</span>
-        <span style="color: #ffad29; font-weight: bold;">return</span> add1(a--);
+    <span style="color: #729fcf; font-weight: bold;">private</span> <span style="color: #2DA6F5; font-weight: bold;">int</span> <span style="color: #edd400; font-weight: bold;">add2</span>(<span style="color: #2DA6F5; font-weight: bold;">int</span> <span style="color: #ff6347;">a</span>) {
+        <span style="color: #888a85; font-style: italic;">//</span><span style="color: #888a85; font-style: italic;">add1 -&gt; add2 --&gt; add1 &#28961;&#38480;&#12523;&#12540;&#12503;&#12398;&#29366;&#24907;&#12391;</span>
+        <span style="color: #888a85; font-style: italic;">//</span><span style="color: #888a85; font-style: italic;">&#12473;&#12479;&#12483;&#12463;&#12434;&#39135;&#12356;&#28528;&#12377;</span>
+        <span style="color: #729fcf; font-weight: bold;">return</span> add1(a--);
     }
 
-    <span style="color: #ffad29; font-weight: bold;">public</span> <span style="color: #ffad29; font-weight: bold;">static</span> <span style="color: #34cae2;">void</span> <span style="color: #00ede1; font-weight: bold;">main</span>(<span style="color: #34cae2;">String</span>[] <span style="color: #dbdb95;">args</span>) <span style="color: #ffad29; font-weight: bold;">throws</span> <span style="color: #34cae2;">Exception</span> {
+    <span style="color: #729fcf; font-weight: bold;">public</span> <span style="color: #729fcf; font-weight: bold;">static</span> <span style="color: #2DA6F5; font-weight: bold;">void</span> <span style="color: #edd400; font-weight: bold;">main</span>(<span style="color: #2DA6F5; font-weight: bold;">String</span>[] <span style="color: #ff6347;">args</span>) <span style="color: #729fcf; font-weight: bold;">throws</span> <span style="color: #2DA6F5; font-weight: bold;">Exception</span> {
 
-        <span style="color: #34cae2;">Thread</span> <span style="color: #dbdb95;">t1</span> = <span style="color: #ffad29; font-weight: bold;">new</span> <span style="color: #34cae2;">Thread</span>(<span style="color: #ffad29; font-weight: bold;">new</span> <span style="color: #34cae2;">TestTask</span>());
-        <span style="color: #34cae2;">Thread</span> <span style="color: #dbdb95;">t2</span> = <span style="color: #ffad29; font-weight: bold;">new</span> <span style="color: #34cae2;">Thread</span>(<span style="color: #ffad29; font-weight: bold;">new</span> <span style="color: #34cae2;">TestTask</span>());
+        <span style="color: #2DA6F5; font-weight: bold;">Thread</span> <span style="color: #ff6347;">t1</span> = <span style="color: #729fcf; font-weight: bold;">new</span> <span style="color: #2DA6F5; font-weight: bold;">Thread</span>(<span style="color: #729fcf; font-weight: bold;">new</span> <span style="color: #2DA6F5; font-weight: bold;">TestTask</span>());
+        <span style="color: #2DA6F5; font-weight: bold;">Thread</span> <span style="color: #ff6347;">t2</span> = <span style="color: #729fcf; font-weight: bold;">new</span> <span style="color: #2DA6F5; font-weight: bold;">Thread</span>(<span style="color: #729fcf; font-weight: bold;">new</span> <span style="color: #2DA6F5; font-weight: bold;">TestTask</span>());
         t1.start();
         t2.start();
 
@@ -989,8 +1053,8 @@ jstack ${<span style="color: #dbdb95;">PID</span>} | grep nid | sed -e <span sty
 
 
 
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> 監視してみる</h2>
+<div id="outline-container-orgheadline4" class="outline-2">
+<h2 id="orgheadline4"><span class="section-number-2">4</span> 監視してみる</h2>
 <div class="outline-text-2" id="text-4">
 <video controls>
    <source src="video/2015-07-21_jvm_stack_watch.mp4" />
@@ -1001,8 +1065,8 @@ jstack ${<span style="color: #dbdb95;">PID</span>} | grep nid | sed -e <span sty
 
 
 
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> 出力形式</h2>
+<div id="outline-container-orgheadline5" class="outline-2">
+<h2 id="orgheadline5"><span class="section-number-2">5</span> 出力形式</h2>
 <div class="outline-text-2" id="text-5">
 <pre class="example">
 [ PID ] [StackSize(kB)] [GuardPage(kB)] [UsedSize(kB)]  [Thread Name]
@@ -1029,40 +1093,40 @@ jstack ${<span style="color: #dbdb95;">PID</span>} | grep nid | sed -e <span sty
 
 
 <colgroup>
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="left">項目名</th>
-<th scope="col" class="left">説明</th>
+<th scope="col" class="org-left">項目名</th>
+<th scope="col" class="org-left">説明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="left">PID</td>
-<td class="left">JavaスレッドのプロセスID</td>
+<td class="org-left">PID</td>
+<td class="org-left">JavaスレッドのプロセスID</td>
 </tr>
 
 <tr>
-<td class="left">StackSize</td>
-<td class="left">Javaスタック＋Nativeスタックのサイズ (kB)</td>
+<td class="org-left">StackSize</td>
+<td class="org-left">Javaスタック＋Nativeスタックのサイズ (kB)</td>
 </tr>
 
 <tr>
-<td class="left">GuardPage</td>
-<td class="left">スタック保護ページ (kB)</td>
+<td class="org-left">GuardPage</td>
+<td class="org-left">スタック保護ページ (kB)</td>
 </tr>
 
 <tr>
-<td class="left">UsedSize</td>
-<td class="left">実際使った物理メモリサイズ (kB)</td>
+<td class="org-left">UsedSize</td>
+<td class="org-left">実際使った物理メモリサイズ (kB)</td>
 </tr>
 
 <tr>
-<td class="left">Thread Name</td>
-<td class="left">スレッド名</td>
+<td class="org-left">Thread Name</td>
+<td class="org-left">スレッド名</td>
 </tr>
 </tbody>
 </table>
@@ -1074,8 +1138,8 @@ jstack ${<span style="color: #dbdb95;">PID</span>} | grep nid | sed -e <span sty
 </div>
 
 
-<div id="outline-container-sec-6" class="outline-2">
-<h2 id="sec-6"><span class="section-number-2">6</span> 2015/08/05 更新</h2>
+<div id="outline-container-orgheadline6" class="outline-2">
+<h2 id="orgheadline6"><span class="section-number-2">6</span> 2015/08/05 更新</h2>
 <div class="outline-text-2" id="text-6">
 <p>
 前の実装は <code>watch</code> コマンドでスクリプトを繰り返し実行させスタックサイズの監視をしてい
@@ -1089,126 +1153,123 @@ jstack ${<span style="color: #dbdb95;">PID</span>} | grep nid | sed -e <span sty
 </p>
 
 <ol class="org-ol">
-<li><code>jstack</code> を１回のみ実行する、その結果(スレッドダンプ)をtmpファイルで保持する
-</li>
-<li><code>ps -H &lt;PID&gt;</code> でスレッドIDを取得して、1のスレッドダンプからスレッド名を引き
-</li>
+<li><code>jstack</code> を１回のみ実行する、その結果(スレッドダンプ)をtmpファイルで保持する</li>
+<li><code>ps -H &lt;PID&gt;</code> でスレッドIDを取得して、1のスレッドダンプからスレッド名を引き</li>
 <li>スレッドダンプから該当するものがない場合、スレッドダンプが古いと判断し再度
-<code>jstack</code> で新しいスレッドダンプを取る
-</li>
+<code>jstack</code> で新しいスレッドダンプを取る</li>
 </ol>
 
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #74af68;">#</span><span style="color: #74af68;">!/bin/</span><span style="color: #ffad29; font-weight: bold;">sh</span>
-<span style="color: #74af68;">###########################################################################</span>
-<span style="color: #74af68;"># </span><span style="color: #74af68;">jvm_stacksize.sh - take jvm stack size snapshot</span>
-<span style="color: #74af68;">#</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">Authors: Akira Wakana <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
-<span style="color: #74af68;">#</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is free software: you can redistribute it and/or modify</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">it under the terms of the GNU General Public License as published by</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">the Free Software Foundation, version 3 of the License.</span>
-<span style="color: #74af68;">#</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">This program is distributed in the hope that it will be useful,</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">GNU General Public License for more details.</span>
-<span style="color: #74af68;">#</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">You should have received a copy of the GNU General Public License</span>
-<span style="color: #74af68;">#    </span><span style="color: #74af68;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/&gt;.
+<pre class="src src-sh"><span style="color: #888a85; font-style: italic;">#</span><span style="color: #888a85; font-style: italic;">!/bin/</span><span style="color: #729fcf; font-weight: bold;">sh</span>
+<span style="color: #888a85; font-style: italic;">###########################################################################</span>
+<span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">jvm_stacksize.sh - take jvm stack size snapshot</span>
+<span style="color: #888a85; font-style: italic;">#</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">Authors: Akira Wakana <a href="mailto:jalen.cn%40gmail.com">&lt;jalen.cn@gmail.com&gt;</a></span>
+<span style="color: #888a85; font-style: italic;">#</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">This program is free software: you can redistribute it and/or modify</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">it under the terms of the GNU General Public License as published by</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">the Free Software Foundation, version 3 of the License.</span>
+<span style="color: #888a85; font-style: italic;">#</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">This program is distributed in the hope that it will be useful,</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">GNU General Public License for more details.</span>
+<span style="color: #888a85; font-style: italic;">#</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">You should have received a copy of the GNU General Public License</span>
+<span style="color: #888a85; font-style: italic;">#    </span><span style="color: #888a85; font-style: italic;">along with this program.  If not, see <a href="http://www.gnu.org/licenses/&gt;.
 #
 # Usage:
 #    $jvm_stacksize.sh &lt;JVM ProcessID">&lt;http://www.gnu.org/licenses/&gt;.</a></span><a href="http://www.gnu.org/licenses/&gt;.
 #
 # Usage:
 #    $jvm_stacksize.sh &lt;JVM ProcessID">
-</a><span style="color: #74af68;"><a href="http://www.gnu.org/licenses/&gt;.
+</a><span style="color: #888a85; font-style: italic;"><a href="http://www.gnu.org/licenses/&gt;.
 #
 # Usage:
 #    $jvm_stacksize.sh &lt;JVM ProcessID">#</a></span><a href="http://www.gnu.org/licenses/&gt;.
 #
 # Usage:
 #    $jvm_stacksize.sh &lt;JVM ProcessID">
-</a><span style="color: #74af68;"><a href="http://www.gnu.org/licenses/&gt;.
+</a><span style="color: #888a85; font-style: italic;"><a href="http://www.gnu.org/licenses/&gt;.
 #
 # Usage:
-#    $jvm_stacksize.sh &lt;JVM ProcessID"># </a></span><span style="color: #74af68;"><a href="http://www.gnu.org/licenses/&gt;.
+#    $jvm_stacksize.sh &lt;JVM ProcessID"># </a></span><span style="color: #888a85; font-style: italic;"><a href="http://www.gnu.org/licenses/&gt;.
 #
 # Usage:
 #    $jvm_stacksize.sh &lt;JVM ProcessID">Usage:</a></span><a href="http://www.gnu.org/licenses/&gt;.
 #
 # Usage:
 #    $jvm_stacksize.sh &lt;JVM ProcessID">
-</a><span style="color: #74af68;"><a href="http://www.gnu.org/licenses/&gt;.
+</a><span style="color: #888a85; font-style: italic;"><a href="http://www.gnu.org/licenses/&gt;.
 #
 # Usage:
-#    $jvm_stacksize.sh &lt;JVM ProcessID">#    </a></span><span style="color: #74af68;"><a href="http://www.gnu.org/licenses/&gt;.
+#    $jvm_stacksize.sh &lt;JVM ProcessID">#    </a></span><span style="color: #888a85; font-style: italic;"><a href="http://www.gnu.org/licenses/&gt;.
 #
 # Usage:
 #    $jvm_stacksize.sh &lt;JVM ProcessID">$jvm_stacksize.sh &lt;JVM ProcessID&gt;</a></span>
-<span style="color: #74af68;">###########################################################################</span>
+<span style="color: #888a85; font-style: italic;">###########################################################################</span>
 
-<span style="color: #00ede1; font-weight: bold;">print_stacksize</span>()
+<span style="color: #edd400; font-weight: bold;">print_stacksize</span>()
 {
-    rm -rf ${<span style="color: #dbdb95;">tmpdir</span>}/stacksize.txt
-    <span style="color: #23d7d7;">printf</span> <span style="color: #e67128;">"[ PID ]\t[StackSize(kB)]\t[GuardPage(kB)]\t[UsedSize(kB)]\t[Thread Name]\n"</span>
-    ps h -L --format=lwp ${<span style="color: #dbdb95;">PID</span>} | grep -v <span style="color: #e67128;">"${PID}"</span> | <span style="color: #ffad29; font-weight: bold;">while </span><span style="color: #23d7d7;">read</span> pid
-    <span style="color: #ffad29; font-weight: bold;">do</span>
-        <span style="color: #74af68;"># </span><span style="color: #74af68;">&#12473;&#12524;&#12483;&#12489;ID</span>
-        <span style="color: #dbdb95;">pid_hex</span>=<span style="color: #fa8072;">`printf '%#x\n' $pid`</span>
+    rm -rf ${<span style="color: #ff6347;">tmpdir</span>}/stacksize.txt
+    <span style="color: #729fcf;">printf</span> <span style="color: #ad7fa8;">"[ PID ]\t[StackSize(kB)]\t[GuardPage(kB)]\t[UsedSize(kB)]\t[Thread Name]\n"</span>
+    ps h -L --format=lwp ${<span style="color: #ff6347;">PID</span>} | grep -v <span style="color: #ad7fa8;">"${PID}"</span> | <span style="color: #729fcf; font-weight: bold;">while </span><span style="color: #729fcf;">read</span> pid
+    <span style="color: #729fcf; font-weight: bold;">do</span>
+        <span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">&#12473;&#12524;&#12483;&#12489;ID</span>
+        <span style="color: #ff6347;">pid_hex</span>=<span style="color: #fa8072;">`printf '%#x\n' $pid`</span>
 
-        <span style="color: #74af68;"># </span><span style="color: #74af68;">&#12473;&#12524;&#12483;&#12489;&#21517;&#12434;&#20999;&#12426;&#20986;&#12377;</span>
-        <span style="color: #dbdb95;">threadinfo</span>=<span style="color: #fa8072;">`cat ${threadtdump} | fgrep " nid=${pid_hex} " | sed -e "s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"`</span>
-        <span style="color: #ffad29; font-weight: bold;">if</span> [ <span style="color: #e67128;">"${threadinfo}"</span> == <span style="color: #e67128;">""</span> ]; <span style="color: #ffad29; font-weight: bold;">then</span>
-            jstack ${<span style="color: #dbdb95;">PID</span>} &gt; ${<span style="color: #dbdb95;">threadtdump</span>}
-            <span style="color: #dbdb95;">threadinfo</span>=<span style="color: #fa8072;">`cat ${threadtdump} | fgrep " nid=${pid_hex} " | sed -e "s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"`</span>
-        <span style="color: #ffad29; font-weight: bold;">fi</span>
-        <span style="color: #dbdb95;">thread_name</span>=<span style="color: #fa8072;">`echo "${threadinfo}" | awk -F"," '{print $2}'`</span>
+        <span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;">&#12473;&#12524;&#12483;&#12489;&#21517;&#12434;&#20999;&#12426;&#20986;&#12377;</span>
+        <span style="color: #ff6347;">threadinfo</span>=<span style="color: #fa8072;">`cat ${threadtdump} | fgrep " nid=${pid_hex} " | sed -e "s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"`</span>
+        <span style="color: #729fcf; font-weight: bold;">if</span> [ <span style="color: #ad7fa8;">"${threadinfo}"</span> == <span style="color: #ad7fa8;">""</span> ]; <span style="color: #729fcf; font-weight: bold;">then</span>
+            jstack ${<span style="color: #ff6347;">PID</span>} &gt; ${<span style="color: #ff6347;">threadtdump</span>}
+            <span style="color: #ff6347;">threadinfo</span>=<span style="color: #fa8072;">`cat ${threadtdump} | fgrep " nid=${pid_hex} " | sed -e "s/^\"\(.*\)\".*nid=\(0x[0-9|a-z]*\).*$/\2,\1/"`</span>
+        <span style="color: #729fcf; font-weight: bold;">fi</span>
+        <span style="color: #ff6347;">thread_name</span>=<span style="color: #fa8072;">`echo "${threadinfo}" | awk -F"," '{print $2}'`</span>
 
-        <span style="color: #74af68;"># </span><span style="color: #74af68;"># /proc/&lt;pid&gt;/smaps &#12501;&#12449;&#12452;&#12523;&#12363;&#12425;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12289;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#12434;&#21462;&#24471;&#12377;&#12427;</span>
-        <span style="color: #dbdb95;">guard_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -B16 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
-        <span style="color: #dbdb95;">stack_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -A15 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
-        <span style="color: #dbdb95;">used_size</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps  | grep -A15 "stack:${pid}" | grep -e "^Rss:" | awk '{print $2}'`</span>
-        <span style="color: #dbdb95;">stack_size</span>=<span style="color: #fa8072;">`expr ${guard_page} + ${stack_page}`</span>
-        <span style="color: #23d7d7;">printf</span> <span style="color: #e67128;">"%7d\t%15s\t%15s\t%14s\t%s\n"</span> <span style="color: #e67128;">"${pid}"</span> <span style="color: #e67128;">"${stack_size}"</span> <span style="color: #e67128;">"${guard_page}"</span> <span style="color: #e67128;">"${used_size}"</span> <span style="color: #e67128;">"${thread_name}"</span>
-    <span style="color: #ffad29; font-weight: bold;">done</span> &gt; ${<span style="color: #dbdb95;">tmpdir</span>}/stacksize.txt
-    sort -r -k4,4 ${<span style="color: #dbdb95;">tmpdir</span>}/stacksize.txt
+        <span style="color: #888a85; font-style: italic;"># </span><span style="color: #888a85; font-style: italic;"># /proc/&lt;pid&gt;/smaps &#12501;&#12449;&#12452;&#12523;&#12363;&#12425;&#12473;&#12479;&#12483;&#12463;&#12469;&#12452;&#12474;&#12289;&#12460;&#12540;&#12489;&#12506;&#12540;&#12472;&#12469;&#12452;&#12474;&#12434;&#21462;&#24471;&#12377;&#12427;</span>
+        <span style="color: #ff6347;">guard_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -B16 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
+        <span style="color: #ff6347;">stack_page</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps | grep -A15 "stack:${pid}" | grep -e "^Size:" | awk '{print $2}'`</span>
+        <span style="color: #ff6347;">used_size</span>=<span style="color: #fa8072;">`cat /proc/${PID}/smaps  | grep -A15 "stack:${pid}" | grep -e "^Rss:" | awk '{print $2}'`</span>
+        <span style="color: #ff6347;">stack_size</span>=<span style="color: #fa8072;">`expr ${guard_page} + ${stack_page}`</span>
+        <span style="color: #729fcf;">printf</span> <span style="color: #ad7fa8;">"%7d\t%15s\t%15s\t%14s\t%s\n"</span> <span style="color: #ad7fa8;">"${pid}"</span> <span style="color: #ad7fa8;">"${stack_size}"</span> <span style="color: #ad7fa8;">"${guard_page}"</span> <span style="color: #ad7fa8;">"${used_size}"</span> <span style="color: #ad7fa8;">"${thread_name}"</span>
+    <span style="color: #729fcf; font-weight: bold;">done</span> &gt; ${<span style="color: #ff6347;">tmpdir</span>}/stacksize.txt
+    sort -r -k4,4 ${<span style="color: #ff6347;">tmpdir</span>}/stacksize.txt
 }
 
-<span style="color: #00ede1; font-weight: bold;">finally_func</span>() {
-    <span style="color: #dbdb95;">RET</span>=$<span style="color: #dbdb95;">?</span>
-    <span style="color: #ffad29; font-weight: bold;">if</span> [ -d ${<span style="color: #dbdb95;">tmpdir</span>} ]; <span style="color: #ffad29; font-weight: bold;">then</span>
-        rm -rf ${<span style="color: #dbdb95;">tmpdir</span>}
-    <span style="color: #ffad29; font-weight: bold;">fi</span>
-    <span style="color: #ffad29; font-weight: bold;">exit</span> ${<span style="color: #dbdb95;">RET</span>}
+<span style="color: #edd400; font-weight: bold;">finally_func</span>() {
+    <span style="color: #ff6347;">RET</span>=$<span style="color: #ff6347;">?</span>
+    <span style="color: #729fcf; font-weight: bold;">if</span> [ -d ${<span style="color: #ff6347;">tmpdir</span>} ]; <span style="color: #729fcf; font-weight: bold;">then</span>
+        rm -rf ${<span style="color: #ff6347;">tmpdir</span>}
+    <span style="color: #729fcf; font-weight: bold;">fi</span>
+    <span style="color: #729fcf; font-weight: bold;">exit</span> ${<span style="color: #ff6347;">RET</span>}
 }
 
-<span style="color: #ffad29; font-weight: bold;">trap</span> finally_func EXIT
+<span style="color: #729fcf; font-weight: bold;">trap</span> finally_func EXIT
 
-<span style="color: #dbdb95;">PID</span>=$<span style="color: #dbdb95;">1</span>
+<span style="color: #ff6347;">PID</span>=$<span style="color: #ff6347;">1</span>
 
-ps ${<span style="color: #dbdb95;">PID</span>} | grep [j]ava &gt; /dev/null || {
-    <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"-----------------------------------------------------------------------"</span>
+ps ${<span style="color: #ff6347;">PID</span>} | grep [j]ava &gt; /dev/null || {
+    <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8;">"-----------------------------------------------------------------------"</span>
     ps -ef  | grep [j]ava
-    <span style="color: #23d7d7;">echo</span> <span style="color: #e67128;">"-----------------------------------------------------------------------"</span>
-    <span style="color: #23d7d7;">echo</span> -n <span style="color: #e67128;">"please input the java process id: "</span>
-    <span style="color: #23d7d7;">read</span> PID
+    <span style="color: #729fcf;">echo</span> <span style="color: #ad7fa8;">"-----------------------------------------------------------------------"</span>
+    <span style="color: #729fcf;">echo</span> -n <span style="color: #ad7fa8;">"please input the java process id: "</span>
+    <span style="color: #729fcf;">read</span> PID
 }
 
-<span style="color: #23d7d7;">export</span> PID
+<span style="color: #729fcf;">export</span> PID
 
-<span style="color: #23d7d7;">export</span> <span style="color: #dbdb95;">tmpdir</span>=<span style="color: #fa8072;">`mktemp -d`</span>
+<span style="color: #729fcf;">export</span> <span style="color: #ff6347;">tmpdir</span>=<span style="color: #fa8072;">`mktemp -d`</span>
 
-<span style="color: #23d7d7;">export</span> <span style="color: #dbdb95;">threadtdump</span>=${<span style="color: #dbdb95;">tmpdir</span>}/${<span style="color: #dbdb95;">PID</span>}.tdump
+<span style="color: #729fcf;">export</span> <span style="color: #ff6347;">threadtdump</span>=${<span style="color: #ff6347;">tmpdir</span>}/${<span style="color: #ff6347;">PID</span>}.tdump
 
-jstack ${<span style="color: #dbdb95;">PID</span>} &gt; ${<span style="color: #dbdb95;">threadtdump</span>}
+jstack ${<span style="color: #ff6347;">PID</span>} &gt; ${<span style="color: #ff6347;">threadtdump</span>}
 
-<span style="color: #23d7d7;">export</span> -f print_stacksize
+<span style="color: #729fcf;">export</span> -f print_stacksize
 
-watch <span style="color: #e67128;">"bash -c print_stacksize"</span>
+watch <span style="color: #ad7fa8;">"bash -c print_stacksize"</span>
 
-rm -rf ${<span style="color: #dbdb95;">tmpdir</span>}
+rm -rf ${<span style="color: #ff6347;">tmpdir</span>}
 </pre>
 </div>
 
@@ -1219,6 +1280,18 @@ rm -rf ${<span style="color: #dbdb95;">tmpdir</span>}
 <p>
 一般的なアプリでは実行中スレッドの数が頻繁に変わらないので、これで満足しています。;-)
 </p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-orgheadline7" class="outline-2">
+<h2 id="orgheadline7"><span class="section-number-2">7</span> 参考</h2>
+<div class="outline-text-2" id="text-7">
+<ul class="org-ul">
+<li><a href="http://linuxjm.osdn.jp/html/LDP_man-pages/man5/proc.5.html">MAN PROC</a></li>
+</ul>
 </div>
 </div>
 
